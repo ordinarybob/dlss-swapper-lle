@@ -29,8 +29,14 @@ public sealed partial class LibraryPage : Page
     void MainGridView_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         // via: https://stackoverflow.com/a/41141249
-        var columns = Math.Ceiling(MainGridView.ActualWidth / 400);
-        ((ItemsWrapGrid)MainGridView.ItemsPanelRoot).ItemWidth = (e.NewSize.Width / columns) - 1;
+        if (MainGridView.ItemsPanelRoot is not ItemsWrapGrid itemsPanel
+            || e.NewSize.Width <= 0)
+        {
+            return;
+        }
+
+        var columns = Math.Max(1, Math.Ceiling(e.NewSize.Width / 400));
+        itemsPanel.ItemWidth = Math.Max(1, (e.NewSize.Width / columns) - 1);
     }
 
     private void MainGridView_ItemClick(object sender, ItemClickEventArgs e)

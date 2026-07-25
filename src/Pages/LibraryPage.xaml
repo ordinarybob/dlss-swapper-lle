@@ -21,6 +21,190 @@
         <ct_converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" TrueValue="Visible" FalseValue="Collapsed" />
         <converters:BytesToMegaBytesConverter x:Key="BytesToMegaBytesConverter" />
         <converters:TotalBytesVisbilityConverter x:Key="TotalBytesVisbilityConverter" />
+
+        <ControlTemplate x:Key="LibrarySelectorScrollPageButtonTemplate" TargetType="RepeatButton">
+            <Grid Background="Transparent">
+                <ContentPresenter
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Content="{TemplateBinding Content}" />
+            </Grid>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="LibrarySelectorScrollThumbTemplate" TargetType="Thumb">
+            <Border
+                x:Name="ThumbVisual"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="5">
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup x:Name="CommonStates">
+                        <VisualState x:Name="Normal" />
+                        <VisualState x:Name="PointerOver">
+                            <Storyboard>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ThumbVisual" Storyboard.TargetProperty="Background">
+                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ScrollBarThumbFillPointerOver}" />
+                                </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="Pressed">
+                            <Storyboard>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ThumbVisual" Storyboard.TargetProperty="Background">
+                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ScrollBarThumbFillPressed}" />
+                                </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="Disabled">
+                            <Storyboard>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ThumbVisual" Storyboard.TargetProperty="Background">
+                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ScrollBarThumbFillDisabled}" />
+                                </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateManager.VisualStateGroups>
+            </Border>
+        </ControlTemplate>
+
+        <Style x:Key="LibrarySelectorPersistentScrollBarStyle" TargetType="ScrollBar">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="Background" Value="{ThemeResource ScrollBarBackground}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource ScrollBarBorderBrush}" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid
+                            x:Name="Root"
+                            MinHeight="{TemplateBinding MinHeight}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.5" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+
+                            <Grid x:Name="HorizontalRoot" IsHitTestVisible="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border
+                                    Grid.ColumnSpan="5"
+                                    Height="10"
+                                    Margin="1,0"
+                                    VerticalAlignment="Center"
+                                    Background="{ThemeResource ScrollBarTrackFill}"
+                                    BorderBrush="{ThemeResource ScrollBarTrackStroke}"
+                                    BorderThickness="1"
+                                    CornerRadius="4" />
+
+                                <RepeatButton
+                                    x:Name="HorizontalSmallDecrease"
+                                    Grid.Column="0"
+                                    Width="18"
+                                    Height="18"
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Padding="0"
+                                    AllowFocusOnInteraction="False"
+                                    Interval="50"
+                                    IsTabStop="False"
+                                    Template="{StaticResource LibrarySelectorScrollPageButtonTemplate}">
+                                    <FontIcon
+                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                        FontSize="8"
+                                        Foreground="{ThemeResource ScrollBarButtonArrowForeground}"
+                                        Glyph="&#xEDD9;"
+                                        MirroredWhenRightToLeft="True" />
+                                </RepeatButton>
+                                <RepeatButton
+                                    x:Name="HorizontalLargeDecrease"
+                                    Grid.Column="1"
+                                    Width="0"
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Padding="0"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    AllowFocusOnInteraction="False"
+                                    Interval="50"
+                                    IsTabStop="False"
+                                    Template="{StaticResource LibrarySelectorScrollPageButtonTemplate}" />
+                                <Thumb
+                                    x:Name="HorizontalThumb"
+                                    Grid.Column="2"
+                                    Height="12"
+                                    MinWidth="48"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Background="{ThemeResource ScrollBarThumbFill}"
+                                    BorderBrush="{ThemeResource ScrollBarThumbBorderBrush}"
+                                    Template="{StaticResource LibrarySelectorScrollThumbTemplate}" />
+                                <RepeatButton
+                                    x:Name="HorizontalLargeIncrease"
+                                    Grid.Column="3"
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Padding="0"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    AllowFocusOnInteraction="False"
+                                    Interval="50"
+                                    IsTabStop="False"
+                                    Template="{StaticResource LibrarySelectorScrollPageButtonTemplate}" />
+                                <RepeatButton
+                                    x:Name="HorizontalSmallIncrease"
+                                    Grid.Column="4"
+                                    Width="18"
+                                    Height="18"
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Padding="0"
+                                    AllowFocusOnInteraction="False"
+                                    Interval="50"
+                                    IsTabStop="False"
+                                    Template="{StaticResource LibrarySelectorScrollPageButtonTemplate}">
+                                    <FontIcon
+                                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                        FontSize="8"
+                                        Foreground="{ThemeResource ScrollBarButtonArrowForeground}"
+                                        Glyph="&#xEDDA;"
+                                        MirroredWhenRightToLeft="True" />
+                                </RepeatButton>
+                            </Grid>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style
+            x:Key="CompactLibraryCardButtonStyle"
+            BasedOn="{StaticResource DefaultButtonStyle}"
+            TargetType="Button">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="MinWidth" Value="34" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
     </Page.Resources>
 
 
@@ -36,45 +220,192 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Padding="16,0,16,0">
+        <Grid Grid.Row="0" Padding="56,2,8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="16">
-                <TextBlock Text="{x:Bind ViewModel.TranslationProperties.PageTitle, Mode=OneWay}" Margin="16,0,0,0" TextWrapping="NoWrap" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
-                <muxc:ProgressRing IsActive="True" VerticalAlignment="Center" Visibility="{x:Bind ViewModel.IsRefreshing, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}"  />
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup>
+                    <VisualState x:Name="NarrowLibraryHeader">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="LibraryHeaderCommands.(Grid.Row)" Value="1" />
+                            <Setter Target="LibraryHeaderCommands.(Grid.Column)" Value="0" />
+                            <Setter Target="LibraryHeaderCommands.(Grid.ColumnSpan)" Value="2" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="WideLibraryHeader">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="720" />
+                        </VisualState.StateTriggers>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <StackPanel
+                Grid.Row="0"
+                Grid.Column="0"
+                HorizontalAlignment="Left"
+                Orientation="Horizontal"
+                Spacing="8">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="24"
+                    FontWeight="SemiBold"
+                    Text="{x:Bind ViewModel.TranslationProperties.PageTitle, Mode=OneWay}"
+                    TextWrapping="NoWrap" />
+                <muxc:ProgressRing
+                    Width="18"
+                    Height="18"
+                    VerticalAlignment="Center"
+                    IsActive="True"
+                    Visibility="{x:Bind ViewModel.IsRefreshing, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" />
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <StackPanel
+                x:Name="LibraryHeaderCommands"
+                Grid.Row="0"
+                Grid.Column="1"
+                Height="64"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Orientation="Horizontal"
+                Spacing="3">
+                <StackPanel.Resources>
+                    <Style x:Key="LibraryHeaderCommandButtonStyle" TargetType="Button">
+                        <Setter Property="Width" Value="50" />
+                        <Setter Property="Height" Value="60" />
+                        <Setter Property="MinWidth" Value="0" />
+                        <Setter Property="MinHeight" Value="0" />
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Padding" Value="3,2" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                    </Style>
+                    <Style x:Key="LibraryHeaderCommandLabelStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="10" />
+                        <Setter Property="MaxLines" Value="1" />
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                        <Setter Property="TextAlignment" Value="Center" />
+                        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                        <Setter Property="TextWrapping" Value="NoWrap" />
+                    </Style>
+                </StackPanel.Resources>
 
-                <AppBarButton Label="{x:Bind ViewModel.TranslationProperties.ImportText, Mode=OneWay}">
-                    <AppBarButton.Content>
-                        <FontIcon Glyph="&#xE8B5;"  />
-                    </AppBarButton.Content>
-                    <AppBarButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.ImportFromLocalFilesText, Mode=OneWay}" Command="{x:Bind ViewModel.ImportCommand}" />
+                <Button
+                    Width="52"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.ImportText, Mode=OneWay}"
+                    Style="{StaticResource LibraryHeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.ImportText, Mode=OneWay}">
+                    <Button.Content>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="24" />
+                                <RowDefinition Height="16" />
+                                <RowDefinition Height="10" />
+                            </Grid.RowDefinitions>
+                            <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE8B5;" />
+                            <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource LibraryHeaderCommandLabelStyle}"
+                                Text="{x:Bind ViewModel.TranslationProperties.ImportText, Mode=OneWay}" />
+                            <FontIcon
+                                Grid.Row="2"
+                                FontSize="8"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE70D;" />
+                        </Grid>
+                    </Button.Content>
+                    <Button.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.ImportCommand}"
+                                Text="{x:Bind ViewModel.TranslationProperties.ImportFromLocalFilesText, Mode=OneWay}" />
                             <MenuFlyoutSubItem Text="NVIDIA">
-                                <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.ImportFromDriverText, Mode=OneWay}" Command="{x:Bind ViewModel.ImportFromNVIDIADriverCommand}" />
-                                <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.ImportFromDownloadServerText, Mode=OneWay}" Command="{x:Bind ViewModel.ImportFromNVIDIAServerCommand}" />
+                                <MenuFlyoutItem
+                                    Command="{x:Bind ViewModel.ImportFromNVIDIADriverCommand}"
+                                    Text="{x:Bind ViewModel.TranslationProperties.ImportFromDriverText, Mode=OneWay}" />
+                                <MenuFlyoutItem
+                                    Command="{x:Bind ViewModel.ImportFromNVIDIAServerCommand}"
+                                    Text="{x:Bind ViewModel.TranslationProperties.ImportFromDownloadServerText, Mode=OneWay}" />
                             </MenuFlyoutSubItem>
                         </MenuFlyout>
-                    </AppBarButton.Flyout>
-                </AppBarButton>
+                    </Button.Flyout>
+                </Button>
 
-                <AppBarButton HorizontalAlignment="Right" Label="{x:Bind ViewModel.TranslationProperties.ExportAllText, Mode=OneWay}" Command="{x:Bind ViewModel.ExportAllCommand}">
-                    <AppBarButton.Content>
-                        <FontIcon Glyph="&#xEDE1;" />
-                    </AppBarButton.Content>
-                </AppBarButton>
-                <AppBarButton HorizontalAlignment="Right" Label="{x:Bind ViewModel.TranslationProperties.DownloadLatestText, Mode=OneWay}" Command="{x:Bind ViewModel.DownloadLatestCommand}">
-                    <AppBarButton.Content>
-                        <FontIcon Glyph="&#xE896;" />
-                    </AppBarButton.Content>
-                </AppBarButton>
-                <AppBarButton HorizontalAlignment="Right" Label="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}" Command="{x:Bind ViewModel.RefreshCommand}">
-                    <AppBarButton.Content>
-                        <FontIcon Glyph="&#xE72C;" />
-                    </AppBarButton.Content>
-                </AppBarButton>
+                <Button
+                    Width="62"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.ExportAllText, Mode=OneWay}"
+                    Command="{x:Bind ViewModel.ExportAllCommand}"
+                    Style="{StaticResource LibraryHeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.ExportAllText, Mode=OneWay}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24" />
+                            <RowDefinition Height="16" />
+                            <RowDefinition Height="10" />
+                        </Grid.RowDefinitions>
+                        <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xEDE1;" />
+                        <TextBlock
+                            Grid.Row="1"
+                            Style="{StaticResource LibraryHeaderCommandLabelStyle}"
+                            Text="{x:Bind ViewModel.TranslationProperties.ExportAllText, Mode=OneWay}" />
+                    </Grid>
+                </Button>
+
+                <Button
+                    Width="82"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.DownloadLatestText, Mode=OneWay}"
+                    Command="{x:Bind ViewModel.DownloadLatestCommand}"
+                    Style="{StaticResource LibraryHeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.DownloadLatestText, Mode=OneWay}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24" />
+                            <RowDefinition Height="16" />
+                            <RowDefinition Height="10" />
+                        </Grid.RowDefinitions>
+                        <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE896;" />
+                        <TextBlock
+                            Grid.Row="1"
+                            Grid.RowSpan="2"
+                            LineHeight="12"
+                            MaxLines="2"
+                            Style="{StaticResource LibraryHeaderCommandLabelStyle}"
+                            Text="{x:Bind ViewModel.TranslationProperties.DownloadLatestText, Mode=OneWay}"
+                            TextTrimming="None"
+                            TextWrapping="WrapWholeWords" />
+                    </Grid>
+                </Button>
+
+                <Button
+                    Width="54"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}"
+                    Command="{x:Bind ViewModel.RefreshCommand}"
+                    Style="{StaticResource LibraryHeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24" />
+                            <RowDefinition Height="16" />
+                            <RowDefinition Height="10" />
+                        </Grid.RowDefinitions>
+                        <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE72C;" />
+                        <TextBlock
+                            Grid.Row="1"
+                            Style="{StaticResource LibraryHeaderCommandLabelStyle}"
+                            Text="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}" />
+                    </Grid>
+                </Button>
             </StackPanel>
         </Grid>
 
@@ -88,8 +419,39 @@
                  Visibility="{x:Bind system:Environment.IsPrivilegedProcess, Converter={StaticResource BoolToVisibilityConverter}}" />
 
 
-        <ScrollViewer Grid.Row="2" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-            <SelectorBar x:Name="UpscalerSelectorBar" SelectedItem="{x:Bind ViewModel.SelectedSelectorBarItem, Mode=TwoWay}" />
+        <ScrollViewer
+            Grid.Row="2"
+            Margin="0,24,0,0"
+            HorizontalScrollBarVisibility="Visible"
+            HorizontalScrollMode="Enabled"
+            VerticalScrollBarVisibility="Disabled"
+            VerticalScrollMode="Disabled">
+            <ScrollViewer.Resources>
+                <Style TargetType="ScrollBar" BasedOn="{StaticResource LibrarySelectorPersistentScrollBarStyle}" />
+            </ScrollViewer.Resources>
+            <SelectorBar
+                x:Name="UpscalerSelectorBar"
+                Margin="0,0,0,18"
+                SelectedItem="{x:Bind ViewModel.SelectedSelectorBarItem, Mode=TwoWay}">
+                <SelectorBar.Resources>
+                    <ResourceDictionary>
+                        <ResourceDictionary.ThemeDictionaries>
+                            <ResourceDictionary x:Key="Default">
+                                <SolidColorBrush x:Key="SelectorBarItemPillFill" Color="Transparent" />
+                                <SolidColorBrush x:Key="SelectorBarItemForegroundSelected" Color="#E4C66A" />
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="Light">
+                                <SolidColorBrush x:Key="SelectorBarItemPillFill" Color="Transparent" />
+                                <SolidColorBrush x:Key="SelectorBarItemForegroundSelected" Color="#7A5900" />
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="HighContrast">
+                                <StaticResource x:Key="SelectorBarItemPillFill" ResourceKey="SystemControlTransparentBrush" />
+                                <StaticResource x:Key="SelectorBarItemForegroundSelected" ResourceKey="SystemColorHotlightColorBrush" />
+                            </ResourceDictionary>
+                        </ResourceDictionary.ThemeDictionaries>
+                    </ResourceDictionary>
+                </SelectorBar.Resources>
+            </SelectorBar>
         </ScrollViewer>
 
         <GridView Grid.Row="3" x:Name="MainGridView" Margin="16,0,16,0" SizeChanged="MainGridView_SizeChanged" ItemsSource="{x:Bind ViewModel.SelectedLibraryList, Mode=OneWay}" SelectionMode="None" IsItemClickEnabled="True" ItemClick="MainGridView_ItemClick">
@@ -104,97 +466,187 @@
                 <Style TargetType="GridViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                    <Setter Property="Margin" Value="8"/>
+                    <Setter Property="Margin" Value="8,3"/>
                     <Setter Property="BorderThickness" Value="0"/>
                 </Style>
             </GridView.ItemContainerStyle>
 
             <GridView.ItemTemplate>
                 <DataTemplate x:DataType="data:DLLRecord">
-                    <Grid BorderThickness="1"
-                          Padding="8"
-                          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                          CornerRadius="8"
-                          ColumnSpacing="8" RowSpacing="8" >
+                    <Grid
+                        Height="60"
+                        Padding="8"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        ColumnSpacing="8"
+                        CornerRadius="6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="24" />
+                            <RowDefinition Height="20" />
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="{x:Bind DisplayName}" HorizontalAlignment="Stretch" ToolTipService.ToolTip="{x:Bind DisplayName}" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="NoWrap" />
+                        <TextBlock
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="4,0,0,0"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            FontSize="18"
+                            MaxLines="1"
+                            Style="{StaticResource SubtitleTextBlockStyle}"
+                            Text="{x:Bind DisplayName}"
+                            TextTrimming="CharacterEllipsis"
+                            TextWrapping="NoWrap"
+                            ToolTipService.ToolTip="{x:Bind DisplayName}" />
 
                         <!-- Imported -->
-                        <StackPanel Grid.Row="1" Visibility="{x:Bind LocalRecord, Converter={StaticResource IsLocalConverter}, Mode=OneWay}" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
-                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE7B8;" ToolTipService.ToolTip="{x:Bind TranslationProperties.ImportedText, Mode=OneWay}" />
+                        <StackPanel
+                            Grid.Row="0"
+                            Grid.RowSpan="2"
+                            Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal"
+                            Visibility="{x:Bind LocalRecord, Converter={StaticResource IsLocalConverter}, Mode=OneWay}">
+                            <FontIcon
+                                Width="34"
+                                Height="34"
+                                AutomationProperties.Name="{x:Bind TranslationProperties.ImportedText, Mode=OneWay}"
+                                FontSize="17"
+                                Glyph="&#xE7B8;"
+                                Style="{StaticResource SagoeFluentIconsFontIcon}"
+                                ToolTipService.ToolTip="{x:Bind TranslationProperties.ImportedText, Mode=OneWay}" />
                         </StackPanel>
 
                         <!-- Not downloaded -->
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Visibility="{x:Bind LocalRecord, Converter={StaticResource IsNotFoundConverter}, Mode=OneWay}">
-
-                            <Button ToolTipService.ToolTip="{x:Bind TranslationProperties.DownloadErrorText, Mode=OneWay}" Visibility="{x:Bind LocalRecord.HasDownloadError, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" Command="{Binding ElementName=thisPage, Path=ViewModel.ShowDownloadErrorCommand}" CommandParameter="{x:Bind }">
+                        <StackPanel
+                            Grid.Row="0"
+                            Grid.RowSpan="2"
+                            Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            Visibility="{x:Bind LocalRecord, Converter={StaticResource IsNotFoundConverter}, Mode=OneWay}">
+                            <Button
+                                AutomationProperties.Name="{x:Bind TranslationProperties.DownloadErrorText, Mode=OneWay}"
+                                Command="{Binding ElementName=thisPage, Path=ViewModel.ShowDownloadErrorCommand}"
+                                CommandParameter="{x:Bind }"
+                                Style="{StaticResource CompactLibraryCardButtonStyle}"
+                                ToolTipService.ToolTip="{x:Bind TranslationProperties.DownloadErrorText, Mode=OneWay}"
+                                Visibility="{x:Bind LocalRecord.HasDownloadError, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}">
                                 <Button.Content>
-                                    <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE783;"/>
+                                    <FontIcon FontSize="16" Glyph="&#xE783;" Style="{StaticResource SagoeFluentIconsFontIcon}" />
                                 </Button.Content>
                             </Button>
 
-                            <Button ToolTipService.ToolTip="{x:Bind TranslationProperties.DownloadText, Mode=OneWay}" Command="{Binding ViewModel.DownloadRecordCommand, ElementName=thisPage}" CommandParameter="{x:Bind }">
+                            <Button
+                                AutomationProperties.Name="{x:Bind TranslationProperties.DownloadText, Mode=OneWay}"
+                                Command="{Binding ViewModel.DownloadRecordCommand, ElementName=thisPage}"
+                                CommandParameter="{x:Bind }"
+                                Style="{StaticResource CompactLibraryCardButtonStyle}"
+                                ToolTipService.ToolTip="{x:Bind TranslationProperties.DownloadText, Mode=OneWay}">
                                 <Button.Content>
-                                    <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE896;"/>
+                                    <FontIcon FontSize="16" Glyph="&#xE896;" Style="{StaticResource SagoeFluentIconsFontIcon}" />
                                 </Button.Content>
                             </Button>
                         </StackPanel>
 
                         <!-- Downloading -->
-                        <Grid Grid.Row="1" ColumnSpacing="8" Visibility="{x:Bind LocalRecord, Converter={StaticResource IsDownloadingConverter}, Mode=OneWay}">
+                        <Grid
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="4,0,0,0"
+                            VerticalAlignment="Center"
+                            Visibility="{x:Bind LocalRecord, Converter={StaticResource IsDownloadingConverter}, Mode=OneWay}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="4" />
+                                <RowDefinition Height="16" />
+                            </Grid.RowDefinitions>
 
-                            <Grid  Grid.Column="0" VerticalAlignment="Center">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <ProgressBar Grid.Row="0" Grid.ColumnSpan="2" Minimum="0" Maximum="100" IsIndeterminate="{x:Bind LocalRecord.FileDownloader.IsIndeterminate, Mode=OneWay}" Value="{x:Bind LocalRecord.FileDownloader.Percent, Mode=OneWay}" VerticalAlignment="Top" />
-
-                                <TextBlock Grid.Row="1" Grid.Column="0" Visibility="{x:Bind LocalRecord.FileDownloader.TotalBytesToDownload, Mode=OneWay, Converter={StaticResource TotalBytesVisbilityConverter}}" Text="{x:Bind system:String.Format('{0:0.0}%', LocalRecord.FileDownloader.Percent), Mode=OneWay}" />
-
-                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2" Orientation="Horizontal" Visibility="{x:Bind LocalRecord.FileDownloader.TotalBytesToDownload, Mode=OneWay, Converter={StaticResource TotalBytesVisbilityConverter}}">
-                                    <TextBlock Text="{x:Bind LocalRecord.FileDownloader.DownloadedBytes, Mode=OneWay, Converter={StaticResource BytesToMegaBytesConverter}}" />
-                                    <TextBlock Text="/" />
-                                    <TextBlock Text="{x:Bind LocalRecord.FileDownloader.TotalBytesToDownload, Mode=OneWay, Converter={StaticResource BytesToMegaBytesConverter}}" />
-                                </StackPanel>
-
-                            </Grid>
-
-                            <Button Grid.Column="1" ToolTipService.ToolTip="{Binding TranslationProperties.CancelText, Mode=OneWay}" Command="{Binding ElementName=thisPage, Path=ViewModel.CancelDownloadRecordCommand}" CommandParameter="{x:Bind }" VerticalAlignment="Center">
-                                <Button.Content>
-                                    <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE711;"/>
-                                </Button.Content>
-                            </Button>
+                            <ProgressBar
+                                Grid.Row="0"
+                                Grid.ColumnSpan="2"
+                                Height="4"
+                                MinHeight="4"
+                                VerticalAlignment="Center"
+                                IsIndeterminate="{x:Bind LocalRecord.FileDownloader.IsIndeterminate, Mode=OneWay}"
+                                Maximum="100"
+                                Minimum="0"
+                                Value="{x:Bind LocalRecord.FileDownloader.Percent, Mode=OneWay}" />
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="10"
+                                Text="{x:Bind system:String.Format('{0:0.0}%', LocalRecord.FileDownloader.Percent), Mode=OneWay}"
+                                Visibility="{x:Bind LocalRecord.FileDownloader.TotalBytesToDownload, Mode=OneWay, Converter={StaticResource TotalBytesVisbilityConverter}}" />
+                            <StackPanel
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal"
+                                Spacing="2"
+                                Visibility="{x:Bind LocalRecord.FileDownloader.TotalBytesToDownload, Mode=OneWay, Converter={StaticResource TotalBytesVisbilityConverter}}">
+                                <TextBlock FontSize="10" Text="{x:Bind LocalRecord.FileDownloader.DownloadedBytes, Mode=OneWay, Converter={StaticResource BytesToMegaBytesConverter}}" />
+                                <TextBlock FontSize="10" Text="/" />
+                                <TextBlock FontSize="10" Text="{x:Bind LocalRecord.FileDownloader.TotalBytesToDownload, Mode=OneWay, Converter={StaticResource BytesToMegaBytesConverter}}" />
+                            </StackPanel>
                         </Grid>
 
+                        <Button
+                            Grid.Row="0"
+                            Grid.RowSpan="2"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="{x:Bind TranslationProperties.CancelText, Mode=OneWay}"
+                            Command="{Binding ElementName=thisPage, Path=ViewModel.CancelDownloadRecordCommand}"
+                            CommandParameter="{x:Bind }"
+                            Style="{StaticResource CompactLibraryCardButtonStyle}"
+                            ToolTipService.ToolTip="{x:Bind TranslationProperties.CancelText, Mode=OneWay}"
+                            Visibility="{x:Bind LocalRecord, Converter={StaticResource IsDownloadingConverter}, Mode=OneWay}">
+                            <Button.Content>
+                                <FontIcon FontSize="16" Glyph="&#xE711;" Style="{StaticResource SagoeFluentIconsFontIcon}" />
+                            </Button.Content>
+                        </Button>
+
                         <!-- Downloaded -->
-                        <StackPanel Grid.Row="1" Visibility="{x:Bind LocalRecord, Converter={StaticResource IsDownloadedConverter}, Mode=OneWay}" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                            <Button ToolTipService.ToolTip="{x:Bind TranslationProperties.ExportText, Mode=OneWay}" Command="{Binding ElementName=thisPage, Path=ViewModel.ExportRecordCommand}" CommandParameter="{x:Bind }">
+                        <StackPanel
+                            Grid.Row="0"
+                            Grid.RowSpan="2"
+                            Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            Visibility="{x:Bind LocalRecord, Converter={StaticResource IsDownloadedConverter}, Mode=OneWay}">
+                            <Button
+                                AutomationProperties.Name="{x:Bind TranslationProperties.ExportText, Mode=OneWay}"
+                                Command="{Binding ElementName=thisPage, Path=ViewModel.ExportRecordCommand}"
+                                CommandParameter="{x:Bind }"
+                                Style="{StaticResource CompactLibraryCardButtonStyle}"
+                                ToolTipService.ToolTip="{x:Bind TranslationProperties.ExportText, Mode=OneWay}">
                                 <Button.Content>
-                                    <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xEDE1;"/>
+                                    <FontIcon FontSize="16" Glyph="&#xEDE1;" Style="{StaticResource SagoeFluentIconsFontIcon}" />
                                 </Button.Content>
                             </Button>
-                            <Button ToolTipService.ToolTip="{x:Bind TranslationProperties.DeleteText, Mode=OneWay}" Command="{Binding ElementName=thisPage, Path=ViewModel.DeleteRecordCommand}" CommandParameter="{x:Bind }">
+                            <Button
+                                AutomationProperties.Name="{x:Bind TranslationProperties.DeleteText, Mode=OneWay}"
+                                Command="{Binding ElementName=thisPage, Path=ViewModel.DeleteRecordCommand}"
+                                CommandParameter="{x:Bind }"
+                                Style="{StaticResource CompactLibraryCardButtonStyle}"
+                                ToolTipService.ToolTip="{x:Bind TranslationProperties.DeleteText, Mode=OneWay}">
                                 <Button.Content>
-                                    <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE74D;"/>
+                                    <FontIcon FontSize="16" Glyph="&#xE74D;" Style="{StaticResource SagoeFluentIconsFontIcon}" />
                                 </Button.Content>
                             </Button>
                         </StackPanel>
