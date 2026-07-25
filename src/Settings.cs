@@ -11,6 +11,9 @@ namespace DLSS_Swapper;
 
 public class Settings
 {
+    public const int MinGridViewItemWidth = 60;
+    public const int MaxGridViewItemWidth = 600;
+
     public const int DefaultRecursiveScanConcurrency = 4;
     public const int MinRecursiveScanConcurrency = 1;
     public const int MaxRecursiveScanConcurrency = 26;
@@ -304,16 +307,38 @@ public class Settings
         }
     }
 
+    GameSortMode _gameSortMode = GameSortMode.NameAscending;
+    public GameSortMode GameSortMode
+    {
+        get { return _gameSortMode; }
+        set
+        {
+            var normalizedValue = Enum.IsDefined(value) ? value : GameSortMode.NameAscending;
+            if (_gameSortMode != normalizedValue)
+            {
+                _gameSortMode = normalizedValue;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
 
-    int _gridViewItemWidth = 200;
+
+    int _gridViewItemWidth = 112;
     public int GridViewItemWidth
     {
         get { return _gridViewItemWidth; }
         set
         {
-            if (_gridViewItemWidth != value)
+            var normalizedValue = Math.Clamp(
+                value,
+                MinGridViewItemWidth,
+                MaxGridViewItemWidth);
+            if (_gridViewItemWidth != normalizedValue)
             {
-                _gridViewItemWidth = value;
+                _gridViewItemWidth = normalizedValue;
                 if (_autoSave)
                 {
                     SaveJson();

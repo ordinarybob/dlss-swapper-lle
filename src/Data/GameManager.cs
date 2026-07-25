@@ -56,6 +56,12 @@ internal partial class GameManager : ObservableObject
     readonly List<Action> _pendingUiChanges = new();
     bool _batchUiChanges;
 
+    static bool IsVisibleForSwappableFilter(Game game, bool hideNonDLSSGames)
+    {
+        return hideNonDLSSGames == false
+            || game.HasSwappableItems
+            || game.IsEligibilityPending;
+    }
 
     Predicate<object> GetPredicateForAllGames(bool hideNonDLSSGames, string? filterText = null)
     {
@@ -69,7 +75,7 @@ internal partial class GameManager : ObservableObject
             }
 
             bool matchesText = string.IsNullOrEmpty(filterText) || game.Title.Contains(filterText, StringComparison.OrdinalIgnoreCase);
-            return (!hideNonDLSSGames || game.HasSwappableItems) && matchesText;
+            return IsVisibleForSwappableFilter(game, hideNonDLSSGames) && matchesText;
         };
     }
 
@@ -85,7 +91,7 @@ internal partial class GameManager : ObservableObject
             }
 
             bool matchesText = string.IsNullOrEmpty(filterText) || game.Title.Contains(filterText, StringComparison.OrdinalIgnoreCase);
-            return game.IsFavourite && (!hideNonDLSSGames || game.HasSwappableItems) && matchesText;
+            return game.IsFavourite && IsVisibleForSwappableFilter(game, hideNonDLSSGames) && matchesText;
         };
     }
 
@@ -102,7 +108,7 @@ internal partial class GameManager : ObservableObject
             }
 
             bool matchesText = string.IsNullOrEmpty(filterText) || game.Title.Contains(filterText, StringComparison.OrdinalIgnoreCase);
-            return game.GameLibrary == library && (!hideNonDLSSGames || game.HasSwappableItems) && matchesText;
+            return game.GameLibrary == library && IsVisibleForSwappableFilter(game, hideNonDLSSGames) && matchesText;
         };
     }
 
@@ -113,15 +119,15 @@ internal partial class GameManager : ObservableObject
         FavouriteGamesView.ObserveFilterProperty(nameof(ShowHiddenGames));
         FavouriteGamesView.ObserveFilterProperty(nameof(Game.IsFavourite));
         FavouriteGamesView.ObserveFilterProperty(nameof(Game.HasSwappableItems));
+        FavouriteGamesView.ObserveFilterProperty(nameof(Game.IsEligibilityPending));
         FavouriteGamesView.ObserveFilterProperty(nameof(Game.IsHidden));
-        FavouriteGamesView.SortDescriptions.Add(new SortDescription(nameof(Game.Title), SortDirection.Ascending));
 
         AllGamesView = new AdvancedCollectionView(_allGames, true);
         AllGamesView.Filter = GetPredicateForAllGames(Settings.Instance.HideNonDLSSGames);
         AllGamesView.ObserveFilterProperty(nameof(ShowHiddenGames));
         AllGamesView.ObserveFilterProperty(nameof(Game.HasSwappableItems));
+        AllGamesView.ObserveFilterProperty(nameof(Game.IsEligibilityPending));
         AllGamesView.ObserveFilterProperty(nameof(Game.IsHidden));
-        AllGamesView.SortDescriptions.Add(new SortDescription(nameof(Game.Title), SortDirection.Ascending));
 
 
         allGamesGroup = new GameGroup(string.Empty, null, AllGamesView);
@@ -146,9 +152,9 @@ internal partial class GameManager : ObservableObject
             var gameView = new AdvancedCollectionView(_allGames, true);
             gameView.Filter = GetPredicateForLibraryGames(gameLibraryEnum, Settings.Instance.HideNonDLSSGames);
             gameView.ObserveFilterProperty(nameof(Game.HasSwappableItems));
+            gameView.ObserveFilterProperty(nameof(Game.IsEligibilityPending));
             gameView.ObserveFilterProperty(nameof(ShowHiddenGames));
             gameView.ObserveFilterProperty(nameof(Game.IsHidden));
-            gameView.SortDescriptions.Add(new SortDescription(nameof(Game.Title), SortDirection.Ascending));
 
             libraryGamesView[gameLibraryEnum] = gameView;
 
@@ -156,6 +162,8 @@ internal partial class GameManager : ObservableObject
             groupedList.Add(gameGroup);
             libraryGameGroups[gameLibraryEnum] = gameGroup;
         }
+
+        ApplySort(Settings.Instance.GameSortMode);
 
 
         GroupedGameCollectionViewSource = new CollectionViewSource()
@@ -199,6 +207,45 @@ internal partial class GameManager : ObservableObject
             }
         });
 
+    }
+
+    IEnumerable<AdvancedCollectionView> GetSortableViews()
+    {
+        yield return FavouriteGamesView;
+        yield return AllGamesView;
+
+        foreach (var gameView in libraryGamesView.Values)
+        {
+            yield return gameView;
+        }
+    }
+
+    public void ApplySort(GameSortMode sortMode)
+    {
+        if (Enum.IsDefined(sortMode) == false)
+        {
+            sortMode = GameSortMode.NameAscending;
+        }
+
+        foreach (var gameView in GetSortableViews())
+        {
+            using (gameView.DeferRefresh())
+            {
+                gameView.SortDescriptions.Clear();
+
+                if (sortMode == GameSortMode.NameAscending)
+                {
+                    gameView.SortDescriptions.Add(new SortDescription(nameof(Game.Title), SortDirection.Ascending));
+                    continue;
+                }
+
+                gameView.SortDescriptions.Add(new SortDescription(nameof(Game.HasCurrentDLSSForSort), SortDirection.Descending));
+                gameView.SortDescriptions.Add(new SortDescription(
+                    nameof(Game.CurrentDLSSVersionSortKey),
+                    sortMode == GameSortMode.DlssNewestFirst ? SortDirection.Descending : SortDirection.Ascending));
+                gameView.SortDescriptions.Add(new SortDescription(nameof(Game.Title), SortDirection.Ascending));
+            }
+        }
     }
 
     public async Task LoadGamesFromCacheAsync()

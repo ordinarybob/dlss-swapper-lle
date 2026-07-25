@@ -103,6 +103,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     public partial bool? IsHidden { get; set; } = null;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEligibilityPending))]
     [Ignore]
     public partial bool Processing { get; set; } = false;
 
@@ -127,12 +128,39 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     [Ignore]
     public bool NeedsProcessing { get; set; } = false;
 
+    [Ignore]
+    public bool IsEligibilityPending => NeedsProcessing || Processing;
+
     readonly SemaphoreSlim _coverImageGate = new(1, 1);
 
     // NOTE: DLL type
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCurrentDLSSForSort))]
+    [NotifyPropertyChangedFor(nameof(CurrentDLSSVersionSortKey))]
     [Ignore]
     public partial GameAsset? CurrentDLSS { get; set; } = null;
+
+    [Ignore]
+    public bool HasCurrentDLSSForSort => CurrentDLSS is not null;
+
+    [Ignore]
+    public ulong CurrentDLSSVersionSortKey
+    {
+        get
+        {
+            if (CurrentDLSS is null || Version.TryParse(CurrentDLSS.Version, out var version) == false)
+            {
+                return 0;
+            }
+
+            static ulong Component(int value) => (ulong)Math.Clamp(value, 0, ushort.MaxValue);
+
+            return (Component(version.Major) << 48)
+                | (Component(version.Minor) << 32)
+                | (Component(version.Build) << 16)
+                | Component(version.Revision);
+        }
+    }
 
     [ObservableProperty]
     [Ignore]
@@ -245,30 +273,37 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             return;
         }
 
-        App.CurrentApp.RunOnUIThread(() =>
-        {
-            NeedsProcessing = false;
-        });
-
         if (string.IsNullOrEmpty(InstallPath))
         {
+            App.CurrentApp.RunOnUIThread(() =>
+            {
+                NeedsProcessing = false;
+                OnPropertyChanged(nameof(IsEligibilityPending));
+            });
             return;
         }
 
         if (Directory.Exists(InstallPath) == false)
         {
+            App.CurrentApp.RunOnUIThread(() =>
+            {
+                NeedsProcessing = false;
+                OnPropertyChanged(nameof(IsEligibilityPending));
+            });
             return;
         }
 
         App.CurrentApp.RunOnUIThread(() =>
         {
             Processing = true;
+            NeedsProcessing = false;
             HasSwappableItems = false;
         });
 
         GameScanQueue.Instance.Enqueue(async () =>
         {
             var newHasSwappableItems = false;
+            var scanCompleted = false;
 
             try
             {
@@ -551,6 +586,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     }
                 }
 
+                scanCompleted = true;
             }
             catch (Exception err)
             {
@@ -562,7 +598,8 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 // Now update all the data on the UI therad.
                 await App.CurrentApp.RunOnUIThreadAsync(async () =>
                 {
-                    HasSwappableItems = newHasSwappableItems;
+                    NeedsProcessing = scanCompleted == false;
+                    HasSwappableItems = scanCompleted && newHasSwappableItems;
 
                     if (autoSave)
                     {
@@ -1128,13 +1165,13 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
     }
 
-    public async Task SaveToDatabaseAsync()
+    public async Task<bool> SaveToDatabaseAsync()
     {
         try
         {
             if (GameDatabaseWriteBatch.Instance.TryEnqueue(this))
             {
-                return;
+                return true;
             }
 
             var rowsChanged = -1;
@@ -1149,16 +1186,19 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 // This appears to change to different games in different libraries.
                 Logger.Error($"Tried to save game to database but rowsChanged was 0.");
                 //Debugger.Break();
+                return false;
             }
+            return true;
         }
         catch (Exception err)
         {
             Logger.Error(err);
             Debugger.Break();
+            return false;
         }
     }
 
-    public async Task DeleteAsync()
+    public async Task<bool> DeleteAsync()
     {
         try
         {
@@ -1226,10 +1266,12 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
             // Remove the game from the list.
             GameManager.Instance.RemoveGame(this);
+            return true;
         }
         catch (Exception err)
         {
             Logger.Error(err);
+            return false;
         }
     }
 
