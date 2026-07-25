@@ -27,8 +27,8 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Padding="16,0,16,0">
-            <TextBlock Margin="16,0,0,0" Text="{x:Bind ViewModel.TranslationProperties.PageTitle, Mode=OneWay}" TextWrapping="NoWrap" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
+        <Grid Grid.Row="0" Padding="56,2,8,0">
+            <TextBlock Text="{x:Bind ViewModel.TranslationProperties.PageTitle, Mode=OneWay}" TextWrapping="NoWrap" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
 
             <!-- Needed to achieve parity in the looking with other pages -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -73,11 +73,15 @@
                 <TextBlock
                     Margin="0,10,0,0"
                     TextWrapping="WrapWholeWords"
-                    Text="These controls tune large-library throughput. Recommended defaults suit most SSD-based systems; changes to worker counts apply after restarting the app." />
-                <Grid Margin="0,18,0,0" ColumnSpacing="24" RowSpacing="16">
+                    Text="These controls tune large-library throughput. Recommended defaults suit most systems. Scan and artwork worker changes apply after restarting the app; batch sizes and selected-game update concurrency apply to subsequent work." />
+                <Grid Margin="0,18,0,0"
+                      MaxWidth="840"
+                      HorizontalAlignment="Left"
+                      ColumnSpacing="16"
+                      RowSpacing="16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="112" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -87,50 +91,85 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game scans" />
+                    <StackPanel Grid.Row="0" VerticalAlignment="Center">
+                        <TextBlock x:Name="RecursiveScanLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game scans" TextWrapping="WrapWholeWords" />
                         <TextBlock TextWrapping="WrapWholeWords" Text="Game folders scanned recursively at once (1–26). Recommended: 4." />
                     </StackPanel>
-                    <NumberBox Grid.Row="0" Grid.Column="1"
-                               Minimum="1" Maximum="26" SmallChange="1"
-                               SpinButtonPlacementMode="Inline"
-                               Value="{x:Bind ViewModel.RecursiveScanConcurrency, Mode=TwoWay}" />
+                    <usercontrols:PerformanceNumberEditor
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Width="112"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        AccessibleName="{Binding Text, ElementName=RecursiveScanLabel}"
+                        Minimum="1"
+                        Maximum="26"
+                        SmallChange="1"
+                        Value="{x:Bind ViewModel.RecursiveScanConcurrency, Mode=TwoWay}" />
 
-                    <StackPanel Grid.Row="1">
-                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent artwork loading" />
+                    <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="CoverHydrationLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent artwork loading" TextWrapping="WrapWholeWords" />
                         <TextBlock TextWrapping="WrapWholeWords" Text="Game covers loaded in parallel after games appear (1–64). Recommended: 12." />
                     </StackPanel>
-                    <NumberBox Grid.Row="1" Grid.Column="1"
-                               Minimum="1" Maximum="64" SmallChange="1"
-                               SpinButtonPlacementMode="Inline"
-                               Value="{x:Bind ViewModel.CoverHydrationConcurrency, Mode=TwoWay}" />
+                    <usercontrols:PerformanceNumberEditor
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Width="112"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        AccessibleName="{Binding Text, ElementName=CoverHydrationLabel}"
+                        Minimum="1"
+                        Maximum="64"
+                        SmallChange="1"
+                        Value="{x:Bind ViewModel.CoverHydrationConcurrency, Mode=TwoWay}" />
 
-                    <StackPanel Grid.Row="2">
-                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Games added per UI batch" />
+                    <StackPanel Grid.Row="2" VerticalAlignment="Center">
+                        <TextBlock x:Name="UiBatchLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Games added per UI batch" TextWrapping="WrapWholeWords" />
                         <TextBlock TextWrapping="WrapWholeWords" Text="Games added to the interface before yielding to input and rendering (10–1000). Recommended: 100." />
                     </StackPanel>
-                    <NumberBox Grid.Row="2" Grid.Column="1"
-                               Minimum="10" Maximum="1000" SmallChange="10"
-                               SpinButtonPlacementMode="Inline"
-                               Value="{x:Bind ViewModel.UiCollectionBatchSize, Mode=TwoWay}" />
+                    <usercontrols:PerformanceNumberEditor
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Width="112"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        AccessibleName="{Binding Text, ElementName=UiBatchLabel}"
+                        Minimum="10"
+                        Maximum="1000"
+                        SmallChange="10"
+                        Value="{x:Bind ViewModel.UiCollectionBatchSize, Mode=TwoWay}" />
 
-                    <StackPanel Grid.Row="3">
-                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Database records per transaction" />
+                    <StackPanel Grid.Row="3" VerticalAlignment="Center">
+                        <TextBlock x:Name="DatabaseBatchLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Database records per transaction" TextWrapping="WrapWholeWords" />
                         <TextBlock TextWrapping="WrapWholeWords" Text="Discovered game records committed per SQLite transaction (10–1000). Recommended: 100." />
                     </StackPanel>
-                    <NumberBox Grid.Row="3" Grid.Column="1"
-                               Minimum="10" Maximum="1000" SmallChange="10"
-                               SpinButtonPlacementMode="Inline"
-                               Value="{x:Bind ViewModel.DatabaseWriteBatchSize, Mode=TwoWay}" />
+                    <usercontrols:PerformanceNumberEditor
+                        Grid.Row="3"
+                        Grid.Column="1"
+                        Width="112"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        AccessibleName="{Binding Text, ElementName=DatabaseBatchLabel}"
+                        Minimum="10"
+                        Maximum="1000"
+                        SmallChange="10"
+                        Value="{x:Bind ViewModel.DatabaseWriteBatchSize, Mode=TwoWay}" />
 
-                    <StackPanel Grid.Row="4">
-                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game updates" />
+                    <StackPanel Grid.Row="4" VerticalAlignment="Center">
+                        <TextBlock x:Name="BatchUpdateLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game updates" TextWrapping="WrapWholeWords" />
                         <TextBlock TextWrapping="WrapWholeWords" Text="Games updated in parallel during a selected-games DLL update (1–26). Recommended: 3." />
                     </StackPanel>
-                    <NumberBox Grid.Row="4" Grid.Column="1"
-                               Minimum="1" Maximum="26" SmallChange="1"
-                               SpinButtonPlacementMode="Inline"
-                               Value="{x:Bind ViewModel.BatchSwapConcurrency, Mode=TwoWay}" />
+                    <usercontrols:PerformanceNumberEditor
+                        Grid.Row="4"
+                        Grid.Column="1"
+                        Width="112"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        AccessibleName="{Binding Text, ElementName=BatchUpdateLabel}"
+                        Minimum="1"
+                        Maximum="26"
+                        SmallChange="1"
+                        Value="{x:Bind ViewModel.BatchSwapConcurrency, Mode=TwoWay}" />
                 </Grid>
                 <Button Margin="0,18,0,0"
                         Content="Reset recommended defaults"

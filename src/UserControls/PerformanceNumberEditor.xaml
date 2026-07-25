@@ -1,0 +1,82 @@
+<UserControl
+    x:Class="DLSS_Swapper.UserControls.PerformanceNumberEditor"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignWidth="112"
+    d:DesignHeight="40"
+    mc:Ignorable="d">
+
+    <Grid Height="40" MinWidth="96">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="32" />
+        </Grid.ColumnDefinitions>
+
+        <TextBox
+            x:Name="EditorTextBox"
+            Grid.Column="0"
+            Padding="10,0,6,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            VerticalContentAlignment="Center"
+            CornerRadius="4,0,0,4"
+            InputScope="Number"
+            KeyDown="EditorTextBox_KeyDown"
+            LayoutUpdated="EditorTextBox_LayoutUpdated"
+            Loaded="EditorTextBox_Loaded"
+            LostFocus="EditorTextBox_LostFocus" />
+
+        <Border
+            Grid.Column="1"
+            HorizontalAlignment="Stretch"
+            Background="{Binding Background, ElementName=EditorTextBox}"
+            BorderBrush="{Binding BorderBrush, ElementName=EditorTextBox}"
+            BorderThickness="0,1,1,1"
+            CornerRadius="0,4,4,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20" />
+                    <RowDefinition Height="20" />
+                </Grid.RowDefinitions>
+                <RepeatButton
+                    x:Name="IncreaseButton"
+                    Grid.Row="0"
+                    Width="31"
+                    Height="20"
+                    MinWidth="0"
+                    MinHeight="0"
+                    Margin="0"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="IncreaseButton_Click"
+                    CornerRadius="0,4,0,0"
+                    Delay="400"
+                    Interval="80"
+                    IsTabStop="False">
+                    <FontIcon FontSize="8" Glyph="&#xE70E;" />
+                </RepeatButton>
+                <RepeatButton
+                    x:Name="DecreaseButton"
+                    Grid.Row="1"
+                    Width="31"
+                    Height="20"
+                    MinWidth="0"
+                    MinHeight="0"
+                    Margin="0"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="DecreaseButton_Click"
+                    CornerRadius="0,0,4,0"
+                    Delay="400"
+                    Interval="80"
+                    IsTabStop="False">
+                    <FontIcon FontSize="8" Glyph="&#xE70D;" />
+                </RepeatButton>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
