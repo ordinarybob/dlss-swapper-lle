@@ -42,23 +42,94 @@
         </Grid>
 
 
-        <muxc:NavigationView Grid.Row="1" x:Name="MainNavigationView"
-                             ItemInvoked="MainNavigationView_ItemInvoked"
-                             PaneDisplayMode="LeftCompact"
-                             IsBackButtonVisible="Collapsed"
-                             Loaded="MainNavigationView_Loaded"
-                             Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-            <muxc:NavigationView.MenuItems>
-                <muxc:NavigationViewItem Content="{x:Bind ViewModel.TranslationProperties.NavigationViewItemGamesText, Mode=OneWay}" Tag="{x:Bind pages:GameGridPage.PageTag}">
-                    <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE7FC;"/>
-                    </muxc:NavigationViewItem.Icon>
-                </muxc:NavigationViewItem>
-                <muxc:NavigationViewItem Icon="Library" Content="{x:Bind ViewModel.TranslationProperties.NavigationViewItemLibraryText, Mode=OneWay}" Tag="{x:Bind pages:LibraryPage.PageTag}" />
-                <muxc:NavigationViewItem Icon="Emoji" Content="{x:Bind ViewModel.TranslationProperties.NavigationViewItemAcknowledgementsText, Mode=OneWay}" Tag="{x:Bind pages:AcknowledgementsPage.PageTag}" Visibility="{x:Bind ViewModel.AcknowledgementsVisibility, Mode=OneWay}" />
-            </muxc:NavigationView.MenuItems>
+        <Grid
+            x:Name="MainContentHost"
+            Grid.Row="1"
+            Loaded="MainContentHost_Loaded"
+            Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
             <Frame x:Name="ContentFrame" />
-        </muxc:NavigationView>
+
+            <Border
+                Width="44"
+                Height="86"
+                Margin="4,4,0,0"
+                Padding="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="5"
+                Canvas.ZIndex="1">
+                <ListView
+                    x:Name="MainTabs"
+                    Width="42"
+                    Height="84"
+                    Padding="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    SelectionMode="Single"
+                    SelectionChanged="MainTabs_SelectionChanged"
+                    ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                    ScrollViewer.HorizontalScrollMode="Disabled"
+                    ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                    ScrollViewer.VerticalScrollMode="Disabled">
+                    <ListView.ItemContainerStyle>
+                        <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
+                            <Setter Property="Width" Value="42" />
+                            <Setter Property="Height" Value="28" />
+                            <Setter Property="MinWidth" Value="42" />
+                            <Setter Property="MinHeight" Value="28" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="UseSystemFocusVisuals" Value="True" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+
+                    <ListViewItem
+                        Tag="{x:Bind pages:GameGridPage.PageTag}"
+                        AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.NavigationViewItemGamesText, Mode=OneWay}"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.NavigationViewItemGamesText, Mode=OneWay}">
+                        <Grid Width="30" Height="24">
+                            <FontIcon
+                                Glyph="&#xE7FC;"
+                                FontSize="17"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AccessibilityView="Raw" />
+                        </Grid>
+                    </ListViewItem>
+                    <ListViewItem
+                        Tag="{x:Bind pages:LibraryPage.PageTag}"
+                        AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.NavigationViewItemLibraryText, Mode=OneWay}"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.NavigationViewItemLibraryText, Mode=OneWay}">
+                        <Grid Width="24" Height="24">
+                            <SymbolIcon
+                                Symbol="Library"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AccessibilityView="Raw" />
+                        </Grid>
+                    </ListViewItem>
+                    <ListViewItem
+                        x:Name="SettingsTab"
+                        Tag="{x:Bind pages:SettingsPage.PageTag}">
+                        <Grid Width="24" Height="24">
+                            <FontIcon
+                                Glyph="&#xE713;"
+                                FontSize="17"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AccessibilityView="Raw" />
+                        </Grid>
+                    </ListViewItem>
+                </ListView>
+            </Border>
+        </Grid>
 
         <Grid x:Name="LoadingStackPanel" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" RowSpacing="10" Grid.Row="1">
 

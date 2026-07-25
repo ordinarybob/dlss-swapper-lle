@@ -5,9 +5,12 @@ using DLSS_Swapper.UserControls;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
+using Windows.Graphics;
 using Windows.System;
 
 namespace DLSS_Swapper;
@@ -17,6 +20,12 @@ namespace DLSS_Swapper;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    const double DefaultWindowWidthDip = 842;
+    const double DefaultWindowMarginDip = 16;
+    const int MinimumRestoredDimension = 512;
+    const int MaximumRestoredDimension = 32_768;
+    const int MaximumCoordinateMagnitude = 1_000_000;
+
     public MainWindowModel ViewModel { get; private set; }
 
     IntPtr _windowIcon;
@@ -29,6 +38,9 @@ public sealed partial class MainWindow : Window
     [DllImport("user32.dll", SetLastError = true)]
     static extern int DestroyIcon(IntPtr hIcon);
 
+    [DllImport("user32.dll")]
+    static extern uint GetDpiForWindow(IntPtr hWnd);
+
     public MainWindow()
     {
         this.InitializeComponent();
@@ -39,11 +51,39 @@ public sealed partial class MainWindow : Window
             var lastWindowSizeAndPosition = Settings.Instance.LastWindowSizeAndPosition;
             _trackedWindow = new WindowPositionRect(lastWindowSizeAndPosition);
 
-            if (lastWindowSizeAndPosition.Width > 512 && lastWindowSizeAndPosition.Height > 512)
+            var safeRestoreRect = default(RectInt32);
+            var shouldRestoreWindow =
+                IsSafeForRestore(_trackedWindow) &&
+                TryGetSafeRestoreRect(
+                    _trackedWindow.GetRectInt32(),
+                    out safeRestoreRect);
+
+            if (shouldRestoreWindow)
             {
-                AppWindow.MoveAndResize(lastWindowSizeAndPosition.GetRectInt32());
+                var restoredState = _trackedWindow.State;
+                AppWindow.MoveAndResize(safeRestoreRect);
+                _trackedWindow = new WindowPositionRect(
+                    safeRestoreRect.X,
+                    safeRestoreRect.Y,
+                    safeRestoreRect.Width,
+                    safeRestoreRect.Height)
+                {
+                    State = restoredState,
+                };
             }
-            if (lastWindowSizeAndPosition.State == OverlappedPresenterState.Maximized)
+            else
+            {
+                var defaultWindowRect = GetDefaultWindowRect();
+                AppWindow.MoveAndResize(defaultWindowRect);
+                _trackedWindow = new WindowPositionRect(
+                    defaultWindowRect.X,
+                    defaultWindowRect.Y,
+                    defaultWindowRect.Width,
+                    defaultWindowRect.Height);
+            }
+
+            if (shouldRestoreWindow &&
+                _trackedWindow.State == OverlappedPresenterState.Maximized)
             {
                 overlappedPresenter.Maximize();
             }
@@ -116,14 +156,86 @@ public sealed partial class MainWindow : Window
 
         SetIcon();
 
+        UpdateSettingsTabLabel();
+
         // Update settings text when language changes.
         LanguageManager.Instance.OnLanguageChanged += () =>
         {
-            if (MainNavigationView.SettingsItem is NavigationViewItem settingsNavigationViewItem)
-            {
-                settingsNavigationViewItem.Content = ResourceHelper.GetString("SettingsPage_Title");
-            }
+            UpdateSettingsTabLabel();
         };
+    }
+
+    RectInt32 GetDefaultWindowRect()
+    {
+        var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        var dpi = GetDpiForWindow(windowHandle);
+        var scale = dpi > 0 ? dpi / 96d : 1d;
+
+        var desiredWidth = (int)Math.Ceiling(DefaultWindowWidthDip * scale);
+        var margin = Math.Max(1, (int)Math.Ceiling(DefaultWindowMarginDip * scale));
+
+        var displayArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary);
+        var workArea = displayArea.WorkArea;
+        var width = Math.Min(desiredWidth, Math.Max(1, workArea.Width - (margin * 2)));
+        var height = Math.Max(1, workArea.Height - (margin * 2));
+
+        return new RectInt32(
+            workArea.X + margin,
+            workArea.Y + margin,
+            width,
+            height);
+    }
+
+    static bool IsSafeForRestore(WindowPositionRect window)
+    {
+        return window.Width is >= MinimumRestoredDimension and <= MaximumRestoredDimension
+            && window.Height is >= MinimumRestoredDimension and <= MaximumRestoredDimension
+            && window.X is >= -MaximumCoordinateMagnitude and <= MaximumCoordinateMagnitude
+            && window.Y is >= -MaximumCoordinateMagnitude and <= MaximumCoordinateMagnitude
+            && Enum.IsDefined(typeof(OverlappedPresenterState), window.State);
+    }
+
+    static bool TryGetSafeRestoreRect(
+        RectInt32 windowRect,
+        out RectInt32 safeRestoreRect)
+    {
+        safeRestoreRect = default;
+        var displayArea = DisplayArea.GetFromRect(windowRect, DisplayAreaFallback.None);
+        if (displayArea is null)
+        {
+            return false;
+        }
+
+        var workArea = displayArea.WorkArea;
+        var left = Math.Max(windowRect.X, workArea.X);
+        var top = Math.Max(windowRect.Y, workArea.Y);
+        var right = Math.Min(windowRect.X + windowRect.Width, workArea.X + workArea.Width);
+        var bottom = Math.Min(windowRect.Y + windowRect.Height, workArea.Y + workArea.Height);
+
+        if (right - left < 64 || bottom - top < 64)
+        {
+            return false;
+        }
+
+        var width = Math.Min(windowRect.Width, workArea.Width);
+        var height = Math.Min(windowRect.Height, workArea.Height);
+        var x = Math.Clamp(
+            windowRect.X,
+            workArea.X,
+            workArea.X + workArea.Width - width);
+        var y = Math.Clamp(
+            windowRect.Y,
+            workArea.Y,
+            workArea.Y + workArea.Height - height);
+        safeRestoreRect = new RectInt32(x, y, width, height);
+        return true;
+    }
+
+    void UpdateSettingsTabLabel()
+    {
+        var settingsText = ResourceHelper.GetString("SettingsPage_Title");
+        AutomationProperties.SetName(SettingsTab, settingsText);
+        ToolTipService.SetToolTip(SettingsTab, settingsText);
     }
 
 
@@ -157,19 +269,40 @@ public sealed partial class MainWindow : Window
 
 
 
-    void MainNavigationView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
+    bool _syncingMainTabs;
+
+    void MainTabs_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
-        if (args.IsSettingsInvoked)
+        if (_syncingMainTabs)
         {
-            GoToPage(SettingsPage.PageTag);
+            return;
         }
-        else if (args.InvokedItemContainer.Tag is string invokedItem)
+
+        if (MainTabs.SelectedItem is ListViewItem { Tag: string page })
         {
-            GoToPage(invokedItem);
+            GoToPage(page);
         }
-        else
+    }
+
+    void SyncMainTab(string page)
+    {
+        var desiredItem = MainTabs.Items
+            .OfType<ListViewItem>()
+            .FirstOrDefault(item => item.Tag is string tag && tag == page);
+
+        if (ReferenceEquals(MainTabs.SelectedItem, desiredItem))
         {
-            Logger.Error($"MainNavigationView_ItemInvoked for a page that was not found. ({args.InvokedItemContainer?.Tag}, {args.InvokedItem})");
+            return;
+        }
+
+        _syncingMainTabs = true;
+        try
+        {
+            MainTabs.SelectedItem = desiredItem;
+        }
+        finally
+        {
+            _syncingMainTabs = false;
         }
     }
 
@@ -219,18 +352,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        // Only try manually set selected item if is not already selected.
-        if (MainNavigationView.SelectedItem is null || (MainNavigationView.SelectedItem is NavigationViewItem selectedItem && selectedItem.Tag.ToString() != page))
-        {
-            foreach (NavigationViewItem navigationViewItem in MainNavigationView.MenuItems)
-            {
-                if (navigationViewItem.Tag.ToString() == page)
-                {
-                    MainNavigationView.SelectedItem = navigationViewItem;
-                    break;
-                }
-            }
-        }
+        SyncMainTab(page);
     }
 
     internal void GoToAcknowledgements()
@@ -238,15 +360,8 @@ public sealed partial class MainWindow : Window
         GoToPage(AcknowledgementsPage.PageTag);
     }
 
-    async void MainNavigationView_Loaded(object sender, RoutedEventArgs e)
+    async void MainContentHost_Loaded(object sender, RoutedEventArgs e)
     {
-        if (sender is NavigationView navigationView && navigationView.SettingsItem is NavigationViewItem settingsNavigationViewItem)
-        {
-            settingsNavigationViewItem.Tag = SettingsPage.PageTag;
-            settingsNavigationViewItem.Content = ResourceHelper.GetString("SettingsPage_Title");
-        }
-
-
         // TODO: Disabled because CommunityToolkit.WinUI.Helpers.SystemInformation.Instance.IsAppUpdated throws exceptions for unpackaged apps.
         /*
         // If this is a new build, fetch updates to display to the user.
@@ -268,7 +383,7 @@ public sealed partial class MainWindow : Window
 
         if (Settings.Instance.HasShownMultiplayerWarning == false)
         {
-            var dialog = new EasyContentDialog(MainNavigationView.XamlRoot)
+            var dialog = new EasyContentDialog(RootGrid.XamlRoot)
             {
                 Title = ResourceHelper.GetString("MainWindow_NoteForMultiplayerGames_Title"),
                 CloseButtonText = ResourceHelper.GetString("General_Okay"),
@@ -283,7 +398,7 @@ public sealed partial class MainWindow : Window
 
         if (DLLManager.Instance.HasLoadedManifest() == false)
         {
-            var dialog = new EasyContentDialog(MainNavigationView.XamlRoot)
+            var dialog = new EasyContentDialog(RootGrid.XamlRoot)
             {
                 Title = ResourceHelper.GetString("General_Error"),
                 CloseButtonText = ResourceHelper.GetString("General_Close"),
@@ -301,7 +416,7 @@ public sealed partial class MainWindow : Window
             }
             else if (response is ContentDialogResult.Secondary)
             {
-                dialog = new EasyContentDialog(MainNavigationView.XamlRoot)
+                dialog = new EasyContentDialog(RootGrid.XamlRoot)
                 {
                     Title = ResourceHelper.GetString("MainWindow_AttemptingManifestUpdate"),
                     DefaultButton = ContentDialogButton.Close,
@@ -325,7 +440,7 @@ public sealed partial class MainWindow : Window
 
             if (shouldClose)
             {
-                dialog = new EasyContentDialog(MainNavigationView.XamlRoot)
+                dialog = new EasyContentDialog(RootGrid.XamlRoot)
                 {
                     Title = ResourceHelper.GetString("MainWindow_DlssSwapperMustClose"),
                     CloseButtonText = ResourceHelper.GetString("General_Close"),
@@ -340,7 +455,7 @@ public sealed partial class MainWindow : Window
 
         if (DLLManager.Instance.ImportedManifest is null)
         {
-            var dialog = new EasyContentDialog(MainNavigationView.XamlRoot)
+            var dialog = new EasyContentDialog(RootGrid.XamlRoot)
             {
                 Title = ResourceHelper.GetString("LibraryPage_CouldNotLoadImportedDlls"),
                 DefaultButton = ContentDialogButton.Close,
@@ -367,7 +482,7 @@ public sealed partial class MainWindow : Window
             await releaseNotesTask;
             if (releaseNotesTask.Result is not null)
             {
-                gitHubUpdater?.DisplayWhatsNewDialog(releaseNotesTask.Result, MainNavigationView);
+                gitHubUpdater?.DisplayWhatsNewDialog(releaseNotesTask.Result, RootGrid);
             }
         }
         */
@@ -378,7 +493,7 @@ public sealed partial class MainWindow : Window
         {
             if (gitHubUpdater.HasPromptedBefore(newUpdateTask.Result) == false)
             {
-                await gitHubUpdater.DisplayNewUpdateDialog(newUpdateTask.Result, MainNavigationView.XamlRoot);
+                await gitHubUpdater.DisplayNewUpdateDialog(newUpdateTask.Result, RootGrid.XamlRoot);
             }
         }
     }
