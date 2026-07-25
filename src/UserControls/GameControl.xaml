@@ -36,69 +36,166 @@
         <converters:NullToInverseVisibilityConverter x:Key="NullToInverseVisibilityConverter" />
         
 
-        <ControlTemplate x:Key="LeftButtonsControlTemplate" TargetType="ContentControl">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom" XYFocusKeyboardNavigation="Enabled" Padding="{ThemeResource ContentDialogPadding}" Background="{TemplateBinding Background}" Spacing="8">
+        <Style x:Key="CompactFooterIconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="MinWidth" Value="40" />
+            <Setter Property="Padding" Value="7" />
+        </Style>
 
+        <Style x:Key="CompactFooterTextButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Setter Property="MinWidth" Value="64" />
+            <Setter Property="Padding" Value="10,8" />
+        </Style>
 
-                <Button Command="{Binding LaunchCommand}" ToolTipService.ToolTip="{Binding TranslationProperties.LaunchText, Mode=OneWay}">
-                    <Button.Content>
-                        <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE768;" />
-                    </Button.Content>
-                </Button>
+        <ControlTemplate x:Key="FooterButtonsControlTemplate" TargetType="ContentControl">
+            <StackPanel
+                x:Name="FooterLayout"
+                Orientation="Vertical"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                XYFocusKeyboardNavigation="Enabled"
+                Padding="{ThemeResource ContentDialogPadding}"
+                Background="{TemplateBinding Background}"
+                Spacing="4">
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup x:Name="FooterWidthStates">
+                        <VisualState x:Name="NarrowFooter">
+                            <VisualState.StateTriggers>
+                                <AdaptiveTrigger MinWindowWidth="0" />
+                            </VisualState.StateTriggers>
+                        </VisualState>
+                        <VisualState x:Name="WideFooter">
+                            <VisualState.StateTriggers>
+                                <AdaptiveTrigger MinWindowWidth="980" />
+                            </VisualState.StateTriggers>
+                            <VisualState.Setters>
+                                <Setter Target="FooterLayout.Orientation" Value="Horizontal" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateManager.VisualStateGroups>
 
-                <Button ToolTipService.ToolTip="{Binding TranslationProperties.NotesText, Mode=OneWay}" Command="{Binding EditNotesCommand}">
-                    <Button.Content>
-                        <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE70B;"/>
-                    </Button.Content>
-                </Button>
+                <StackPanel
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="4">
+                    <Button
+                        Style="{StaticResource CompactFooterIconButtonStyle}"
+                        Command="{Binding LaunchCommand}"
+                        ToolTipService.ToolTip="{Binding TranslationProperties.LaunchText, Mode=OneWay}"
+                        AutomationProperties.Name="{Binding TranslationProperties.LaunchText, Mode=OneWay}">
+                        <Button.Content>
+                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE768;" />
+                        </Button.Content>
+                    </Button>
 
-                <Button ToolTipService.ToolTip="{Binding TranslationProperties.HistoryText, Mode=OneWay}" Command="{Binding ViewHistoryCommand}">
-                    <Button.Content>
-                        <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE81C;"/>
-                    </Button.Content>
-                </Button>
+                    <Button
+                        Style="{StaticResource CompactFooterIconButtonStyle}"
+                        ToolTipService.ToolTip="{Binding TranslationProperties.NotesText, Mode=OneWay}"
+                        AutomationProperties.Name="{Binding TranslationProperties.NotesText, Mode=OneWay}"
+                        Command="{Binding EditNotesCommand}">
+                        <Button.Content>
+                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE70B;"/>
+                        </Button.Content>
+                    </Button>
 
-                <!--
-                <Button ToolTipService.ToolTip="{Binding TranslationProperties.ResetAllText, Mode=OneWay}" Command="{Binding ResetAllCommand}">
-                    <Button.Content>
-                        <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xED62;"/>
-                    </Button.Content>
-                </Button>
-                -->
+                    <Button
+                        Style="{StaticResource CompactFooterIconButtonStyle}"
+                        ToolTipService.ToolTip="{Binding TranslationProperties.HistoryText, Mode=OneWay}"
+                        AutomationProperties.Name="{Binding TranslationProperties.HistoryText, Mode=OneWay}"
+                        Command="{Binding ViewHistoryCommand}">
+                        <Button.Content>
+                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE81C;"/>
+                        </Button.Content>
+                    </Button>
 
-                <Button Command="{Binding FavouriteCommand}" ToolTipService.ToolTip="{Binding Game.IsFavourite, Converter={StaticResource FavouriteTextConverter}}">
-                    <Button.Content>
-                        <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="{Binding Game.IsFavourite, Converter={StaticResource FavouriteGlyphConverter}}"/>
-                    </Button.Content>
-                </Button>
+                    <!--
+                    <Button ToolTipService.ToolTip="{Binding TranslationProperties.ResetAllText, Mode=OneWay}" Command="{Binding ResetAllCommand}">
+                        <Button.Content>
+                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xED62;"/>
+                        </Button.Content>
+                    </Button>
+                    -->
 
-                <Button Command="{Binding ReloadGameCommand}" ToolTipService.ToolTip="{Binding TranslationProperties.ReloadText, Mode=OneWay}">
-                    <Button.Content>
-                        <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE72C;"/>
-                    </Button.Content>
-                </Button>
+                    <Button
+                        Style="{StaticResource CompactFooterIconButtonStyle}"
+                        Command="{Binding FavouriteCommand}"
+                        ToolTipService.ToolTip="{Binding Game.IsFavourite, Converter={StaticResource FavouriteTextConverter}}"
+                        AutomationProperties.Name="{Binding Game.IsFavourite, Converter={StaticResource FavouriteTextConverter}}">
+                        <Button.Content>
+                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="{Binding Game.IsFavourite, Converter={StaticResource FavouriteGlyphConverter}}"/>
+                        </Button.Content>
+                    </Button>
 
-                <Button Command="{Binding ShowHideGameCommand}" ToolTipService.ToolTip="{Binding Game.IsHidden, Mode=OneWay, Converter={StaticResource HideGameTextConverter}}">
-                    <Button.Content>
-                        <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="{Binding Game.IsHidden, Mode=OneWay, Converter={StaticResource HideGameGlyphConverter}}" />
-                    </Button.Content>
-                </Button>
+                    <Button
+                        Style="{StaticResource CompactFooterIconButtonStyle}"
+                        Command="{Binding ReloadGameCommand}"
+                        ToolTipService.ToolTip="{Binding TranslationProperties.ReloadText, Mode=OneWay}"
+                        AutomationProperties.Name="{Binding TranslationProperties.ReloadText, Mode=OneWay}">
+                        <Button.Content>
+                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE72C;"/>
+                        </Button.Content>
+                    </Button>
 
-            </StackPanel>
-        </ControlTemplate>
+                    <Button
+                        Style="{StaticResource CompactFooterIconButtonStyle}"
+                        Command="{Binding ShowHideGameCommand}"
+                        ToolTipService.ToolTip="{Binding Game.IsHidden, Mode=OneWay, Converter={StaticResource HideGameTextConverter}}"
+                        AutomationProperties.Name="{Binding Game.IsHidden, Mode=OneWay, Converter={StaticResource HideGameTextConverter}}">
+                        <Button.Content>
+                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="{Binding Game.IsHidden, Mode=OneWay, Converter={StaticResource HideGameGlyphConverter}}" />
+                        </Button.Content>
+                    </Button>
 
-        <ControlTemplate x:Key="RightButtonsControlTemplate" TargetType="ContentControl">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" XYFocusKeyboardNavigation="Enabled" Padding="{ThemeResource ContentDialogPadding}" Background="{TemplateBinding Background}" Spacing="8">
-                <Button
-                    Content="{Binding TranslationProperties.UpdateDetectedDllsText, Mode=OneWay}"
-                    Command="{Binding UpdateDetectedDllsToLatestCommand}"
-                    ToolTipService.ToolTip="{Binding TranslationProperties.UpdateDetectedDllsTooltipText, Mode=OneWay}" />
-                <Button Content="{Binding TranslationProperties.RemoveText, Mode=OneWay}" Visibility="{Binding IsManuallyAdded, Converter={StaticResource BoolToVisibilityConverter}}" Command="{Binding RemoveCommand}" />
-                <Button x:Name="CloseButton" IsTabStop="False" Content="{Binding TranslationProperties.CloseText, Mode=OneWay}" Style="{ThemeResource DefaultButtonStyle}" ElementSoundMode="FocusOnly" Command="{Binding CloseCommand}" KeyboardAcceleratorPlacementMode="Hidden">
-                    <Button.KeyboardAccelerators>
-                        <KeyboardAccelerator Key="Escape" Modifiers="None" />
-                    </Button.KeyboardAccelerators>
-                </Button>
+                    <Button
+                        Style="{StaticResource CompactFooterIconButtonStyle}"
+                        Command="{Binding AddCoverImageCommand}"
+                        ToolTipService.ToolTip="{Binding TranslationProperties.AddCustomCoverText, Mode=OneWay}"
+                        AutomationProperties.Name="{Binding TranslationProperties.AddCustomCoverText, Mode=OneWay}">
+                        <Button.Content>
+                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE8B9;" />
+                        </Button.Content>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel HorizontalAlignment="Right">
+                    <Button
+                        Style="{StaticResource CompactFooterTextButtonStyle}"
+                        MaxWidth="320"
+                        Command="{Binding UpdateDetectedDllsToLatestCommand}"
+                        ToolTipService.ToolTip="{Binding TranslationProperties.UpdateDetectedDllsTooltipText, Mode=OneWay}"
+                        AutomationProperties.Name="{Binding TranslationProperties.UpdateDetectedDllsText, Mode=OneWay}">
+                        <Button.Content>
+                            <TextBlock
+                                Text="{Binding TranslationProperties.UpdateDetectedDllsText, Mode=OneWay}"
+                                TextAlignment="Center"
+                                TextWrapping="Wrap" />
+                        </Button.Content>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="4">
+                    <Button
+                        Style="{StaticResource CompactFooterTextButtonStyle}"
+                        Content="{Binding TranslationProperties.RemoveText, Mode=OneWay}"
+                        Command="{Binding RemoveCommand}" />
+
+                    <Button
+                        x:Name="CloseButton"
+                        IsTabStop="False"
+                        Content="{Binding TranslationProperties.CloseText, Mode=OneWay}"
+                        Style="{StaticResource CompactFooterTextButtonStyle}"
+                        ElementSoundMode="FocusOnly"
+                        Command="{Binding CloseCommand}"
+                        KeyboardAcceleratorPlacementMode="Hidden">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="Escape" Modifiers="None" />
+                        </Button.KeyboardAccelerators>
+                    </Button>
+                </StackPanel>
             </StackPanel>
         </ControlTemplate>
 
@@ -112,13 +209,42 @@
     </usercontrols:FakeContentDialog.Resources>
 
     <usercontrols:FakeContentDialog.Content>
-        <Grid Grid.Row="0" ColumnSpacing="20" HorizontalAlignment="Stretch">
+        <Grid
+            x:Name="ResponsiveContentGrid"
+            Grid.Row="0"
+            ColumnSpacing="0"
+            HorizontalAlignment="Stretch">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200" />
+                <ColumnDefinition x:Name="CoverColumn" Width="0" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="8">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="GameDialogWidthStates">
+                    <VisualState x:Name="CompactGameDialog">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0" />
+                        </VisualState.StateTriggers>
+                    </VisualState>
+                    <VisualState x:Name="WideGameDialog">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="980" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="CoverColumn.Width" Value="200" />
+                            <Setter Target="CoverPanel.Visibility" Value="Visible" />
+                            <Setter Target="ResponsiveContentGrid.ColumnSpacing" Value="16" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <StackPanel
+                x:Name="CoverPanel"
+                Grid.Column="0"
+                Orientation="Vertical"
+                Spacing="8"
+                Visibility="Collapsed">
                 <Grid Width="200" Height="300" CornerRadius="8"  BorderThickness="1" ColumnSpacing="0" RowSpacing="0" Margin="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
 
                     <!-- Padding="{ThemeResource ContentDialogPadding}" -->
@@ -139,7 +265,6 @@
 
                     <Button HorizontalAlignment="Stretch" Background="Transparent" VerticalAlignment="Stretch" Command="{x:Bind ViewModel.AddCoverImageCommand}" AllowDrop="True" DragEnter="CoverButton_DragEnter" DragOver="CoverButton_DragOver" Drop="CoverButton_Drop" />
                 </Grid>
-                <Button Content="{x:Bind ViewModel.TranslationProperties.AddCustomCoverText, Mode=OneWay}" HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.AddCoverImageCommand}" />
             </StackPanel>
 
             <Grid Grid.Column="1" >
