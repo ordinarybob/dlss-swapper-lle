@@ -15,6 +15,10 @@ namespace DLSS_Swapper.Data.Steam;
 
 internal partial class SteamLibrary : IGameLibrary
 {
+    static readonly Regex AppManifestFileNameRegex = new(
+        @"^appmanifest_(?<app_id>\d+)\.acf$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     public GameLibrary GameLibrary => GameLibrary.Steam;
     public string Name => "Steam";
 
@@ -75,8 +79,6 @@ internal partial class SteamLibrary : IGameLibrary
             return new List<Game>();
         }
 
-        var libraryFoldersFileInfo = new FileInfo(libraryFoldersFile);
-
         var steamAppsPaths = new List<string>()
         {
             baseSteamAppsFolder
@@ -129,39 +131,30 @@ internal partial class SteamLibrary : IGameLibrary
             Debugger.Break();
         }
 
-        // Look for files within steamAppsPaths.
-        // If the file already exists in knownAppManifestPaths we can skip it.
-        // If the file does not exist in knownAppManifestPaths we should process it as it is likly freshly installed.
-
-        var appManifestRegex = new Regex(@"^(.*)\\appmanifest_(?<app_id>\d*)\.acf$");
-        foreach (var steamAppPath in steamAppsPaths)
+        // libraryfolders.vdf can contain a stale or incomplete app index.
+        // The top-level appmanifest files are Steam's authoritative installed-game list.
+        foreach (var steamAppPath in steamAppsPaths.Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            var appManifestPaths = Directory.GetFiles(steamAppPath, "*.acf", SearchOption.TopDirectoryOnly);
-            if (appManifestPaths?.Length > 0)
+            foreach (var appManifestPath in Directory.EnumerateFiles(
+                steamAppPath,
+                "appmanifest_*.acf",
+                SearchOption.TopDirectoryOnly))
             {
-                foreach (var appManifestPath in appManifestPaths)
+                var match = AppManifestFileNameRegex.Match(Path.GetFileName(appManifestPath));
+                if (match.Success == false)
                 {
-                    var match = appManifestRegex.Match(appManifestPath);
-                    if (match.Success)
-                    {
-                        var appId = match.Groups["app_id"].Value;
+                    continue;
+                }
 
-                        // If the app_id is not known this is either a new install or a corrupt/leftover file.
-                        if (knownAppManifestPaths.ContainsKey(appId) == false)
-                        {
-                            var fileInfo = new FileInfo(appManifestPath);
-
-                            // If the appManifest is newer than the last time libraryFoldersFileInfo was updated it is likely a new install.
-                            if (fileInfo.LastWriteTime > libraryFoldersFileInfo.LastWriteTime)
-                            {
-                                knownAppManifestPaths[appId] = appManifestPath;
-                            }
-                            else
-                            {
-                                Logger.Error($"Found potential rogue file when loading Steam manifests: appId {appId}, {appManifestPath}");
-                            }
-                        }
-                    }
+                var appId = match.Groups["app_id"].Value;
+                if (knownAppManifestPaths.TryAdd(appId, appManifestPath) == false
+                    && string.Equals(
+                        knownAppManifestPaths[appId],
+                        appManifestPath,
+                        StringComparison.OrdinalIgnoreCase) == false)
+                {
+                    Logger.Warning(
+                        $"Steam app {appId} has manifests in more than one library. Preserving {knownAppManifestPaths[appId]} and ignoring {appManifestPath}.");
                 }
             }
         }
