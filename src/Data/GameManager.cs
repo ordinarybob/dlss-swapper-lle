@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
@@ -50,6 +51,10 @@ internal partial class GameManager : ObservableObject
 
     Dictionary<GameLibrary, GameGroup> libraryGameGroups = new Dictionary<GameLibrary, GameGroup>();
     Dictionary<GameLibrary, AdvancedCollectionView> libraryGamesView = new Dictionary<GameLibrary, AdvancedCollectionView>();
+
+    readonly SemaphoreSlim _loadGate = new(1, 1);
+    readonly List<Action> _pendingUiChanges = new();
+    bool _batchUiChanges;
 
 
     Predicate<object> GetPredicateForAllGames(bool hideNonDLSSGames, string? filterText = null)
@@ -198,47 +203,78 @@ internal partial class GameManager : ObservableObject
 
     public async Task LoadGamesFromCacheAsync()
     {
-        UnknownAssetsFound = false;
-        _unknownGameAssets.Clear();
-
-        foreach (var gameLibraryEnum in GameManager.Instance.GetGameLibraries(true))
+        await _loadGate.WaitAsync().ConfigureAwait(false);
+        BeginUiBatch();
+        try
         {
-            var gameLibrary = IGameLibrary.GetGameLibrary(gameLibraryEnum);
-            if (gameLibrary.IsEnabled)
+            UnknownAssetsFound = false;
+            _unknownGameAssets.Clear();
+
+            foreach (var gameLibraryEnum in GameManager.Instance.GetGameLibraries(true))
             {
-                await gameLibrary.LoadGamesFromCacheAsync().ConfigureAwait(false);
+                var gameLibrary = IGameLibrary.GetGameLibrary(gameLibraryEnum);
+                if (gameLibrary.IsEnabled)
+                {
+                    await gameLibrary.LoadGamesFromCacheAsync().ConfigureAwait(false);
+                }
             }
+        }
+        finally
+        {
+            await EndUiBatchAsync().ConfigureAwait(false);
+            _loadGate.Release();
         }
     }
 
     public async Task LoadGamesAsync(bool forceNeedsProcessing = false)
     {
-        var tasks = new List<Task<List<Game>>>();
-        if (forceNeedsProcessing == true)
+        await _loadGate.WaitAsync().ConfigureAwait(false);
+        BeginUiBatch();
+        GameDatabaseWriteBatch.Instance.Begin();
+        try
         {
-            lock (unknownGameAsseetLock)
+            var tasks = new List<Task<List<Game>>>();
+            if (forceNeedsProcessing == true)
             {
-                _unknownGameAssets.Clear();
+                lock (unknownGameAsseetLock)
+                {
+                    _unknownGameAssets.Clear();
+                }
             }
-        }
-        foreach (var gameLibraryEnum in GameManager.Instance.GetGameLibraries(true))
-        {
-            var gameLibrary = IGameLibrary.GetGameLibrary(gameLibraryEnum);
-            if (gameLibrary.IsEnabled)
+            foreach (var gameLibraryEnum in GameManager.Instance.GetGameLibraries(true))
             {
-                tasks.Add(gameLibrary.ListGamesAsync(forceNeedsProcessing));
+                var gameLibrary = IGameLibrary.GetGameLibrary(gameLibraryEnum);
+                if (gameLibrary.IsEnabled)
+                {
+                    tasks.Add(gameLibrary.ListGamesAsync(forceNeedsProcessing));
+                }
             }
-        }
 
-        // Add games to the game library when the tasks is completed.
-        while (tasks.Any())
-        {
-            var completedTask = await Task.WhenAny(tasks);
-            tasks.Remove(completedTask);
-
-            foreach (var game in completedTask.Result)
+            // Add games to the game library when each library task completes.
+            while (tasks.Any())
             {
-                AddGame(game);
+                var completedTask = await Task.WhenAny(tasks).ConfigureAwait(false);
+                tasks.Remove(completedTask);
+
+                foreach (var game in await completedTask.ConfigureAwait(false))
+                {
+                    AddGame(game);
+                }
+            }
+
+            await FlushPendingUiChangesAsync().ConfigureAwait(false);
+            await GameScanQueue.Instance.WhenIdleAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            try
+            {
+                await GameDatabaseWriteBatch.Instance.EndAndFlushAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                await EndUiBatchAsync().ConfigureAwait(false);
+                _loadGate.Release();
             }
         }
     }
@@ -296,10 +332,19 @@ internal partial class GameManager : ObservableObject
                 // We could do away with this, but in theory this if is never hit
                 var oldGame = _synchronisedAllGames.First(x => x.Equals(game));
 
-                App.CurrentApp.RunOnUIThread(() =>
+                void UpdateExistingGame()
                 {
                     oldGame.UpdateFromGame(game);
-                });
+                }
+
+                if (_batchUiChanges)
+                {
+                    _pendingUiChanges.Add(UpdateExistingGame);
+                }
+                else
+                {
+                    App.CurrentApp.RunOnUIThread(UpdateExistingGame);
+                }
 
                 Debug.WriteLine($"Reusing old game: {game.Title}");
                 return oldGame;
@@ -310,7 +355,7 @@ internal partial class GameManager : ObservableObject
 
                 _synchronisedAllGames.Add(game);
 
-                App.CurrentApp.RunOnUIThread(() =>
+                void AddNewGame()
                 {
                     _allGames.Add(game);
 
@@ -318,10 +363,67 @@ internal partial class GameManager : ObservableObject
                     {
                         App.CurrentApp.MainWindow.GameGridPage?.ScrollToGame(game);
                     }
-                });
+                }
+
+                if (_batchUiChanges)
+                {
+                    _pendingUiChanges.Add(AddNewGame);
+                }
+                else
+                {
+                    App.CurrentApp.RunOnUIThread(AddNewGame);
+                }
 
                 return game;
             }
+        }
+    }
+
+    void BeginUiBatch()
+    {
+        lock (gameLock)
+        {
+            _batchUiChanges = true;
+        }
+    }
+
+    async Task EndUiBatchAsync()
+    {
+        await FlushPendingUiChangesAsync().ConfigureAwait(false);
+        lock (gameLock)
+        {
+            _batchUiChanges = false;
+        }
+    }
+
+    async Task FlushPendingUiChangesAsync()
+    {
+        while (true)
+        {
+            List<Action> changes;
+            lock (gameLock)
+            {
+                if (_pendingUiChanges.Count == 0)
+                {
+                    return;
+                }
+
+                var batchSize = Math.Min(Settings.Instance.UiCollectionBatchSize, _pendingUiChanges.Count);
+                changes = _pendingUiChanges.GetRange(0, batchSize);
+                _pendingUiChanges.RemoveRange(0, batchSize);
+            }
+
+            await App.CurrentApp.RunOnUIThreadAsync(() =>
+            {
+                foreach (var change in changes)
+                {
+                    change();
+                }
+
+                return Task.CompletedTask;
+            }).ConfigureAwait(false);
+
+            await Task.Yield();
         }
     }
 

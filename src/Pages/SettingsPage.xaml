@@ -69,6 +69,76 @@
                 <TextBlock
                     Style="{StaticResource SubtitleTextBlockStyle}"
                     Margin="0,40,0,0"
+                    Text="Performance" />
+                <TextBlock
+                    Margin="0,10,0,0"
+                    TextWrapping="WrapWholeWords"
+                    Text="These controls tune large-library throughput. Recommended defaults suit most SSD-based systems; changes to worker counts apply after restarting the app." />
+                <Grid Margin="0,18,0,0" ColumnSpacing="24" RowSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="220" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game scans" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Game folders scanned recursively at once (1–26). Recommended: 4." />
+                    </StackPanel>
+                    <NumberBox Grid.Row="0" Grid.Column="1"
+                               Minimum="1" Maximum="26" SmallChange="1"
+                               SpinButtonPlacementMode="Inline"
+                               Value="{x:Bind ViewModel.RecursiveScanConcurrency, Mode=TwoWay}" />
+
+                    <StackPanel Grid.Row="1">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent artwork loading" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Game covers loaded in parallel after games appear (1–64). Recommended: 12." />
+                    </StackPanel>
+                    <NumberBox Grid.Row="1" Grid.Column="1"
+                               Minimum="1" Maximum="64" SmallChange="1"
+                               SpinButtonPlacementMode="Inline"
+                               Value="{x:Bind ViewModel.CoverHydrationConcurrency, Mode=TwoWay}" />
+
+                    <StackPanel Grid.Row="2">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Games added per UI batch" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Games added to the interface before yielding to input and rendering (10–1000). Recommended: 100." />
+                    </StackPanel>
+                    <NumberBox Grid.Row="2" Grid.Column="1"
+                               Minimum="10" Maximum="1000" SmallChange="10"
+                               SpinButtonPlacementMode="Inline"
+                               Value="{x:Bind ViewModel.UiCollectionBatchSize, Mode=TwoWay}" />
+
+                    <StackPanel Grid.Row="3">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Database records per transaction" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Discovered game records committed per SQLite transaction (10–1000). Recommended: 100." />
+                    </StackPanel>
+                    <NumberBox Grid.Row="3" Grid.Column="1"
+                               Minimum="10" Maximum="1000" SmallChange="10"
+                               SpinButtonPlacementMode="Inline"
+                               Value="{x:Bind ViewModel.DatabaseWriteBatchSize, Mode=TwoWay}" />
+
+                    <StackPanel Grid.Row="4">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game updates" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Games updated in parallel during a selected-games DLL update (1–26). Recommended: 3." />
+                    </StackPanel>
+                    <NumberBox Grid.Row="4" Grid.Column="1"
+                               Minimum="1" Maximum="26" SmallChange="1"
+                               SpinButtonPlacementMode="Inline"
+                               Value="{x:Bind ViewModel.BatchSwapConcurrency, Mode=TwoWay}" />
+                </Grid>
+                <Button Margin="0,18,0,0"
+                        Content="Reset recommended defaults"
+                        Command="{x:Bind ViewModel.ResetPerformanceDefaultsCommand}" />
+
+                <TextBlock
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Margin="0,40,0,0"
                     Text="{x:Bind ViewModel.TranslationProperties.IgnoredPathsText, Mode=OneWay}" />
                 <StackPanel Margin="0,10,0,0">
                     <StackPanel.Resources>

@@ -127,7 +127,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     [Ignore]
     public bool NeedsProcessing { get; set; } = false;
 
-    bool _isLoadingCoverImage;
+    readonly SemaphoreSlim _coverImageGate = new(1, 1);
 
     // NOTE: DLL type
     [ObservableProperty]
@@ -266,7 +266,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             HasSwappableItems = false;
         });
 
-        ThreadPool.QueueUserWorkItem(async (stateInfo) =>
+        GameScanQueue.Instance.Enqueue(async () =>
         {
             var newHasSwappableItems = false;
 
@@ -315,10 +315,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     }
                 }
 
-                Task? coverImageTask = null;
                 if (shouldUpdatedCover)
                 {
-                    coverImageTask = UpdateCacheImageAsync();
+                    GameCoverHydrationQueue.Instance.Enqueue(this, refreshFromSource: true);
                 }
                 else
                 {
@@ -336,7 +335,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
                 }
                 // TODO: See if changing these to filter specific files, or getting very *.dll and looking for our specific ones is faster
-                var dllPaths = Directory.GetFiles(InstallPath, "*.dll", enumerationOptions);
+                var dllPaths = Directory.EnumerateFiles(InstallPath, "*.dll", enumerationOptions);
 
                 /*
                 var dlssDllPaths = Directory.GetFiles(InstallPath, "nvngx_dlss.dll", enumerationOptions);
@@ -552,10 +551,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     }
                 }
 
-                if (coverImageTask is not null)
-                {
-                    await coverImageTask;
-                }
             }
             catch (Exception err)
             {
@@ -599,41 +594,53 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
     public async Task LoadCoverImageAsync()
     {
-        if (_isLoadingCoverImage == true)
+        await _coverImageGate.WaitAsync().ConfigureAwait(false);
+        try
         {
-            return;
-        }
+            // TODO: Update if the image last write is > 1 week old or something
 
-        _isLoadingCoverImage = true;
-
-        // TODO: Update if the image last write is > 1 week old or something
-
-        if (File.Exists(ExpectedCustomCoverImage))
-        {
-            // If a custom cover exists use it.
-            App.CurrentApp.RunOnUIThread(() =>
+            if (File.Exists(ExpectedCustomCoverImage))
             {
-                CoverImage = ExpectedCustomCoverImage;
-            });
-        }
-        else if (File.Exists(ExpectedCoverImage))
-        {
-            // If a standard cover exists use it.
-            App.CurrentApp.RunOnUIThread(() =>
+                // If a custom cover exists use it.
+                App.CurrentApp.RunOnUIThread(() =>
+                {
+                    CoverImage = ExpectedCustomCoverImage;
+                });
+            }
+            else if (File.Exists(ExpectedCoverImage))
             {
-                CoverImage = ExpectedCoverImage;
-            });
+                // If a standard cover exists use it.
+                App.CurrentApp.RunOnUIThread(() =>
+                {
+                    CoverImage = ExpectedCoverImage;
+                });
+            }
+            else
+            {
+                // If no cover exists use the abstracted method to get the game as expect for this library.
+                await UpdateCacheImageAsync().ConfigureAwait(false);
+            }
         }
-        else
+        finally
         {
-            // If no cover exists use the abstracted method to get the game as expect for this library.
-            await UpdateCacheImageAsync();
+            _coverImageGate.Release();
         }
-
-        _isLoadingCoverImage = false;
     }
 
     protected abstract Task UpdateCacheImageAsync();
+
+    internal async Task RefreshCoverFromSourceAsync()
+    {
+        await _coverImageGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await UpdateCacheImageAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            _coverImageGate.Release();
+        }
+    }
 
     internal async Task<(bool Success, string Message, bool PromptToRelaunchAsAdmin)> ResetDllAsync(GameAssetType gameAssetType)
     {
@@ -1125,6 +1132,11 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     {
         try
         {
+            if (GameDatabaseWriteBatch.Instance.TryEnqueue(this))
+            {
+                return;
+            }
+
             var rowsChanged = -1;
             using (await Database.Instance.Mutex.LockAsync())
             {
@@ -1479,7 +1491,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
     public async Task LoadGameAssetsFromCacheAsync()
     {
-        await LoadCoverImageAsync();
+        GameCoverHydrationQueue.Instance.Enqueue(this);
 
         GameAssets.Clear();
         using (await Database.Instance.Mutex.LockAsync())

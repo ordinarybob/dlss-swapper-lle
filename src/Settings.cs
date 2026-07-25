@@ -11,6 +11,26 @@ namespace DLSS_Swapper;
 
 public class Settings
 {
+    public const int DefaultRecursiveScanConcurrency = 4;
+    public const int MinRecursiveScanConcurrency = 1;
+    public const int MaxRecursiveScanConcurrency = 26;
+
+    public const int DefaultCoverHydrationConcurrency = 12;
+    public const int MinCoverHydrationConcurrency = 1;
+    public const int MaxCoverHydrationConcurrency = 64;
+
+    public const int DefaultUiCollectionBatchSize = 100;
+    public const int MinUiCollectionBatchSize = 10;
+    public const int MaxUiCollectionBatchSize = 1000;
+
+    public const int DefaultDatabaseWriteBatchSize = 100;
+    public const int MinDatabaseWriteBatchSize = 10;
+    public const int MaxDatabaseWriteBatchSize = 1000;
+
+    public const int DefaultBatchSwapConcurrency = 3;
+    public const int MinBatchSwapConcurrency = 1;
+    public const int MaxBatchSwapConcurrency = 26;
+
     static Settings? _instance;
 
     public static Settings Instance => _instance ??= Settings.FromJson();
@@ -54,7 +74,7 @@ public class Settings
         }
     }
 
-    bool _hideNonDLSSGames;
+    bool _hideNonDLSSGames = true;
     public bool HideNonDLSSGames
     {
         get { return _hideNonDLSSGames; }
@@ -267,7 +287,7 @@ public class Settings
         }
     }
 
-    GameGridViewType _gameGridViewType = GameGridViewType.GridView;
+    GameGridViewType _gameGridViewType = GameGridViewType.ListView;
     public GameGridViewType GameGridViewType
     {
         get { return _gameGridViewType; }
@@ -294,6 +314,96 @@ public class Settings
             if (_gridViewItemWidth != value)
             {
                 _gridViewItemWidth = value;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    int _recursiveScanConcurrency = DefaultRecursiveScanConcurrency;
+    public int RecursiveScanConcurrency
+    {
+        get { return _recursiveScanConcurrency; }
+        set
+        {
+            var clampedValue = Math.Clamp(value, MinRecursiveScanConcurrency, MaxRecursiveScanConcurrency);
+            if (_recursiveScanConcurrency != clampedValue)
+            {
+                _recursiveScanConcurrency = clampedValue;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    int _coverHydrationConcurrency = DefaultCoverHydrationConcurrency;
+    public int CoverHydrationConcurrency
+    {
+        get { return _coverHydrationConcurrency; }
+        set
+        {
+            var clampedValue = Math.Clamp(value, MinCoverHydrationConcurrency, MaxCoverHydrationConcurrency);
+            if (_coverHydrationConcurrency != clampedValue)
+            {
+                _coverHydrationConcurrency = clampedValue;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    int _uiCollectionBatchSize = DefaultUiCollectionBatchSize;
+    public int UiCollectionBatchSize
+    {
+        get { return _uiCollectionBatchSize; }
+        set
+        {
+            var clampedValue = Math.Clamp(value, MinUiCollectionBatchSize, MaxUiCollectionBatchSize);
+            if (_uiCollectionBatchSize != clampedValue)
+            {
+                _uiCollectionBatchSize = clampedValue;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    int _databaseWriteBatchSize = DefaultDatabaseWriteBatchSize;
+    public int DatabaseWriteBatchSize
+    {
+        get { return _databaseWriteBatchSize; }
+        set
+        {
+            var clampedValue = Math.Clamp(value, MinDatabaseWriteBatchSize, MaxDatabaseWriteBatchSize);
+            if (_databaseWriteBatchSize != clampedValue)
+            {
+                _databaseWriteBatchSize = clampedValue;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    int _batchSwapConcurrency = DefaultBatchSwapConcurrency;
+    public int BatchSwapConcurrency
+    {
+        get { return _batchSwapConcurrency; }
+        set
+        {
+            var clampedValue = Math.Clamp(value, MinBatchSwapConcurrency, MaxBatchSwapConcurrency);
+            if (_batchSwapConcurrency != clampedValue)
+            {
+                _batchSwapConcurrency = clampedValue;
                 if (_autoSave)
                 {
                     SaveJson();

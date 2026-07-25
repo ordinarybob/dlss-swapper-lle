@@ -89,6 +89,21 @@ public partial class SettingsPageModel : ObservableObject
     public partial bool OnlyShowDownloadedDlls { get; set; } = false;
 
     [ObservableProperty]
+    public partial double RecursiveScanConcurrency { get; set; }
+
+    [ObservableProperty]
+    public partial double CoverHydrationConcurrency { get; set; }
+
+    [ObservableProperty]
+    public partial double UiCollectionBatchSize { get; set; }
+
+    [ObservableProperty]
+    public partial double DatabaseWriteBatchSize { get; set; }
+
+    [ObservableProperty]
+    public partial double BatchSwapConcurrency { get; set; }
+
+    [ObservableProperty]
     public partial ComboBoxOption LoggingLevel { get; set; }
 
     public RefreshableObservableCollection<ComboBoxOption> LoggingLevelOptions { get; init; } = new RefreshableObservableCollection<ComboBoxOption>()
@@ -166,6 +181,11 @@ public partial class SettingsPageModel : ObservableObject
         AllowUntrusted = Settings.Instance.AllowUntrusted;
         AllowDebugDlls = Settings.Instance.AllowDebugDlls;
         OnlyShowDownloadedDlls = Settings.Instance.OnlyShowDownloadedDlls;
+        RecursiveScanConcurrency = Settings.Instance.RecursiveScanConcurrency;
+        CoverHydrationConcurrency = Settings.Instance.CoverHydrationConcurrency;
+        UiCollectionBatchSize = Settings.Instance.UiCollectionBatchSize;
+        DatabaseWriteBatchSize = Settings.Instance.DatabaseWriteBatchSize;
+        BatchSwapConcurrency = Settings.Instance.BatchSwapConcurrency;
 
 
         var loggingLevel = Settings.Instance.LoggingLevel;
@@ -308,6 +328,26 @@ public partial class SettingsPageModel : ObservableObject
         {
             Settings.Instance.OnlyShowDownloadedDlls = OnlyShowDownloadedDlls;
         }
+        else if (e.PropertyName == nameof(RecursiveScanConcurrency) && double.IsFinite(RecursiveScanConcurrency))
+        {
+            Settings.Instance.RecursiveScanConcurrency = (int)Math.Round(RecursiveScanConcurrency);
+        }
+        else if (e.PropertyName == nameof(CoverHydrationConcurrency) && double.IsFinite(CoverHydrationConcurrency))
+        {
+            Settings.Instance.CoverHydrationConcurrency = (int)Math.Round(CoverHydrationConcurrency);
+        }
+        else if (e.PropertyName == nameof(UiCollectionBatchSize) && double.IsFinite(UiCollectionBatchSize))
+        {
+            Settings.Instance.UiCollectionBatchSize = (int)Math.Round(UiCollectionBatchSize);
+        }
+        else if (e.PropertyName == nameof(DatabaseWriteBatchSize) && double.IsFinite(DatabaseWriteBatchSize))
+        {
+            Settings.Instance.DatabaseWriteBatchSize = (int)Math.Round(DatabaseWriteBatchSize);
+        }
+        else if (e.PropertyName == nameof(BatchSwapConcurrency) && double.IsFinite(BatchSwapConcurrency))
+        {
+            Settings.Instance.BatchSwapConcurrency = (int)Math.Round(BatchSwapConcurrency);
+        }
         else if (e.PropertyName == nameof(LoggingLevel))
         {
             var loggingLevel  = (DLSS_Swapper.LoggingLevel)LoggingLevel.Value;
@@ -371,6 +411,16 @@ public partial class SettingsPageModel : ObservableObject
                 }
             }
         }
+    }
+
+    [RelayCommand]
+    void ResetPerformanceDefaults()
+    {
+        RecursiveScanConcurrency = Settings.DefaultRecursiveScanConcurrency;
+        CoverHydrationConcurrency = Settings.DefaultCoverHydrationConcurrency;
+        UiCollectionBatchSize = Settings.DefaultUiCollectionBatchSize;
+        DatabaseWriteBatchSize = Settings.DefaultDatabaseWriteBatchSize;
+        BatchSwapConcurrency = Settings.DefaultBatchSwapConcurrency;
     }
 
     [RelayCommand]
