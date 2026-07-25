@@ -13,7 +13,22 @@ public class GameGridPageModelTranslationProperties : LocalizedViewModelBase
     public string AddGameText => ResourceHelper.GetString("GamesPage_AddGame");
 
     [TranslationProperty]
+    public string AddSingleGameText => ResourceHelper.GetString("GamesPage_ManuallyAdding_AddSingleGame");
+
+    [TranslationProperty]
+    public string AddMultipleGameFoldersText => ResourceHelper.GetString("GamesPage_ManuallyAdding_AddMultipleGameFolders");
+
+    [TranslationProperty]
+    public string AddMultiGameDirectoryText => ResourceHelper.GetString("GamesPage_ManuallyAdding_AddMultiGameDirectory");
+
+    [TranslationProperty]
     public string RefreshText => ResourceHelper.GetString("General_Refresh");
+
+    [TranslationProperty]
+    public string RefreshPreserveExcludedText => ResourceHelper.GetString("GamesPage_Refresh_PreserveExcluded");
+
+    [TranslationProperty]
+    public string RestoreExcludedAndRefreshText => ResourceHelper.GetString("GamesPage_Refresh_RestoreExcluded");
 
     [TranslationProperty]
     public string FilterText => ResourceHelper.GetString("General_Filter");

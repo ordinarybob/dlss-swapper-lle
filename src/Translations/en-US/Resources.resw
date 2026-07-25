@@ -300,6 +300,10 @@ To verify what preset is being used please enable the DLSS on-screen indicator.<
     <value>Are you sure you want to remove "{0}" from DLSS Swapper? This will not make any changes to DLSS files that have already been swapped.</value>
     <comment>{0} is the game name</comment>
   </data>
+  <data name="GamePage_Discovered_RemoveGameTemplate" xml:space="preserve">
+    <value>Exclude "{0}" from this library? Ordinary refreshes will keep it excluded. Use Restore excluded games and full refresh to add it again.</value>
+    <comment>{0} is the game title</comment>
+  </data>
   <data name="GamePage_MultipleDllFound_Notice" xml:space="preserve">
     <value>Shown below are the multiple DLLs found. You will still be able to swap and restore DLLs as usual as we will do these actions to all DLLs at once. However because we don't know what one of these DLLs is used by the game the DLL version shown is of the first DLL detected.</value>
   </data>
@@ -379,17 +383,44 @@ To verify what preset is being used please enable the DLSS on-screen indicator.<
   <data name="GamesPage_ManuallyAdding_AddCoverErrorSingleFile" xml:space="preserve">
     <value>You may only drag over a single file for a cover</value>
   </data>
+  <data name="GamesPage_ManuallyAdding_AddMultiGameDirectory" xml:space="preserve">
+    <value>Add a multi-game directory</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_AddMultipleGameFolders" xml:space="preserve">
+    <value>Add multiple game folders</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_AddSingleGame" xml:space="preserve">
+    <value>Add one game</value>
+  </data>
   <data name="GamesPage_ManuallyAdding_AnotherNoteTitle" xml:space="preserve">
     <value>Another note for manually adding games</value>
   </data>
   <data name="GamesPage_ManuallyAdding_CouldntAddError" xml:space="preserve">
     <value>There was a problem and your game could not be added at this time. Please report this issue.</value>
   </data>
+  <data name="GamesPage_ManuallyAdding_BulkDirectoryMissing" xml:space="preserve">
+    <value>The directory no longer exists.</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_BulkSummaryFailed" xml:space="preserve">
+    <value>Failed:</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_BulkSummaryTemplate" xml:space="preserve">
+    <value>Added: {0}    Already present: {1}    Failed: {2}</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_BulkSummaryTitle" xml:space="preserve">
+    <value>Bulk game import summary</value>
+  </data>
   <data name="GamesPage_ManuallyAdding_ErrorTitle" xml:space="preserve">
     <value>Error adding your game</value>
   </data>
   <data name="GamesPage_ManuallyAdding_InfoHtml" xml:space="preserve">
     <value>You must select your &lt;i&gt;game&lt;/i&gt; directory, not your &lt;i&gt;games&lt;/i&gt; directory.&lt;br/&gt;&lt;br/&gt;For example, if you have a game at:&lt;br/&gt;&lt;b&gt;C:\Program Files\MyGamesFolder\MyFavGame\&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;You would select the &lt;b&gt;MyFavGame&lt;/b&gt; directory and not the &lt;b&gt;MyGamesFolder&lt;/b&gt; directory.</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_MultipleFoldersDescription" xml:space="preserve">
+    <value>Select multiple individual game folders in one picker. To add every immediate child folder beneath one parent, use Add a multi-game directory instead.</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_MultipleFoldersNoteTitle" xml:space="preserve">
+    <value>Select multiple game folders</value>
   </data>
   <data name="GamesPage_ManuallyAdding_NoteMessage" xml:space="preserve">
     <value>DLSS Swapper should find games from your installed game libraries automatically. If your game is not listed there may be a few settings preventing it. Please check:
@@ -409,8 +440,29 @@ If you have checked these and your game is still not showing up there may be a b
   <data name="GamesPage_ManuallyAdding_SelectGameFolder" xml:space="preserve">
     <value>Select Game Folder</value>
   </data>
+  <data name="GamesPage_ManuallyAdding_SelectGameFolders" xml:space="preserve">
+    <value>Select Game Folders</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_SelectMultiGameDirectory" xml:space="preserve">
+    <value>Select Multi-Game Directory</value>
+  </data>
   <data name="GamesPage_ManuallyAdding_TopLevelDirectoryNotSupported" xml:space="preserve">
     <value>Adding top level directory is not supported. Please add the root of your game directory.</value>
+  </data>
+  <data name="GamesPage_Refresh_PreserveExcluded" xml:space="preserve">
+    <value>Refresh — keep excluded games</value>
+  </data>
+  <data name="GamesPage_Refresh_RestoreExcluded" xml:space="preserve">
+    <value>Restore hidden/excluded games and full refresh</value>
+  </data>
+  <data name="GamesPage_Refresh_RestoreExcluded_Title" xml:space="preserve">
+    <value>Restore hidden/excluded launcher games?</value>
+  </data>
+  <data name="GamesPage_Refresh_RestoreExcluded_Primary" xml:space="preserve">
+    <value>Restore and refresh</value>
+  </data>
+  <data name="GamesPage_Refresh_RestoreExcluded_Description" xml:space="preserve">
+    <value>This restores every hidden or excluded game in enabled launcher libraries, then refreshes those libraries. Manually added games are unchanged.</value>
   </data>
   <data name="GamesPage_NewDlls" xml:space="preserve">
     <value>New DLLs</value>

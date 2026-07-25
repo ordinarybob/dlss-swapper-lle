@@ -340,6 +340,23 @@ public class Settings
         }
     }
 
+    bool _hasShownAddMultipleGameFoldersMessage;
+    public bool HasShownAddMultipleGameFoldersMessage
+    {
+        get { return _hasShownAddMultipleGameFoldersMessage; }
+        set
+        {
+            if (_hasShownAddMultipleGameFoldersMessage != value)
+            {
+                _hasShownAddMultipleGameFoldersMessage = value;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
     int _coverHydrationConcurrency = DefaultCoverHydrationConcurrency;
     public int CoverHydrationConcurrency
     {

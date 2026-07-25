@@ -29,6 +29,17 @@ internal class FileSystemHelper
 
     internal static string OpenFolder(nint hWnd, string? defaultPath = null, string? okButtonLabel = null)
     {
+        var folders = OpenFolderInternal(hWnd, false, defaultPath, okButtonLabel);
+        return folders.Count == 1 ? folders[0] : string.Empty;
+    }
+
+    internal static List<string> OpenMultipleFolders(nint hWnd, string? defaultPath = null, string? okButtonLabel = null)
+    {
+        return OpenFolderInternal(hWnd, true, defaultPath, okButtonLabel);
+    }
+
+    static List<string> OpenFolderInternal(nint hWnd, bool pickMultiple, string? defaultPath, string? okButtonLabel)
+    {
         try
         {
             var hResult = PInvoke.CoCreateInstance<IFileOpenDialog>(typeof(FileOpenDialog).GUID, null, CLSCTX.CLSCTX_INPROC_SERVER, out var folderOpenDialog);
@@ -38,7 +49,12 @@ internal class FileSystemHelper
             }
 
             // Set options to pick a folder
-            folderOpenDialog.SetOptions(FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS | FILEOPENDIALOGOPTIONS.FOS_FORCEFILESYSTEM);
+            var options = FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS | FILEOPENDIALOGOPTIONS.FOS_FORCEFILESYSTEM;
+            if (pickMultiple)
+            {
+                options |= FILEOPENDIALOGOPTIONS.FOS_ALLOWMULTISELECT;
+            }
+            folderOpenDialog.SetOptions(options);
 
             // If no default is provided (or doesn't exist) use My Computer.
             // I hope users don't just click C:\ and call it a day -_-
@@ -62,20 +78,43 @@ internal class FileSystemHelper
             }
             folderOpenDialog.Show(new HWND(hWnd));
 
-            folderOpenDialog.GetResult(out var ppsi);
-
-            unsafe
+            var results = new List<string>();
+            if (pickMultiple)
             {
-                PWSTR filename;
-                ppsi.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, &filename);
-                var pathName = filename.ToString();
-                return pathName;
+                folderOpenDialog.GetResults(out var selectedItems);
+                selectedItems.GetCount(out uint count);
+                for (uint index = 0; index < count; index++)
+                {
+                    selectedItems.GetItemAt(index, out var selectedItem);
+                    results.Add(GetFileSystemPath(selectedItem));
+                }
             }
+            else
+            {
+                folderOpenDialog.GetResult(out var selectedItem);
+                results.Add(GetFileSystemPath(selectedItem));
+            }
+
+            return results;
         }
         catch (COMException ex) when (ex.HResult == ERROR_CANCELLED)
         {
             // NOOP
-            return string.Empty;
+            return new List<string>();
+        }
+    }
+
+    static unsafe string GetFileSystemPath(IShellItem shellItem)
+    {
+        PWSTR value;
+        shellItem.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, &value);
+        try
+        {
+            return value.ToString();
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem((nint)value.Value);
         }
     }
 

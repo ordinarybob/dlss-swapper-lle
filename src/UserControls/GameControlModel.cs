@@ -379,22 +379,6 @@ public partial class GameControlModel : ObservableObject
     {
         if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
         {
-            // This should never happen
-            if (IsManuallyAdded == false)
-            {
-                var cantDeleteDialog = new EasyContentDialog(gameControl.XamlRoot)
-                {
-                    Title = ResourceHelper.GetString("General_Error"),
-                    CloseButtonText = ResourceHelper.GetString("General_Okay"),
-                    DefaultButton = ContentDialogButton.Close,
-                    Content = ResourceHelper.GetString("GamePage_ManuallyAdded_CantBeRemoved"),
-                };
-                await cantDeleteDialog.ShowAsync();
-                return;
-            }
-
-
-
             // This needs to be set after AcceptsReturn otherwise it will strip out the \r
             var dialog = new EasyContentDialog(gameControl.XamlRoot)
             {
@@ -402,13 +386,25 @@ public partial class GameControlModel : ObservableObject
                 PrimaryButtonText = ResourceHelper.GetString("General_Remove"),
                 CloseButtonText = ResourceHelper.GetString("General_Cancel"),
                 DefaultButton = ContentDialogButton.Primary,
-                Content = ResourceHelper.GetFormattedResourceTemplate("GamePage_ManuallyAdded_RemoveGameTemplate", Game.Title),
+                Content = ResourceHelper.GetFormattedResourceTemplate(
+                    IsManuallyAdded
+                        ? "GamePage_ManuallyAdded_RemoveGameTemplate"
+                        : "GamePage_Discovered_RemoveGameTemplate",
+                    Game.Title),
             };
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                await Game.DeleteAsync();
-                GameManager.Instance.RemoveGame(Game);
+                if (IsManuallyAdded)
+                {
+                    await Game.DeleteAsync();
+                    GameManager.Instance.RemoveGame(Game);
+                }
+                else
+                {
+                    Game.IsHidden = true;
+                    await Game.SaveToDatabaseAsync();
+                }
                 gameControl.Hide();
             }
         }

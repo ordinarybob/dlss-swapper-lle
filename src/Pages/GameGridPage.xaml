@@ -231,15 +231,28 @@
                         <FontIcon Glyph="&#xE946;" />
                     </AppBarButton.Content>
                 </AppBarButton>
-                <AppBarButton Label="{x:Bind ViewModel.TranslationProperties.AddGameText, Mode=OneWay}" Command="{x:Bind ViewModel.AddManualGameButtonCommand}" IsEnabled="{x:Bind ViewModel.IsGameListLoading, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}">
+                <AppBarButton Label="{x:Bind ViewModel.TranslationProperties.AddGameText, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.IsGameListLoading, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}">
                     <AppBarButton.Content>
                         <FontIcon Glyph="&#xE710;" />
                     </AppBarButton.Content>
+                    <AppBarButton.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.AddSingleGameText, Mode=OneWay}" Command="{x:Bind ViewModel.AddManualGameButtonCommand}" />
+                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.AddMultipleGameFoldersText, Mode=OneWay}" Command="{x:Bind ViewModel.AddManualGamesButtonCommand}" />
+                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.AddMultiGameDirectoryText, Mode=OneWay}" Command="{x:Bind ViewModel.AddManualGamesDirectoryButtonCommand}" />
+                        </MenuFlyout>
+                    </AppBarButton.Flyout>
                 </AppBarButton>
-                <AppBarButton Label="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}" Command="{x:Bind ViewModel.RefreshGamesButtonCommand}" IsEnabled="{x:Bind ViewModel.IsLoading, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}">
+                <AppBarButton Label="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.IsLoading, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}">
                     <AppBarButton.Content>
                         <FontIcon Glyph="&#xE72C;" />
                     </AppBarButton.Content>
+                    <AppBarButton.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.RefreshPreserveExcludedText, Mode=OneWay}" Command="{x:Bind ViewModel.RefreshGamesButtonCommand}" />
+                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.RestoreExcludedAndRefreshText, Mode=OneWay}" Command="{x:Bind ViewModel.RestoreExcludedLauncherGamesAndRefreshCommand}" />
+                        </MenuFlyout>
+                    </AppBarButton.Flyout>
                 </AppBarButton>
                 <AppBarButton Icon="Filter" Label="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}" Command="{x:Bind ViewModel.FilterGamesButtonCommand}" IsEnabled="{x:Bind ViewModel.IsGameListLoading, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}">
                     <AppBarButton.Content>

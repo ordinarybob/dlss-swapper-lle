@@ -1,5 +1,7 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
+using DLSS_Swapper.Helpers;
 using DLSS_Swapper.Interfaces;
 using SQLite;
 
@@ -21,6 +23,17 @@ public class ManuallyAddedGame : Game
     {
         PlatformId = id;
         SetID();
+    }
+
+    internal static ManuallyAddedGame CreateForInstallPath(string installPath)
+    {
+        var normalizedPath = PathHelpers.NormalizePath(installPath);
+        return new ManuallyAddedGame(Guid.NewGuid().ToString("D"))
+        {
+            Title = Path.GetFileName(normalizedPath),
+            InstallPath = normalizedPath,
+            NeedsProcessing = true,
+        };
     }
 
     public async Task ImportCoverImage(string imagePath)

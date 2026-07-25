@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DLSS_Swapper.Builders;
 using DLSS_Swapper.Data;
+using DLSS_Swapper.Data.ManuallyAdded;
 using DLSS_Swapper.Helpers;
 using CommunityToolkit.Mvvm.Messaging;
 using DLSS_Swapper.Messages;
@@ -166,6 +169,196 @@ public partial class GameGridPageModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    async Task AddManualGamesButtonAsync()
+    {
+        if (Settings.Instance.HasShownAddMultipleGameFoldersMessage == false)
+        {
+            var explanation = new EasyContentDialog(gameGridPage.XamlRoot)
+            {
+                Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultipleFoldersNoteTitle"),
+                PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectGameFolders"),
+                CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+                DefaultButton = ContentDialogButton.Primary,
+                Content = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultipleFoldersDescription"),
+            };
+            if (await explanation.ShowAsync() != ContentDialogResult.Primary)
+            {
+                return;
+            }
+            Settings.Instance.HasShownAddMultipleGameFoldersMessage = true;
+        }
+
+        try
+        {
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.CurrentApp.MainWindow);
+            var folders = FileSystemHelper.OpenMultipleFolders(
+                hWnd,
+                okButtonLabel: ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectGameFolders"));
+            if (folders.Count == 0)
+            {
+                return;
+            }
+            await ImportManualGamesAsync(folders);
+        }
+        catch (Exception err)
+        {
+            await ShowManualGameImportErrorAsync(err);
+        }
+    }
+
+    [RelayCommand]
+    async Task AddManualGamesDirectoryButtonAsync()
+    {
+        try
+        {
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.CurrentApp.MainWindow);
+            var parentFolder = FileSystemHelper.OpenFolder(
+                hWnd,
+                okButtonLabel: ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectMultiGameDirectory"));
+            if (string.IsNullOrWhiteSpace(parentFolder))
+            {
+                return;
+            }
+            if (IsTopLevelDirectory(parentFolder))
+            {
+                await ShowTopLevelDirectoryNotSupportedAsync();
+                return;
+            }
+
+            var folders = await Task.Run(() => Directory
+                .EnumerateDirectories(parentFolder, "*", SearchOption.TopDirectoryOnly)
+                .ToArray());
+            await ImportManualGamesAsync(folders);
+        }
+        catch (Exception err)
+        {
+            await ShowManualGameImportErrorAsync(err);
+        }
+    }
+
+    async Task ImportManualGamesAsync(IEnumerable<string> candidatePaths)
+    {
+        var added = 0;
+        var alreadyPresent = 0;
+        var failed = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var candidatePath in candidatePaths)
+        {
+            if (IsTopLevelDirectory(candidatePath))
+            {
+                failed.Add($"{candidatePath}: {ResourceHelper.GetString("GamesPage_ManuallyAdding_TopLevelDirectoryNotSupported")}");
+                continue;
+            }
+
+            var installPath = PathHelpers.NormalizePath(candidatePath);
+            if (seen.Add(installPath) == false)
+            {
+                continue;
+            }
+            if (Directory.Exists(installPath) == false)
+            {
+                failed.Add($"{installPath}: {ResourceHelper.GetString("GamesPage_ManuallyAdding_BulkDirectoryMissing")}");
+                continue;
+            }
+            if (GameManager.Instance.CheckIfGameIsAdded(installPath))
+            {
+                alreadyPresent++;
+                continue;
+            }
+
+            ManuallyAddedGame? game = null;
+            try
+            {
+                game = ManuallyAddedGame.CreateForInstallPath(installPath);
+                await game.SaveToDatabaseAsync();
+                game.ProcessGame();
+                GameManager.Instance.AddGame(game);
+                added++;
+            }
+            catch (Exception err)
+            {
+                Logger.Error(err, $"Could not add manual game folder \"{installPath}\".");
+                if (game is not null)
+                {
+                    await game.DeleteAsync();
+                    GameManager.Instance.RemoveGame(game);
+                }
+                failed.Add($"{installPath}: {err.Message}");
+            }
+        }
+
+        var summary = new List<string>
+        {
+            ResourceHelper.GetFormattedResourceTemplate(
+                "GamesPage_ManuallyAdding_BulkSummaryTemplate",
+                added,
+                alreadyPresent,
+                failed.Count),
+        };
+        if (failed.Count > 0)
+        {
+            summary.Add(string.Empty);
+            summary.Add(ResourceHelper.GetString("GamesPage_ManuallyAdding_BulkSummaryFailed"));
+            summary.AddRange(failed.Select(item => $"• {item}"));
+        }
+
+        var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
+        {
+            Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_BulkSummaryTitle"),
+            CloseButtonText = ResourceHelper.GetString("General_Close"),
+            DefaultButton = ContentDialogButton.Close,
+            Content = new ScrollViewer
+            {
+                MaxHeight = 420,
+                Content = new TextBlock
+                {
+                    Text = string.Join(Environment.NewLine, summary),
+                    TextWrapping = TextWrapping.Wrap,
+                    IsTextSelectionEnabled = true,
+                },
+            },
+        };
+        await dialog.ShowAsync();
+    }
+
+    static bool IsTopLevelDirectory(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var rootPath = Path.GetPathRoot(fullPath);
+        return string.IsNullOrWhiteSpace(rootPath) == false
+            && string.Equals(
+                fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    async Task ShowTopLevelDirectoryNotSupportedAsync()
+    {
+        var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
+        {
+            CloseButtonText = ResourceHelper.GetString("General_Okay"),
+            DefaultButton = ContentDialogButton.Close,
+            Title = ResourceHelper.GetString("General_Error"),
+            Content = ResourceHelper.GetString("GamesPage_ManuallyAdding_TopLevelDirectoryNotSupported"),
+        };
+        await dialog.ShowAsync();
+    }
+
+    async Task ShowManualGameImportErrorAsync(Exception err)
+    {
+        Logger.Error(err, "Bulk manual game import failed.");
+        var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
+        {
+            Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_ErrorTitle"),
+            CloseButtonText = ResourceHelper.GetString("General_Close"),
+            DefaultButton = ContentDialogButton.Close,
+            Content = $"{ResourceHelper.GetString("GamesPage_ManuallyAdding_CouldntAddError")}\n\n{err.Message}",
+        };
+        await dialog.ShowAsync();
+    }
+
     async Task AddGameManually()
     {
         TextBlockBuilder textBlockBuilder = new TextBlockBuilder(ResourceHelper.GetString("GamesPage_ManuallyAdding_InfoHtml"));
@@ -207,16 +400,9 @@ public partial class GameGridPageModel : ObservableObject
             installPath = folder;
 
             // If top level directory throw error.
-            if (installPath == Path.GetPathRoot(installPath))
+            if (IsTopLevelDirectory(installPath))
             {
-                var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
-                {
-                    CloseButtonText = ResourceHelper.GetString("General_Okay"),
-                    DefaultButton = ContentDialogButton.Close,
-                    Title = ResourceHelper.GetString("General_Error"),
-                    Content = ResourceHelper.GetString("GamesPage_ManuallyAdding_TopLevelDirectoryNotSupported"),
-                };
-                await dialog.ShowAsync();
+                await ShowTopLevelDirectoryNotSupportedAsync();
                 return;
             }
 
@@ -289,6 +475,46 @@ public partial class GameGridPageModel : ObservableObject
         await GameManager.Instance.LoadGamesAsync(true);
 
         IsDLSSLoading = false;
+    }
+
+    [RelayCommand]
+    async Task RestoreExcludedLauncherGamesAndRefreshAsync()
+    {
+        var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
+        {
+            Title = ResourceHelper.GetString("GamesPage_Refresh_RestoreExcluded_Title"),
+            PrimaryButtonText = ResourceHelper.GetString("GamesPage_Refresh_RestoreExcluded_Primary"),
+            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+            DefaultButton = ContentDialogButton.Close,
+            Content = ResourceHelper.GetString("GamesPage_Refresh_RestoreExcluded_Description"),
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        IsDLSSLoading = true;
+        try
+        {
+            var enabledLibraries = GameManager.Instance.GetGameLibraries(true).ToHashSet();
+            var excludedGames = GameManager.Instance.GetSynchronisedGamesListCopy()
+                .Where(game => game.GameLibrary != Interfaces.GameLibrary.ManuallyAdded
+                    && enabledLibraries.Contains(game.GameLibrary)
+                    && game.IsHidden == true)
+                .ToArray();
+
+            foreach (var game in excludedGames)
+            {
+                game.IsHidden = null;
+                await game.SaveToDatabaseAsync();
+            }
+
+            await GameManager.Instance.LoadGamesAsync(true);
+        }
+        finally
+        {
+            IsDLSSLoading = false;
+        }
     }
 
     [RelayCommand]
