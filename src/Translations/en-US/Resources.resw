@@ -1366,4 +1366,37 @@ Because of this we recommend using caution for multiplayer games.</value>
   <data name="GamesPage_SelectionMode_SelectVisible" xml:space="preserve">
     <value>Select visible</value>
   </data>
+  <data name="GamesPage_SelectionMode_RemoveDescriptionTemplate" xml:space="preserve">
+    <value>Selected: {0}. Manually added: {1} (removed from DLSS Swapper and app-created cached data/backups are cleaned up). Automatically discovered: {2} (hidden from the normal Games view and recoverable with Restore excluded games and refresh). No game will be uninstalled.</value>
+    <comment>{0} is total selected, {1} is manually added, and {2} is automatically discovered</comment>
+  </data>
+  <data name="GamesPage_SelectionMode_RemoveTitleTemplate" xml:space="preserve">
+    <value>Remove {0} selected game(s)?</value>
+    <comment>{0} is the number of selected games</comment>
+  </data>
+  <data name="GamesPage_SelectionMode_RemoveFailedTemplate" xml:space="preserve">
+    <value>DLSS Swapper could not remove or exclude {0} selected game(s). Their visible state was retained where possible. Check the log and try again.</value>
+    <comment>{0} is the number of selected games whose removal or exclusion could not be saved</comment>
+  </data>
+  <data name="GamesPage_Sort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="GamesPage_Sort_NameAscending" xml:space="preserve">
+    <value>Name (A–Z)</value>
+  </data>
+  <data name="GamesPage_Sort_DLSSNewestFirst" xml:space="preserve">
+    <value>DLSS version: newest first</value>
+  </data>
+  <data name="GamesPage_Sort_DLSSOldestFirst" xml:space="preserve">
+    <value>DLSS version: oldest first</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_LleNoteMessage" xml:space="preserve">
+    <value>DLSS Swapper should find supported launcher games automatically. Before adding a game manually, check that the Games filter is not hiding games without swappable items and that the relevant game library is enabled in Settings. A manual entry must point to one individual game folder and is local to this installation.</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_MultiGameDirectoryNoteTitle" xml:space="preserve">
+    <value>Add one parent directory</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_MultiGameDirectoryDescription" xml:space="preserve">
+    <value>Select one parent directory. Each immediate child folder will be imported as a separate manually added game. The parent itself is not added, and nested folders are not searched recursively.</value>
+  </data>
 </root>

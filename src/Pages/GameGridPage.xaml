@@ -1,320 +1,773 @@
 <Page
     x:Class="DLSS_Swapper.Pages.GameGridPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ct_converters="using:CommunityToolkit.WinUI.Converters"
     xmlns:converters="using:DLSS_Swapper.Converters"
     xmlns:data="using:DLSS_Swapper.Data"
-    xmlns:system="using:System"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     xmlns:pages="using:DLSS_Swapper.Pages"
+    xmlns:system="using:System"
     xmlns:usercontrols="using:DLSS_Swapper.UserControls"
-    mc:Ignorable="d"
+    x:Name="RootGameGridPage"
     d:DataContext="pages:GameGridPageModel"
     Loaded="Page_Loaded"
-    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     NavigationCacheMode="Required"
-    x:Name="RootGameGridPage">
+    mc:Ignorable="d">
+
     <Page.Resources>
         <ct_converters:BoolNegationConverter x:Key="BoolNegationConverter" />
-        <ct_converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" TrueValue="Visible" FalseValue="Collapsed" />
-        <ct_converters:BoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" TrueValue="Collapsed" FalseValue="Visible" />
-        <ct_converters:StringVisibilityConverter x:Key="StringVisibilityConverter" EmptyValue="Collapsed" NotEmptyValue="Visible" />
-        <ct_converters:StringVisibilityConverter x:Key="InverseStringVisibilityConverter" EmptyValue="Visible" NotEmptyValue="Collapsed" />
+        <ct_converters:BoolToVisibilityConverter
+            x:Key="BoolToVisibilityConverter"
+            FalseValue="Collapsed"
+            TrueValue="Visible" />
+        <ct_converters:BoolToVisibilityConverter
+            x:Key="InverseBoolToVisibilityConverter"
+            FalseValue="Visible"
+            TrueValue="Collapsed" />
+        <ct_converters:StringVisibilityConverter
+            x:Key="StringVisibilityConverter"
+            EmptyValue="Collapsed"
+            NotEmptyValue="Visible" />
         <converters:BitmapImageUriConverter x:Key="BitmapImageUriConverter" />
-        <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" TrueValue="0.25" FalseValue="1.0" NullValue="1.0" />
-        
+        <converters:BoolToOpacityConverter
+            x:Key="BoolToOpacityConverter"
+            FalseValue="1.0"
+            NullValue="1.0"
+            TrueValue="0.25" />
 
-
+        <Style
+            x:Key="CompactListViewItemStyle"
+            BasedOn="{StaticResource DefaultListViewItemStyle}"
+            TargetType="ListViewItem">
+            <Setter Property="Height" Value="42" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="2,0,8,0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style
+            x:Key="SelectingListViewItemStyle"
+            BasedOn="{StaticResource CompactListViewItemStyle}"
+            TargetType="ListViewItem">
+            <Setter Property="Margin" Value="-6,0,0,0" />
+            <Setter Property="Padding" Value="8,0,8,0" />
+        </Style>
+        <Style x:Key="CompactListViewHeaderStyle" TargetType="ListViewHeaderItem">
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
 
         <DataTemplate x:Key="ListViewTemplate" x:DataType="pages:GameGridPageModel">
-            <ListView ItemsSource="{x:Bind CurrentCollectionView, Mode=OneWay}" ItemClick="GridAndListView_ItemClick" HorizontalAlignment="Stretch" SelectionMode="None" IsItemClickEnabled="True" Padding="20">
-
-                <!--
+            <ListView
+                HorizontalAlignment="Stretch"
+                IsItemClickEnabled="True"
+                ItemClick="GridAndListView_ItemClick"
+                ItemsSource="{x:Bind CurrentCollectionView, Mode=OneWay}"
+                Padding="18,0,8,2"
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                ScrollViewer.HorizontalScrollMode="Disabled"
+                SelectionMode="None">
                 <ListView.ItemContainerStyle>
-                    <Style BasedOn="{StaticResource DefaultListViewItemStyle}" TargetType="ListViewItem">
-                        <Setter Property="MinWidth" Value="0" />
-                        <Setter Property="Padding" Value="12,0,0,0" />
-                    </Style>
+                    <StaticResource ResourceKey="CompactListViewItemStyle" />
                 </ListView.ItemContainerStyle>
-                -->
-
                 <ListView.GroupStyle>
                     <GroupStyle HidesIfEmpty="True">
+                        <GroupStyle.HeaderContainerStyle>
+                            <StaticResource ResourceKey="CompactListViewHeaderStyle" />
+                        </GroupStyle.HeaderContainerStyle>
                         <GroupStyle.HeaderTemplate>
                             <DataTemplate x:DataType="data:GameGroup">
-                                <Grid Margin="0" Visibility="{x:Bind Name, Converter={StaticResource StringVisibilityConverter}}">
-                                    <TextBlock Text="{x:Bind Name}"  Margin="0" Style="{StaticResource TitleTextBlockStyle}"/>
+                                <Grid
+                                    Height="30"
+                                    Margin="38,0,2,0"
+                                    Visibility="{x:Bind Name, Converter={StaticResource StringVisibilityConverter}}">
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="17"
+                                        FontWeight="SemiBold"
+                                        Text="{x:Bind Name}" />
                                 </Grid>
                             </DataTemplate>
                         </GroupStyle.HeaderTemplate>
                     </GroupStyle>
                 </ListView.GroupStyle>
-
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="data:Game">
-                        <Grid ColumnSpacing="12" Opacity="{x:Bind IsHidden, Mode=OneWay, Converter={StaticResource BoolToOpacityConverter}}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="80" />
-                            </Grid.RowDefinitions>
+                        <Grid
+                            MinWidth="0"
+                            HorizontalAlignment="Stretch"
+                            ColumnSpacing="6"
+                            Opacity="{x:Bind IsHidden, Mode=OneWay, Converter={StaticResource BoolToOpacityConverter}}">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="30" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" MaxWidth="180" />
                             </Grid.ColumnDefinitions>
 
-                            <Border Grid.Row="0" BorderThickness="0" CornerRadius="4" Width="40" Height="60" FlowDirection="LeftToRight">
-                                <Border.RenderTransform>
-                                    <CompositeTransform ScaleX="1" />
-                                </Border.RenderTransform>
+                            <Border
+                                Width="30"
+                                Height="40"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                FlowDirection="LeftToRight">
                                 <Border.Background>
-                                    <ImageBrush Stretch="UniformToFill">
+                                    <ImageBrush Stretch="Uniform">
                                         <ImageBrush.ImageSource>
-                                            <BitmapImage CreateOptions="IgnoreImageCache" UriSource="{x:Bind CoverImage, Mode=OneWay, Converter={StaticResource BitmapImageUriConverter}}"/>
+                                            <BitmapImage
+                                                CreateOptions="IgnoreImageCache"
+                                                UriSource="{x:Bind CoverImage, Mode=OneWay, Converter={StaticResource BitmapImageUriConverter}}" />
                                         </ImageBrush.ImageSource>
                                     </ImageBrush>
                                 </Border.Background>
                             </Border>
 
-                            <TextBlock Grid.Column="1" Text="{x:Bind Title, Mode=OneWay}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                            <ProgressRing Grid.Column="2" VerticalAlignment="Center" Width="16" Height="16" Visibility="{x:Bind Processing, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" />
-                            <TextBlock Grid.Column="3" VerticalAlignment="Center">
+                            <TextBlock
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                Text="{x:Bind Title, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="NoWrap" />
+                            <ProgressRing
+                                Grid.Column="2"
+                                Width="16"
+                                Height="16"
+                                VerticalAlignment="Center"
+                                Visibility="{x:Bind Processing, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            <TextBlock
+                                Grid.Column="3"
+                                MinWidth="0"
+                                MaxWidth="180"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="NoWrap">
                                 <Run Text="DLSS: " />
-                                <Run Text="{x:Bind CurrentDLSS.DisplayName, FallbackValue='N/A', Mode=OneWay}" />
+                                <Run Text="{x:Bind CurrentDLSS.DisplayName, Mode=OneWay, FallbackValue='N/A'}" />
                             </TextBlock>
-
                         </Grid>
-
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-
         </DataTemplate>
 
         <DataTemplate x:Key="GridVeiwTemplate" x:DataType="pages:GameGridPageModel">
-
-            <GridView PointerWheelChanged="MainGridView_PointerWheelChanged" ManipulationMode="None" x:Name="MainGridView" ItemsSource="{x:Bind CurrentCollectionView, Mode=OneWay}" SelectionMode="None" IsItemClickEnabled="True" ItemClick="GridAndListView_ItemClick" Padding="20"  >
-
+            <GridView
+                x:Name="MainGridView"
+                IsItemClickEnabled="True"
+                ItemClick="GridAndListView_ItemClick"
+                ItemsSource="{x:Bind CurrentCollectionView, Mode=OneWay}"
+                Loaded="MainGridView_Loaded"
+                ManipulationMode="None"
+                Padding="4,0,8,2"
+                PointerWheelChanged="MainGridView_PointerWheelChanged"
+                SelectionMode="None"
+                SizeChanged="MainGridView_SizeChanged">
+                <GridView.Resources>
+                    <SolidColorBrush x:Key="GridViewItemCheckBoxSelectedBrush" Color="White" />
+                    <SolidColorBrush x:Key="GridViewItemCheckBoxSelectedPointerOverBrush" Color="White" />
+                    <SolidColorBrush x:Key="GridViewItemCheckBoxSelectedPressedBrush" Color="#DDDDDD" />
+                    <SolidColorBrush x:Key="GridViewItemCheckBrush" Color="Black" />
+                    <StaticResource
+                        x:Key="GridViewItemBackgroundSelected"
+                        ResourceKey="AccentFillColorDefaultBrush" />
+                    <StaticResource
+                        x:Key="GridViewItemBackgroundSelectedPointerOver"
+                        ResourceKey="AccentFillColorSecondaryBrush" />
+                    <StaticResource
+                        x:Key="GridViewItemBackgroundSelectedPressed"
+                        ResourceKey="AccentFillColorTertiaryBrush" />
+                </GridView.Resources>
                 <GridView.GroupStyle>
                     <GroupStyle HidesIfEmpty="True">
+                        <GroupStyle.Panel>
+                            <ItemsPanelTemplate>
+                                <ItemsWrapGrid
+                                    ItemWidth="{Binding ElementName=RootGameGridPage, Path=ViewModel.GridViewCellWidth, Mode=OneWay}"
+                                    Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </GroupStyle.Panel>
+                        <GroupStyle.HeaderContainerStyle>
+                            <Style TargetType="GridViewHeaderItem">
+                                <Setter Property="MinHeight" Value="0" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </GroupStyle.HeaderContainerStyle>
                         <GroupStyle.HeaderTemplate>
                             <DataTemplate x:DataType="data:GameGroup">
-                                <Grid Margin="0" Visibility="{x:Bind Name, Converter={StaticResource StringVisibilityConverter}}">
-                                    <TextBlock Text="{x:Bind Name}" Margin="0" Style="{StaticResource TitleTextBlockStyle}"/>
+                                <Grid
+                                    Height="30"
+                                    Margin="52,0,2,0"
+                                    Visibility="{x:Bind Name, Converter={StaticResource StringVisibilityConverter}}">
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="17"
+                                        FontWeight="SemiBold"
+                                        Text="{x:Bind Name}" />
                                 </Grid>
                             </DataTemplate>
                         </GroupStyle.HeaderTemplate>
                     </GroupStyle>
                 </GridView.GroupStyle>
-
                 <GridView.ItemContainerStyle>
                     <Style TargetType="GridViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                        <Setter Property="Margin" Value="8"/>
-                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Margin" Value="3" />
+                        <Setter Property="Padding" Value="2" />
+                        <Setter Property="BorderThickness" Value="0" />
+                        <Setter Property="CornerRadius" Value="7" />
+                        <Setter Property="HorizontalContentAlignment" Value="Center" />
+                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
                     </Style>
                 </GridView.ItemContainerStyle>
-
                 <GridView.ItemTemplate>
                     <DataTemplate x:DataType="data:Game">
-                        <Grid 
+                        <Grid
                             Width="{Binding ElementName=RootGameGridPage, Path=ViewModel.GridViewItemWidth, Mode=OneWay}"
                             Height="{Binding ElementName=RootGameGridPage, Path=ViewModel.GridViewItemHeight, Mode=OneWay}"
-                            CornerRadius="8" Opacity="{x:Bind IsHidden, Mode=OneWay, Converter={StaticResource BoolToOpacityConverter}}" BorderThickness="1" ColumnSpacing="0" RowSpacing="0" Margin="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-
-                            <TextBlock Text="{x:Bind Title, Mode=OneWay}" Margin="20" TextWrapping="WrapWholeWords" TextAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{ThemeResource ButtonForegroundColor}" />
-
-                            <!-- Weird, but allows image to strecth centered rather than left align -->
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="5"
+                            Opacity="{x:Bind IsHidden, Mode=OneWay, Converter={StaticResource BoolToOpacityConverter}}">
                             <Border BorderThickness="0" FlowDirection="LeftToRight">
-                                <Border.RenderTransform>
-                                    <CompositeTransform ScaleX="1" />
-                                </Border.RenderTransform>
                                 <Border.Background>
                                     <ImageBrush Stretch="UniformToFill">
                                         <ImageBrush.ImageSource>
-                                            <BitmapImage CreateOptions="IgnoreImageCache" UriSource="{x:Bind CoverImage, Mode=OneWay, Converter={StaticResource BitmapImageUriConverter}}"/>
+                                            <BitmapImage
+                                                CreateOptions="IgnoreImageCache"
+                                                UriSource="{x:Bind CoverImage, Mode=OneWay, Converter={StaticResource BitmapImageUriConverter}}" />
                                         </ImageBrush.ImageSource>
                                     </ImageBrush>
                                 </Border.Background>
                             </Border>
 
-                            <Grid VerticalAlignment="Bottom"  Background="#88000000" Padding="8" ColumnSpacing="8">
-
+                            <Grid
+                                Padding="5,3"
+                                VerticalAlignment="Bottom"
+                                Background="#C0000000"
+                                ColumnSpacing="5"
+                                RowSpacing="1">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
-
-                                <TextBlock Grid.Column="0" FontWeight="Bold" Text="DLSS" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White" />
-                                <TextBlock Grid.Column="1" Text="{x:Bind CurrentDLSS.DisplayName, FallbackValue='N/A', Mode=OneWay}" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="White" Visibility="{x:Bind Processing, Converter={StaticResource InverseBoolToVisibilityConverter}, Mode=OneWay}" />
-                                <ProgressRing Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="White" Width="16" Height="16" Visibility="{x:Bind Processing, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" />
+                                <TextBlock
+                                    Grid.Row="0"
+                                    Grid.ColumnSpan="2"
+                                    MaxLines="2"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    Foreground="White"
+                                    Text="{x:Bind Title, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="WrapWholeWords" />
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    FontSize="10"
+                                    FontWeight="SemiBold"
+                                    Foreground="White"
+                                    Text="DLSS" />
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontSize="10"
+                                    Foreground="White"
+                                    Text="{x:Bind CurrentDLSS.DisplayName, Mode=OneWay, FallbackValue='N/A'}"
+                                    TextTrimming="CharacterEllipsis"
+                                    Visibility="{x:Bind Processing, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}" />
+                                <ProgressRing
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    Width="12"
+                                    Height="12"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Foreground="White"
+                                    Visibility="{x:Bind Processing, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
                             </Grid>
                         </Grid>
                     </DataTemplate>
-
                 </GridView.ItemTemplate>
             </GridView>
-
         </DataTemplate>
 
-        <usercontrols:ListGridViewTemplateSelector x:Key="TemplateSelector"
-                                  ListViewTemplate="{StaticResource ListViewTemplate}"
-                                  GridVeiwTemplate="{StaticResource GridVeiwTemplate}"/>
-        
+        <usercontrols:ListGridViewTemplateSelector
+            x:Key="TemplateSelector"
+            GridVeiwTemplate="{StaticResource GridVeiwTemplate}"
+            ListViewTemplate="{StaticResource ListViewTemplate}" />
     </Page.Resources>
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
 
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Padding="16,0,16,0">
-
+        <Grid Grid.Row="0" Padding="56,2,8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" MinWidth="160" MaxWidth="360" />
+                <ColumnDefinition Width="3*" />
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="32" />
+                <RowDefinition Height="36" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Spacing="16">
-                <TextBlock Text="{x:Bind ViewModel.TranslationProperties.PageTitle, Mode=OneWay}" Margin="16,0,0,0" TextWrapping="NoWrap" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
-                <muxc:ProgressRing IsActive="True" VerticalAlignment="Center" Visibility="{x:Bind ViewModel.IsLoading, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}"  />
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup>
+                    <VisualState x:Name="NarrowHeader">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="SearchHost.(Grid.ColumnSpan)" Value="2" />
+                            <Setter Target="HeaderCommands.(Grid.Row)" Value="2" />
+                            <Setter Target="HeaderCommands.(Grid.RowSpan)" Value="1" />
+                            <Setter Target="HeaderCommands.(Grid.Column)" Value="0" />
+                            <Setter Target="HeaderCommands.(Grid.ColumnSpan)" Value="2" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="WideHeader">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="720" />
+                        </VisualState.StateTriggers>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <StackPanel
+                Grid.Row="0"
+                Grid.ColumnSpan="2"
+                HorizontalAlignment="Left"
+                Orientation="Horizontal"
+                Spacing="8">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="24"
+                    FontWeight="SemiBold"
+                    Text="{x:Bind ViewModel.TranslationProperties.PageTitle, Mode=OneWay}"
+                    TextWrapping="NoWrap" />
+                <muxc:ProgressRing
+                    Width="20"
+                    Height="20"
+                    VerticalAlignment="Center"
+                    IsActive="True"
+                    Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
             </StackPanel>
 
-            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                <Grid Width="300" Margin="10,0,0,0">
-                    <TextBox x:Name="SearchBox"
-                        Height="20"
-                        Padding="8,5,32,0"
-                        AcceptsReturn="True"
-                        IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
-                        PlaceholderText="{x:Bind ViewModel.TranslationProperties.SearchText, Mode=OneWay}"
-                        TextChanged="{x:Bind ViewModel.SearchForGameEvent}" />
+            <Grid
+                x:Name="SearchHost"
+                Grid.Row="1"
+                Grid.Column="0"
+                MaxWidth="360"
+                Margin="0,3,8,1"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center">
+                <TextBox
+                    x:Name="SearchBox"
+                    Height="30"
+                    Padding="8,0,32,0"
+                    VerticalContentAlignment="Center"
+                    AcceptsReturn="False"
+                    IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
+                    PlaceholderText="{x:Bind ViewModel.TranslationProperties.SearchText, Mode=OneWay}"
+                    TextChanged="{x:Bind ViewModel.SearchForGameEvent}" />
+                <Button
+                    x:Name="ClearButton"
+                    Width="26"
+                    Height="24"
+                    Margin="0,0,4,0"
+                    Padding="4"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="ClearSearchBox_Click"
+                    IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
+                    Visibility="{x:Bind SearchBox.Text, Mode=OneWay, Converter={StaticResource StringVisibilityConverter}}">
+                    <FontIcon
+                        FontSize="14"
+                        Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                        Glyph="&#xE711;" />
+                </Button>
+            </Grid>
 
-                    <Button x:Name="ClearButton"
-                            Width="26"
-                            Height="26"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Margin="0,0,4,0"
-                            Padding="4"
-                            IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
-                            Visibility="{x:Bind SearchBox.Text, Mode=OneWay, Converter={StaticResource StringVisibilityConverter}}"
-                            Click="ClearSearchBox_Click">
-                        <FontIcon Glyph="&#xE711;" FontSize="14" Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
-                    </Button>
-                </Grid>
-            </StackPanel>
+            <StackPanel
+                x:Name="HeaderCommands"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="1"
+                Height="64"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Orientation="Horizontal"
+                Spacing="3">
+                <StackPanel.Resources>
+                    <Style x:Key="HeaderCommandButtonStyle" TargetType="Button">
+                        <Setter Property="Width" Value="52" />
+                        <Setter Property="Height" Value="60" />
+                        <Setter Property="MinWidth" Value="0" />
+                        <Setter Property="MinHeight" Value="0" />
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Padding" Value="3,2" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                    </Style>
+                    <Style x:Key="HeaderCommandLabelStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="10" />
+                        <Setter Property="MaxLines" Value="1" />
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                        <Setter Property="TextAlignment" Value="Center" />
+                        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                        <Setter Property="TextWrapping" Value="NoWrap" />
+                    </Style>
+                </StackPanel.Resources>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button
+                    Width="58"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.AddGameText, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
+                    Style="{StaticResource HeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.AddGameText, Mode=OneWay}">
+                    <Button.Content>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="24" />
+                                <RowDefinition Height="16" />
+                                <RowDefinition Height="10" />
+                            </Grid.RowDefinitions>
+                            <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE710;" />
+                            <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource HeaderCommandLabelStyle}"
+                                Text="{x:Bind ViewModel.TranslationProperties.AddGameText, Mode=OneWay}" />
+                            <FontIcon
+                                Grid.Row="2"
+                                FontSize="8"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE70D;" />
+                        </Grid>
+                    </Button.Content>
+                    <Button.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.AddManualGameButtonCommand}"
+                                Text="{x:Bind ViewModel.TranslationProperties.AddSingleGameText, Mode=OneWay}" />
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.AddManualGamesButtonCommand}"
+                                Text="{x:Bind ViewModel.TranslationProperties.AddMultipleGameFoldersText, Mode=OneWay}" />
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.AddManualGamesDirectoryButtonCommand}"
+                                Text="{x:Bind ViewModel.TranslationProperties.AddMultiGameDirectoryText, Mode=OneWay}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
 
-                <AppBarButton Label="{x:Bind ViewModel.TranslationProperties.NewDllsText, Mode=OneWay}" Command="{x:Bind ViewModel.UnknownAssetsFoundButtonCommand}" Visibility="{x:Bind data:GameManager.Instance.UnknownAssetsFound, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}">
-                    <AppBarButton.Content>
-                        <FontIcon Glyph="&#xE946;" />
-                    </AppBarButton.Content>
-                </AppBarButton>
-                <AppBarButton Label="{x:Bind ViewModel.TranslationProperties.AddGameText, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}">
-                    <AppBarButton.Content>
-                        <FontIcon Glyph="&#xE710;" />
-                    </AppBarButton.Content>
-                    <AppBarButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.AddSingleGameText, Mode=OneWay}" Command="{x:Bind ViewModel.AddManualGameButtonCommand}" />
-                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.AddMultipleGameFoldersText, Mode=OneWay}" Command="{x:Bind ViewModel.AddManualGamesButtonCommand}" />
-                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.AddMultiGameDirectoryText, Mode=OneWay}" Command="{x:Bind ViewModel.AddManualGamesDirectoryButtonCommand}" />
+                <Button
+                    Width="54"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.CanRefresh, Mode=OneWay}"
+                    Style="{StaticResource HeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}">
+                    <Button.Content>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="24" />
+                                <RowDefinition Height="16" />
+                                <RowDefinition Height="10" />
+                            </Grid.RowDefinitions>
+                            <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE72C;" />
+                            <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource HeaderCommandLabelStyle}"
+                                Text="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}" />
+                            <FontIcon
+                                Grid.Row="2"
+                                FontSize="8"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE70D;" />
+                        </Grid>
+                    </Button.Content>
+                    <Button.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.RefreshGamesButtonCommand}"
+                                Text="{x:Bind ViewModel.TranslationProperties.RefreshPreserveExcludedText, Mode=OneWay}" />
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.RestoreExcludedLauncherGamesAndRefreshCommand}"
+                                Text="{x:Bind ViewModel.TranslationProperties.RestoreExcludedAndRefreshText, Mode=OneWay}" />
                         </MenuFlyout>
-                    </AppBarButton.Flyout>
-                </AppBarButton>
-                <AppBarButton Label="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.CanRefresh, Mode=OneWay}">
-                    <AppBarButton.Content>
-                        <FontIcon Glyph="&#xE72C;" />
-                    </AppBarButton.Content>
-                    <AppBarButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.RefreshPreserveExcludedText, Mode=OneWay}" Command="{x:Bind ViewModel.RefreshGamesButtonCommand}" />
-                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.RestoreExcludedAndRefreshText, Mode=OneWay}" Command="{x:Bind ViewModel.RestoreExcludedLauncherGamesAndRefreshCommand}" />
-                        </MenuFlyout>
-                    </AppBarButton.Flyout>
-                </AppBarButton>
-                <AppBarButton Icon="Filter" Label="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}" Command="{x:Bind ViewModel.FilterGamesButtonCommand}" IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}">
-                    <AppBarButton.Content>
-                        <FontIcon Glyph="&#xE71C;" />
-                    </AppBarButton.Content>
-                </AppBarButton>
-                <AppBarButton Label="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}" Content="{x:Bind ViewModel.GameGridViewIcon, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}">
-                    <AppBarButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.GridViewText, Mode=OneWay}" Command="{x:Bind ViewModel.ChangeGameGridViewCommand}" CommandParameter="{x:Bind pages:GameGridViewType.GridView}" />
-                            <MenuFlyoutItem Text="{x:Bind ViewModel.TranslationProperties.ListViewText, Mode=OneWay}" Command="{x:Bind ViewModel.ChangeGameGridViewCommand}" CommandParameter="{x:Bind pages:GameGridViewType.ListView}" />
-                        </MenuFlyout>
-                    </AppBarButton.Flyout>
-                </AppBarButton>
-                <AppBarButton
-                    Label="{x:Bind ViewModel.TranslationProperties.SelectGamesText, Mode=OneWay}"
+                    </Button.Flyout>
+                </Button>
+
+                <Button
+                    Width="58"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.SelectGamesText, Mode=OneWay}"
                     Command="{x:Bind ViewModel.ToggleSelectionModeCommand}"
-                    IsEnabled="{x:Bind ViewModel.CanRefresh, Mode=OneWay}">
-                    <AppBarButton.Content>
-                        <FontIcon Glyph="&#xE762;" />
-                    </AppBarButton.Content>
-                </AppBarButton>
+                    IsEnabled="{x:Bind ViewModel.CanRefresh, Mode=OneWay}"
+                    Style="{StaticResource HeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.SelectGamesText, Mode=OneWay}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24" />
+                            <RowDefinition Height="16" />
+                            <RowDefinition Height="10" />
+                        </Grid.RowDefinitions>
+                        <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE762;" />
+                        <TextBlock
+                            Grid.Row="1"
+                            Style="{StaticResource HeaderCommandLabelStyle}"
+                            Text="{x:Bind ViewModel.TranslationProperties.SelectGamesText, Mode=OneWay}" />
+                    </Grid>
+                </Button>
+
+                <Button
+                    Width="48"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}"
+                    Command="{x:Bind ViewModel.FilterGamesButtonCommand}"
+                    IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
+                    Style="{StaticResource HeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24" />
+                            <RowDefinition Height="16" />
+                            <RowDefinition Height="10" />
+                        </Grid.RowDefinitions>
+                        <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE71C;" />
+                        <TextBlock
+                            Grid.Row="1"
+                            Style="{StaticResource HeaderCommandLabelStyle}"
+                            Text="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}" />
+                    </Grid>
+                </Button>
+
+                <Button
+                    Width="54"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
+                    Style="{StaticResource HeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}">
+                    <Button.Content>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="24" />
+                                <RowDefinition Height="16" />
+                                <RowDefinition Height="10" />
+                            </Grid.RowDefinitions>
+                            <ContentPresenter
+                                Grid.Row="0"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                Content="{x:Bind ViewModel.GameGridViewIcon, Mode=OneWay}" />
+                            <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource HeaderCommandLabelStyle}"
+                                Text="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}" />
+                            <FontIcon
+                                Grid.Row="2"
+                                FontSize="8"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE70D;" />
+                        </Grid>
+                    </Button.Content>
+                    <Button.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.ChangeGameGridViewCommand}"
+                                CommandParameter="{x:Bind pages:GameGridViewType.GridView}"
+                                Text="{x:Bind ViewModel.TranslationProperties.GridViewText, Mode=OneWay}" />
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.ChangeGameGridViewCommand}"
+                                CommandParameter="{x:Bind pages:GameGridViewType.ListView}"
+                                Text="{x:Bind ViewModel.TranslationProperties.ListViewText, Mode=OneWay}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+
+                <Button
+                    Width="46"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.SortText, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
+                    Style="{StaticResource HeaderCommandButtonStyle}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.SortText, Mode=OneWay}">
+                    <Button.Content>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="24" />
+                                <RowDefinition Height="16" />
+                                <RowDefinition Height="10" />
+                            </Grid.RowDefinitions>
+                            <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE8CB;" />
+                            <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource HeaderCommandLabelStyle}"
+                                Text="{x:Bind ViewModel.TranslationProperties.SortText, Mode=OneWay}" />
+                            <FontIcon
+                                Grid.Row="2"
+                                FontSize="8"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE70D;" />
+                        </Grid>
+                    </Button.Content>
+                    <Button.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.ChangeGameSortCommand}"
+                                CommandParameter="{x:Bind data:GameSortMode.DlssNewestFirst}"
+                                Text="{x:Bind ViewModel.TranslationProperties.SortDlssNewestFirstText, Mode=OneWay}" />
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.ChangeGameSortCommand}"
+                                CommandParameter="{x:Bind data:GameSortMode.DlssOldestFirst}"
+                                Text="{x:Bind ViewModel.TranslationProperties.SortDlssOldestFirstText, Mode=OneWay}" />
+                            <MenuFlyoutSeparator />
+                            <MenuFlyoutItem
+                                Command="{x:Bind ViewModel.ChangeGameSortCommand}"
+                                CommandParameter="{x:Bind data:GameSortMode.NameAscending}"
+                                Text="{x:Bind ViewModel.TranslationProperties.SortNameAscendingText, Mode=OneWay}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
             </StackPanel>
 
             <Border
-                Grid.Row="1"
-                Margin="0,4,0,4"
-                Padding="8"
-                Visibility="{x:Bind ViewModel.IsSelectionMode, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                Grid.Row="3"
+                Grid.ColumnSpan="2"
+                Margin="0,3,0,2"
+                Padding="4"
+                HorizontalAlignment="Right"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid ColumnSpacing="4" RowSpacing="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup>
+                            <VisualState x:Name="NarrowSelectionCommands">
+                                <VisualState.StateTriggers>
+                                    <AdaptiveTrigger MinWindowWidth="0" />
+                                </VisualState.StateTriggers>
+                                <VisualState.Setters>
+                                    <Setter Target="SelectionCount.(Grid.Column)" Value="0" />
+                                    <Setter Target="SelectVisibleButton.(Grid.Column)" Value="1" />
+                                    <Setter Target="ApplyDllButton.(Grid.Row)" Value="1" />
+                                    <Setter Target="ApplyDllButton.(Grid.Column)" Value="0" />
+                                    <Setter Target="RemoveGamesButton.(Grid.Row)" Value="1" />
+                                    <Setter Target="RemoveGamesButton.(Grid.Column)" Value="1" />
+                                    <Setter Target="CloseSelectionButton.(Grid.Row)" Value="1" />
+                                    <Setter Target="CloseSelectionButton.(Grid.Column)" Value="2" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState x:Name="WideSelectionCommands">
+                                <VisualState.StateTriggers>
+                                    <AdaptiveTrigger MinWindowWidth="620" />
+                                </VisualState.StateTriggers>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
                     <TextBlock
-                        Text="{x:Bind ViewModel.SelectedGamesCountText, Mode=OneWay}"
-                        VerticalAlignment="Center" />
+                        x:Name="SelectionCount"
+                        Grid.Column="0"
+                        Margin="3,0"
+                        VerticalAlignment="Center"
+                        Text="{x:Bind ViewModel.SelectedGamesCountText, Mode=OneWay}" />
                     <Button
-                        Content="{x:Bind ViewModel.SelectVisibleButtonText, Mode=OneWay}"
+                        x:Name="SelectVisibleButton"
+                        Grid.Column="1"
+                        Height="28"
+                        MinWidth="0"
+                        Padding="8,0"
                         Command="{x:Bind ViewModel.ToggleSelectVisibleCommand}"
-                        IsEnabled="{x:Bind ViewModel.IsBatchUpdateRunning, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
+                        Content="{x:Bind ViewModel.SelectVisibleButtonText, Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.IsBatchUpdateRunning, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
                     <Button
-                        Style="{StaticResource AccentButtonStyle}"
-                        Content="{x:Bind ViewModel.TranslationProperties.ApplyDllText, Mode=OneWay}"
+                        x:Name="ApplyDllButton"
+                        Grid.Column="2"
+                        Height="28"
+                        MinWidth="0"
+                        Padding="8,0"
                         Command="{x:Bind ViewModel.ApplyBatchDllCommand}"
-                        IsEnabled="{x:Bind ViewModel.IsBatchUpdateRunning, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
+                        Content="{x:Bind ViewModel.TranslationProperties.ApplyDllText, Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.CanApplyBatchDll, Mode=OneWay}"
+                        Style="{StaticResource AccentButtonStyle}" />
                     <Button
-                        Content="{x:Bind ViewModel.TranslationProperties.CloseText, Mode=OneWay}"
+                        x:Name="RemoveGamesButton"
+                        Grid.Column="3"
+                        Height="28"
+                        MinWidth="0"
+                        Padding="8,0"
+                        Command="{x:Bind ViewModel.RemoveSelectedGamesCommand}"
+                        Content="{x:Bind ViewModel.TranslationProperties.RemoveText, Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.CanRemoveSelectedGames, Mode=OneWay}" />
+                    <Button
+                        x:Name="CloseSelectionButton"
+                        Grid.Column="4"
+                        Height="28"
+                        MinWidth="0"
+                        Padding="8,0"
                         Command="{x:Bind ViewModel.ToggleSelectionModeCommand}"
-                        IsEnabled="{x:Bind ViewModel.IsBatchUpdateRunning, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
-                </StackPanel>
+                        Content="{x:Bind ViewModel.TranslationProperties.CloseText, Mode=OneWay}"
+                        IsEnabled="{x:Bind ViewModel.IsBatchUpdateRunning, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+                </Grid>
             </Border>
 
-            <InfoBar x:Name="AdminInfoBar"
-                 Grid.Row="2"
-                 IsOpen="True"
-                 Severity="Warning"
-                 IsClosable="False"
-                 Title="Warning"
-                 Message="{x:Bind ViewModel.TranslationProperties.ApplicationRunsInAdministrativeModeInfo, Mode=OneWay}"
-                 Visibility="{x:Bind system:Environment.IsPrivilegedProcess, Converter={StaticResource BoolToVisibilityConverter}}" />
+            <InfoBar
+                x:Name="AdminInfoBar"
+                Grid.Row="4"
+                Grid.ColumnSpan="2"
+                IsClosable="False"
+                IsOpen="True"
+                Message="{x:Bind ViewModel.TranslationProperties.ApplicationRunsInAdministrativeModeInfo, Mode=OneWay}"
+                Severity="Warning"
+                Title="Warning"
+                Visibility="{x:Bind system:Environment.IsPrivilegedProcess, Converter={StaticResource BoolToVisibilityConverter}}" />
         </Grid>
 
-        <ContentControl x:Name="MainContentControl" Grid.Row="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalAlignment="Stretch" Content="{x:Bind ViewModel, Mode=OneWay}" ContentTemplateSelector="{StaticResource TemplateSelector}" />
-        
+        <ContentControl
+            x:Name="MainContentControl"
+            Grid.Row="1"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Content="{x:Bind ViewModel, Mode=OneWay}"
+            ContentTemplateSelector="{StaticResource TemplateSelector}" />
     </Grid>
 </Page>

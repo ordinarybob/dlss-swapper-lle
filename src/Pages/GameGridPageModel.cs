@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +16,6 @@ using DLSS_Swapper.UserControls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
-using Windows.System;
 
 namespace DLSS_Swapper.Pages;
 
@@ -37,14 +37,18 @@ public partial class GameGridPageModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanUseHeaderControls))]
     [NotifyPropertyChangedFor(nameof(CanRefresh))]
     [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
+    [NotifyPropertyChangedFor(nameof(CanRemoveSelectedGames))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RemoveSelectedGamesCommand))]
     public partial bool IsGameListLoading { get; set; } = true;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoading))]
     [NotifyPropertyChangedFor(nameof(CanRefresh))]
     [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
+    [NotifyPropertyChangedFor(nameof(CanRemoveSelectedGames))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RemoveSelectedGamesCommand))]
     public partial bool IsDLSSLoading { get; set; } = true;
 
     public bool IsLoading => (IsGameListLoading || IsDLSSLoading);
@@ -64,6 +68,10 @@ public partial class GameGridPageModel : ObservableObject
     public int GridViewItemHeight => (int)(GridViewItemWidth * 1.5);
 
     [ObservableProperty]
+    public partial double GridViewCellWidth { get; set; } =
+        Settings.Instance.GridViewItemWidth + ResponsiveGameGridLayout.HorizontalContainerChrome;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(GameGridViewIcon))]
     public partial GameGridViewType GameGridViewType { get; set; } = Settings.Instance.GameGridViewType;
 
@@ -75,13 +83,18 @@ public partial class GameGridPageModel : ObservableObject
     };
 
     [ObservableProperty]
+    public partial GameSortMode GameSortMode { get; set; } = Settings.Instance.GameSortMode;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanUseHeaderControls))]
     [NotifyPropertyChangedFor(nameof(CanRefresh))]
     public partial bool IsSelectionMode { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
+    [NotifyPropertyChangedFor(nameof(CanRemoveSelectedGames))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RemoveSelectedGamesCommand))]
     public partial bool IsBatchUpdateRunning { get; set; }
 
     public List<Game> SelectedGames { get; } = new List<Game>();
@@ -92,6 +105,12 @@ public partial class GameGridPageModel : ObservableObject
             SelectedGames.Count);
 
     public bool CanApplyBatchDll =>
+        SelectedGames.Count > 0
+        && IsLoading == false
+        && IsBatchUpdateRunning == false
+        && SelectedGames.All(game => game.Processing == false);
+
+    public bool CanRemoveSelectedGames =>
         SelectedGames.Count > 0
         && IsLoading == false
         && IsBatchUpdateRunning == false
@@ -210,6 +229,7 @@ public partial class GameGridPageModel : ObservableObject
                     selectedGame => ReferenceEquals(selectedGame, game));
                 if (selectedIndex >= 0)
                 {
+                    game.PropertyChanged -= SelectedGame_PropertyChanged;
                     SelectedGames.RemoveAt(selectedIndex);
                 }
             }
@@ -222,6 +242,7 @@ public partial class GameGridPageModel : ObservableObject
                     ReferenceEquals(selectedGame, game)) == false)
             {
                 SelectedGames.Add(game);
+                game.PropertyChanged += SelectedGame_PropertyChanged;
             }
         }
 
@@ -231,6 +252,10 @@ public partial class GameGridPageModel : ObservableObject
     void ExitSelectionMode()
     {
         gameGridPage.ExitSelectionMode();
+        foreach (var game in SelectedGames)
+        {
+            game.PropertyChanged -= SelectedGame_PropertyChanged;
+        }
         SelectedGames.Clear();
         IsSelectionMode = false;
         NotifySelectionChanged();
@@ -241,7 +266,101 @@ public partial class GameGridPageModel : ObservableObject
         OnPropertyChanged(nameof(SelectedGamesCountText));
         OnPropertyChanged(nameof(SelectVisibleButtonText));
         OnPropertyChanged(nameof(CanApplyBatchDll));
+        OnPropertyChanged(nameof(CanRemoveSelectedGames));
         ApplyBatchDllCommand.NotifyCanExecuteChanged();
+        RemoveSelectedGamesCommand.NotifyCanExecuteChanged();
+    }
+
+    void SelectedGame_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(Game.Processing))
+        {
+            return;
+        }
+
+        OnPropertyChanged(nameof(CanApplyBatchDll));
+        OnPropertyChanged(nameof(CanRemoveSelectedGames));
+        ApplyBatchDllCommand.NotifyCanExecuteChanged();
+        RemoveSelectedGamesCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRemoveSelectedGames))]
+    async Task RemoveSelectedGamesAsync()
+    {
+        var games = SelectedGames.ToArray();
+        if (games.Length == 0 || CanRemoveSelectedGames == false)
+        {
+            return;
+        }
+
+        var manuallyAddedCount = games.Count(
+            game => game.GameLibrary == Interfaces.GameLibrary.ManuallyAdded);
+        var discoveredCount = games.Length - manuallyAddedCount;
+        var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
+        {
+            Title = ResourceHelper.GetFormattedResourceTemplate(
+                "GamesPage_SelectionMode_RemoveTitleTemplate",
+                games.Length),
+            PrimaryButtonText = ResourceHelper.GetString("General_Remove"),
+            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+            DefaultButton = ContentDialogButton.Close,
+            Content = ResourceHelper.GetFormattedResourceTemplate(
+                "GamesPage_SelectionMode_RemoveDescriptionTemplate",
+                games.Length,
+                manuallyAddedCount,
+                discoveredCount),
+        };
+
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        IsBatchUpdateRunning = true;
+        gameGridPage.BeginSuppressSelectionEvents();
+        var failedGames = new List<Game>();
+        try
+        {
+            foreach (var game in games)
+            {
+                if (game.GameLibrary == Interfaces.GameLibrary.ManuallyAdded)
+                {
+                    if (await game.DeleteAsync() == false)
+                    {
+                        failedGames.Add(game);
+                    }
+                }
+                else
+                {
+                    var previousHiddenState = game.IsHidden;
+                    game.IsHidden = true;
+                    if (await game.SaveToDatabaseAsync() == false)
+                    {
+                        game.IsHidden = previousHiddenState;
+                        failedGames.Add(game);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            IsBatchUpdateRunning = false;
+            ExitSelectionMode();
+        }
+
+        if (failedGames.Count > 0)
+        {
+            var failureDialog = new EasyContentDialog(gameGridPage.XamlRoot)
+            {
+                Title = ResourceHelper.GetString("General_Error"),
+                CloseButtonText = ResourceHelper.GetString("General_Close"),
+                DefaultButton = ContentDialogButton.Close,
+                Content = ResourceHelper.GetFormattedResourceTemplate(
+                    "GamesPage_SelectionMode_RemoveFailedTemplate",
+                    failedGames.Count),
+            };
+            await failureDialog.ShowAsync();
+        }
     }
 
     public async Task InitialLoadAsync()
@@ -290,7 +409,6 @@ public partial class GameGridPageModel : ObservableObject
             {
                 Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_NoteTitle"),
                 PrimaryButtonText = ResourceHelper.GetString("GamesPage_AddGame"),
-                SecondaryButtonText = ResourceHelper.GetString("General_ReportIssue"),
                 CloseButtonText = ResourceHelper.GetString("General_Cancel"),
                 DefaultButton = ContentDialogButton.Primary,
                 Content = new StackPanel()
@@ -299,7 +417,7 @@ public partial class GameGridPageModel : ObservableObject
                         new TextBlock()
                         {
                             TextWrapping = TextWrapping.Wrap,
-                            Text = ResourceHelper.GetString("GamesPage_ManuallyAdding_NoteMessage"),
+                            Text = ResourceHelper.GetString("GamesPage_ManuallyAdding_LleNoteMessage"),
                         },
                         dontShowAgainCheckbox,
                     },
@@ -324,10 +442,6 @@ public partial class GameGridPageModel : ObservableObject
                     Settings.Instance.DontShowManuallyAddingGamesNotice = true;
                 }
                 await AddGameManually();
-            }
-            else if (result == ContentDialogResult.Secondary)
-            {
-                await Launcher.LaunchUriAsync(new Uri("https://github.com/beeradmoore/dlss-swapper/issues"));
             }
         }
         else
@@ -377,6 +491,19 @@ public partial class GameGridPageModel : ObservableObject
     [RelayCommand]
     async Task AddManualGamesDirectoryButtonAsync()
     {
+        var explanation = new EasyContentDialog(gameGridPage.XamlRoot)
+        {
+            Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultiGameDirectoryNoteTitle"),
+            PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectMultiGameDirectory"),
+            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+            DefaultButton = ContentDialogButton.Primary,
+            Content = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultiGameDirectoryDescription"),
+        };
+        if (await explanation.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
         try
         {
             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.CurrentApp.MainWindow);
@@ -622,15 +749,10 @@ public partial class GameGridPageModel : ObservableObject
             {
                 Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_ErrorTitle"),
                 CloseButtonText = ResourceHelper.GetString("General_Close"),
-                PrimaryButtonText = ResourceHelper.GetString("General_ReportIssue"),
-                DefaultButton = ContentDialogButton.Primary,
+                DefaultButton = ContentDialogButton.Close,
                 Content = $"{ResourceHelper.GetString("GamesPage_ManuallyAdding_CouldntAddError")}\n\n{ResourceHelper.GetString("General_ErrorMessage")}: {err.Message}",
             };
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
-            {
-                await Launcher.LaunchUriAsync(new Uri("https://github.com/beeradmoore/dlss-swapper/issues"));
-            }
+            await dialog.ShowAsync();
         }
     }
 
@@ -724,22 +846,6 @@ public partial class GameGridPageModel : ObservableObject
     }
 
     [RelayCommand]
-    async Task UnknownAssetsFoundButtonAsync()
-    {
-        var newDllsControl = new NewDLLsControl();
-
-        var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
-        {
-            Title = ResourceHelper.GetString("GamesPage_NewDllsFound"),
-            CloseButtonText = ResourceHelper.GetString("General_Close"),
-            Content = newDllsControl,
-        };
-        dialog.Resources["ContentDialogMinWidth"] = 700;
-        dialog.Resources["ContentDialogMaxWidth"] = 700;
-        await dialog.ShowAsync();
-    }
-
-    [RelayCommand]
     void ChangeGameGridView(GameGridViewType gameGridView)
     {
         if (gameGridView == this.GameGridViewType)
@@ -750,5 +856,18 @@ public partial class GameGridPageModel : ObservableObject
         GameGridViewType = gameGridView;
         gameGridPage.ReloadMainContentControl();
         Settings.Instance.GameGridViewType = gameGridView;
+    }
+
+    [RelayCommand]
+    void ChangeGameSort(GameSortMode gameSortMode)
+    {
+        if (gameSortMode == GameSortMode)
+        {
+            return;
+        }
+
+        GameSortMode = gameSortMode;
+        GameManager.Instance.ApplySort(gameSortMode);
+        Settings.Instance.GameSortMode = gameSortMode;
     }
 }

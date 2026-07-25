@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 using Windows.System;
 using AsyncAwaitBestPractices;
 using CommunityToolkit.WinUI;
-using System.Threading;
 using DLSS_Swapper.Helpers;
+using DispatcherQueueTimer = Microsoft.UI.Dispatching.DispatcherQueueTimer;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -39,7 +39,14 @@ public sealed partial class GameGridPage : Page
     */
 
     bool _loadingGamesAndDlls;
-    Timer? _saveScrollSizeTimer;
+    DispatcherQueueTimer? _saveScrollSizeTimer;
+    GridView? _responsiveGridView;
+    ScrollViewer? _responsiveGridScrollViewer;
+    XamlRoot? _responsiveGridXamlRoot;
+    double _lastResponsiveViewportWidth = double.NaN;
+    double _lastResponsiveHorizontalPadding = double.NaN;
+    double _lastResponsiveCardWidth = double.NaN;
+    double _lastResponsiveRasterizationScale = double.NaN;
 
     public GameGridPageModel ViewModel { get; private set; }
 
@@ -48,6 +55,7 @@ public sealed partial class GameGridPage : Page
         this.InitializeComponent();
         ViewModel = new GameGridPageModel(this);
         DataContext = ViewModel;
+        Unloaded += Page_Unloaded;
     }
 
     bool hasFirstLoaded;
@@ -157,6 +165,153 @@ public sealed partial class GameGridPage : Page
     }
 
 
+    void MainGridView_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not GridView gridView)
+        {
+            return;
+        }
+
+        AttachResponsiveGridLayout(gridView);
+        gridView.DispatcherQueue.TryEnqueue(() =>
+        {
+            if (gridView.IsLoaded)
+            {
+                AttachResponsiveGridLayout(gridView);
+            }
+        });
+    }
+
+    void MainGridView_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is GridView gridView)
+        {
+            // Use the new control width immediately. The ScrollViewer reports its
+            // exact viewport in a subsequent layout callback (including any
+            // vertical scrollbar), which performs the final pixel-level update.
+            UpdateResponsiveGridLayout(gridView, e.NewSize.Width);
+        }
+    }
+
+    void AttachResponsiveGridLayout(GridView gridView)
+    {
+        if (ReferenceEquals(_responsiveGridView, gridView) == false)
+        {
+            DetachResponsiveGridLayout();
+            _responsiveGridView = gridView;
+            gridView.Unloaded += MainGridView_Unloaded;
+        }
+
+        var scrollViewer = gridView.FindDescendant<ScrollViewer>();
+        if (scrollViewer is not null
+            && ReferenceEquals(_responsiveGridScrollViewer, scrollViewer) == false)
+        {
+            if (_responsiveGridScrollViewer is not null)
+            {
+                _responsiveGridScrollViewer.SizeChanged -= ResponsiveGridScrollViewer_SizeChanged;
+            }
+
+            _responsiveGridScrollViewer = scrollViewer;
+            scrollViewer.SizeChanged += ResponsiveGridScrollViewer_SizeChanged;
+        }
+
+        var xamlRoot = gridView.XamlRoot;
+        if (xamlRoot is not null
+            && ReferenceEquals(_responsiveGridXamlRoot, xamlRoot) == false)
+        {
+            if (_responsiveGridXamlRoot is not null)
+            {
+                _responsiveGridXamlRoot.Changed -= ResponsiveGridXamlRoot_Changed;
+            }
+
+            _responsiveGridXamlRoot = xamlRoot;
+            xamlRoot.Changed += ResponsiveGridXamlRoot_Changed;
+        }
+
+        UpdateResponsiveGridLayout(gridView);
+    }
+
+    void MainGridView_Unloaded(object sender, RoutedEventArgs e)
+    {
+        if (ReferenceEquals(sender, _responsiveGridView))
+        {
+            DetachResponsiveGridLayout();
+        }
+    }
+
+    void ResponsiveGridScrollViewer_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (_responsiveGridView is not null)
+        {
+            UpdateResponsiveGridLayout(_responsiveGridView);
+        }
+    }
+
+    void ResponsiveGridXamlRoot_Changed(XamlRoot sender, XamlRootChangedEventArgs args)
+    {
+        if (_responsiveGridView is not null)
+        {
+            UpdateResponsiveGridLayout(_responsiveGridView);
+        }
+    }
+
+    void DetachResponsiveGridLayout()
+    {
+        if (_responsiveGridScrollViewer is not null)
+        {
+            _responsiveGridScrollViewer.SizeChanged -= ResponsiveGridScrollViewer_SizeChanged;
+            _responsiveGridScrollViewer = null;
+        }
+        if (_responsiveGridView is not null)
+        {
+            _responsiveGridView.Unloaded -= MainGridView_Unloaded;
+            _responsiveGridView = null;
+        }
+        if (_responsiveGridXamlRoot is not null)
+        {
+            _responsiveGridXamlRoot.Changed -= ResponsiveGridXamlRoot_Changed;
+            _responsiveGridXamlRoot = null;
+        }
+
+        _lastResponsiveViewportWidth = double.NaN;
+        _lastResponsiveHorizontalPadding = double.NaN;
+        _lastResponsiveCardWidth = double.NaN;
+        _lastResponsiveRasterizationScale = double.NaN;
+    }
+
+    void UpdateResponsiveGridLayout(GridView gridView, double immediateViewportWidth = 0)
+    {
+        var scrollViewer = gridView.FindDescendant<ScrollViewer>();
+        var viewportWidth = immediateViewportWidth > 0
+            ? immediateViewportWidth
+            : scrollViewer is not null && scrollViewer.ViewportWidth > 0
+                ? scrollViewer.ViewportWidth
+                : gridView.ActualWidth;
+        var horizontalPadding = gridView.Padding.Left + gridView.Padding.Right;
+        var cardWidth = ViewModel.GridViewItemWidth;
+        var rasterizationScale = gridView.XamlRoot?.RasterizationScale ?? 1d;
+
+        if (Math.Abs(viewportWidth - _lastResponsiveViewportWidth) < 0.25
+            && Math.Abs(horizontalPadding - _lastResponsiveHorizontalPadding) < 0.01
+            && Math.Abs(cardWidth - _lastResponsiveCardWidth) < 0.01
+            && Math.Abs(rasterizationScale - _lastResponsiveRasterizationScale) < 0.001)
+        {
+            return;
+        }
+
+        _lastResponsiveViewportWidth = viewportWidth;
+        _lastResponsiveHorizontalPadding = horizontalPadding;
+        _lastResponsiveCardWidth = cardWidth;
+        _lastResponsiveRasterizationScale = rasterizationScale;
+
+        var metrics = ResponsiveGameGridLayout.Calculate(
+            viewportWidth,
+            horizontalPadding,
+            cardWidth,
+            rasterizationScale);
+        ViewModel.GridViewCellWidth = metrics.CellWidth;
+    }
+
     void MainGridView_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
     {
         if (e.KeyModifiers.HasFlag(VirtualKeyModifiers.Control))
@@ -168,20 +323,22 @@ public sealed partial class GameGridPage : Page
                 double scaleAmount = delta > 0 ? 1.05 : 0.95;
                 var newWidth = (int)(ViewModel.GridViewItemWidth * scaleAmount);
 
-                if (newWidth > 60 && newWidth < 600)
+                if (newWidth >= Settings.MinGridViewItemWidth
+                    && newWidth <= Settings.MaxGridViewItemWidth)
                 {
                     ViewModel.GridViewItemWidth = newWidth;
+                    UpdateResponsiveGridLayout(gridView);
 
-                    if (_saveScrollSizeTimer is not null)
+                    if (_saveScrollSizeTimer is null)
                     {
-                        _saveScrollSizeTimer.Dispose();
-                        _saveScrollSizeTimer = null;
+                        _saveScrollSizeTimer = DispatcherQueue.CreateTimer();
+                        _saveScrollSizeTimer.Interval = TimeSpan.FromMilliseconds(500);
+                        _saveScrollSizeTimer.IsRepeating = false;
+                        _saveScrollSizeTimer.Tick += SaveScrollSizeTimer_Tick;
                     }
 
-                    _saveScrollSizeTimer = new Timer((state) =>
-                    {
-                        Settings.Instance.GridViewItemWidth = ViewModel.GridViewItemWidth;
-                    }, null, 500, Timeout.Infinite);
+                    _saveScrollSizeTimer.Stop();
+                    _saveScrollSizeTimer.Start();
                 }
             }
 
@@ -201,6 +358,36 @@ public sealed partial class GameGridPage : Page
         return MainContentControl.ContentTemplateRoot as ListViewBase;
     }
 
+    void ApplyListSelectionLayout(ListViewBase listControl, bool isSelecting)
+    {
+        if (listControl is ListView listView)
+        {
+            listView.ItemContainerStyle = (Style)Resources[
+                isSelecting ? "SelectingListViewItemStyle" : "CompactListViewItemStyle"];
+        }
+    }
+
+    void SaveScrollSizeTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        sender.Stop();
+        Settings.Instance.GridViewItemWidth = ViewModel.GridViewItemWidth;
+    }
+
+    void Page_Unloaded(object sender, RoutedEventArgs e)
+    {
+        DetachResponsiveGridLayout();
+
+        if (_saveScrollSizeTimer is null)
+        {
+            return;
+        }
+
+        _saveScrollSizeTimer.Stop();
+        _saveScrollSizeTimer.Tick -= SaveScrollSizeTimer_Tick;
+        _saveScrollSizeTimer = null;
+        Settings.Instance.GridViewItemWidth = ViewModel.GridViewItemWidth;
+    }
+
     internal void EnterSelectionMode()
     {
         var listControl = GetActiveListControl();
@@ -209,6 +396,7 @@ public sealed partial class GameGridPage : Page
             return;
         }
 
+        ApplyListSelectionLayout(listControl, true);
         listControl.SelectionMode = ListViewSelectionMode.Multiple;
         listControl.IsItemClickEnabled = false;
         listControl.SelectionChanged += ListControl_SelectionChanged;
@@ -234,6 +422,7 @@ public sealed partial class GameGridPage : Page
         }
 
         listControl.SelectionMode = ListViewSelectionMode.None;
+        ApplyListSelectionLayout(listControl, false);
         listControl.IsItemClickEnabled = true;
     }
 
@@ -272,6 +461,11 @@ public sealed partial class GameGridPage : Page
     internal void DeselectAllVisible()
     {
         GetActiveListControl()?.SelectedItems.Clear();
+    }
+
+    internal void BeginSuppressSelectionEvents()
+    {
+        _isSyncingSelection = true;
     }
 
     void ListControl_SelectionChanged(object sender, SelectionChangedEventArgs e)

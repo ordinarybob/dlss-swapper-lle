@@ -46,6 +46,18 @@ public class GameGridPageModelTranslationProperties : LocalizedViewModelBase
     public string ListViewText => ResourceHelper.GetString("GamesPage_ViewType_ListView");
 
     [TranslationProperty]
+    public string SortText => ResourceHelper.GetString("GamesPage_Sort");
+
+    [TranslationProperty]
+    public string SortNameAscendingText => ResourceHelper.GetString("GamesPage_Sort_NameAscending");
+
+    [TranslationProperty]
+    public string SortDlssNewestFirstText => ResourceHelper.GetString("GamesPage_Sort_DLSSNewestFirst");
+
+    [TranslationProperty]
+    public string SortDlssOldestFirstText => ResourceHelper.GetString("GamesPage_Sort_DLSSOldestFirst");
+
+    [TranslationProperty]
     public string PageTitle => ResourceHelper.GetString("GamesPage_Title");
 
     [TranslationProperty]
@@ -56,6 +68,9 @@ public class GameGridPageModelTranslationProperties : LocalizedViewModelBase
 
     [TranslationProperty]
     public string ApplyDllText => ResourceHelper.GetString("GamesPage_SelectionMode_ApplyDll");
+
+    [TranslationProperty]
+    public string RemoveText => ResourceHelper.GetString("General_Remove");
 
     [TranslationProperty]
     public string CloseText => ResourceHelper.GetString("General_Close");
