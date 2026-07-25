@@ -89,6 +89,10 @@
 
         <ControlTemplate x:Key="RightButtonsControlTemplate" TargetType="ContentControl">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" XYFocusKeyboardNavigation="Enabled" Padding="{ThemeResource ContentDialogPadding}" Background="{TemplateBinding Background}" Spacing="8">
+                <Button
+                    Content="{Binding TranslationProperties.UpdateDetectedDllsText, Mode=OneWay}"
+                    Command="{Binding UpdateDetectedDllsToLatestCommand}"
+                    ToolTipService.ToolTip="{Binding TranslationProperties.UpdateDetectedDllsTooltipText, Mode=OneWay}" />
                 <Button Content="{Binding TranslationProperties.RemoveText, Mode=OneWay}" Visibility="{Binding IsManuallyAdded, Converter={StaticResource BoolToVisibilityConverter}}" Command="{Binding RemoveCommand}" />
                 <Button x:Name="CloseButton" IsTabStop="False" Content="{Binding TranslationProperties.CloseText, Mode=OneWay}" Style="{ThemeResource DefaultButtonStyle}" ElementSoundMode="FocusOnly" Command="{Binding CloseCommand}" KeyboardAcceleratorPlacementMode="Hidden">
                     <Button.KeyboardAccelerators>

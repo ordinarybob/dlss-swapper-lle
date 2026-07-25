@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Windows.System;
 using AsyncAwaitBestPractices;
@@ -191,5 +192,95 @@ public sealed partial class GameGridPage : Page
     private void ClearSearchBox_Click(object sender, RoutedEventArgs e)
     {
         SearchBox.Text = string.Empty;
+    }
+
+    bool _isSyncingSelection;
+
+    ListViewBase? GetActiveListControl()
+    {
+        return MainContentControl.ContentTemplateRoot as ListViewBase;
+    }
+
+    internal void EnterSelectionMode()
+    {
+        var listControl = GetActiveListControl();
+        if (listControl is null)
+        {
+            return;
+        }
+
+        listControl.SelectionMode = ListViewSelectionMode.Multiple;
+        listControl.IsItemClickEnabled = false;
+        listControl.SelectionChanged += ListControl_SelectionChanged;
+    }
+
+    internal void ExitSelectionMode()
+    {
+        var listControl = GetActiveListControl();
+        if (listControl is null)
+        {
+            return;
+        }
+
+        listControl.SelectionChanged -= ListControl_SelectionChanged;
+        _isSyncingSelection = true;
+        try
+        {
+            listControl.SelectedItems.Clear();
+        }
+        finally
+        {
+            _isSyncingSelection = false;
+        }
+
+        listControl.SelectionMode = ListViewSelectionMode.None;
+        listControl.IsItemClickEnabled = true;
+    }
+
+    internal int GetVisibleItemCount()
+    {
+        return GetActiveListControl()?.Items.Count ?? 0;
+    }
+
+    internal int GetVisibleSelectedCount()
+    {
+        var listControl = GetActiveListControl();
+        if (listControl is null)
+        {
+            return 0;
+        }
+
+        var selectedCount = 0;
+        foreach (var item in listControl.Items)
+        {
+            if (item is Game game
+                && ViewModel.SelectedGames.Any(selectedGame =>
+                    ReferenceEquals(selectedGame, game)))
+            {
+                selectedCount++;
+            }
+        }
+
+        return selectedCount;
+    }
+
+    internal void SelectAllVisible()
+    {
+        GetActiveListControl()?.SelectAll();
+    }
+
+    internal void DeselectAllVisible()
+    {
+        GetActiveListControl()?.SelectedItems.Clear();
+    }
+
+    void ListControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isSyncingSelection)
+        {
+            return;
+        }
+
+        ViewModel.UpdateSelection(e.AddedItems, e.RemovedItems);
     }
 }

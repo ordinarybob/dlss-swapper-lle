@@ -25,6 +25,12 @@ public partial class GameControlModel : ObservableObject
     public bool IsManuallyAdded => Game.GameLibrary == Interfaces.GameLibrary.ManuallyAdded;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(UpdateDetectedDllsToLatestCommand))]
+    public partial bool IsUpdatingDetectedDlls { get; set; }
+
+    bool CanUpdateDetectedDllsToLatest => IsUpdatingDetectedDlls == false;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(GameTitleHasChanged))]
     public partial string GameTitle { get; set; }
 
@@ -363,6 +369,84 @@ public partial class GameControlModel : ObservableObject
         }
 
         Game.PromptToBrowseCustomCover();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUpdateDetectedDllsToLatest))]
+    async Task UpdateDetectedDllsToLatestAsync()
+    {
+        if (gameControlWeakReference.TryGetTarget(out var gameControl) == false)
+        {
+            return;
+        }
+
+        var selections = DllUpdateWorkflow.GetLatestSelections([Game]);
+        if (selections.Count == 0)
+        {
+            var noActionsDialog = new EasyContentDialog(gameControl.XamlRoot)
+            {
+                Title = TranslationProperties.UpdateDetectedDllsText,
+                CloseButtonText = ResourceHelper.GetString("General_Close"),
+                DefaultButton = ContentDialogButton.Close,
+                Content = ResourceHelper.GetString("GamePage_UpdateDetectedDlls_NoEligibleActions"),
+            };
+            await noActionsDialog.ShowAsync();
+            return;
+        }
+
+        var confirmationContent = new StackPanel
+        {
+            Spacing = 12,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = ResourceHelper.GetFormattedResourceTemplate(
+                        "GamePage_UpdateDetectedDlls_ConfirmTemplate",
+                        selections.Count,
+                        Game.Title),
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                new TextBlock
+                {
+                    Text = ResourceHelper.GetString("GamePage_UpdateDetectedDlls_PresetsUnchanged"),
+                    TextWrapping = TextWrapping.Wrap,
+                },
+            },
+        };
+        var confirmationDialog = new EasyContentDialog(gameControl.XamlRoot)
+        {
+            Title = TranslationProperties.UpdateDetectedDllsText,
+            PrimaryButtonText = ResourceHelper.GetString("General_Update"),
+            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+            DefaultButton = ContentDialogButton.Primary,
+            Content = confirmationContent,
+        };
+        if (await confirmationDialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        List<BatchSwapResult> results;
+        IsUpdatingDetectedDlls = true;
+        gameControl.IsEnabled = false;
+        try
+        {
+            results = await DllUpdateWorkflow.ApplyAsync([Game], selections);
+        }
+        finally
+        {
+            gameControl.IsEnabled = true;
+            IsUpdatingDetectedDlls = false;
+        }
+
+        var summaryDialog = new EasyContentDialog(gameControl.XamlRoot)
+        {
+            Title = ResourceHelper.GetString("GamesPage_Batch_Summary_Title"),
+            CloseButtonText = ResourceHelper.GetString("General_Close"),
+            DefaultButton = ContentDialogButton.Close,
+            Content = new BatchSwapSummaryControl(results),
+        };
+        await summaryDialog.ShowAsync();
     }
 
     [RelayCommand]

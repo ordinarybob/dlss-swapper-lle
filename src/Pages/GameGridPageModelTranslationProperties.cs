@@ -50,4 +50,13 @@ public class GameGridPageModelTranslationProperties : LocalizedViewModelBase
 
     [TranslationProperty]
     public string ApplicationRunsInAdministrativeModeInfo => ResourceHelper.GetString("General_ApplicationRunningAsAdmin");
+
+    [TranslationProperty]
+    public string SelectGamesText => ResourceHelper.GetString("GamesPage_SelectionMode_SelectGames");
+
+    [TranslationProperty]
+    public string ApplyDllText => ResourceHelper.GetString("GamesPage_SelectionMode_ApplyDll");
+
+    [TranslationProperty]
+    public string CloseText => ResourceHelper.GetString("General_Close");
 }

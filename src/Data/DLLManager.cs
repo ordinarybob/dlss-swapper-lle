@@ -787,6 +787,43 @@ internal class DLLManager
         };
     }
 
+    /// <summary>
+    /// Checks whether one selected DLL can replace every matching asset in a game.
+    /// DLSS 1.x cannot be mixed with later generations, and a game containing both
+    /// generations is skipped because UpdateDllAsync replaces every matching asset.
+    /// </summary>
+    internal static (bool Compatible, string ReasonKey) GetBatchCompatibility(
+        Game game,
+        DLLRecord dllRecord)
+    {
+        var existingAssets = game.GameAssets
+            .Where(asset => asset.AssetType == dllRecord.AssetType)
+            .ToList();
+        if (existingAssets.Count == 0)
+        {
+            return (false, "GamesPage_Batch_Skipped_NoAsset");
+        }
+
+        if (dllRecord.AssetType == GameAssetType.DLSS)
+        {
+            var hasV1Assets = existingAssets.Any(asset => asset.Version.StartsWith("1."));
+            var hasV2PlusAssets = existingAssets.Any(asset => asset.Version.StartsWith("1.") == false);
+
+            if (hasV1Assets && hasV2PlusAssets)
+            {
+                return (false, "GamesPage_Batch_Skipped_MixedGenerations");
+            }
+
+            var recordIsV1 = dllRecord.Version.StartsWith("1.");
+            if (hasV1Assets != recordIsV1)
+            {
+                return (false, "GamesPage_Batch_Skipped_Incompatible");
+            }
+        }
+
+        return (true, string.Empty);
+    }
+
 
     public GameAssetType GetAssetBackupType(GameAssetType assetType)
     {

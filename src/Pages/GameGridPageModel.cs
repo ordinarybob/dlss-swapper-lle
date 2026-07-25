@@ -34,13 +34,24 @@ public partial class GameGridPageModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoading))]
+    [NotifyPropertyChangedFor(nameof(CanUseHeaderControls))]
+    [NotifyPropertyChangedFor(nameof(CanRefresh))]
+    [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
     public partial bool IsGameListLoading { get; set; } = true;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoading))]
+    [NotifyPropertyChangedFor(nameof(CanRefresh))]
+    [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
     public partial bool IsDLSSLoading { get; set; } = true;
 
     public bool IsLoading => (IsGameListLoading || IsDLSSLoading);
+
+    public bool CanUseHeaderControls => IsGameListLoading == false && IsSelectionMode == false;
+
+    public bool CanRefresh => IsLoading == false && IsSelectionMode == false;
 
     [ObservableProperty]
     public partial ICollectionView? CurrentCollectionView { get; set; } = null;
@@ -63,6 +74,37 @@ public partial class GameGridPageModel : ObservableObject
         _ => new FontIcon() { },
     };
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanUseHeaderControls))]
+    [NotifyPropertyChangedFor(nameof(CanRefresh))]
+    public partial bool IsSelectionMode { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
+    public partial bool IsBatchUpdateRunning { get; set; }
+
+    public List<Game> SelectedGames { get; } = new List<Game>();
+
+    public string SelectedGamesCountText =>
+        ResourceHelper.GetFormattedResourceTemplate(
+            "GamesPage_SelectionMode_CountTemplate",
+            SelectedGames.Count);
+
+    public bool CanApplyBatchDll =>
+        SelectedGames.Count > 0
+        && IsLoading == false
+        && IsBatchUpdateRunning == false
+        && SelectedGames.All(game => game.Processing == false);
+
+    bool AreAllVisibleGamesSelected =>
+        gameGridPage.GetVisibleItemCount() > 0
+        && gameGridPage.GetVisibleSelectedCount() == gameGridPage.GetVisibleItemCount();
+
+    public string SelectVisibleButtonText => AreAllVisibleGamesSelected
+        ? ResourceHelper.GetString("GamesPage_SelectionMode_DeselectAll")
+        : ResourceHelper.GetString("GamesPage_SelectionMode_SelectVisible");
+
     public GameGridPageModelTranslationProperties TranslationProperties { get; } = new GameGridPageModelTranslationProperties();
 
     public GameGridPageModel(GameGridPage gameGridPage)
@@ -75,6 +117,131 @@ public partial class GameGridPageModel : ObservableObject
 
         this.gameGridPage = gameGridPage;
         ApplyGameGroupFilter();
+    }
+
+    [RelayCommand]
+    void ToggleSelectionMode()
+    {
+        if (IsSelectionMode == false)
+        {
+            IsSelectionMode = true;
+            gameGridPage.EnterSelectionMode();
+            return;
+        }
+
+        ExitSelectionMode();
+    }
+
+    [RelayCommand]
+    void ToggleSelectVisible()
+    {
+        if (AreAllVisibleGamesSelected)
+        {
+            gameGridPage.DeselectAllVisible();
+        }
+        else
+        {
+            gameGridPage.SelectAllVisible();
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanApplyBatchDll))]
+    async Task ApplyBatchDllAsync()
+    {
+        var games = SelectedGames.ToList();
+        if (games.Count == 0
+            || IsLoading
+            || IsBatchUpdateRunning
+            || games.Any(game => game.Processing))
+        {
+            return;
+        }
+
+        var pickerDialog = new EasyContentDialog(gameGridPage.XamlRoot)
+        {
+            Title = ResourceHelper.GetString("GamesPage_Batch_Title"),
+            PrimaryButtonText = ResourceHelper.GetString("General_Apply"),
+            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        pickerDialog.Resources["ContentDialogMaxWidth"] = 680d;
+        var picker = new BatchDllPickerControl(pickerDialog, games);
+        pickerDialog.Content = picker;
+
+        if (await pickerDialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        var selections = picker.ViewModel.PlannedDllActions;
+        if (selections.Count == 0)
+        {
+            return;
+        }
+
+        IsBatchUpdateRunning = true;
+        try
+        {
+            var results = await DllUpdateWorkflow.ApplyAsync(games, selections);
+            var summaryDialog = new EasyContentDialog(gameGridPage.XamlRoot)
+            {
+                Title = ResourceHelper.GetString("GamesPage_Batch_Summary_Title"),
+                CloseButtonText = ResourceHelper.GetString("General_Close"),
+                DefaultButton = ContentDialogButton.Close,
+                Content = new BatchSwapSummaryControl(results),
+            };
+            await summaryDialog.ShowAsync();
+        }
+        finally
+        {
+            IsBatchUpdateRunning = false;
+        }
+
+        ExitSelectionMode();
+    }
+
+    internal void UpdateSelection(IList<object> addedItems, IList<object> removedItems)
+    {
+        foreach (var item in removedItems)
+        {
+            if (item is Game game)
+            {
+                var selectedIndex = SelectedGames.FindIndex(
+                    selectedGame => ReferenceEquals(selectedGame, game));
+                if (selectedIndex >= 0)
+                {
+                    SelectedGames.RemoveAt(selectedIndex);
+                }
+            }
+        }
+
+        foreach (var item in addedItems)
+        {
+            if (item is Game game
+                && SelectedGames.Any(selectedGame =>
+                    ReferenceEquals(selectedGame, game)) == false)
+            {
+                SelectedGames.Add(game);
+            }
+        }
+
+        NotifySelectionChanged();
+    }
+
+    void ExitSelectionMode()
+    {
+        gameGridPage.ExitSelectionMode();
+        SelectedGames.Clear();
+        IsSelectionMode = false;
+        NotifySelectionChanged();
+    }
+
+    void NotifySelectionChanged()
+    {
+        OnPropertyChanged(nameof(SelectedGamesCountText));
+        OnPropertyChanged(nameof(SelectVisibleButtonText));
+        OnPropertyChanged(nameof(CanApplyBatchDll));
+        ApplyBatchDllCommand.NotifyCanExecuteChanged();
     }
 
     public async Task InitialLoadAsync()

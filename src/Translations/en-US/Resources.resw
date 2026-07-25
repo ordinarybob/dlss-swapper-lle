@@ -1273,4 +1273,97 @@ Because of this we recommend using caution for multiplayer games.</value>
   <data name="TranslationToolboxPage_WindowTitle" xml:space="preserve">
     <value>Translation Toolbox</value>
   </data>
+  <data name="GamePage_UpdateDetectedDlls_ConfirmTemplate" xml:space="preserve">
+    <value>Update {0} detected DLL families in "{1}" to their latest eligible versions?</value>
+  </data>
+  <data name="GamePage_UpdateDetectedDlls_NoEligibleActions" xml:space="preserve">
+    <value>No detected DLL family has an eligible version under the current library filters.</value>
+  </data>
+  <data name="GamePage_UpdateDetectedDlls_PresetsUnchanged" xml:space="preserve">
+    <value>NVIDIA preset selections will not change.</value>
+  </data>
+  <data name="GamePage_UpdateDetectedDlls_Tooltip" xml:space="preserve">
+    <value>Update each detected DLL family to its latest eligible version.</value>
+  </data>
+  <data name="GamesPage_Batch_DllLabelTemplate" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="GamesPage_Batch_Error_Generic" xml:space="preserve">
+    <value>The update failed.</value>
+  </data>
+  <data name="GamesPage_Batch_NoChange" xml:space="preserve">
+    <value>Don't change</value>
+  </data>
+  <data name="GamesPage_Batch_Skipped_Incompatible" xml:space="preserve">
+    <value>The selected DLL uses an incompatible DLSS generation.</value>
+  </data>
+  <data name="GamesPage_Batch_Skipped_MixedGenerations" xml:space="preserve">
+    <value>Game mixes DLSS generations.</value>
+  </data>
+  <data name="GamesPage_Batch_Skipped_NoAsset" xml:space="preserve">
+    <value>The DLL family is no longer detected.</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_AlreadyCurrent" xml:space="preserve">
+    <value>Already current:</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_CopyAll" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_CopyFailedTemplate" xml:space="preserve">
+    <value>Could not copy the report: {0}</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_CopySuccess" xml:space="preserve">
+    <value>The report was copied.</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_Errors" xml:space="preserve">
+    <value>Errors:</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_NeedsAdminTemplate" xml:space="preserve">
+    <value>Games needing administrator access: {0}. Run DLSS Swapper as administrator and try again.</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_Results" xml:space="preserve">
+    <value>Results</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_SaveFailedTemplate" xml:space="preserve">
+    <value>Could not save the report: {0}</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_SaveReport" xml:space="preserve">
+    <value>Save report</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_SaveSuccessTemplate" xml:space="preserve">
+    <value>Report saved to {0}</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_Skipped" xml:space="preserve">
+    <value>Skipped:</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_Swapped" xml:space="preserve">
+    <value>Swapped:</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_Title" xml:space="preserve">
+    <value>DLL update summary</value>
+  </data>
+  <data name="GamesPage_Batch_Title" xml:space="preserve">
+    <value>Apply DLLs to selected games</value>
+  </data>
+  <data name="GamesPage_Batch_UpdateDetectedDllsDescription" xml:space="preserve">
+    <value>Selects the latest eligible version for every detected DLL family. NVIDIA preset selections are unchanged.</value>
+  </data>
+  <data name="GamesPage_Batch_UpdateDetectedDllsToLatest" xml:space="preserve">
+    <value>Update detected DLLs to latest</value>
+  </data>
+  <data name="GamesPage_SelectionMode_ApplyDll" xml:space="preserve">
+    <value>Apply DLL</value>
+  </data>
+  <data name="GamesPage_SelectionMode_CountTemplate" xml:space="preserve">
+    <value>{0} selected</value>
+  </data>
+  <data name="GamesPage_SelectionMode_DeselectAll" xml:space="preserve">
+    <value>Deselect all</value>
+  </data>
+  <data name="GamesPage_SelectionMode_SelectGames" xml:space="preserve">
+    <value>Select games</value>
+  </data>
+  <data name="GamesPage_SelectionMode_SelectVisible" xml:space="preserve">
+    <value>Select visible</value>
+  </data>
 </root>

@@ -80,4 +80,10 @@ public class GameControlModelTranslationProperties : LocalizedViewModelBase
 
     [TranslationProperty]
     public string NVAPIErrorTooltipText => ResourceHelper.GetString("GamePage_NVAPIError_Tooltip");
+
+    [TranslationProperty]
+    public string UpdateDetectedDllsText => ResourceHelper.GetString("GamesPage_Batch_UpdateDetectedDllsToLatest");
+
+    [TranslationProperty]
+    public string UpdateDetectedDllsTooltipText => ResourceHelper.GetString("GamePage_UpdateDetectedDlls_Tooltip");
 }
