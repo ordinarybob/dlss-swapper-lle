@@ -118,7 +118,6 @@
     <None Remove="UserControls\ImportSystemDisabledView.xaml" />
     <None Remove="UserControls\ManuallyAddGameControl.xaml" />
     <None Remove="UserControls\MultipleDLLsFoundControl.xaml" />
-    <None Remove="UserControls\NewDLLsControl.xaml" />
     <None Remove="UserControls\NGXModelImporter.xaml" />
     <None Remove="UserControls\ProxySettingsControl.xaml" />
   </ItemGroup>
@@ -358,9 +357,6 @@
           <Generator>MSBuild:Compile</Generator>
         </Page>
         <Page Update="UserControls\MultipleDLLsFoundControl.xaml">
-          <Generator>MSBuild:Compile</Generator>
-        </Page>
-        <Page Update="UserControls\NewDLLsControl.xaml">
           <Generator>MSBuild:Compile</Generator>
         </Page>
         <Page Update="UserControls\DLLPickerControl.xaml">
