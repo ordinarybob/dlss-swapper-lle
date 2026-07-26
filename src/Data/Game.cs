@@ -307,58 +307,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
             try
             {
-                var shouldUpdatedCover = true;
-
-                if (forceNeedsProcessing == true && File.Exists(ExpectedCustomCoverImage) == false)
-                {
-                    // If we are forcing game load and custom cover image doesnt exist we will force load the cover no matter what.
-                }
-                else
-                {
-                    // This shouldn't crash, bit if it does lets not take down the entire processing.
-                    try
-                    {
-                        FileInfo? fileInfo = null;
-                        if (File.Exists(ExpectedCustomCoverImage))
-                        {
-                            // If we are using a custom cover we don't want to try reloading any cover so we don't set fileInfo.
-                            shouldUpdatedCover = false;
-                        }
-                        else if (File.Exists(ExpectedCoverImage))
-                        {
-                            fileInfo = new FileInfo(ExpectedCoverImage);
-                        }
-
-                        if (fileInfo is not null)
-                        {
-                            var daysSinceLastModified = (DateTime.Now - fileInfo.LastWriteTime).TotalDays;
-
-                            // Add +/- 2 days so not all will process at the same time.
-                            daysSinceLastModified += ((new Random()).NextDouble() - 0.5) * 4.0;
-
-                            // If its less than 7 days lets not try refresh.
-                            if (daysSinceLastModified < 7)
-                            {
-                                shouldUpdatedCover = false;
-                            }
-                        }
-                    }
-                    catch (Exception err)
-                    {
-                        Logger.Error(err);
-                        Debugger.Break();
-                    }
-                }
-
-                if (shouldUpdatedCover)
-                {
-                    GameCoverHydrationQueue.Instance.Enqueue(this, refreshFromSource: true);
-                }
-                else
-                {
-                    Logger.Verbose($"Skipping updating cover for {Title}");
-                }
-
                 var enumerationOptions = new EnumerationOptions();
                 enumerationOptions.RecurseSubdirectories = true;
                 enumerationOptions.AttributesToSkip |= FileAttributes.ReparsePoint;
@@ -583,6 +531,58 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     if (unknownGameAssets.Any())
                     {
                         GameManager.Instance.AddUnknownGameAssets(GameLibrary, Title, unknownGameAssets);
+                    }
+
+                    var shouldUpdatedCover = true;
+
+                    if (forceNeedsProcessing == true && File.Exists(ExpectedCustomCoverImage) == false)
+                    {
+                        // If we are forcing game load and custom cover image doesnt exist we will force load the cover no matter what.
+                    }
+                    else
+                    {
+                        // This shouldn't crash, bit if it does lets not take down the entire processing.
+                        try
+                        {
+                            FileInfo? fileInfo = null;
+                            if (File.Exists(ExpectedCustomCoverImage))
+                            {
+                                // If we are using a custom cover we don't want to try reloading any cover so we don't set fileInfo.
+                                shouldUpdatedCover = false;
+                            }
+                            else if (File.Exists(ExpectedCoverImage))
+                            {
+                                fileInfo = new FileInfo(ExpectedCoverImage);
+                            }
+
+                            if (fileInfo is not null)
+                            {
+                                var daysSinceLastModified = (DateTime.Now - fileInfo.LastWriteTime).TotalDays;
+
+                                // Add +/- 2 days so not all will process at the same time.
+                                daysSinceLastModified += ((new Random()).NextDouble() - 0.5) * 4.0;
+
+                                // If its less than 7 days lets not try refresh.
+                                if (daysSinceLastModified < 7)
+                                {
+                                    shouldUpdatedCover = false;
+                                }
+                            }
+                        }
+                        catch (Exception err)
+                        {
+                            Logger.Error(err);
+                            Debugger.Break();
+                        }
+                    }
+
+                    if (shouldUpdatedCover)
+                    {
+                        GameCoverHydrationQueue.Instance.Enqueue(this, refreshFromSource: true);
+                    }
+                    else
+                    {
+                        Logger.Verbose($"Skipping updating cover for {Title}");
                     }
                 }
 
@@ -1533,8 +1533,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
     public async Task LoadGameAssetsFromCacheAsync()
     {
-        GameCoverHydrationQueue.Instance.Enqueue(this);
-
         GameAssets.Clear();
         using (await Database.Instance.Mutex.LockAsync())
         {
@@ -1586,6 +1584,11 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         NeedsProcessing = true;
                         break;
                     }
+                }
+
+                if (NeedsProcessing == false)
+                {
+                    GameCoverHydrationQueue.Instance.Enqueue(this);
                 }
             }
         }

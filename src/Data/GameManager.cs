@@ -59,8 +59,7 @@ internal partial class GameManager : ObservableObject
     static bool IsVisibleForSwappableFilter(Game game, bool hideNonDLSSGames)
     {
         return hideNonDLSSGames == false
-            || game.HasSwappableItems
-            || game.IsEligibilityPending;
+            || game.HasSwappableItems;
     }
 
     Predicate<object> GetPredicateForAllGames(bool hideNonDLSSGames, string? filterText = null)
