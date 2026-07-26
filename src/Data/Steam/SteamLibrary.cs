@@ -79,6 +79,8 @@ internal partial class SteamLibrary : IGameLibrary
             return new List<Game>();
         }
 
+        var libraryFoldersFileInfo = new FileInfo(libraryFoldersFile);
+
         var steamAppsPaths = new List<string>()
         {
             baseSteamAppsFolder
@@ -131,8 +133,8 @@ internal partial class SteamLibrary : IGameLibrary
             Debugger.Break();
         }
 
-        // libraryfolders.vdf can contain a stale or incomplete app index.
-        // The top-level appmanifest files are Steam's authoritative installed-game list.
+        // Look for newly installed games that have not reached libraryfolders.vdf yet.
+        // Older unindexed manifests are likely stale leftovers and must not be loaded.
         foreach (var steamAppPath in steamAppsPaths.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             foreach (var appManifestPath in Directory.EnumerateFiles(
@@ -147,14 +149,20 @@ internal partial class SteamLibrary : IGameLibrary
                 }
 
                 var appId = match.Groups["app_id"].Value;
-                if (knownAppManifestPaths.TryAdd(appId, appManifestPath) == false
-                    && string.Equals(
-                        knownAppManifestPaths[appId],
-                        appManifestPath,
-                        StringComparison.OrdinalIgnoreCase) == false)
+                if (knownAppManifestPaths.ContainsKey(appId))
                 {
-                    Logger.Warning(
-                        $"Steam app {appId} has manifests in more than one library. Preserving {knownAppManifestPaths[appId]} and ignoring {appManifestPath}.");
+                    continue;
+                }
+
+                var appManifestFileInfo = new FileInfo(appManifestPath);
+                if (appManifestFileInfo.LastWriteTime > libraryFoldersFileInfo.LastWriteTime)
+                {
+                    knownAppManifestPaths[appId] = appManifestPath;
+                }
+                else
+                {
+                    Logger.Error(
+                        $"Found potential rogue file when loading Steam manifests: appId {appId}, {appManifestPath}");
                 }
             }
         }
