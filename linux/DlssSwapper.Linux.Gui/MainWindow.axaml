@@ -1,0 +1,205 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DlssSwapper.Linux.Gui.MainWindow"
+        Title="DLSS Swapper LLE — Linux preview"
+        Width="1180"
+        Height="820"
+        MinWidth="900"
+        MinHeight="650"
+        WindowStartupLocation="CenterScreen">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="20">
+    <StackPanel Grid.Row="0" Spacing="10">
+      <StackPanel>
+        <TextBlock Text="DLSS Swapper LLE"
+                   FontSize="27"
+                   FontWeight="SemiBold" />
+        <TextBlock Text="Discover, inspect, preview, update, and restore supported game DLLs."
+                   Classes="muted" />
+      </StackPanel>
+      <Border Background="#5A4217"
+              BorderBrush="#E2AD3A"
+              BorderThickness="1"
+              CornerRadius="7"
+              Padding="12">
+        <TextBlock Text="Untested on Linux as of this release"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   Foreground="#FFE3A0"
+                   HorizontalAlignment="Center" />
+      </Border>
+    </StackPanel>
+
+    <Border Grid.Row="1"
+            Classes="card"
+            Margin="0,14,0,14">
+      <StackPanel Spacing="10">
+        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+          <StackPanel Grid.Column="0" Spacing="5">
+            <TextBlock Text="Additional Steam roots" FontWeight="SemiBold" />
+            <TextBox x:Name="SteamRootsTextBox"
+                     Height="72"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     PlaceholderText="One optional Steam root per line" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="5">
+            <TextBlock Text="Explicit game paths" FontWeight="SemiBold" />
+            <TextBox x:Name="ExplicitPathsTextBox"
+                     Height="72"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     PlaceholderText="One game directory per line" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="5">
+            <TextBlock Text="Multi-game roots" FontWeight="SemiBold" />
+            <TextBox x:Name="GameRootsTextBox"
+                     Height="72"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     PlaceholderText="Immediate child directories become games" />
+          </StackPanel>
+        </Grid>
+
+        <WrapPanel Orientation="Horizontal">
+          <Button Content="Discover Steam"
+                  Classes="primary"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="DiscoverSteam_Click" />
+          <Button Content="Add paths and roots"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="AddPaths_Click" />
+          <Button Content="Select all"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="SelectAll_Click" />
+          <Button Content="Select none"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="SelectNone_Click" />
+          <Button Content="Scan selected"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="ScanSelected_Click" />
+          <Button Content="Preview latest (dry run)"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="PreviewLatest_Click" />
+          <Button Content="Apply preview"
+                  Classes="danger"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanApplyPreview}"
+                  Click="ApplyPreview_Click" />
+          <Button Content="Restore backups"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="RestoreBackups_Click" />
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="1.05*,0.95*" ColumnSpacing="14">
+      <Border Grid.Column="0" Classes="card">
+        <Grid RowDefinitions="Auto,*">
+          <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="Games" Classes="sectionTitle" />
+            <TextBlock Text="Selection changes invalidate an existing update preview."
+                       Classes="muted"
+                       FontSize="12" />
+          </StackPanel>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Games}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="row">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                      <CheckBox Grid.Column="0"
+                                IsChecked="{Binding IsSelected}"
+                                VerticalAlignment="Top" />
+                      <StackPanel Grid.Column="1" Spacing="3">
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="15"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Source}"
+                                   Classes="muted"
+                                   FontSize="12" />
+                        <TextBlock Text="{Binding RootPath}"
+                                   TextWrapping="Wrap"
+                                   FontFamily="Monospace"
+                                   FontSize="12" />
+                        <TextBlock Text="{Binding ScanSummary}"
+                                   Margin="0,4,0,0"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ScanDetail}"
+                                   Classes="muted"
+                                   FontSize="12"
+                                   TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="1" Classes="card">
+        <Grid RowDefinitions="Auto,*">
+          <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="Preview and results" Classes="sectionTitle" />
+            <TextBlock Text="A preview performs no downloads and writes no files."
+                       Classes="muted"
+                       FontSize="12" />
+          </StackPanel>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Results}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="row">
+                    <StackPanel Spacing="3">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding Game}"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Outcome}"
+                                   FontWeight="SemiBold" />
+                      </Grid>
+                      <TextBlock Text="{Binding Family}" Classes="muted" />
+                      <TextBlock Text="{Binding Target}"
+                                 TextWrapping="Wrap"
+                                 FontFamily="Monospace"
+                                 FontSize="12" />
+                      <TextBlock Text="{Binding Message}"
+                                 TextWrapping="Wrap"
+                                 Margin="0,3,0,0" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <Grid Grid.Row="3"
+          ColumnDefinitions="*,220"
+          ColumnSpacing="12"
+          Margin="0,14,0,0">
+      <TextBlock Grid.Column="0"
+                 Text="{Binding StatusText}"
+                 TextWrapping="Wrap"
+                 VerticalAlignment="Center" />
+      <ProgressBar Grid.Column="1"
+                   Height="5"
+                   IsIndeterminate="True"
+                   IsVisible="{Binding IsBusy}"
+                   VerticalAlignment="Center" />
+    </Grid>
+  </Grid>
+</Window>
