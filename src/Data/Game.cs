@@ -312,25 +312,13 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
             try
             {
-                var enumerationOptions = new EnumerationOptions();
-                enumerationOptions.RecurseSubdirectories = true;
-                enumerationOptions.AttributesToSkip |= FileAttributes.ReparsePoint;
-
                 var oldGameAssets = GameAssets.ToList();
                 GameAssets.Clear();
                 using (await Database.Instance.Mutex.LockAsync())
                 {
                     await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
                 }
-                // TODO: See if changing these to filter specific files, or getting very *.dll and looking for our specific ones is faster
-                var dllPaths = Directory.EnumerateFiles(InstallPath, "*.dll", enumerationOptions);
-
-                /*
-                var dlssDllPaths = Directory.GetFiles(InstallPath, "nvngx_dlss.dll", enumerationOptions);
-                var dlssgDllPaths = Directory.GetFiles(InstallPath, "nvngx_dlssg.dll", enumerationOptions);
-                var dlssdDllPaths = Directory.GetFiles(InstallPath, "nvngx_dlssd.dll", enumerationOptions);
-                var xessDllPaths = Directory.GetFiles(InstallPath, "libxess.dll", enumerationOptions);
-                */
+                var discoveredAssets = await GameAssetPathIndex.FindAsync(InstallPath).ConfigureAwait(false);
 
                 var dllHistory = new List<GameHistory>();
                 var unknownGameAssets = new List<GameAsset>();
@@ -409,111 +397,16 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
                 }
 
-                foreach (var dllPath in dllPaths)
+                foreach (var discoveredAsset in discoveredAssets)
                 {
-                    var dllName = Path.GetFileName(dllPath);
-
-                    // NOTE: DLL type
-                    // The case of these files should never change, right?
-                    if (dllName == "nvngx_dlss.dll")
+                    var gameAsset = new GameAsset()
                     {
-                        var gameAsset = new GameAsset()
-                        {
-                            Id = ID,
-                            AssetType = GameAssetType.DLSS,
-                            Path = dllPath,
-                        };
-                        ProcessGame_ProcessGameAsset(gameAsset);
-                        GameAssets.Add(gameAsset);
-                    }
-                    else if (dllName == "nvngx_dlssg.dll")
-                    {
-                        var gameAsset = new GameAsset()
-                        {
-                            Id = ID,
-                            AssetType = GameAssetType.DLSS_G,
-                            Path = dllPath,
-                        };
-                        ProcessGame_ProcessGameAsset(gameAsset);
-                        GameAssets.Add(gameAsset);
-                    }
-                    else if (dllName == "nvngx_dlssd.dll")
-                    {
-                        var gameAsset = new GameAsset()
-                        {
-                            Id = ID,
-                            AssetType = GameAssetType.DLSS_D,
-                            Path = dllPath,
-                        };
-                        ProcessGame_ProcessGameAsset(gameAsset);
-                        GameAssets.Add(gameAsset);
-                    }
-                    else if (dllName == "amd_fidelityfx_dx12.dll")
-                    {
-                        var gameAsset = new GameAsset()
-                        {
-                            Id = ID,
-                            AssetType = GameAssetType.FSR_31_DX12,
-                            Path = dllPath,
-                        };
-                        ProcessGame_ProcessGameAsset(gameAsset);
-                        GameAssets.Add(gameAsset);
-                    }
-                    else if (dllName == "amd_fidelityfx_vk.dll")
-                    {
-                        var gameAsset = new GameAsset()
-                        {
-                            Id = ID,
-                            AssetType = GameAssetType.FSR_31_VK,
-                            Path = dllPath,
-                        };
-                        ProcessGame_ProcessGameAsset(gameAsset);
-                        GameAssets.Add(gameAsset);
-                    }
-                    else if (dllName == "libxess.dll")
-                    {
-                        var gameAsset = new GameAsset()
-                        {
-                            Id = ID,
-                            AssetType = GameAssetType.XeSS,
-                            Path = dllPath,
-                        };
-                        ProcessGame_ProcessGameAsset(gameAsset);
-                        GameAssets.Add(gameAsset);
-                    }
-                    else if (dllName == "libxess_dx11.dll")
-                    {
-                        var gameAsset = new GameAsset()
-                        {
-                            Id = ID,
-                            AssetType = GameAssetType.XeSS_DX11,
-                            Path = dllPath,
-                        };
-                        ProcessGame_ProcessGameAsset(gameAsset);
-                        GameAssets.Add(gameAsset);
-                    }
-                    else if (dllName == "libxell.dll")
-                    {
-                        var gameAsset = new GameAsset()
-                        {
-                            Id = ID,
-                            AssetType = GameAssetType.XeLL,
-                            Path = dllPath,
-                        };
-                        ProcessGame_ProcessGameAsset(gameAsset);
-                        GameAssets.Add(gameAsset);
-                    }
-                    else if (dllName == "libxess_fg.dll")
-                    {
-                        var gameAsset = new GameAsset()
-                        {
-                            Id = ID,
-                            AssetType = GameAssetType.XeSS_FG,
-                            Path = dllPath,
-                        };
-                        ProcessGame_ProcessGameAsset(gameAsset);
-                        GameAssets.Add(gameAsset);
-                    }
+                        Id = ID,
+                        AssetType = discoveredAsset.AssetType,
+                        Path = discoveredAsset.Path,
+                    };
+                    ProcessGame_ProcessGameAsset(gameAsset);
+                    GameAssets.Add(gameAsset);
                 }
 
                 App.CurrentApp.RunOnUIThread(() =>

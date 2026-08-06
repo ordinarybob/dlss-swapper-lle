@@ -277,6 +277,7 @@ internal partial class GameManager : ObservableObject
         await _loadGate.WaitAsync().ConfigureAwait(false);
         BeginUiBatch();
         GameDatabaseWriteBatch.Instance.Begin();
+        using var gameAssetPathIndex = GameAssetPathIndex.BeginBatch();
         try
         {
             var tasks = new List<Task<List<Game>>>();
