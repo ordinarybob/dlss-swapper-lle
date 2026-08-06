@@ -251,17 +251,31 @@ internal partial class SteamLibrary : IGameLibrary
         }
 
 
-        games.Sort();
-
-        // Delete games that are no longer loaded, they are likely uninstalled
-        foreach (var cachedGame in cachedGames)
+        if (libraryFoldersFileInfo is null)
         {
-            // Game is to be deleted.
-            if (games.Contains(cachedGame) == false)
+            // Standalone discovery is additive because it cannot prove that an
+            // undiscovered library is uninstalled or currently available.
+            foreach (var cachedGame in cachedGames)
             {
-                await cachedGame.DeleteAsync().ConfigureAwait(false);
+                if (games.Contains(cachedGame) == false)
+                {
+                    games.Add(cachedGame);
+                }
             }
         }
+        else
+        {
+            // The Steam client index is authoritative for installed libraries.
+            foreach (var cachedGame in cachedGames)
+            {
+                if (games.Contains(cachedGame) == false)
+                {
+                    await cachedGame.DeleteAsync().ConfigureAwait(false);
+                }
+            }
+        }
+
+        games.Sort();
 
         return games;
     }
