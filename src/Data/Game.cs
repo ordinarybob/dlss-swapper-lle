@@ -21,6 +21,8 @@ namespace DLSS_Swapper.Data;
 
 public abstract partial class Game : ObservableObject, IComparable<Game>, IEquatable<Game> //, INotifyPropertyChanged
 {
+    static readonly TimeSpan NegativeScanCacheLifetime = TimeSpan.FromDays(7);
+
     [PrimaryKey]
     [Column("id")]
     public string ID { get; set; } = string.Empty;
@@ -85,6 +87,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     [ObservableProperty]
     [Column("has_swappable_items")]
     public partial bool HasSwappableItems { get; set; } = false;
+
+    [Column("last_scan_time")]
+    public DateTime? LastScanTimeUtc { get; set; }
 
     [ObservableProperty]
     [Column("notes")]
@@ -600,6 +605,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 {
                     NeedsProcessing = scanCompleted == false;
                     HasSwappableItems = scanCompleted && newHasSwappableItems;
+                    if (scanCompleted)
+                    {
+                        LastScanTimeUtc = DateTime.UtcNow;
+                    }
 
                     if (autoSave)
                     {
@@ -1594,10 +1603,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
         else
         {
-            // If there is no known current DLLs then we likely want to do a full reload in case the game got updated.
-            // TODO: Also add a time last reloaded here.
-            NeedsProcessing = true;
-            return;
+            // A successful empty scan is still useful cache data. Periodically re-scan
+            // in case the game changed outside a launcher update or explicit refresh.
+            NeedsProcessing = LastScanTimeUtc is null
+                || LastScanTimeUtc < DateTime.UtcNow.Subtract(NegativeScanCacheLifetime);
         }
     }
 
