@@ -381,18 +381,43 @@ public sealed partial class MainWindow : Window
         await DLLManager.Instance.LoadManifestsAsync();
 
 
-        if (Settings.Instance.HasShownMultiplayerWarning == false)
+        if (Settings.Instance.HasSelectedSystemPerformance == false)
         {
+            var performanceOptions = new RadioButtons()
+            {
+                SelectedIndex = 0,
+            };
+            performanceOptions.Items.Add(ResourceHelper.GetString("MainWindow_SystemPerformance_Low"));
+            performanceOptions.Items.Add(ResourceHelper.GetString("MainWindow_SystemPerformance_Medium"));
+            performanceOptions.Items.Add(ResourceHelper.GetString("MainWindow_SystemPerformance_High"));
+
+            var content = new StackPanel()
+            {
+                Spacing = 12,
+            };
+            content.Children.Add(new TextBlock()
+            {
+                Text = ResourceHelper.GetString("MainWindow_SystemPerformance_Message"),
+                TextWrapping = TextWrapping.Wrap,
+            });
+            content.Children.Add(performanceOptions);
+
             var dialog = new EasyContentDialog(RootGrid.XamlRoot)
             {
-                Title = ResourceHelper.GetString("MainWindow_NoteForMultiplayerGames_Title"),
-                CloseButtonText = ResourceHelper.GetString("General_Okay"),
-                DefaultButton = ContentDialogButton.Close,
-                Content = ResourceHelper.GetString("MainWindow_NoteForMultiplayerGames_Message"),
+                Title = ResourceHelper.GetString("MainWindow_SystemPerformance_Title"),
+                PrimaryButtonText = ResourceHelper.GetString("General_Apply"),
+                DefaultButton = ContentDialogButton.Primary,
+                Content = content,
             };
-            var result = await dialog.ShowAsync();
+            await dialog.ShowAsync();
 
-            Settings.Instance.HasShownMultiplayerWarning = true;
+            var profile = performanceOptions.SelectedIndex switch
+            {
+                1 => SystemPerformanceProfile.Medium,
+                2 => SystemPerformanceProfile.High,
+                _ => SystemPerformanceProfile.Low,
+            };
+            Settings.Instance.ApplySystemPerformanceProfile(profile);
         }
 
 

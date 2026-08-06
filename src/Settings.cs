@@ -9,6 +9,13 @@ using System.Linq;
 
 namespace DLSS_Swapper;
 
+internal enum SystemPerformanceProfile
+{
+    Low,
+    Medium,
+    High,
+}
+
 public class Settings
 {
     public const int MinGridViewItemWidth = 60;
@@ -33,6 +40,12 @@ public class Settings
     public const int DefaultBatchSwapConcurrency = 3;
     public const int MinBatchSwapConcurrency = 1;
     public const int MaxBatchSwapConcurrency = 26;
+
+    public const int MediumRecursiveScanConcurrency = (DefaultRecursiveScanConcurrency + MaxRecursiveScanConcurrency + 1) / 2;
+    public const int MediumCoverHydrationConcurrency = (DefaultCoverHydrationConcurrency + MaxCoverHydrationConcurrency + 1) / 2;
+    public const int MediumUiCollectionBatchSize = (DefaultUiCollectionBatchSize + MaxUiCollectionBatchSize + 1) / 2;
+    public const int MediumDatabaseWriteBatchSize = (DefaultDatabaseWriteBatchSize + MaxDatabaseWriteBatchSize + 1) / 2;
+    public const int MediumBatchSwapConcurrency = (DefaultBatchSwapConcurrency + MaxBatchSwapConcurrency + 1) / 2;
 
     static Settings? _instance;
 
@@ -69,6 +82,23 @@ public class Settings
             if (_hasShownMultiplayerWarning != value)
             {
                 _hasShownMultiplayerWarning = value;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    bool _hasSelectedSystemPerformance;
+    public bool HasSelectedSystemPerformance
+    {
+        get { return _hasSelectedSystemPerformance; }
+        set
+        {
+            if (_hasSelectedSystemPerformance != value)
+            {
+                _hasSelectedSystemPerformance = value;
                 if (_autoSave)
                 {
                     SaveJson();
@@ -547,6 +577,52 @@ public class Settings
     internal void SaveJson()
     {
         Storage.SaveSettingsJson(this);
+    }
+
+    internal void ApplySystemPerformanceProfile(SystemPerformanceProfile profile)
+    {
+        var shouldSave = _autoSave;
+        _autoSave = false;
+        try
+        {
+            switch (profile)
+            {
+                case SystemPerformanceProfile.Low:
+                    RecursiveScanConcurrency = DefaultRecursiveScanConcurrency;
+                    CoverHydrationConcurrency = DefaultCoverHydrationConcurrency;
+                    UiCollectionBatchSize = DefaultUiCollectionBatchSize;
+                    DatabaseWriteBatchSize = DefaultDatabaseWriteBatchSize;
+                    BatchSwapConcurrency = DefaultBatchSwapConcurrency;
+                    break;
+                case SystemPerformanceProfile.Medium:
+                    RecursiveScanConcurrency = MediumRecursiveScanConcurrency;
+                    CoverHydrationConcurrency = MediumCoverHydrationConcurrency;
+                    UiCollectionBatchSize = MediumUiCollectionBatchSize;
+                    DatabaseWriteBatchSize = MediumDatabaseWriteBatchSize;
+                    BatchSwapConcurrency = MediumBatchSwapConcurrency;
+                    break;
+                case SystemPerformanceProfile.High:
+                    RecursiveScanConcurrency = MaxRecursiveScanConcurrency;
+                    CoverHydrationConcurrency = MaxCoverHydrationConcurrency;
+                    UiCollectionBatchSize = MaxUiCollectionBatchSize;
+                    DatabaseWriteBatchSize = MaxDatabaseWriteBatchSize;
+                    BatchSwapConcurrency = MaxBatchSwapConcurrency;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(profile), profile, null);
+            }
+
+            HasSelectedSystemPerformance = true;
+        }
+        finally
+        {
+            _autoSave = shouldSave;
+        }
+
+        if (shouldSave)
+        {
+            SaveJson();
+        }
     }
 
     static Settings FromJson()
