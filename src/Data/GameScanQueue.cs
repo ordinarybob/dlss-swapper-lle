@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
@@ -6,6 +7,8 @@ namespace DLSS_Swapper.Data;
 
 internal sealed class GameScanQueue
 {
+    internal readonly record struct Progress(long Enqueued, long Completed);
+
     static readonly Lazy<GameScanQueue> _instance = new(() => new GameScanQueue());
 
     public static GameScanQueue Instance => _instance.Value;
@@ -18,15 +21,24 @@ internal sealed class GameScanQueue
         });
 
     readonly object _idleLock = new();
+    readonly object _workerLock = new();
     TaskCompletionSource _idleCompletion = CompletedCompletion();
     int _pendingCount;
+    int _workerCount;
+    int _desiredWorkerCount;
+    long _totalEnqueued;
+    long _totalCompleted;
 
     GameScanQueue()
     {
-        var workerCount = Settings.Instance.RecursiveScanConcurrency;
-        for (var i = 0; i < workerCount; i++)
+        SetConcurrency(Settings.Instance.RecursiveScanConcurrency);
+    }
+
+    public static void UpdateConcurrency(int workerCount)
+    {
+        if (_instance.IsValueCreated)
         {
-            _ = RunWorkerAsync();
+            _instance.Value.SetConcurrency(workerCount);
         }
     }
 
@@ -41,12 +53,20 @@ internal sealed class GameScanQueue
 
             _pendingCount++;
         }
+        Interlocked.Increment(ref _totalEnqueued);
 
         if (_queue.Writer.TryWrite(scan) == false)
         {
             MarkCompleted();
             throw new InvalidOperationException("Unable to queue game scan.");
         }
+    }
+
+    public Progress GetProgress()
+    {
+        return new Progress(
+            Interlocked.Read(ref _totalEnqueued),
+            Interlocked.Read(ref _totalCompleted));
     }
 
     public Task WhenIdleAsync()
@@ -59,8 +79,23 @@ internal sealed class GameScanQueue
 
     async Task RunWorkerAsync()
     {
-        await foreach (var scan in _queue.Reader.ReadAllAsync())
+        while (await _queue.Reader.WaitToReadAsync().ConfigureAwait(false))
         {
+            if (_queue.Reader.TryRead(out var scan) == false)
+            {
+                continue;
+            }
+
+            if (TryRetireWorker())
+            {
+                if (_queue.Writer.TryWrite(scan) == false)
+                {
+                    Interlocked.Increment(ref _totalCompleted);
+                    MarkCompleted();
+                }
+                return;
+            }
+
             try
             {
                 await scan().ConfigureAwait(false);
@@ -71,8 +106,46 @@ internal sealed class GameScanQueue
             }
             finally
             {
+                Interlocked.Increment(ref _totalCompleted);
                 MarkCompleted();
             }
+        }
+    }
+
+    void SetConcurrency(int workerCount)
+    {
+        var workersToStart = 0;
+        lock (_workerLock)
+        {
+            if (_desiredWorkerCount == workerCount)
+            {
+                return;
+            }
+
+            _desiredWorkerCount = workerCount;
+            workersToStart = Math.Max(0, _desiredWorkerCount - _workerCount);
+            _workerCount += workersToStart;
+        }
+
+        for (var i = 0; i < workersToStart; i++)
+        {
+            _ = RunWorkerAsync();
+        }
+
+        Logger.Info($"Game scan concurrency set to {workerCount} worker(s).");
+    }
+
+    bool TryRetireWorker()
+    {
+        lock (_workerLock)
+        {
+            if (_workerCount <= _desiredWorkerCount)
+            {
+                return false;
+            }
+
+            _workerCount--;
+            return true;
         }
     }
 

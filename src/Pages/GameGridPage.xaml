@@ -378,6 +378,11 @@
                     VerticalAlignment="Center"
                     IsActive="True"
                     Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{x:Bind ViewModel.ScanProgressText, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.ScanProgressText, Mode=OneWay, Converter={StaticResource StringVisibilityConverter}}" />
             </StackPanel>
 
             <Grid

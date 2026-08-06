@@ -58,6 +58,9 @@ public partial class GameGridPageModel : ObservableObject
     public bool CanRefresh => IsLoading == false && IsSelectionMode == false;
 
     [ObservableProperty]
+    public partial string ScanProgressText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial ICollectionView? CurrentCollectionView { get; set; } = null;
 
 
@@ -367,14 +370,50 @@ public partial class GameGridPageModel : ObservableObject
     {
         IsGameListLoading = true;
         IsDLSSLoading = true;
+        ScanProgressText = ResourceHelper.GetString("General_Loading");
 
         await GameManager.Instance.LoadGamesFromCacheAsync();
 
         IsGameListLoading = false;
 
-        await GameManager.Instance.LoadGamesAsync(false);
+        await LoadGamesWithProgressAsync(false);
 
         IsDLSSLoading = false;
+    }
+
+    async Task LoadGamesWithProgressAsync(bool forceNeedsProcessing)
+    {
+        var scanQueue = GameScanQueue.Instance;
+        var initialProgress = scanQueue.GetProgress();
+        var loadTask = GameManager.Instance.LoadGamesAsync(forceNeedsProcessing);
+
+        try
+        {
+            while (loadTask.IsCompleted == false)
+            {
+                UpdateScanProgress(scanQueue.GetProgress(), initialProgress);
+                await Task.WhenAny(loadTask, Task.Delay(250));
+            }
+
+            await loadTask;
+        }
+        finally
+        {
+            ScanProgressText = string.Empty;
+        }
+    }
+
+    void UpdateScanProgress(GameScanQueue.Progress currentProgress, GameScanQueue.Progress initialProgress)
+    {
+        var enqueued = currentProgress.Enqueued - initialProgress.Enqueued;
+        if (enqueued <= 0)
+        {
+            ScanProgressText = ResourceHelper.GetString("General_Loading");
+            return;
+        }
+
+        var completed = Math.Clamp(currentProgress.Completed - initialProgress.Completed, 0, enqueued);
+        ScanProgressText = $"{ResourceHelper.GetString("General_Loading")} {completed:N0} / {enqueued:N0}";
     }
 
     public void SearchForGameEvent(object sender, TextChangedEventArgs e)
@@ -761,7 +800,7 @@ public partial class GameGridPageModel : ObservableObject
     {
         IsDLSSLoading = true;
 
-        await GameManager.Instance.LoadGamesAsync(true);
+        await LoadGamesWithProgressAsync(true);
 
         IsDLSSLoading = false;
     }
@@ -798,7 +837,7 @@ public partial class GameGridPageModel : ObservableObject
                 await game.SaveToDatabaseAsync();
             }
 
-            await GameManager.Instance.LoadGamesAsync(true);
+            await LoadGamesWithProgressAsync(true);
         }
         finally
         {

@@ -357,6 +357,7 @@ public class Settings
             if (_recursiveScanConcurrency != clampedValue)
             {
                 _recursiveScanConcurrency = clampedValue;
+                GameScanQueue.UpdateConcurrency(clampedValue);
                 if (_autoSave)
                 {
                     SaveJson();
