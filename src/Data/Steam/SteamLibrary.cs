@@ -39,7 +39,8 @@ internal partial class SteamLibrary : IGameLibrary
 
     public bool IsInstalled()
     {
-        return string.IsNullOrEmpty(GetInstallPath()) == false;
+        return string.IsNullOrEmpty(GetInstallPath()) == false
+            || FindStandaloneSteamAppsPaths().Count > 0;
     }
 
     readonly string[] _defaultHiddenGames = [
@@ -48,12 +49,6 @@ internal partial class SteamLibrary : IGameLibrary
 
     public async Task<List<Game>> ListGamesAsync(bool forceNeedsProcessing = false)
     {
-        // If we don't detect a steam install patg return an empty list.
-        if (IsInstalled() == false)
-        {
-            return new List<Game>();
-        }
-
         var cachedGames = GameManager.Instance.GetGames<SteamGame>();
 
         var installPath = GetInstallPath();
@@ -65,34 +60,35 @@ internal partial class SteamLibrary : IGameLibrary
         // Base steamapps folder contains libraryfolders.vdf which has references to other steamapps folders and individual installed Steam games.
         // All of these folders contain appmanifest_[some_id].acf which contains information about the game.
 
-        var baseSteamAppsFolder = Path.Combine(installPath, "steamapps") ?? string.Empty;
+        var baseSteamAppsFolder = string.IsNullOrWhiteSpace(installPath)
+            ? string.Empty
+            : Path.Combine(installPath, "steamapps");
+        var libraryFoldersFile = string.IsNullOrWhiteSpace(baseSteamAppsFolder)
+            ? string.Empty
+            : Path.Combine(baseSteamAppsFolder, "libraryfolders.vdf");
+        FileInfo? libraryFoldersFileInfo = File.Exists(libraryFoldersFile)
+            ? new FileInfo(libraryFoldersFile)
+            : null;
 
-        // This should never happen, but it is a compiler hint for later.
-        if (string.IsNullOrWhiteSpace(baseSteamAppsFolder))
+        var steamAppsPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (Directory.Exists(baseSteamAppsFolder))
         {
-            return new List<Game>();
+            steamAppsPaths.Add(baseSteamAppsFolder);
         }
 
-        var libraryFoldersFile = Path.Combine(baseSteamAppsFolder, "libraryfolders.vdf");
-        if (File.Exists(libraryFoldersFile) == false)
-        {
-            return new List<Game>();
-        }
-
-        var libraryFoldersFileInfo = new FileInfo(libraryFoldersFile);
-
-        var steamAppsPaths = new List<string>()
-        {
-            baseSteamAppsFolder
-        };
+        var standaloneSteamAppsPaths = libraryFoldersFileInfo is null
+            ? FindStandaloneSteamAppsPaths()
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        steamAppsPaths.UnionWith(standaloneSteamAppsPaths);
         var knownAppManifestPaths = new Dictionary<string, string>();
 
         var kvSerializer = KVSerializer.Create(KVSerializationFormat.KeyValues1Text);
 
         try
         {
-            using (var fileStream = File.OpenRead(libraryFoldersFile))
+            if (libraryFoldersFileInfo is not null)
             {
+                using var fileStream = File.OpenRead(libraryFoldersFile);
                 var libraryFoldersVDF = kvSerializer.Deserialize<Dictionary<string, LibraryFoldersVDF>>(fileStream);
                 foreach (var libraryFolderVDF in libraryFoldersVDF)
                 {
@@ -135,7 +131,7 @@ internal partial class SteamLibrary : IGameLibrary
 
         // Look for newly installed games that have not reached libraryfolders.vdf yet.
         // Older unindexed manifests are likely stale leftovers and must not be loaded.
-        foreach (var steamAppPath in steamAppsPaths.Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var steamAppPath in steamAppsPaths)
         {
             foreach (var appManifestPath in Directory.EnumerateFiles(
                 steamAppPath,
@@ -155,7 +151,9 @@ internal partial class SteamLibrary : IGameLibrary
                 }
 
                 var appManifestFileInfo = new FileInfo(appManifestPath);
-                if (appManifestFileInfo.LastWriteTime > libraryFoldersFileInfo.LastWriteTime)
+                if (standaloneSteamAppsPaths.Contains(steamAppPath)
+                    || libraryFoldersFileInfo is null
+                    || appManifestFileInfo.LastWriteTime > libraryFoldersFileInfo.LastWriteTime)
                 {
                     knownAppManifestPaths[appId] = appManifestPath;
                 }
@@ -266,6 +264,45 @@ internal partial class SteamLibrary : IGameLibrary
         }
 
         return games;
+    }
+
+    static HashSet<string> FindStandaloneSteamAppsPaths()
+    {
+        var steamAppsPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var drive in DriveInfo.GetDrives())
+        {
+            if (drive.DriveType != DriveType.Fixed || drive.IsReady == false)
+            {
+                continue;
+            }
+
+            var steamAppsPath = Path.Combine(
+                drive.RootDirectory.FullName,
+                "SteamLibrary",
+                "steamapps");
+            if (Directory.Exists(steamAppsPath) == false)
+            {
+                continue;
+            }
+
+            try
+            {
+                if (Directory.EnumerateFiles(
+                    steamAppsPath,
+                    "appmanifest_*.acf",
+                    SearchOption.TopDirectoryOnly).Any())
+                {
+                    steamAppsPaths.Add(steamAppsPath);
+                }
+            }
+            catch (Exception err)
+            {
+                Logger.Error(err, $"Unable to inspect Steam library {steamAppsPath}.");
+            }
+        }
+
+        return steamAppsPaths;
     }
 
     public static string GetInstallPath()
