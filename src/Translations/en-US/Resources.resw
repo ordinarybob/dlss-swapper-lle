@@ -417,7 +417,7 @@ To verify what preset is being used please enable the DLSS on-screen indicator.<
     <value>You must select your &lt;i&gt;game&lt;/i&gt; directory, not your &lt;i&gt;games&lt;/i&gt; directory.&lt;br/&gt;&lt;br/&gt;For example, if you have a game at:&lt;br/&gt;&lt;b&gt;C:\Program Files\MyGamesFolder\MyFavGame\&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;You would select the &lt;b&gt;MyFavGame&lt;/b&gt; directory and not the &lt;b&gt;MyGamesFolder&lt;/b&gt; directory.</value>
   </data>
   <data name="GamesPage_ManuallyAdding_MultipleFoldersDescription" xml:space="preserve">
-    <value>Select multiple individual game folders in one picker. To add every immediate child folder beneath one parent, use Add a multi-game directory instead.</value>
+    <value>Use the multi-game directory option instead.</value>
   </data>
   <data name="GamesPage_ManuallyAdding_MultipleFoldersNoteTitle" xml:space="preserve">
     <value>Select multiple game folders</value>
@@ -1378,8 +1378,8 @@ Because of this we recommend using caution for multiplayer games.</value>
   <data name="GamesPage_SelectionMode_SelectGames" xml:space="preserve">
     <value>Select games</value>
   </data>
-  <data name="GamesPage_SelectionMode_SelectVisible" xml:space="preserve">
-    <value>Select visible</value>
+  <data name="GamesPage_SelectionMode_SelectAll" xml:space="preserve">
+    <value>Select all</value>
   </data>
   <data name="GamesPage_SelectionMode_RemoveDescriptionTemplate" xml:space="preserve">
     <value>Selected: {0}. Manually added: {1} (removed from DLSS Swapper and app-created cached data/backups are cleaned up). Automatically discovered: {2} (hidden from the normal Games view and recoverable with Restore excluded games and refresh). No game will be uninstalled.</value>

@@ -18,8 +18,13 @@ internal enum SystemPerformanceProfile
 
 public class Settings
 {
-    public const int MinGridViewItemWidth = 60;
-    public const int MaxGridViewItemWidth = 600;
+    public const int DefaultGridViewPreferredColumns = 8;
+    public const int MinGridViewPreferredColumns = 1;
+    public const int MaxGridViewPreferredColumns = 16;
+
+    public const int DefaultGridViewPreferredRows = 3;
+    public const int MinGridViewPreferredRows = 1;
+    public const int MaxGridViewPreferredRows = 10;
 
     public const int DefaultRecursiveScanConcurrency = 4;
     public const int MinRecursiveScanConcurrency = 1;
@@ -356,19 +361,40 @@ public class Settings
     }
 
 
-    int _gridViewItemWidth = 112;
-    public int GridViewItemWidth
+    int _gridViewPreferredColumns = DefaultGridViewPreferredColumns;
+    public int GridViewPreferredColumns
     {
-        get { return _gridViewItemWidth; }
+        get { return _gridViewPreferredColumns; }
         set
         {
             var normalizedValue = Math.Clamp(
                 value,
-                MinGridViewItemWidth,
-                MaxGridViewItemWidth);
-            if (_gridViewItemWidth != normalizedValue)
+                MinGridViewPreferredColumns,
+                MaxGridViewPreferredColumns);
+            if (_gridViewPreferredColumns != normalizedValue)
             {
-                _gridViewItemWidth = normalizedValue;
+                _gridViewPreferredColumns = normalizedValue;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    int _gridViewPreferredRows = DefaultGridViewPreferredRows;
+    public int GridViewPreferredRows
+    {
+        get { return _gridViewPreferredRows; }
+        set
+        {
+            var normalizedValue = Math.Clamp(
+                value,
+                MinGridViewPreferredRows,
+                MaxGridViewPreferredRows);
+            if (_gridViewPreferredRows != normalizedValue)
+            {
+                _gridViewPreferredRows = normalizedValue;
                 if (_autoSave)
                 {
                     SaveJson();

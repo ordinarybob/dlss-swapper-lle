@@ -104,6 +104,12 @@ public partial class SettingsPageModel : ObservableObject
     public partial double BatchSwapConcurrency { get; set; }
 
     [ObservableProperty]
+    public partial double GridViewPreferredColumns { get; set; }
+
+    [ObservableProperty]
+    public partial double GridViewPreferredRows { get; set; }
+
+    [ObservableProperty]
     public partial ComboBoxOption LoggingLevel { get; set; }
 
     public RefreshableObservableCollection<ComboBoxOption> LoggingLevelOptions { get; init; } = new RefreshableObservableCollection<ComboBoxOption>()
@@ -186,6 +192,8 @@ public partial class SettingsPageModel : ObservableObject
         UiCollectionBatchSize = Settings.Instance.UiCollectionBatchSize;
         DatabaseWriteBatchSize = Settings.Instance.DatabaseWriteBatchSize;
         BatchSwapConcurrency = Settings.Instance.BatchSwapConcurrency;
+        GridViewPreferredColumns = Settings.Instance.GridViewPreferredColumns;
+        GridViewPreferredRows = Settings.Instance.GridViewPreferredRows;
 
 
         var loggingLevel = Settings.Instance.LoggingLevel;
@@ -347,6 +355,14 @@ public partial class SettingsPageModel : ObservableObject
         else if (e.PropertyName == nameof(BatchSwapConcurrency) && double.IsFinite(BatchSwapConcurrency))
         {
             Settings.Instance.BatchSwapConcurrency = (int)Math.Round(BatchSwapConcurrency);
+        }
+        else if (e.PropertyName == nameof(GridViewPreferredColumns) && double.IsFinite(GridViewPreferredColumns))
+        {
+            Settings.Instance.GridViewPreferredColumns = (int)Math.Round(GridViewPreferredColumns);
+        }
+        else if (e.PropertyName == nameof(GridViewPreferredRows) && double.IsFinite(GridViewPreferredRows))
+        {
+            Settings.Instance.GridViewPreferredRows = (int)Math.Round(GridViewPreferredRows);
         }
         else if (e.PropertyName == nameof(LoggingLevel))
         {

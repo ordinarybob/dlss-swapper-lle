@@ -34,35 +34,35 @@
                 FontWeight="Bold"
                 Text="{x:Bind ViewModel.TranslationProperties.SwappedText, Mode=OneWay}" />
             <Run Text=" " />
-            <Run Text="{x:Bind ViewModel.SwappedCount, Mode=OneWay}" />
+            <Run Text="{x:Bind ViewModel.SwappedCount, Mode=OneTime}" />
         </TextBlock>
         <TextBlock IsTextSelectionEnabled="True" TextWrapping="Wrap">
             <Run
                 FontWeight="Bold"
                 Text="{x:Bind ViewModel.TranslationProperties.AlreadyCurrentText, Mode=OneWay}" />
             <Run Text=" " />
-            <Run Text="{x:Bind ViewModel.AlreadyCurrentCount, Mode=OneWay}" />
+            <Run Text="{x:Bind ViewModel.AlreadyCurrentCount, Mode=OneTime}" />
         </TextBlock>
         <TextBlock IsTextSelectionEnabled="True" TextWrapping="Wrap">
             <Run
                 FontWeight="Bold"
                 Text="{x:Bind ViewModel.TranslationProperties.SkippedText, Mode=OneWay}" />
             <Run Text=" " />
-            <Run Text="{x:Bind ViewModel.SkippedCount, Mode=OneWay}" />
+            <Run Text="{x:Bind ViewModel.SkippedCount, Mode=OneTime}" />
         </TextBlock>
         <TextBlock IsTextSelectionEnabled="True" TextWrapping="Wrap">
             <Run
                 FontWeight="Bold"
                 Text="{x:Bind ViewModel.TranslationProperties.ErrorsText, Mode=OneWay}" />
             <Run Text=" " />
-            <Run Text="{x:Bind ViewModel.ErrorCount, Mode=OneWay}" />
+            <Run Text="{x:Bind ViewModel.ErrorCount, Mode=OneTime}" />
         </TextBlock>
 
         <TextBlock
             IsTextSelectionEnabled="True"
-            Text="{x:Bind ViewModel.AdminMessage, Mode=OneWay}"
+            Text="{x:Bind ViewModel.AdminMessage, Mode=OneTime}"
             TextWrapping="Wrap"
-            Visibility="{x:Bind ViewModel.AdminMessage, Mode=OneWay, Converter={StaticResource StringVisibilityConverter}}" />
+            Visibility="{x:Bind ViewModel.AdminMessage, Mode=OneTime, Converter={StaticResource StringVisibilityConverter}}" />
 
         <TextBox
             AcceptsReturn="True"
@@ -73,8 +73,8 @@
             MaxHeight="300"
             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
             ScrollViewer.VerticalScrollBarVisibility="Auto"
-            Text="{x:Bind ViewModel.ResultsText, Mode=OneWay}"
+            Text="{x:Bind ViewModel.ResultsText, Mode=OneTime}"
             TextWrapping="Wrap"
-            Visibility="{x:Bind ViewModel.ResultsText, Mode=OneWay, Converter={StaticResource StringVisibilityConverter}}" />
+            Visibility="{x:Bind ViewModel.ResultsText, Mode=OneTime, Converter={StaticResource StringVisibilityConverter}}" />
     </StackPanel>
 </UserControl>

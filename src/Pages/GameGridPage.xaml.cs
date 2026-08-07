@@ -10,7 +10,6 @@ using Windows.System;
 using AsyncAwaitBestPractices;
 using CommunityToolkit.WinUI;
 using DLSS_Swapper.Helpers;
-using DispatcherQueueTimer = Microsoft.UI.Dispatching.DispatcherQueueTimer;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -39,13 +38,14 @@ public sealed partial class GameGridPage : Page
     */
 
     bool _loadingGamesAndDlls;
-    DispatcherQueueTimer? _saveScrollSizeTimer;
     GridView? _responsiveGridView;
     ScrollViewer? _responsiveGridScrollViewer;
     XamlRoot? _responsiveGridXamlRoot;
     double _lastResponsiveViewportWidth = double.NaN;
+    double _lastResponsiveViewportHeight = double.NaN;
     double _lastResponsiveHorizontalPadding = double.NaN;
-    double _lastResponsiveCardWidth = double.NaN;
+    int _lastResponsivePreferredColumns = -1;
+    int _lastResponsivePreferredRows = -1;
     double _lastResponsiveRasterizationScale = double.NaN;
     TaskCompletionSource? _visibleCoverOpened;
 
@@ -192,6 +192,43 @@ public sealed partial class GameGridPage : Page
     }
 
 
+    // The hover border is a direct child of each card's template root; template
+    // namescopes don't reliably resolve FindName from the instantiated root, so
+    // it is located by name among the children instead.
+    static Border? FindCardHoverBorder(object sender)
+    {
+        if (sender is not Grid card)
+        {
+            return null;
+        }
+
+        foreach (var child in card.Children)
+        {
+            if (child is Border border && border.Name == "CardHoverBorder")
+            {
+                return border;
+            }
+        }
+
+        return null;
+    }
+
+    void GameCard_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (FindCardHoverBorder(sender) is Border hoverBorder)
+        {
+            hoverBorder.Visibility = Visibility.Visible;
+        }
+    }
+
+    void GameCard_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (FindCardHoverBorder(sender) is Border hoverBorder)
+        {
+            hoverBorder.Visibility = Visibility.Collapsed;
+        }
+    }
+
     void MainGridView_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not GridView gridView)
@@ -213,10 +250,10 @@ public sealed partial class GameGridPage : Page
     {
         if (sender is GridView gridView)
         {
-            // Use the new control width immediately. The ScrollViewer reports its
+            // Use the new control size immediately. The ScrollViewer reports its
             // exact viewport in a subsequent layout callback (including any
             // vertical scrollbar), which performs the final pixel-level update.
-            UpdateResponsiveGridLayout(gridView, e.NewSize.Width);
+            UpdateResponsiveGridLayout(gridView, e.NewSize.Width, e.NewSize.Height);
         }
     }
 
@@ -301,12 +338,17 @@ public sealed partial class GameGridPage : Page
         }
 
         _lastResponsiveViewportWidth = double.NaN;
+        _lastResponsiveViewportHeight = double.NaN;
         _lastResponsiveHorizontalPadding = double.NaN;
-        _lastResponsiveCardWidth = double.NaN;
+        _lastResponsivePreferredColumns = -1;
+        _lastResponsivePreferredRows = -1;
         _lastResponsiveRasterizationScale = double.NaN;
     }
 
-    void UpdateResponsiveGridLayout(GridView gridView, double immediateViewportWidth = 0)
+    void UpdateResponsiveGridLayout(
+        GridView gridView,
+        double immediateViewportWidth = 0,
+        double immediateViewportHeight = 0)
     {
         var scrollViewer = gridView.FindDescendant<ScrollViewer>();
         var viewportWidth = immediateViewportWidth > 0
@@ -314,29 +356,55 @@ public sealed partial class GameGridPage : Page
             : scrollViewer is not null && scrollViewer.ViewportWidth > 0
                 ? scrollViewer.ViewportWidth
                 : gridView.ActualWidth;
+        var viewportHeight = immediateViewportHeight > 0
+            ? immediateViewportHeight
+            : scrollViewer is not null && scrollViewer.ViewportHeight > 0
+                ? scrollViewer.ViewportHeight
+                : gridView.ActualHeight;
         var horizontalPadding = gridView.Padding.Left + gridView.Padding.Right;
-        var cardWidth = ViewModel.GridViewItemWidth;
+        var preferredColumns = Settings.Instance.GridViewPreferredColumns;
+        var preferredRows = Settings.Instance.GridViewPreferredRows;
         var rasterizationScale = gridView.XamlRoot?.RasterizationScale ?? 1d;
+        var itemsWrapGrid = gridView.ItemsPanelRoot as ItemsWrapGrid;
 
-        if (Math.Abs(viewportWidth - _lastResponsiveViewportWidth) < 0.25
+        if (itemsWrapGrid is not null
+            && double.IsNaN(itemsWrapGrid.ItemWidth) == false
+            && Math.Abs(viewportWidth - _lastResponsiveViewportWidth) < 0.25
+            && Math.Abs(viewportHeight - _lastResponsiveViewportHeight) < 0.25
             && Math.Abs(horizontalPadding - _lastResponsiveHorizontalPadding) < 0.01
-            && Math.Abs(cardWidth - _lastResponsiveCardWidth) < 0.01
+            && preferredColumns == _lastResponsivePreferredColumns
+            && preferredRows == _lastResponsivePreferredRows
             && Math.Abs(rasterizationScale - _lastResponsiveRasterizationScale) < 0.001)
         {
             return;
         }
 
         _lastResponsiveViewportWidth = viewportWidth;
+        _lastResponsiveViewportHeight = viewportHeight;
         _lastResponsiveHorizontalPadding = horizontalPadding;
-        _lastResponsiveCardWidth = cardWidth;
+        _lastResponsivePreferredColumns = preferredColumns;
+        _lastResponsivePreferredRows = preferredRows;
         _lastResponsiveRasterizationScale = rasterizationScale;
 
         var metrics = ResponsiveGameGridLayout.Calculate(
             viewportWidth,
+            viewportHeight,
             horizontalPadding,
-            cardWidth,
+            preferredColumns,
+            preferredRows,
             rasterizationScale);
-        ViewModel.GridViewCellWidth = metrics.CellWidth;
+
+        // The GridView's own ItemsWrapGrid performs the grouped layout; modern
+        // virtualizing panels ignore GroupStyle.Panel, so the explicit cell size
+        // must be applied here rather than through a panel template binding.
+        if (itemsWrapGrid is not null)
+        {
+            itemsWrapGrid.ItemWidth = metrics.CellWidth;
+            itemsWrapGrid.ItemHeight = metrics.CellHeight;
+        }
+
+        ViewModel.GridViewCardWidth = metrics.CardWidth;
+        ViewModel.GridViewCardHeight = metrics.CardHeight;
     }
 
     void MainGridView_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
@@ -347,26 +415,10 @@ public sealed partial class GameGridPage : Page
 
             if (sender is GridView gridView)
             {
-                double scaleAmount = delta > 0 ? 1.05 : 0.95;
-                var newWidth = (int)(ViewModel.GridViewItemWidth * scaleAmount);
-
-                if (newWidth >= Settings.MinGridViewItemWidth
-                    && newWidth <= Settings.MaxGridViewItemWidth)
-                {
-                    ViewModel.GridViewItemWidth = newWidth;
-                    UpdateResponsiveGridLayout(gridView);
-
-                    if (_saveScrollSizeTimer is null)
-                    {
-                        _saveScrollSizeTimer = DispatcherQueue.CreateTimer();
-                        _saveScrollSizeTimer.Interval = TimeSpan.FromMilliseconds(500);
-                        _saveScrollSizeTimer.IsRepeating = false;
-                        _saveScrollSizeTimer.Tick += SaveScrollSizeTimer_Tick;
-                    }
-
-                    _saveScrollSizeTimer.Stop();
-                    _saveScrollSizeTimer.Start();
-                }
+                // Wheel up prefers fewer, larger cards; wheel down prefers more,
+                // smaller cards. The setting clamps and persists itself.
+                Settings.Instance.GridViewPreferredColumns += delta > 0 ? -1 : 1;
+                UpdateResponsiveGridLayout(gridView);
             }
 
             e.Handled = true;
@@ -394,25 +446,9 @@ public sealed partial class GameGridPage : Page
         }
     }
 
-    void SaveScrollSizeTimer_Tick(DispatcherQueueTimer sender, object args)
-    {
-        sender.Stop();
-        Settings.Instance.GridViewItemWidth = ViewModel.GridViewItemWidth;
-    }
-
     void Page_Unloaded(object sender, RoutedEventArgs e)
     {
         DetachResponsiveGridLayout();
-
-        if (_saveScrollSizeTimer is null)
-        {
-            return;
-        }
-
-        _saveScrollSizeTimer.Stop();
-        _saveScrollSizeTimer.Tick -= SaveScrollSizeTimer_Tick;
-        _saveScrollSizeTimer = null;
-        Settings.Instance.GridViewItemWidth = ViewModel.GridViewItemWidth;
     }
 
     internal void EnterSelectionMode()

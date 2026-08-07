@@ -178,6 +178,61 @@
                 <TextBlock
                     Style="{StaticResource SubtitleTextBlockStyle}"
                     Margin="0,40,0,0"
+                    Text="Games grid" />
+                <TextBlock
+                    Margin="0,10,0,0"
+                    TextWrapping="WrapWholeWords"
+                    Text="Grid cards resize to fill the available width at a 2:3 cover ratio, so no space is reserved at the right edge. These preferences guide how dense the grid is." />
+                <Grid Margin="0,18,0,0"
+                      MaxWidth="840"
+                      HorizontalAlignment="Left"
+                      ColumnSpacing="16"
+                      RowSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="112" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" VerticalAlignment="Center">
+                        <TextBlock x:Name="GridColumnsLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Preferred columns" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Minimum card columns in grid view (1–16). Ctrl + mouse wheel over the grid also changes this. Recommended: 8." />
+                    </StackPanel>
+                    <usercontrols:PerformanceNumberEditor
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Width="112"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        AccessibleName="{Binding Text, ElementName=GridColumnsLabel}"
+                        Minimum="1"
+                        Maximum="16"
+                        SmallChange="1"
+                        Value="{x:Bind ViewModel.GridViewPreferredColumns, Mode=TwoWay}" />
+
+                    <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="GridRowsLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Preferred visible rows" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Card rows kept in view when the window is short; extra columns are added if needed (1–10). Recommended: 3." />
+                    </StackPanel>
+                    <usercontrols:PerformanceNumberEditor
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Width="112"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        AccessibleName="{Binding Text, ElementName=GridRowsLabel}"
+                        Minimum="1"
+                        Maximum="10"
+                        SmallChange="1"
+                        Value="{x:Bind ViewModel.GridViewPreferredRows, Mode=TwoWay}" />
+                </Grid>
+
+                <TextBlock
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Margin="0,40,0,0"
                     Text="{x:Bind ViewModel.TranslationProperties.IgnoredPathsText, Mode=OneWay}" />
                 <StackPanel Margin="0,10,0,0">
                     <StackPanel.Resources>

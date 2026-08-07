@@ -70,15 +70,13 @@ public partial class GameGridPageModel : ObservableObject
     public partial ICollectionView? CurrentCollectionView { get; set; } = null;
 
 
+    // Placeholder card size used until the first layout pass measures the real
+    // grid viewport; UpdateResponsiveGridLayout keeps both in sync at 2:3.
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(GridViewItemHeight))]
-    public partial int GridViewItemWidth { get; set; } = Settings.Instance.GridViewItemWidth;
-
-    public int GridViewItemHeight => (int)(GridViewItemWidth * 1.5);
+    public partial double GridViewCardWidth { get; set; } = 112;
 
     [ObservableProperty]
-    public partial double GridViewCellWidth { get; set; } =
-        Settings.Instance.GridViewItemWidth + ResponsiveGameGridLayout.HorizontalContainerChrome;
+    public partial double GridViewCardHeight { get; set; } = 168;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(GameGridViewIcon))]
@@ -129,9 +127,9 @@ public partial class GameGridPageModel : ObservableObject
         gameGridPage.GetVisibleItemCount() > 0
         && gameGridPage.GetVisibleSelectedCount() == gameGridPage.GetVisibleItemCount();
 
-    public string SelectVisibleButtonText => AreAllVisibleGamesSelected
+    public string SelectAllButtonText => AreAllVisibleGamesSelected
         ? ResourceHelper.GetString("GamesPage_SelectionMode_DeselectAll")
-        : ResourceHelper.GetString("GamesPage_SelectionMode_SelectVisible");
+        : ResourceHelper.GetString("GamesPage_SelectionMode_SelectAll");
 
     public GameGridPageModelTranslationProperties TranslationProperties { get; } = new GameGridPageModelTranslationProperties();
 
@@ -161,7 +159,7 @@ public partial class GameGridPageModel : ObservableObject
     }
 
     [RelayCommand]
-    void ToggleSelectVisible()
+    void ToggleSelectAll()
     {
         if (AreAllVisibleGamesSelected)
         {
@@ -273,7 +271,7 @@ public partial class GameGridPageModel : ObservableObject
     void NotifySelectionChanged()
     {
         OnPropertyChanged(nameof(SelectedGamesCountText));
-        OnPropertyChanged(nameof(SelectVisibleButtonText));
+        OnPropertyChanged(nameof(SelectAllButtonText));
         OnPropertyChanged(nameof(CanApplyBatchDll));
         OnPropertyChanged(nameof(CanRemoveSelectedGames));
         ApplyBatchDllCommand.NotifyCanExecuteChanged();
