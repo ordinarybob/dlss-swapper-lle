@@ -6,11 +6,19 @@ namespace DLSS_Swapper.Extensions;
 
 internal static class FileVersionInfoExtensions
 {
+    const int HashReadBufferSize = 1024 * 1024;
+
     internal static string GetMD5Hash(this FileVersionInfo fileVersionInfo)
     {
         try
         {
-            using (var fileStream = File.OpenRead(fileVersionInfo.FileName))
+            using (var fileStream = new FileStream(
+                fileVersionInfo.FileName,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                HashReadBufferSize,
+                FileOptions.SequentialScan))
             {
                 return fileStream.GetMD5Hash();
             }
