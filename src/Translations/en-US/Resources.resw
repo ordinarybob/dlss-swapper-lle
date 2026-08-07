@@ -417,7 +417,7 @@ To verify what preset is being used please enable the DLSS on-screen indicator.<
     <value>You must select your &lt;i&gt;game&lt;/i&gt; directory, not your &lt;i&gt;games&lt;/i&gt; directory.&lt;br/&gt;&lt;br/&gt;For example, if you have a game at:&lt;br/&gt;&lt;b&gt;C:\Program Files\MyGamesFolder\MyFavGame\&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;You would select the &lt;b&gt;MyFavGame&lt;/b&gt; directory and not the &lt;b&gt;MyGamesFolder&lt;/b&gt; directory.</value>
   </data>
   <data name="GamesPage_ManuallyAdding_MultipleFoldersDescription" xml:space="preserve">
-    <value>Use the multi-game directory option instead.</value>
+    <value>Select multiple game folders. Each selected folder will be added as a separate manually added game.</value>
   </data>
   <data name="GamesPage_ManuallyAdding_MultipleFoldersNoteTitle" xml:space="preserve">
     <value>Select multiple game folders</value>
@@ -1405,8 +1405,11 @@ Because of this we recommend using caution for multiplayer games.</value>
   <data name="GamesPage_Sort_DLSSOldestFirst" xml:space="preserve">
     <value>DLSS version: oldest first</value>
   </data>
-  <data name="GamesPage_ManuallyAdding_LleNoteMessage" xml:space="preserve">
-    <value>DLSS Swapper should find supported launcher games automatically. Before adding a game manually, check that the Games filter is not hiding games without swappable items and that the relevant game library is enabled in Settings. A manual entry must point to one individual game folder and is local to this installation.</value>
+  <data name="GamesPage_ManuallyAdding_SingleFolderNoteTitle" xml:space="preserve">
+    <value>Select one game folder</value>
+  </data>
+  <data name="GamesPage_ManuallyAdding_SingleFolderDescription" xml:space="preserve">
+    <value>Select one game folder to add it as a manually added game.</value>
   </data>
   <data name="GamesPage_ManuallyAdding_MultiGameDirectoryNoteTitle" xml:space="preserve">
     <value>Add one parent directory</value>

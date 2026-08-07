@@ -467,8 +467,8 @@ public partial class GameGridPageModel : ObservableObject
 
             var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
             {
-                Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_NoteTitle"),
-                PrimaryButtonText = ResourceHelper.GetString("GamesPage_AddGame"),
+                Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_SingleFolderNoteTitle"),
+                PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectGameFolder"),
                 CloseButtonText = ResourceHelper.GetString("General_Cancel"),
                 DefaultButton = ContentDialogButton.Primary,
                 Content = new StackPanel()
@@ -477,7 +477,7 @@ public partial class GameGridPageModel : ObservableObject
                         new TextBlock()
                         {
                             TextWrapping = TextWrapping.Wrap,
-                            Text = ResourceHelper.GetString("GamesPage_ManuallyAdding_LleNoteMessage"),
+                            Text = ResourceHelper.GetString("GamesPage_ManuallyAdding_SingleFolderDescription"),
                         },
                         dontShowAgainCheckbox,
                     },
