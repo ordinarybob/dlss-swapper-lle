@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Enumeration;
 using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace DLSS_Swapper.Data;
@@ -146,20 +144,6 @@ internal static class GameAssetPathIndex
         return Path.GetPathRoot(path) ?? path;
     }
 
-    static bool IsAtOrUnder(string path, string root)
-    {
-        if (path.Equals(root, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return path.Length > root.Length
-            && path.StartsWith(root, StringComparison.OrdinalIgnoreCase)
-            && (root.EndsWith(Path.DirectorySeparatorChar)
-                || path[root.Length] == Path.DirectorySeparatorChar
-                || path[root.Length] == Path.AltDirectorySeparatorChar);
-    }
-
     internal sealed class PreparedAssetScan
     {
         readonly string _installPath;
@@ -259,179 +243,60 @@ internal static class GameAssetPathIndex
                 requests = _requests.Values.ToArray();
             }
 
-            var volumeTasks = requests
-                .GroupBy(static request => GetVolumeKey(request.InstallPath), StringComparer.OrdinalIgnoreCase)
-                .Select(group => ScanVolumeAsync(group.Key, group.ToArray()));
-            await Task.WhenAll(volumeTasks).ConfigureAwait(false);
+            await ScanRootsAsync(requests).ConfigureAwait(false);
         }
 
-        static async Task ScanVolumeAsync(string volumeRoot, ScanRequest[] requests)
+        static async Task ScanRootsAsync(ScanRequest[] requests)
         {
             var startedAt = System.Diagnostics.Stopwatch.StartNew();
-            try
-            {
-                var roots = requests
-                    .Select(static request => request.InstallPath)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderByDescending(static path => path.Length)
-                    .ToArray();
-                var scanRoots = GetScanRoots(roots);
-                var results = roots.ToDictionary(
-                    static path => path,
-                    static _ => new ConcurrentBag<DiscoveredGameAsset>(),
-                    StringComparer.OrdinalIgnoreCase);
-                var workerCount = GetWorkerCount();
-
-                Logger.Info($"Scanning {roots.Length:N0} game root(s) from {scanRoots.Length:N0} shared tree root(s) on {volumeRoot} with {workerCount} directory worker(s).");
-                var statistics = await WalkTreesAsync(scanRoots, workerCount, asset =>
-                {
-                    foreach (var root in roots)
-                    {
-                        if (IsAtOrUnder(asset.Path, root))
-                        {
-                            results[root].Add(asset);
-                            break;
-                        }
-                    }
-                }).ConfigureAwait(false);
-
-                foreach (var request in requests)
-                {
-                    var assets = results[request.InstallPath]
-                        .OrderBy(static asset => asset.Path, StringComparer.OrdinalIgnoreCase)
-                        .ToArray();
-                    request.Completion.TrySetResult(assets);
-                }
-
-                Logger.Info(
-                    $"Scanned {roots.Length:N0} game root(s) and {statistics.Directories:N0} directories on {volumeRoot} " +
-                    $"in {startedAt.Elapsed.TotalSeconds:N2} seconds; peak directory workers: {statistics.PeakWorkers}/{workerCount}, " +
-                    $"peak pending directories: {statistics.PeakPendingDirectories:N0}.");
-            }
-            catch (Exception err)
-            {
-                foreach (var request in requests)
-                {
-                    request.Completion.TrySetException(err);
-                }
-
-                Logger.Error($"Unable to scan game roots on {volumeRoot}. {err}");
-            }
-        }
-
-        static string[] GetScanRoots(string[] gameRoots)
-        {
-            var groupedRoots = gameRoots
-                .GroupBy(static root => Path.GetDirectoryName(root) ?? root, StringComparer.OrdinalIgnoreCase);
-            var candidateRoots = new List<string>();
-            foreach (var group in groupedRoots)
-            {
-                if (group.Count() > 1)
-                {
-                    candidateRoots.Add(group.Key);
-                }
-                else
-                {
-                    candidateRoots.Add(group.First());
-                }
-            }
-
-            var candidates = candidateRoots
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(static path => path.Length)
+            var roots = requests
+                .GroupBy(static request => request.InstallPath, StringComparer.OrdinalIgnoreCase)
+                .Select(static group => new RootScan(group.Key, group.ToArray()))
                 .ToArray();
-            var scanRoots = new List<string>(candidates.Length);
-
-            foreach (var candidate in candidates)
-            {
-                if (scanRoots.Any(root => IsAtOrUnder(candidate, root)) == false)
-                {
-                    scanRoots.Add(candidate);
-                }
-            }
-
-            return scanRoots.ToArray();
-        }
-
-        static int GetWorkerCount()
-        {
-            return Settings.Instance.RecursiveScanConcurrency;
-        }
-
-        static async Task<WalkStatistics> WalkTreesAsync(
-            string[] roots,
-            int workerCount,
-            Action<DiscoveredGameAsset> onAsset)
-        {
-            var directories = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
-            {
-                SingleReader = workerCount == 1,
-                SingleWriter = false,
-                AllowSynchronousContinuations = false,
-            });
-            var pendingDirectoryCount = roots.Length;
-            var peakPendingDirectories = roots.Length;
+            var workerCount = Settings.Instance.RecursiveScanConcurrency;
             var activeWorkerCount = 0;
             var peakWorkerCount = 0;
-            long scannedDirectoryCount = 0;
+            var volumes = string.Join(
+                ", ",
+                roots
+                    .GroupBy(static root => GetVolumeKey(root.InstallPath), StringComparer.OrdinalIgnoreCase)
+                    .Select(static group => $"{group.Key} ({group.Count():N0})"));
 
-            foreach (var root in roots)
-            {
-                if (Directory.Exists(root))
+            Logger.Info($"Scanning {roots.Length:N0} game root(s) across {volumes} with {workerCount} worker(s).");
+            await Parallel.ForEachAsync(
+                roots,
+                new ParallelOptions { MaxDegreeOfParallelism = workerCount },
+                (root, _) =>
                 {
-                    directories.Writer.TryWrite(root);
-                }
-                else if (Interlocked.Decrement(ref pendingDirectoryCount) == 0)
-                {
-                    directories.Writer.TryComplete();
-                }
-            }
-
-            var workers = Enumerable.Range(0, workerCount)
-                .Select(_ => Task.Run(async () =>
-                {
-                    await foreach (var directory in directories.Reader.ReadAllAsync().ConfigureAwait(false))
+                    var activeWorkers = Interlocked.Increment(ref activeWorkerCount);
+                    UpdateMaximum(ref peakWorkerCount, activeWorkers);
+                    try
                     {
-                        var activeWorkers = Interlocked.Increment(ref activeWorkerCount);
-                        UpdateMaximum(ref peakWorkerCount, activeWorkers);
-                        Interlocked.Increment(ref scannedDirectoryCount);
-                        try
+                        if (Directory.Exists(root.InstallPath))
                         {
-                            foreach (var entry in EnumerateDirectory(directory))
-                            {
-                                if (entry.IsDirectory)
-                                {
-                                    var pendingDirectories = Interlocked.Increment(ref pendingDirectoryCount);
-                                    UpdateMaximum(ref peakPendingDirectories, pendingDirectories);
-                                    if (directories.Writer.TryWrite(entry.Path) == false)
-                                    {
-                                        Interlocked.Decrement(ref pendingDirectoryCount);
-                                    }
-                                }
-                                else
-                                {
-                                    onAsset(entry.Asset!.Value);
-                                }
-                            }
+                            root.Complete(EnumerateTree(root.InstallPath));
                         }
-                        catch (Exception err) when (err is IOException or UnauthorizedAccessException)
+                        else
                         {
-                            Logger.Warning($"Unable to enumerate {directory}. {err.Message}");
-                        }
-                        finally
-                        {
-                            Interlocked.Decrement(ref activeWorkerCount);
-                            if (Interlocked.Decrement(ref pendingDirectoryCount) == 0)
-                            {
-                                directories.Writer.TryComplete();
-                            }
+                            root.Complete([]);
                         }
                     }
-                }))
-                .ToArray();
+                    catch (Exception err)
+                    {
+                        root.Fail(err);
+                        Logger.Error(err, $"Unable to scan game root {root.InstallPath}.");
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref activeWorkerCount);
+                    }
 
-            await Task.WhenAll(workers).ConfigureAwait(false);
-            return new WalkStatistics(scannedDirectoryCount, peakWorkerCount, peakPendingDirectories);
+                    return ValueTask.CompletedTask;
+                }).ConfigureAwait(false);
+
+            Logger.Info(
+                $"Scanned {roots.Length:N0} game root(s) in {startedAt.Elapsed.TotalSeconds:N2} seconds; " +
+                $"peak workers: {peakWorkerCount}/{workerCount}.");
         }
 
         static void UpdateMaximum(ref int target, int candidate)
@@ -447,25 +312,6 @@ internal static class GameAssetPathIndex
 
                 current = observed;
             }
-        }
-
-        static IEnumerable<WalkEntry> EnumerateDirectory(string directory)
-        {
-            var entries = new FileSystemEnumerable<WalkEntry>(
-                directory,
-                (ref FileSystemEntry entry) => entry.IsDirectory
-                    ? new WalkEntry(entry.ToFullPath(), true, null)
-                    : new WalkEntry(
-                        entry.ToFullPath(),
-                        false,
-                        new DiscoveredGameAsset(entry.ToFullPath(), GetAssetType(entry.FileName))),
-                CreateEnumerationOptions(recurseSubdirectories: false))
-            {
-                ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                    entry.IsDirectory || TryGetAssetType(entry.FileName, out _),
-            };
-
-            return entries;
         }
 
         public void Dispose()
@@ -501,6 +347,35 @@ internal static class GameAssetPathIndex
         }
     }
 
-    readonly record struct WalkEntry(string Path, bool IsDirectory, DiscoveredGameAsset? Asset);
-    readonly record struct WalkStatistics(long Directories, int PeakWorkers, int PeakPendingDirectories);
+    sealed class RootScan
+    {
+        readonly ScanRequest[] _requests;
+
+        internal string InstallPath { get; }
+
+        internal RootScan(string installPath, ScanRequest[] requests)
+        {
+            InstallPath = installPath;
+            _requests = requests;
+        }
+
+        internal void Complete(IReadOnlyList<DiscoveredGameAsset> assets)
+        {
+            var orderedAssets = assets
+                .OrderBy(static asset => asset.Path, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            foreach (var request in _requests)
+            {
+                request.Completion.TrySetResult(orderedAssets);
+            }
+        }
+
+        internal void Fail(Exception error)
+        {
+            foreach (var request in _requests)
+            {
+                request.Completion.TrySetException(error);
+            }
+        }
+    }
 }
