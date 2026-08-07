@@ -595,6 +595,44 @@ public partial class SettingsPageModel : ObservableObject
     }
 
     [RelayCommand]
+    async Task ResetLocalAppDataAsync()
+    {
+        if (_weakPage.TryGetTarget(out SettingsPage? settingsPage) == false)
+        {
+            return;
+        }
+
+        var dialog = new EasyContentDialog(settingsPage.XamlRoot)
+        {
+            Title = "Reset all local app data?",
+            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+            DefaultButton = ContentDialogButton.Close,
+            PrimaryButtonText = "Reset and restart",
+            Content = "This permanently deletes all data stored by DLSS Swapper, including settings, discovered and manually added games, scan results, history, notes, favourites, hidden-game state, cached and custom covers, downloaded and imported DLLs, manifests, logs, temporary files, and saved proxy credentials.\n\nThe app will close and restart at the first-run performance selector. Game installations and .dlsss backup files are not changed.",
+        };
+
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        if (AppDataReset.TryStart(out var errorMessage))
+        {
+            App.CurrentApp.Exit();
+            return;
+        }
+
+        var errorDialog = new EasyContentDialog(settingsPage.XamlRoot)
+        {
+            Title = ResourceHelper.GetString("General_Error"),
+            CloseButtonText = ResourceHelper.GetString("General_Okay"),
+            DefaultButton = ContentDialogButton.Close,
+            Content = $"DLSS Swapper could not start the reset process. No app data was deleted.\n\n{errorMessage}",
+        };
+        await errorDialog.ShowAsync();
+    }
+
+    [RelayCommand]
     void OpenTranslationToolbox()
     {
         var translationToolboxWindow = new TranslationToolboxWindow();

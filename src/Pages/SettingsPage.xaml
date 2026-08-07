@@ -405,6 +405,21 @@
                             </Hyperlink>
                         </Paragraph>
                     </RichTextBlock>
+
+                    <TextBlock
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Margin="0,24,0,0"
+                        Text="Reset local app data" />
+                    <TextBlock
+                        Margin="0,6,0,0"
+                        MaxWidth="680"
+                        HorizontalAlignment="Left"
+                        TextWrapping="Wrap"
+                        Text="Erase all local DLSS Swapper data and restart at the first-run performance selector. Game installations and .dlsss backups are not changed." />
+                    <Button
+                        Margin="0,12,0,0"
+                        Content="Reset all local app data"
+                        Command="{x:Bind ViewModel.ResetLocalAppDataCommand}" />
                 </StackPanel>
 
             </StackPanel>

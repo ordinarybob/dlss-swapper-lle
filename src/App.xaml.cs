@@ -38,6 +38,8 @@ public sealed partial class App : Application
     /// </summary>
     public App()
     {
+        AppDataReset.RunHelperIfRequested();
+
         Logger.Init();
         Logger.Info($"Managed application initialization started {DateTime.Now - Process.GetCurrentProcess().StartTime:g} after process creation.", null);
 
