@@ -362,6 +362,7 @@ public sealed partial class MainWindow : Window
 
     async void MainContentHost_Loaded(object sender, RoutedEventArgs e)
     {
+        Logger.Info("Main window content loaded.");
         // TODO: Disabled because CommunityToolkit.WinUI.Helpers.SystemInformation.Instance.IsAppUpdated throws exceptions for unpackaged apps.
         /*
         // If this is a new build, fetch updates to display to the user.
@@ -383,6 +384,7 @@ public sealed partial class MainWindow : Window
 
         if (Settings.Instance.HasSelectedSystemPerformance == false)
         {
+            Logger.Info("Showing first-run system performance selector.");
             var performanceOptions = new RadioButtons()
             {
                 SelectedIndex = 0,
@@ -418,6 +420,7 @@ public sealed partial class MainWindow : Window
                 _ => SystemPerformanceProfile.Low,
             };
             Settings.Instance.ApplySystemPerformanceProfile(profile);
+            Logger.Info($"Applied first-run system performance profile: {profile}.");
         }
 
 

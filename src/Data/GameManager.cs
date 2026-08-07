@@ -274,6 +274,8 @@ internal partial class GameManager : ObservableObject
 
     public async Task LoadGamesAsync(bool forceNeedsProcessing = false)
     {
+        var loadStopwatch = Stopwatch.StartNew();
+        Logger.Info("Game library discovery started.");
         await _loadGate.WaitAsync().ConfigureAwait(false);
         BeginUiBatch();
         GameDatabaseWriteBatch.Instance.Begin();
@@ -293,7 +295,7 @@ internal partial class GameManager : ObservableObject
                 var gameLibrary = IGameLibrary.GetGameLibrary(gameLibraryEnum);
                 if (gameLibrary.IsEnabled)
                 {
-                    tasks.Add(gameLibrary.ListGamesAsync(forceNeedsProcessing));
+                    tasks.Add(Task.Run(() => gameLibrary.ListGamesAsync(forceNeedsProcessing)));
                 }
             }
 
@@ -309,9 +311,12 @@ internal partial class GameManager : ObservableObject
                 }
             }
 
-            await gameAssetPathIndex.CompleteAsync().ConfigureAwait(false);
+            Logger.Info($"Game library discovery registered all scan work in {loadStopwatch.Elapsed.TotalSeconds:N2} seconds.");
+            var assetScanTask = gameAssetPathIndex.CompleteAsync();
             await FlushPendingUiChangesAsync().ConfigureAwait(false);
+            await assetScanTask.ConfigureAwait(false);
             await GameScanQueue.Instance.WhenIdleAsync().ConfigureAwait(false);
+            Logger.Info($"Game library discovery and processing completed in {loadStopwatch.Elapsed.TotalSeconds:N2} seconds.");
         }
         finally
         {
@@ -427,6 +432,14 @@ internal partial class GameManager : ObservableObject
         }
     }
 
+    internal bool ContainsGame(Game game)
+    {
+        lock (gameLock)
+        {
+            return _synchronisedAllGames.Contains(game);
+        }
+    }
+
     void BeginUiBatch()
     {
         lock (gameLock)
@@ -461,17 +474,23 @@ internal partial class GameManager : ObservableObject
                 _pendingUiChanges.RemoveRange(0, batchSize);
             }
 
-            await App.CurrentApp.RunOnUIThreadAsync(() =>
+            var nextChange = 0;
+            while (nextChange < changes.Count)
             {
-                foreach (var change in changes)
+                await App.CurrentApp.RunOnUIThreadAsync(() =>
                 {
-                    change();
-                }
+                    var stopwatch = Stopwatch.StartNew();
+                    do
+                    {
+                        changes[nextChange++]();
+                    }
+                    while (nextChange < changes.Count && stopwatch.ElapsedMilliseconds < 8);
 
-                return Task.CompletedTask;
-            }).ConfigureAwait(false);
+                    return Task.CompletedTask;
+                }).ConfigureAwait(false);
 
-            await Task.Yield();
+                await Task.Yield();
+            }
         }
     }
 

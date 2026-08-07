@@ -298,12 +298,21 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             return;
         }
 
-        App.CurrentApp.RunOnUIThread(() =>
+        void MarkProcessing()
         {
             Processing = true;
             NeedsProcessing = false;
             HasSwappableItems = false;
-        });
+        }
+
+        if (GameManager.Instance.ContainsGame(this))
+        {
+            App.CurrentApp.RunOnUIThread(MarkProcessing);
+        }
+        else
+        {
+            MarkProcessing();
+        }
 
         var assetScan = GameAssetPathIndex.PrepareFind(InstallPath);
 
@@ -316,9 +325,12 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             {
                 var oldGameAssets = GameAssets.ToList();
                 GameAssets.Clear();
-                using (await Database.Instance.Mutex.LockAsync())
+                if (oldGameAssets.Count > 0)
                 {
-                    await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
+                    using (await Database.Instance.Mutex.LockAsync())
+                    {
+                        await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
+                    }
                 }
                 var discoveredAssets = await assetScan.ExecuteAsync().ConfigureAwait(false);
 

@@ -39,6 +39,7 @@ public sealed partial class App : Application
     public App()
     {
         Logger.Init();
+        Logger.Info($"Managed application initialization started {DateTime.Now - Process.GetCurrentProcess().StartTime:g} after process creation.", null);
 
         HttpClient = GenerateNewHttpClient();
 
@@ -76,6 +77,7 @@ public sealed partial class App : Application
         GlobalElementTheme = Settings.Instance.AppTheme;
 
         this.InitializeComponent();
+        Logger.Info("Managed application initialization completed.");
     }
 
     internal void RegenerateHttpClient()
@@ -157,6 +159,8 @@ public sealed partial class App : Application
     /// <param name="args">Details about the launch request and process.</param>
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        Logger.Info("Launch activation received.");
+
         // If this is the first instance launched, then register it as the "main" instance.
         // If this isn't the first instance launched, then "main" will already be registered,
         // so retrieve it.
@@ -224,9 +228,11 @@ public sealed partial class App : Application
 
         if (_mainWindow is null)
         {
+            Logger.Info("Creating main window.");
             _mainWindow = new MainWindow();
         }
         WindowManager.ShowWindow(_mainWindow);
+        Logger.Info("Main window activated.");
 
 #if !PORTABLE
         // No need to calculate this for portable app.
