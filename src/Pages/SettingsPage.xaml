@@ -93,7 +93,7 @@
 
                     <StackPanel Grid.Row="0" VerticalAlignment="Center">
                         <TextBlock x:Name="RecursiveScanLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game scans" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Game folders scanned recursively at once (1–26). Recommended: 15." />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Game folders scanned recursively at once (1–26). Recommended: 15; use 2 for a game library on a HDD." />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="0"
@@ -109,7 +109,7 @@
 
                     <StackPanel Grid.Row="1" VerticalAlignment="Center">
                         <TextBlock x:Name="CoverHydrationLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent artwork loading" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Game covers loaded in parallel after games appear (1–64). Recommended: 38; use 4 for a game library on a HDD." />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Game covers loaded in parallel after games appear (1–64). Recommended: 38; use 1 for a game library on a HDD." />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="1"

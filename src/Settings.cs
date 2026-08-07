@@ -26,11 +26,12 @@ public class Settings
     public const int MaxGridViewPreferredRows = 10;
 
     public const int DefaultRecursiveScanConcurrency = 15;
+    public const int HardDriveRecursiveScanConcurrency = 2;
     public const int MinRecursiveScanConcurrency = 1;
     public const int MaxRecursiveScanConcurrency = 26;
 
     public const int DefaultCoverHydrationConcurrency = 38;
-    public const int HardDriveCoverHydrationConcurrency = 4;
+    public const int HardDriveCoverHydrationConcurrency = 1;
     public const int MinCoverHydrationConcurrency = 1;
     public const int MaxCoverHydrationConcurrency = 64;
 
@@ -605,7 +606,12 @@ public class Settings
         _autoSave = false;
         try
         {
-            RecursiveScanConcurrency = DefaultRecursiveScanConcurrency;
+            RecursiveScanConcurrency = profile switch
+            {
+                GameLibraryStorageProfile.Standard => DefaultRecursiveScanConcurrency,
+                GameLibraryStorageProfile.HardDrive => HardDriveRecursiveScanConcurrency,
+                _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, null),
+            };
             CoverHydrationConcurrency = profile switch
             {
                 GameLibraryStorageProfile.Standard => DefaultCoverHydrationConcurrency,
