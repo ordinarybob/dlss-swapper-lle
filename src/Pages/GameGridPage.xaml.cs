@@ -3,6 +3,7 @@ using DLSS_Swapper.UserControls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -192,40 +193,23 @@ public sealed partial class GameGridPage : Page
     }
 
 
-    // The hover border is a direct child of each card's template root; template
-    // namescopes don't reliably resolve FindName from the instantiated root, so
-    // it is located by name among the children instead.
-    static Border? FindCardHoverBorder(object sender)
-    {
-        if (sender is not Grid card)
-        {
-            return null;
-        }
+    static readonly SolidColorBrush _cardHoverRestBrush = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
 
-        foreach (var child in card.Children)
-        {
-            if (child is Border border && border.Name == "CardHoverBorder")
-            {
-                return border;
-            }
-        }
-
-        return null;
-    }
-
+    // The card grid's parent is the hover ring Border surrounding the cover; its
+    // 2px thickness is always reserved, only the brush changes on hover.
     void GameCard_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
-        if (FindCardHoverBorder(sender) is Border hoverBorder)
+        if (sender is Grid card && card.Parent is Border hoverBorder)
         {
-            hoverBorder.Visibility = Visibility.Visible;
+            hoverBorder.BorderBrush = (Brush)Resources["CardHoverBorderBrush"];
         }
     }
 
     void GameCard_PointerExited(object sender, PointerRoutedEventArgs e)
     {
-        if (FindCardHoverBorder(sender) is Border hoverBorder)
+        if (sender is Grid card && card.Parent is Border hoverBorder)
         {
-            hoverBorder.Visibility = Visibility.Collapsed;
+            hoverBorder.BorderBrush = _cardHoverRestBrush;
         }
     }
 
