@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using DLSS_Swapper.Data.Steam;
 
@@ -12,6 +14,9 @@ internal static class WikipediaArtworkLookup
 {
     const long MaximumCoverBytes = 15 * 1024 * 1024;
     static readonly TimeSpan MissingLookupRetryInterval = TimeSpan.FromDays(7);
+    static readonly TimeSpan MinimumApiRequestInterval = TimeSpan.FromMilliseconds(500);
+    static readonly SemaphoreSlim LookupGate = new(1, 1);
+    static DateTime _lastApiRequestUtc = DateTime.MinValue;
 
     internal static string? FindCachedCover(string title, string installPath)
     {
@@ -26,54 +31,62 @@ internal static class WikipediaArtworkLookup
             return null;
         }
 
+        await LookupGate.WaitAsync().ConfigureAwait(false);
         try
         {
-            var searchUrl = "https://en.wikipedia.org/w/api.php"
-                + "?action=query&generator=search&gsrnamespace=0&gsrlimit=5"
-                + "&redirects=1&prop=images&imlimit=max&format=json&formatversion=2"
-                + $"&gsrsearch={Uri.EscapeDataString(title + " video game")}";
-            var searchResponse = await GetResponseAsync(searchUrl).ConfigureAwait(false);
-            if (searchResponse is null)
+            try
             {
+                var searchUrl = "https://en.wikipedia.org/w/api.php"
+                    + "?action=query&generator=search&gsrnamespace=0&gsrlimit=5"
+                    + "&redirects=1&prop=images&imlimit=max&format=json&formatversion=2&maxlag=5"
+                    + $"&gsrsearch={Uri.EscapeDataString(title + " video game")}";
+                var searchResponse = await GetResponseAsync(searchUrl).ConfigureAwait(false);
+                if (searchResponse is null)
+                {
+                    return null;
+                }
+
+                var page = FindExactPage(searchResponse, title);
+                var imageTitle = page?.Images
+                    .Where(image => IsCoverImageName(image.Title))
+                    .OrderBy(image => GetCoverImageNameScore(image.Title))
+                    .ThenBy(image => image.Title.Length)
+                    .Select(image => image.Title)
+                    .FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(imageTitle))
+                {
+                    MarkLookupUnavailable(title, installPath);
+                    return null;
+                }
+
+                var imageInfoUrl = "https://en.wikipedia.org/w/api.php"
+                    + "?action=query&prop=imageinfo&iiprop=url%7Cmime%7Csize"
+                    + "&format=json&formatversion=2&maxlag=5"
+                    + $"&titles={Uri.EscapeDataString(imageTitle)}";
+                var imageResponse = await GetResponseAsync(imageInfoUrl).ConfigureAwait(false);
+                var imageInfo = imageResponse?.Query?.Pages
+                    .SelectMany(candidate => candidate.ImageInfo)
+                    .FirstOrDefault();
+                if (IsUsablePortraitCover(imageInfo) == false)
+                {
+                    MarkLookupUnavailable(title, installPath);
+                    return null;
+                }
+
+                ClearMissingLookupMarker(title, installPath);
+                return imageInfo!.Url;
+            }
+            catch (Exception err)
+            {
+                // Network and parsing failures remain retryable. Only a successful
+                // lookup with no safe cover candidate receives a negative marker.
+                Logger.Warning($"Unable to find Wikipedia artwork for manually added game '{title}'. {err.Message}");
                 return null;
             }
-
-            var page = FindExactPage(searchResponse, title);
-            var imageTitle = page?.Images
-                .Where(image => IsCoverImageName(image.Title))
-                .OrderBy(image => GetCoverImageNameScore(image.Title))
-                .ThenBy(image => image.Title.Length)
-                .Select(image => image.Title)
-                .FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(imageTitle))
-            {
-                MarkLookupUnavailable(title, installPath);
-                return null;
-            }
-
-            var imageInfoUrl = "https://en.wikipedia.org/w/api.php"
-                + "?action=query&prop=imageinfo&iiprop=url%7Cmime%7Csize"
-                + "&format=json&formatversion=2"
-                + $"&titles={Uri.EscapeDataString(imageTitle)}";
-            var imageResponse = await GetResponseAsync(imageInfoUrl).ConfigureAwait(false);
-            var imageInfo = imageResponse?.Query?.Pages
-                .SelectMany(candidate => candidate.ImageInfo)
-                .FirstOrDefault();
-            if (IsUsablePortraitCover(imageInfo) == false)
-            {
-                MarkLookupUnavailable(title, installPath);
-                return null;
-            }
-
-            ClearMissingLookupMarker(title, installPath);
-            return imageInfo!.Url;
         }
-        catch (Exception err)
+        finally
         {
-            // Network and parsing failures remain retryable. Only a successful
-            // lookup with no safe cover candidate receives a negative marker.
-            Logger.Warning($"Unable to find Wikipedia artwork for manually added game '{title}'. {err.Message}");
-            return null;
+            LookupGate.Release();
         }
     }
 
@@ -96,8 +109,16 @@ internal static class WikipediaArtworkLookup
 
     static async Task<WikipediaResponse?> GetResponseAsync(string url)
     {
+        var earliestRequestUtc = _lastApiRequestUtc.Add(MinimumApiRequestInterval);
+        var delay = earliestRequestUtc - DateTime.UtcNow;
+        if (delay > TimeSpan.Zero)
+        {
+            await Task.Delay(delay).ConfigureAwait(false);
+        }
+
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.UserAgent.ParseAdd("DLSS-Swapper-LLE/1.0");
+        _lastApiRequestUtc = DateTime.UtcNow;
         using var response = await App.CurrentApp.HttpClient.SendAsync(
             request,
             HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
@@ -115,9 +136,9 @@ internal static class WikipediaArtworkLookup
 
     static WikipediaPage? FindExactPage(WikipediaResponse response, string title)
     {
-        var normalizedTitle = SteamArtworkLookup.NormalizeTitle(title);
+        var normalizedTitle = NormalizeArticleTitle(title);
         var exactPage = response.Query?.Pages.FirstOrDefault(page =>
-            SteamArtworkLookup.NormalizeTitle(RemoveVideoGameDisambiguator(page.Title)).Equals(
+            NormalizeArticleTitle(page.Title).Equals(
                 normalizedTitle,
                 StringComparison.Ordinal));
         if (exactPage is not null)
@@ -126,7 +147,7 @@ internal static class WikipediaArtworkLookup
         }
 
         var exactRedirect = response.Query?.Redirects.FirstOrDefault(redirect =>
-            SteamArtworkLookup.NormalizeTitle(RemoveVideoGameDisambiguator(redirect.From)).Equals(
+            NormalizeArticleTitle(redirect.From).Equals(
                 normalizedTitle,
                 StringComparison.Ordinal));
         if (exactRedirect is null)
@@ -134,11 +155,39 @@ internal static class WikipediaArtworkLookup
             return null;
         }
 
-        var normalizedTarget = SteamArtworkLookup.NormalizeTitle(exactRedirect.To);
+        var normalizedTarget = NormalizeArticleTitle(exactRedirect.To);
         return response.Query?.Pages.FirstOrDefault(page =>
-            SteamArtworkLookup.NormalizeTitle(page.Title).Equals(
+            NormalizeArticleTitle(page.Title).Equals(
                 normalizedTarget,
                 StringComparison.Ordinal));
+    }
+
+    static string NormalizeArticleTitle(string title)
+    {
+        var withoutDisambiguator = RemoveVideoGameDisambiguator(title);
+        var normalizedNumerals = Regex.Replace(
+            withoutDisambiguator,
+            @"\b(VIII|VII|VI|IV|IX|III|II|X|V)\b",
+            match => match.Value.ToUpperInvariant() switch
+            {
+                "II" => "2",
+                "III" => "3",
+                "IV" => "4",
+                "V" => "5",
+                "VI" => "6",
+                "VII" => "7",
+                "VIII" => "8",
+                "IX" => "9",
+                "X" => "10",
+                _ => match.Value,
+            },
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        normalizedNumerals = Regex.Replace(
+            normalizedNumerals,
+            @"\b(part|episode|chapter|volume|vol)\s+I\b",
+            "$1 1",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        return SteamArtworkLookup.NormalizeTitle(normalizedNumerals);
     }
 
     static string RemoveVideoGameDisambiguator(string title)
