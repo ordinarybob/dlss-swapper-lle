@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Web;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DLSS_Swapper.Data.Steam.SteamAPI;
+using DLSS_Swapper.Helpers;
 using DLSS_Swapper.Interfaces;
 using SQLite;
 
@@ -14,7 +15,12 @@ namespace DLSS_Swapper.Data.Steam;
 [Table("steam_game")]
 internal partial class SteamGame : Game
 {
+    internal const string SharedArtworkCacheDirectoryName = "DLSS Swapper LLE Artwork Cache";
+    static readonly TimeSpan MissingArtworkRetryInterval = TimeSpan.FromDays(7);
+
     public override GameLibrary GameLibrary => GameLibrary.Steam;
+
+    string PortableDirectCoverImage => Path.Combine(Storage.GetImageCachePath(), $"{ID}_600_900.jpg");
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsReadyToPlay))]
@@ -43,35 +49,277 @@ internal partial class SteamGame : Game
 
     protected override async Task UpdateCacheImageAsync()
     {
-        // Try get image from the local disk first.
-        var localHeaderImagePath = Path.Combine(SteamLibrary.GetInstallPath(), "appcache", "librarycache", $"{PlatformId}_library_600x900.jpg");
-        if (File.Exists(localHeaderImagePath))
+        // Prefer artwork already held by Steam or the persistent cache beside a
+        // standalone SteamLibrary. Either avoids first-init network work.
+        var localHeaderImagePath = FindLocalCoverImage();
+        if (localHeaderImagePath is not null)
         {
-            using (var fileStream = File.Open(localHeaderImagePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
-                await ResizeCoverAsync(fileStream).ConfigureAwait(false);
-            }
+            UseLocalCoverImage(localHeaderImagePath);
+            return;
+        }
+
+        if (HasRecentMissingArtworkMarker())
+        {
             return;
         }
 
         // Special case for Steamworks redistributable. 
         if (PlatformId == "228980")
         {
-            await DownloadCoverAsync($"https://steamcdn-a.akamaihd.net/steam/apps/{PlatformId}/header.jpg").ConfigureAwait(false);
+            if (await DownloadCoverAsync($"https://steamcdn-a.akamaihd.net/steam/apps/{PlatformId}/header.jpg").ConfigureAwait(false))
+            {
+                PersistPortableCoverToSharedCache();
+            }
+            else
+            {
+                MarkArtworkUnavailable();
+            }
             return;            
         }
 
-        // Try download via IStoreBrowseService first.
-        var didDownload = await DownloadCoverFromIStoreBrowseService();
+        // The conventional portrait URL needs one request and covers nearly all
+        // Steam titles. Use the metadata service only for the exceptions.
+        var didDownload = await DownloadDirectCoverAsync($"https://steamcdn-a.akamaihd.net/steam/apps/{PlatformId}/library_600x900.jpg").ConfigureAwait(false);
         if (didDownload == false)
         {
-            // Try the old cover system?
-            didDownload = await DownloadCoverAsync($"https://steamcdn-a.akamaihd.net/steam/apps/{PlatformId}/library_600x900_2x.jpg").ConfigureAwait(false);
+            didDownload = await DownloadCoverFromIStoreBrowseService();
+            if (didDownload)
+            {
+                PersistPortableCoverToSharedCache();
+            }
 
             if (didDownload == false)
             {
-                Logger.Error($"Tried to get Steam cover for {PlatformId} but was unable to get it from both old and new Steam CDNs.");
+                MarkArtworkUnavailable();
+                Logger.Error($"Tried to get Steam cover for {PlatformId} but was unable to get it from the direct CDN or store metadata service.");
             }
+        }
+    }
+
+    async Task<bool> DownloadDirectCoverAsync(string url)
+    {
+        var directCoverImage = GetDirectCoverDestination();
+        var temporaryPath = directCoverImage + ".download";
+        try
+        {
+            using (var fileStream = File.Create(temporaryPath))
+            {
+                var fileDownloader = new FileDownloader(url, 0);
+                await fileDownloader.DownloadFileToStreamAsync(fileStream).ConfigureAwait(false);
+            }
+
+            File.Move(temporaryPath, directCoverImage, true);
+            ClearMissingArtworkMarker();
+            UseLocalCoverImage(directCoverImage);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
+    }
+
+    string? FindLocalCoverImage()
+    {
+        var steamInstallPath = SteamLibrary.GetInstallPath();
+        if (string.IsNullOrWhiteSpace(steamInstallPath) == false)
+        {
+            var steamArtworkCache = Path.Combine(steamInstallPath, "appcache", "librarycache");
+            var conventionalCover = Path.Combine(steamArtworkCache, $"{PlatformId}_library_600x900.jpg");
+            if (File.Exists(conventionalCover))
+            {
+                return conventionalCover;
+            }
+
+            var nestedCover = Path.Combine(steamArtworkCache, PlatformId, "library_600x900.jpg");
+            if (File.Exists(nestedCover))
+            {
+                return nestedCover;
+            }
+        }
+
+        var sharedArtworkCache = GetSharedArtworkCacheDirectory(InstallPath);
+        if (sharedArtworkCache is not null)
+        {
+            var sharedCover = Path.Combine(sharedArtworkCache, $"{PlatformId}_library_600x900.jpg");
+            if (File.Exists(sharedCover))
+            {
+                return sharedCover;
+            }
+
+            var sharedFallbackCover = Path.Combine(sharedArtworkCache, $"{PlatformId}_library_600x900.png");
+            if (File.Exists(sharedFallbackCover))
+            {
+                return sharedFallbackCover;
+            }
+        }
+
+        if (File.Exists(PortableDirectCoverImage))
+        {
+            return PortableDirectCoverImage;
+        }
+
+        return null;
+    }
+
+    string GetDirectCoverDestination()
+    {
+        var sharedArtworkCache = GetSharedArtworkCacheDirectory(InstallPath);
+        if (sharedArtworkCache is null)
+        {
+            return PortableDirectCoverImage;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(sharedArtworkCache);
+            return Path.Combine(sharedArtworkCache, $"{PlatformId}_library_600x900.jpg");
+        }
+        catch (Exception err)
+        {
+            Logger.Warning($"Unable to use shared Steam artwork cache {sharedArtworkCache}; using the portable cache instead. {err.Message}");
+            return PortableDirectCoverImage;
+        }
+    }
+
+    void PersistPortableCoverToSharedCache()
+    {
+        if (File.Exists(ExpectedCoverImage) == false)
+        {
+            return;
+        }
+
+        var sharedArtworkCache = GetSharedArtworkCacheDirectory(InstallPath);
+        if (sharedArtworkCache is null)
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(sharedArtworkCache);
+            var sharedCover = Path.Combine(sharedArtworkCache, $"{PlatformId}_library_600x900.png");
+            File.Copy(ExpectedCoverImage, sharedCover, true);
+            ClearMissingArtworkMarker();
+            UseLocalCoverImage(sharedCover);
+        }
+        catch (Exception err)
+        {
+            Logger.Warning($"Unable to persist Steam artwork in shared cache {sharedArtworkCache}; keeping the portable copy. {err.Message}");
+        }
+    }
+
+    string? GetMissingArtworkMarkerPath()
+    {
+        var sharedArtworkCache = GetSharedArtworkCacheDirectory(InstallPath);
+        return sharedArtworkCache is null
+            ? null
+            : Path.Combine(sharedArtworkCache, $"{PlatformId}_library_600x900.missing");
+    }
+
+    bool HasRecentMissingArtworkMarker()
+    {
+        var markerPath = GetMissingArtworkMarkerPath();
+        if (markerPath is null || File.Exists(markerPath) == false)
+        {
+            return false;
+        }
+
+        try
+        {
+            return File.GetLastWriteTimeUtc(markerPath) >= DateTime.UtcNow.Subtract(MissingArtworkRetryInterval);
+        }
+        catch (Exception err)
+        {
+            Logger.Warning($"Unable to read Steam artwork marker {markerPath}. {err.Message}");
+            return false;
+        }
+    }
+
+    void MarkArtworkUnavailable()
+    {
+        var markerPath = GetMissingArtworkMarkerPath();
+        if (markerPath is null)
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(markerPath)!);
+            File.WriteAllText(markerPath, string.Empty);
+        }
+        catch (Exception err)
+        {
+            Logger.Warning($"Unable to persist Steam artwork marker {markerPath}. {err.Message}");
+        }
+    }
+
+    void ClearMissingArtworkMarker()
+    {
+        var markerPath = GetMissingArtworkMarkerPath();
+        if (markerPath is null || File.Exists(markerPath) == false)
+        {
+            return;
+        }
+
+        try
+        {
+            File.Delete(markerPath);
+        }
+        catch (Exception err)
+        {
+            Logger.Warning($"Unable to clear Steam artwork marker {markerPath}. {err.Message}");
+        }
+    }
+
+    internal static string? GetSharedArtworkCacheDirectory(string installPath)
+    {
+        if (string.IsNullOrWhiteSpace(installPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            DirectoryInfo? currentDirectory = new DirectoryInfo(installPath);
+            while (currentDirectory is not null
+                && currentDirectory.Name.Equals("steamapps", StringComparison.OrdinalIgnoreCase) == false)
+            {
+                currentDirectory = currentDirectory.Parent;
+            }
+
+            var libraryDirectory = currentDirectory?.Parent;
+            if (libraryDirectory is null
+                || libraryDirectory.Name.Equals("SteamLibrary", StringComparison.OrdinalIgnoreCase) == false)
+            {
+                return null;
+            }
+
+            var volumeRoot = Path.GetPathRoot(libraryDirectory.FullName);
+            var libraryParent = libraryDirectory.Parent?.FullName;
+            if (string.IsNullOrWhiteSpace(volumeRoot)
+                || string.IsNullOrWhiteSpace(libraryParent)
+                || Path.TrimEndingDirectorySeparator(volumeRoot).Equals(
+                    Path.TrimEndingDirectorySeparator(libraryParent),
+                    StringComparison.OrdinalIgnoreCase) == false)
+            {
+                return null;
+            }
+
+            return Path.Combine(volumeRoot, SharedArtworkCacheDirectoryName);
+        }
+        catch (Exception err)
+        {
+            Logger.Warning($"Unable to resolve a shared Steam artwork cache for {installPath}. {err.Message}");
+            return null;
         }
     }
 

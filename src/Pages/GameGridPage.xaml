@@ -131,7 +131,7 @@
                                     <ImageBrush Stretch="Uniform">
                                         <ImageBrush.ImageSource>
                                             <BitmapImage
-                                                CreateOptions="IgnoreImageCache"
+                                                DecodePixelWidth="60"
                                                 ImageOpened="CoverImage_ImageOpened"
                                                 UriSource="{x:Bind CoverImage, Mode=OneWay, Converter={StaticResource BitmapImageUriConverter}}" />
                                         </ImageBrush.ImageSource>
@@ -266,7 +266,7 @@
                                     <ImageBrush Stretch="UniformToFill">
                                         <ImageBrush.ImageSource>
                                             <BitmapImage
-                                                CreateOptions="IgnoreImageCache"
+                                                DecodePixelWidth="400"
                                                 ImageOpened="CoverImage_ImageOpened"
                                                 UriSource="{x:Bind CoverImage, Mode=OneWay, Converter={StaticResource BitmapImageUriConverter}}" />
                                         </ImageBrush.ImageSource>

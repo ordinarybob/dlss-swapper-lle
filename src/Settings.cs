@@ -9,11 +9,10 @@ using System.Linq;
 
 namespace DLSS_Swapper;
 
-internal enum SystemPerformanceProfile
+internal enum GameLibraryStorageProfile
 {
-    Low,
-    Medium,
-    High,
+    Standard,
+    HardDrive,
 }
 
 public class Settings
@@ -26,31 +25,26 @@ public class Settings
     public const int MinGridViewPreferredRows = 1;
     public const int MaxGridViewPreferredRows = 10;
 
-    public const int DefaultRecursiveScanConcurrency = 4;
+    public const int DefaultRecursiveScanConcurrency = 15;
     public const int MinRecursiveScanConcurrency = 1;
     public const int MaxRecursiveScanConcurrency = 26;
 
-    public const int DefaultCoverHydrationConcurrency = 12;
+    public const int DefaultCoverHydrationConcurrency = 38;
+    public const int HardDriveCoverHydrationConcurrency = 4;
     public const int MinCoverHydrationConcurrency = 1;
     public const int MaxCoverHydrationConcurrency = 64;
 
-    public const int DefaultUiCollectionBatchSize = 100;
+    public const int DefaultUiCollectionBatchSize = 550;
     public const int MinUiCollectionBatchSize = 10;
     public const int MaxUiCollectionBatchSize = 1000;
 
-    public const int DefaultDatabaseWriteBatchSize = 100;
+    public const int DefaultDatabaseWriteBatchSize = 550;
     public const int MinDatabaseWriteBatchSize = 10;
     public const int MaxDatabaseWriteBatchSize = 1000;
 
-    public const int DefaultBatchSwapConcurrency = 3;
+    public const int DefaultBatchSwapConcurrency = 15;
     public const int MinBatchSwapConcurrency = 1;
     public const int MaxBatchSwapConcurrency = 26;
-
-    public const int MediumRecursiveScanConcurrency = (DefaultRecursiveScanConcurrency + MaxRecursiveScanConcurrency + 1) / 2;
-    public const int MediumCoverHydrationConcurrency = (DefaultCoverHydrationConcurrency + MaxCoverHydrationConcurrency + 1) / 2;
-    public const int MediumUiCollectionBatchSize = (DefaultUiCollectionBatchSize + MaxUiCollectionBatchSize + 1) / 2;
-    public const int MediumDatabaseWriteBatchSize = (DefaultDatabaseWriteBatchSize + MaxDatabaseWriteBatchSize + 1) / 2;
-    public const int MediumBatchSwapConcurrency = (DefaultBatchSwapConcurrency + MaxBatchSwapConcurrency + 1) / 2;
 
     static Settings? _instance;
 
@@ -605,38 +599,22 @@ public class Settings
         Storage.SaveSettingsJson(this);
     }
 
-    internal void ApplySystemPerformanceProfile(SystemPerformanceProfile profile)
+    internal void ApplyGameLibraryStorageProfile(GameLibraryStorageProfile profile)
     {
         var shouldSave = _autoSave;
         _autoSave = false;
         try
         {
-            switch (profile)
+            RecursiveScanConcurrency = DefaultRecursiveScanConcurrency;
+            CoverHydrationConcurrency = profile switch
             {
-                case SystemPerformanceProfile.Low:
-                    RecursiveScanConcurrency = DefaultRecursiveScanConcurrency;
-                    CoverHydrationConcurrency = DefaultCoverHydrationConcurrency;
-                    UiCollectionBatchSize = DefaultUiCollectionBatchSize;
-                    DatabaseWriteBatchSize = DefaultDatabaseWriteBatchSize;
-                    BatchSwapConcurrency = DefaultBatchSwapConcurrency;
-                    break;
-                case SystemPerformanceProfile.Medium:
-                    RecursiveScanConcurrency = MediumRecursiveScanConcurrency;
-                    CoverHydrationConcurrency = MediumCoverHydrationConcurrency;
-                    UiCollectionBatchSize = MediumUiCollectionBatchSize;
-                    DatabaseWriteBatchSize = MediumDatabaseWriteBatchSize;
-                    BatchSwapConcurrency = MediumBatchSwapConcurrency;
-                    break;
-                case SystemPerformanceProfile.High:
-                    RecursiveScanConcurrency = MaxRecursiveScanConcurrency;
-                    CoverHydrationConcurrency = MaxCoverHydrationConcurrency;
-                    UiCollectionBatchSize = MaxUiCollectionBatchSize;
-                    DatabaseWriteBatchSize = MaxDatabaseWriteBatchSize;
-                    BatchSwapConcurrency = MaxBatchSwapConcurrency;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(profile), profile, null);
-            }
+                GameLibraryStorageProfile.Standard => DefaultCoverHydrationConcurrency,
+                GameLibraryStorageProfile.HardDrive => HardDriveCoverHydrationConcurrency,
+                _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, null),
+            };
+            UiCollectionBatchSize = DefaultUiCollectionBatchSize;
+            DatabaseWriteBatchSize = DefaultDatabaseWriteBatchSize;
+            BatchSwapConcurrency = DefaultBatchSwapConcurrency;
 
             HasSelectedSystemPerformance = true;
         }

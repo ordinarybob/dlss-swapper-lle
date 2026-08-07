@@ -929,20 +929,14 @@ Because of this we recommend using caution for multiplayer games.</value>
   <data name="MainWindow_NoteForMultiplayerGames_Title" xml:space="preserve">
     <value>Note for multiplayer games</value>
   </data>
-  <data name="MainWindow_SystemPerformance_High" xml:space="preserve">
-    <value>High — maximum parallelism for high-end systems and fast SSDs</value>
-  </data>
-  <data name="MainWindow_SystemPerformance_Low" xml:space="preserve">
-    <value>Low — current defaults for 4-core CPUs and hard drives</value>
-  </data>
-  <data name="MainWindow_SystemPerformance_Medium" xml:space="preserve">
-    <value>Medium — balanced for modern mainstream systems</value>
+  <data name="MainWindow_SystemPerformance_HardDrive" xml:space="preserve">
+    <value>Select this option if your game library is on a HDD</value>
   </data>
   <data name="MainWindow_SystemPerformance_Message" xml:space="preserve">
-    <value>This controls library scanning, artwork loading, interface and database batching, and multi-game updates. You can change each setting later in Settings.</value>
+    <value>Standard settings are tuned for game libraries on SSD and NVMe storage.</value>
   </data>
   <data name="MainWindow_SystemPerformance_Title" xml:space="preserve">
-    <value>Select your system performance setting</value>
+    <value>Game library storage</value>
   </data>
   <data name="NetworkTesterPage_BrowserTesterStillDoesNotWork" xml:space="preserve">
     <value>Still does not work</value>

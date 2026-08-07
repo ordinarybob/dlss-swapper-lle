@@ -461,14 +461,15 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         try
                         {
                             FileInfo? fileInfo = null;
-                            if (File.Exists(ExpectedCustomCoverImage))
+                            var cachedCoverImage = GetCachedCoverImage();
+                            if (cachedCoverImage == ExpectedCustomCoverImage)
                             {
                                 // If we are using a custom cover we don't want to try reloading any cover so we don't set fileInfo.
                                 shouldUpdatedCover = false;
                             }
-                            else if (File.Exists(ExpectedCoverImage))
+                            else if (cachedCoverImage is not null)
                             {
-                                fileInfo = new FileInfo(ExpectedCoverImage);
+                                fileInfo = new FileInfo(cachedCoverImage);
                             }
 
                             if (fileInfo is not null)
@@ -689,20 +690,12 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         {
             // TODO: Update if the image last write is > 1 week old or something
 
-            if (File.Exists(ExpectedCustomCoverImage))
+            var cachedCoverImage = GetCachedCoverImage();
+            if (cachedCoverImage is not null)
             {
-                // If a custom cover exists use it.
                 App.CurrentApp.RunOnUIThread(() =>
                 {
-                    CoverImage = ExpectedCustomCoverImage;
-                });
-            }
-            else if (File.Exists(ExpectedCoverImage))
-            {
-                // If a standard cover exists use it.
-                App.CurrentApp.RunOnUIThread(() =>
-                {
-                    CoverImage = ExpectedCoverImage;
+                    CoverImage = cachedCoverImage;
                 });
             }
             else
@@ -715,6 +708,46 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         {
             _coverImageGate.Release();
         }
+    }
+
+    string? GetCachedCoverImage()
+    {
+        if (File.Exists(ExpectedCustomCoverImage))
+        {
+            return ExpectedCustomCoverImage;
+        }
+
+        if (File.Exists(ExpectedCoverImage))
+        {
+            return ExpectedCoverImage;
+        }
+
+        if (string.IsNullOrWhiteSpace(CoverImage) == false && File.Exists(CoverImage))
+        {
+            return CoverImage;
+        }
+
+        return null;
+    }
+
+    internal bool PrimeCachedCoverImage()
+    {
+        var cachedCoverImage = GetCachedCoverImage();
+        if (cachedCoverImage is null)
+        {
+            return false;
+        }
+
+        CoverImage = cachedCoverImage;
+        return true;
+    }
+
+    protected void UseLocalCoverImage(string coverImagePath)
+    {
+        App.CurrentApp.RunOnUIThread(() =>
+        {
+            CoverImage = coverImagePath;
+        });
     }
 
     protected abstract Task UpdateCacheImageAsync();
@@ -1639,10 +1672,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     }
                 }
 
-                if (NeedsProcessing == false)
-                {
-                    GameCoverHydrationQueue.Instance.Enqueue(this);
-                }
             }
         }
         else

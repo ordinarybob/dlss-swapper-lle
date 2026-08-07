@@ -430,6 +430,16 @@ internal partial class GameManager : ObservableObject
 
                 _synchronisedAllGames.Add(game);
 
+                // Attach an existing local cover before the card enters the UI.
+                // Only fetch missing artwork for a game already known to belong
+                // in the visible DLSS library; fresh games are queued after their
+                // scan proves eligibility. This avoids downloading thousands of
+                // covers that the default filter will never display.
+                if (game.PrimeCachedCoverImage() == false && game.HasSwappableItems)
+                {
+                    GameCoverHydrationQueue.Instance.Enqueue(game);
+                }
+
                 void AddNewGame()
                 {
                     _allGames.Add(game);

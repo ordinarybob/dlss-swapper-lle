@@ -384,14 +384,11 @@ public sealed partial class MainWindow : Window
 
         if (Settings.Instance.HasSelectedSystemPerformance == false)
         {
-            Logger.Info("Showing first-run system performance selector.");
-            var performanceOptions = new RadioButtons()
+            Logger.Info("Showing first-run game library storage selector.");
+            var hardDriveOption = new CheckBox
             {
-                SelectedIndex = 0,
+                Content = ResourceHelper.GetString("MainWindow_SystemPerformance_HardDrive"),
             };
-            performanceOptions.Items.Add(ResourceHelper.GetString("MainWindow_SystemPerformance_Low"));
-            performanceOptions.Items.Add(ResourceHelper.GetString("MainWindow_SystemPerformance_Medium"));
-            performanceOptions.Items.Add(ResourceHelper.GetString("MainWindow_SystemPerformance_High"));
 
             var content = new StackPanel()
             {
@@ -402,7 +399,7 @@ public sealed partial class MainWindow : Window
                 Text = ResourceHelper.GetString("MainWindow_SystemPerformance_Message"),
                 TextWrapping = TextWrapping.Wrap,
             });
-            content.Children.Add(performanceOptions);
+            content.Children.Add(hardDriveOption);
 
             var dialog = new EasyContentDialog(RootGrid.XamlRoot)
             {
@@ -413,14 +410,11 @@ public sealed partial class MainWindow : Window
             };
             await dialog.ShowAsync();
 
-            var profile = performanceOptions.SelectedIndex switch
-            {
-                1 => SystemPerformanceProfile.Medium,
-                2 => SystemPerformanceProfile.High,
-                _ => SystemPerformanceProfile.Low,
-            };
-            Settings.Instance.ApplySystemPerformanceProfile(profile);
-            Logger.Info($"Applied first-run system performance profile: {profile}.");
+            var profile = hardDriveOption.IsChecked == true
+                ? GameLibraryStorageProfile.HardDrive
+                : GameLibraryStorageProfile.Standard;
+            Settings.Instance.ApplyGameLibraryStorageProfile(profile);
+            Logger.Info($"Applied first-run game library storage profile: {profile}.");
         }
 
 

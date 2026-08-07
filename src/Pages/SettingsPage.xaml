@@ -93,7 +93,7 @@
 
                     <StackPanel Grid.Row="0" VerticalAlignment="Center">
                         <TextBlock x:Name="RecursiveScanLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game scans" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Game folders scanned recursively at once (1–26). Recommended: 4." />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Game folders scanned recursively at once (1–26). Recommended: 15." />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="0"
@@ -109,7 +109,7 @@
 
                     <StackPanel Grid.Row="1" VerticalAlignment="Center">
                         <TextBlock x:Name="CoverHydrationLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent artwork loading" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Game covers loaded in parallel after games appear (1–64). Recommended: 12." />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Game covers loaded in parallel after games appear (1–64). Recommended: 38; use 4 for a game library on a HDD." />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="1"
@@ -125,7 +125,7 @@
 
                     <StackPanel Grid.Row="2" VerticalAlignment="Center">
                         <TextBlock x:Name="UiBatchLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Games added per UI batch" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Games added to the interface before yielding to input and rendering (10–1000). Recommended: 100." />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Games added to the interface before yielding to input and rendering (10–1000). Recommended: 550." />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="2"
@@ -141,7 +141,7 @@
 
                     <StackPanel Grid.Row="3" VerticalAlignment="Center">
                         <TextBlock x:Name="DatabaseBatchLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Database records per transaction" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Discovered game records committed per SQLite transaction (10–1000). Recommended: 100." />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Discovered game records committed per SQLite transaction (10–1000). Recommended: 550." />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="3"
@@ -157,7 +157,7 @@
 
                     <StackPanel Grid.Row="4" VerticalAlignment="Center">
                         <TextBlock x:Name="BatchUpdateLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game updates" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Games updated in parallel during a selected-games DLL update (1–26). Recommended: 3." />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Games updated in parallel during a selected-games DLL update (1–26). Recommended: 15." />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="4"
