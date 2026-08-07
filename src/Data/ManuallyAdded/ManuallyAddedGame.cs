@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using DLSS_Swapper.Data.Steam;
 using DLSS_Swapper.Helpers;
 using DLSS_Swapper.Interfaces;
 using SQLite;
@@ -13,6 +14,9 @@ public class ManuallyAddedGame : Game
     public override GameLibrary GameLibrary => GameLibrary.ManuallyAdded;
 
     public override bool IsReadyToPlay => true;
+
+    [Column("steam_app_id")]
+    public string? SteamAppId { get; set; }
 
 
     public ManuallyAddedGame()
@@ -44,22 +48,45 @@ public class ManuallyAddedGame : Game
         }
     }
 
-    protected override Task UpdateCacheImageAsync()
+    protected override async Task UpdateCacheImageAsync()
     {
-        // NOOP, the image is manually managed by the user.
-        return Task.CompletedTask;
+        var steamAppId = SteamAppId;
+        if (string.IsNullOrWhiteSpace(steamAppId))
+        {
+            steamAppId = await SteamArtworkLookup.ResolveAppIdAsync(Title, InstallPath).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(steamAppId))
+            {
+                return;
+            }
+
+            SteamAppId = steamAppId;
+            await SaveToDatabaseAsync().ConfigureAwait(false);
+        }
+
+        var steamGame = new SteamGame(steamAppId)
+        {
+            Title = Title,
+            InstallPath = InstallPath,
+        };
+        var coverImagePath = await steamGame.AcquireCoverImagePathAsync().ConfigureAwait(false);
+        if (coverImagePath is not null)
+        {
+            UseLocalCoverImage(coverImagePath);
+        }
     }
 
     public override bool UpdateFromGame(Game game)
     {
         var didChange = ParentUpdateFromGame(game);
 
-        /*
         if (game is ManuallyAddedGame manuallyAddedGame)
         {
-
+            if (SteamAppId != manuallyAddedGame.SteamAppId)
+            {
+                SteamAppId = manuallyAddedGame.SteamAppId;
+                didChange = true;
+            }
         }
-        */
 
         return didChange;
     }

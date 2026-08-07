@@ -33,6 +33,14 @@
             NotEmptyValue="Visible" />
         <converters:BitmapImageUriConverter x:Key="BitmapImageUriConverter" />
 
+        <Flyout
+            x:Key="HeaderFilterFlyout"
+            Closed="FilterFlyout_Closed"
+            Opening="FilterFlyout_Opening"
+            Placement="Bottom">
+            <usercontrols:GameFilterControl Width="320" />
+        </Flyout>
+
         <!--  Black with a subtle top sheen; shown around a grid card while hovered.  -->
         <LinearGradientBrush x:Key="CardHoverBorderBrush" StartPoint="0,0" EndPoint="0,1">
             <GradientStop Offset="0" Color="#FF5A5A5A" />
@@ -556,7 +564,7 @@
                     Width="58"
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.SelectGamesText, Mode=OneWay}"
                     Command="{x:Bind ViewModel.ToggleSelectionModeCommand}"
-                    IsEnabled="{x:Bind ViewModel.CanRefresh, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.CanToggleSelectionMode, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
                     ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.SelectGamesText, Mode=OneWay}">
                     <Grid>
@@ -570,13 +578,19 @@
                             Grid.Row="1"
                             Style="{StaticResource HeaderCommandLabelStyle}"
                             Text="{x:Bind ViewModel.TranslationProperties.SelectGamesText, Mode=OneWay}" />
+                        <FontIcon
+                            Grid.Row="2"
+                            FontSize="8"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Glyph="&#xE70D;" />
                     </Grid>
                 </Button>
 
                 <Button
+                    x:Name="FilterButton"
                     Width="48"
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}"
-                    Command="{x:Bind ViewModel.FilterGamesButtonCommand}"
+                    Click="FilterButton_Click"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
                     ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}">
@@ -591,6 +605,11 @@
                             Grid.Row="1"
                             Style="{StaticResource HeaderCommandLabelStyle}"
                             Text="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}" />
+                        <FontIcon
+                            Grid.Row="2"
+                            FontSize="8"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Glyph="&#xE70D;" />
                     </Grid>
                 </Button>
 
@@ -699,7 +718,6 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -718,8 +736,6 @@
                                     <Setter Target="ApplyDllButton.(Grid.Column)" Value="0" />
                                     <Setter Target="RemoveGamesButton.(Grid.Row)" Value="1" />
                                     <Setter Target="RemoveGamesButton.(Grid.Column)" Value="1" />
-                                    <Setter Target="CloseSelectionButton.(Grid.Row)" Value="1" />
-                                    <Setter Target="CloseSelectionButton.(Grid.Column)" Value="2" />
                                 </VisualState.Setters>
                             </VisualState>
                             <VisualState x:Name="WideSelectionCommands">
@@ -763,15 +779,6 @@
                         Command="{x:Bind ViewModel.RemoveSelectedGamesCommand}"
                         Content="{x:Bind ViewModel.TranslationProperties.RemoveText, Mode=OneWay}"
                         IsEnabled="{x:Bind ViewModel.CanRemoveSelectedGames, Mode=OneWay}" />
-                    <Button
-                        x:Name="CloseSelectionButton"
-                        Grid.Column="4"
-                        Height="28"
-                        MinWidth="0"
-                        Padding="8,0"
-                        Command="{x:Bind ViewModel.ToggleSelectionModeCommand}"
-                        Content="{x:Bind ViewModel.TranslationProperties.CloseText, Mode=OneWay}"
-                        IsEnabled="{x:Bind ViewModel.IsBatchUpdateRunning, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
                 </Grid>
             </Border>
 

@@ -35,6 +35,7 @@ public partial class GameGridPageModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsLoading))]
     [NotifyPropertyChangedFor(nameof(CanUseHeaderControls))]
     [NotifyPropertyChangedFor(nameof(CanRefresh))]
+    [NotifyPropertyChangedFor(nameof(CanToggleSelectionMode))]
     [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
     [NotifyPropertyChangedFor(nameof(CanRemoveSelectedGames))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
@@ -44,6 +45,7 @@ public partial class GameGridPageModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoading))]
     [NotifyPropertyChangedFor(nameof(CanRefresh))]
+    [NotifyPropertyChangedFor(nameof(CanToggleSelectionMode))]
     [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
     [NotifyPropertyChangedFor(nameof(CanRemoveSelectedGames))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
@@ -56,11 +58,16 @@ public partial class GameGridPageModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanRefresh))]
+    [NotifyPropertyChangedFor(nameof(CanToggleSelectionMode))]
     public partial bool IsBackgroundScanRunning { get; set; }
 
     public bool CanRefresh => IsLoading == false
         && IsBackgroundScanRunning == false
         && IsSelectionMode == false;
+
+    public bool CanToggleSelectionMode => IsLoading == false
+        && IsBackgroundScanRunning == false
+        && IsBatchUpdateRunning == false;
 
     [ObservableProperty]
     public partial string ScanProgressText { get; set; } = string.Empty;
@@ -99,6 +106,7 @@ public partial class GameGridPageModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
     [NotifyPropertyChangedFor(nameof(CanRemoveSelectedGames))]
+    [NotifyPropertyChangedFor(nameof(CanToggleSelectionMode))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
     [NotifyCanExecuteChangedFor(nameof(RemoveSelectedGamesCommand))]
     public partial bool IsBatchUpdateRunning { get; set; }
@@ -897,33 +905,12 @@ public partial class GameGridPageModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    async Task FilterGamesButtonAsync()
+    internal void ApplyGameFilter(GameFilterControlViewModel gameFilterControlViewModel)
     {
-        var gameFilterControl = new GameFilterControl();
-
-        var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
-        {
-            Title = ResourceHelper.GetString("General_Filter"),
-            PrimaryButtonText = ResourceHelper.GetString("General_Apply"),
-            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
-            DefaultButton = ContentDialogButton.Primary,
-            Content = gameFilterControl,
-        };
-        var result = await dialog.ShowAsync();
-
-        if (result == ContentDialogResult.Primary)
-        {
-            if (gameFilterControl.DataContext is GameFilterControlViewModel gameFilterControlViewModel)
-            {
-                Settings.Instance.HideNonDLSSGames = gameFilterControlViewModel.HideNonSwappableGames;
-                GameManager.Instance.ShowHiddenGames = gameFilterControlViewModel.ShowHiddenGames;
-                Settings.Instance.GroupGameLibrariesTogether = gameFilterControlViewModel.GroupGameLibrariesTogether;
-            }
-
-            ApplyGameGroupFilter();
-        }
-
+        Settings.Instance.HideNonDLSSGames = gameFilterControlViewModel.HideNonSwappableGames;
+        GameManager.Instance.ShowHiddenGames = gameFilterControlViewModel.ShowHiddenGames;
+        Settings.Instance.GroupGameLibrariesTogether = gameFilterControlViewModel.GroupGameLibrariesTogether;
+        ApplyGameGroupFilter();
     }
 
     void ApplyGameGroupFilter()

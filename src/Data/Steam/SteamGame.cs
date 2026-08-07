@@ -47,6 +47,13 @@ internal partial class SteamGame : Game
         SetID();
     }
 
+    internal async Task<string?> AcquireCoverImagePathAsync()
+    {
+        await LoadCoverImageAsync().ConfigureAwait(false);
+        return FindLocalCoverImage()
+            ?? (File.Exists(ExpectedCoverImage) ? ExpectedCoverImage : null);
+    }
+
     protected override async Task UpdateCacheImageAsync()
     {
         // Prefer artwork already held by Steam or the persistent cache beside a

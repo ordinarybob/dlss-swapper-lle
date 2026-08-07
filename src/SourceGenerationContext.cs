@@ -31,6 +31,7 @@ namespace DLSS_Swapper;
 [JsonSerializable(typeof(List<GameSearchResult>))]
 [JsonSerializable(typeof(List<PresetOption>))]
 [JsonSerializable(typeof(GetItemsInput))]
+[JsonSerializable(typeof(SteamStoreSearchResponse))]
 internal partial class SourceGenerationContext : JsonSerializerContext
 {
 }

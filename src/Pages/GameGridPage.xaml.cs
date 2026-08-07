@@ -49,6 +49,7 @@ public sealed partial class GameGridPage : Page
     int _lastResponsivePreferredRows = -1;
     double _lastResponsiveRasterizationScale = double.NaN;
     TaskCompletionSource? _visibleCoverOpened;
+    bool _isHeaderFilterFlyoutOpen;
 
     public GameGridPageModel ViewModel { get; private set; }
 
@@ -471,6 +472,33 @@ public sealed partial class GameGridPage : Page
         listControl.SelectionMode = ListViewSelectionMode.None;
         ApplyListSelectionLayout(listControl, false);
         listControl.IsItemClickEnabled = true;
+    }
+
+    void FilterButton_Click(object sender, RoutedEventArgs e)
+    {
+        var flyout = (Flyout)Resources["HeaderFilterFlyout"];
+        if (_isHeaderFilterFlyoutOpen)
+        {
+            flyout.Hide();
+            return;
+        }
+
+        flyout.ShowAt(FilterButton);
+    }
+
+    void FilterFlyout_Opening(object sender, object e)
+    {
+        _isHeaderFilterFlyoutOpen = true;
+    }
+
+    void FilterFlyout_Closed(object sender, object e)
+    {
+        _isHeaderFilterFlyoutOpen = false;
+        if (sender is Flyout { Content: GameFilterControl filterControl }
+            && filterControl.DataContext is GameFilterControlViewModel filterViewModel)
+        {
+            ViewModel.ApplyGameFilter(filterViewModel);
+        }
     }
 
     internal int GetVisibleItemCount()

@@ -38,6 +38,67 @@ internal partial class SteamLibrary : IGameLibrary
 
     }
 
+    internal static string? TryResolveAppIdFromInstallPath(string installPath)
+    {
+        if (string.IsNullOrWhiteSpace(installPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            var normalizedInstallPath = PathHelpers.NormalizePath(installPath);
+            var gameDirectory = new DirectoryInfo(normalizedInstallPath);
+            var commonDirectory = gameDirectory.Parent;
+            var steamAppsDirectory = commonDirectory?.Parent;
+            if (commonDirectory is null
+                || steamAppsDirectory is null
+                || commonDirectory.Name.Equals("common", StringComparison.OrdinalIgnoreCase) == false
+                || steamAppsDirectory.Name.Equals("steamapps", StringComparison.OrdinalIgnoreCase) == false)
+            {
+                return null;
+            }
+
+            var serializer = KVSerializer.Create(KVSerializationFormat.KeyValues1Text);
+            foreach (var manifestPath in Directory.EnumerateFiles(
+                steamAppsDirectory.FullName,
+                "appmanifest_*.acf",
+                SearchOption.TopDirectoryOnly))
+            {
+                try
+                {
+                    using var fileStream = File.OpenRead(manifestPath);
+                    var manifest = serializer.Deserialize<AppManifestACF>(fileStream);
+                    if (manifest is null
+                        || string.IsNullOrWhiteSpace(manifest.AppId)
+                        || string.IsNullOrWhiteSpace(manifest.InstallDir))
+                    {
+                        continue;
+                    }
+
+                    var manifestInstallPath = PathHelpers.NormalizePath(
+                        Path.Combine(commonDirectory.FullName, manifest.InstallDir));
+                    if (manifestInstallPath.Equals(
+                        normalizedInstallPath,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return manifest.AppId;
+                    }
+                }
+                catch (Exception err)
+                {
+                    Logger.Warning($"Unable to inspect Steam manifest {manifestPath} for manual artwork. {err.Message}");
+                }
+            }
+        }
+        catch (Exception err)
+        {
+            Logger.Warning($"Unable to match manual install path {installPath} to a Steam manifest. {err.Message}");
+        }
+
+        return null;
+    }
+
     public bool IsInstalled()
     {
         return string.IsNullOrEmpty(GetInstallPath()) == false
