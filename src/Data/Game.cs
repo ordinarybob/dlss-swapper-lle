@@ -270,7 +270,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     /// <summary>
     /// Detects DLSS and updates cover image.
     /// </summary>
-    public void ProcessGame(bool autoSave = true, bool forceNeedsProcessing = false)
+    public void ProcessGame(
+        bool autoSave = true,
+        bool forceNeedsProcessing = false,
+        bool installPathValidated = false)
     {
         // If we are alreayd procssing we don't need to process again
         if (Processing == true)
@@ -288,7 +291,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             return;
         }
 
-        if (Directory.Exists(InstallPath) == false)
+        if (installPathValidated == false && Directory.Exists(InstallPath) == false)
         {
             App.CurrentApp.RunOnUIThread(() =>
             {

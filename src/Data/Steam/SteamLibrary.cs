@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using ValveKeyValue;
 
@@ -80,7 +81,12 @@ internal partial class SteamLibrary : IGameLibrary
             ? FindStandaloneSteamAppsPaths()
             : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         steamAppsPaths.UnionWith(standaloneSteamAppsPaths);
+        var steamDiscoveryStartedAt = Stopwatch.StartNew();
+        var indexedAppManifestPaths = new Dictionary<string, List<string>>();
         var knownAppManifestPaths = new Dictionary<string, string>();
+        var discoveredAppManifestPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var enumeratedAppManifests = new List<(string AppId, string Path, string SteamAppsPath)>();
+        var knownInstallPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         var kvSerializer = KVSerializer.Create(KVSerializationFormat.KeyValues1Text);
 
@@ -101,22 +107,15 @@ internal partial class SteamLibrary : IGameLibrary
 
                         foreach (var steamApp in libraryFolderVDF.Value.Apps)
                         {
-                            // If the appManifestPath does not exist it is likely the game was freshly uninstalled.
                             var appManifestPath = Path.Combine(path, $"appmanifest_{steamApp.Key}.acf");
-                            if (File.Exists(appManifestPath))
+                            if (indexedAppManifestPaths.TryGetValue(steamApp.Key, out var expectedPaths) == false)
                             {
-                                if (knownAppManifestPaths.ContainsKey(steamApp.Key) == false)
-                                {
-                                    knownAppManifestPaths[steamApp.Key] = appManifestPath;
-                                }
-                                else
-                                {
-                                    Logger.Error($"Went to add {steamApp.Key} to knownAppManifestPaths, but this key already exists.");
-                                }
+                                expectedPaths = [];
+                                indexedAppManifestPaths.Add(steamApp.Key, expectedPaths);
                             }
-                            else
+                            if (expectedPaths.Contains(appManifestPath, StringComparer.OrdinalIgnoreCase) == false)
                             {
-                                Logger.Error($"Expected manifest path was not found - {appManifestPath}");
+                                expectedPaths.Add(appManifestPath);
                             }
                         }
                     }
@@ -133,6 +132,25 @@ internal partial class SteamLibrary : IGameLibrary
         // Older unindexed manifests are likely stale leftovers and must not be loaded.
         foreach (var steamAppPath in steamAppsPaths)
         {
+            var commonPath = Path.Combine(steamAppPath, "common");
+            try
+            {
+                if (Directory.Exists(commonPath))
+                {
+                    foreach (var installedDirectory in Directory.EnumerateDirectories(
+                        commonPath,
+                        "*",
+                        SearchOption.TopDirectoryOnly))
+                    {
+                        knownInstallPaths.Add(PathHelpers.NormalizePath(installedDirectory));
+                    }
+                }
+            }
+            catch (Exception err)
+            {
+                Logger.Error(err, $"Unable to enumerate Steam install directories in {commonPath}.");
+            }
+
             foreach (var appManifestPath in Directory.EnumerateFiles(
                 steamAppPath,
                 "appmanifest_*.acf",
@@ -145,51 +163,109 @@ internal partial class SteamLibrary : IGameLibrary
                 }
 
                 var appId = match.Groups["app_id"].Value;
-                if (knownAppManifestPaths.ContainsKey(appId))
-                {
-                    continue;
-                }
+                discoveredAppManifestPaths.Add(appManifestPath);
+                enumeratedAppManifests.Add((appId, appManifestPath, steamAppPath));
+            }
+        }
 
-                var appManifestFileInfo = new FileInfo(appManifestPath);
-                if (standaloneSteamAppsPaths.Contains(steamAppPath)
-                    || libraryFoldersFileInfo is null
-                    || appManifestFileInfo.LastWriteTime > libraryFoldersFileInfo.LastWriteTime)
+        foreach (var indexedAppManifest in indexedAppManifestPaths)
+        {
+            foreach (var indexedAppManifestPath in indexedAppManifest.Value)
+            {
+                if (discoveredAppManifestPaths.Contains(indexedAppManifestPath))
                 {
-                    knownAppManifestPaths[appId] = appManifestPath;
+                    if (knownAppManifestPaths.TryAdd(indexedAppManifest.Key, indexedAppManifestPath) == false)
+                    {
+                        Logger.Error(
+                            $"Found app {indexedAppManifest.Key} in more than one indexed Steam library: " +
+                            $"{knownAppManifestPaths[indexedAppManifest.Key]}, {indexedAppManifestPath}");
+                    }
                 }
                 else
                 {
-                    Logger.Error(
-                        $"Found potential rogue file when loading Steam manifests: appId {appId}, {appManifestPath}");
+                    Logger.Error($"Expected manifest path was not found - {indexedAppManifestPath}");
                 }
             }
         }
 
-        var games = new List<Game>();
-
-        foreach (var appManifestPath in knownAppManifestPaths.Values)
+        foreach (var enumeratedAppManifest in enumeratedAppManifests)
         {
-            SteamGame? game;
+            if (knownAppManifestPaths.ContainsKey(enumeratedAppManifest.AppId))
+            {
+                continue;
+            }
+
+            var appManifestFileInfo = new FileInfo(enumeratedAppManifest.Path);
+            if (standaloneSteamAppsPaths.Contains(enumeratedAppManifest.SteamAppsPath)
+                || libraryFoldersFileInfo is null
+                || appManifestFileInfo.LastWriteTime > libraryFoldersFileInfo.LastWriteTime)
+            {
+                knownAppManifestPaths[enumeratedAppManifest.AppId] = enumeratedAppManifest.Path;
+            }
+            else
+            {
+                Logger.Error(
+                    $"Found potential rogue file when loading Steam manifests: " +
+                    $"appId {enumeratedAppManifest.AppId}, {enumeratedAppManifest.Path}");
+            }
+        }
+        Logger.Info(
+            $"Discovered {knownAppManifestPaths.Count:N0} Steam manifest(s) and " +
+            $"{knownInstallPaths.Count:N0} install director(ies) in " +
+            $"{steamDiscoveryStartedAt.Elapsed.TotalSeconds:N2} seconds.");
+
+        var cachedGamesByPlatformId = cachedGames
+            .GroupBy(static game => game.PlatformId, StringComparer.Ordinal)
+            .ToDictionary(static group => group.Key, static group => group.First(), StringComparer.Ordinal);
+        var appManifestPaths = knownAppManifestPaths.Values.ToArray();
+        var parsedGames = new SteamGame?[appManifestPaths.Length];
+        var manifestStartedAt = Stopwatch.StartNew();
+        var activeManifestWorkers = 0;
+        var peakManifestWorkers = 0;
+        var manifestWorkerCount = Settings.Instance.RecursiveScanConcurrency;
+        Parallel.ForEach(
+            Enumerable.Range(0, appManifestPaths.Length),
+            new ParallelOptions { MaxDegreeOfParallelism = manifestWorkerCount },
+            manifestIndex =>
+        {
+            var appManifestPath = appManifestPaths[manifestIndex];
 
             try
             {
+                var activeWorkers = Interlocked.Increment(ref activeManifestWorkers);
+                var currentPeak = Volatile.Read(ref peakManifestWorkers);
+                while (activeWorkers > currentPeak)
+                {
+                    var observedPeak = Interlocked.CompareExchange(
+                        ref peakManifestWorkers,
+                        activeWorkers,
+                        currentPeak);
+                    if (observedPeak == currentPeak)
+                    {
+                        break;
+                    }
+
+                    currentPeak = observedPeak;
+                }
+
                 using (var fileStream = File.OpenRead(appManifestPath))
                 {
-                    var appManifestACF = kvSerializer.Deserialize<AppManifestACF>(fileStream);
+                    var manifestSerializer = KVSerializer.Create(KVSerializationFormat.KeyValues1Text);
+                    var appManifestACF = manifestSerializer.Deserialize<AppManifestACF>(fileStream);
 
                     if (appManifestACF is null || string.IsNullOrEmpty(appManifestACF.AppId))
                     {
                         Logger.Error($"Unable to parse app manifest - {appManifestPath}");
-                        continue;
+                        return;
                     }
 
-                    game = new SteamGame(appManifestACF.AppId);
+                    var game = new SteamGame(appManifestACF.AppId);
 
                     if (Enum.TryParse(appManifestACF.StateFlags, out SteamStateFlag stateFlags) == false)
                     {
                         // The AppState couldn't be parsed from the appmanifest_*.acf
                         Logger.Error($"Unable to parse StateFlags {appManifestACF.StateFlags} for app {appManifestACF.AppId} in {appManifestPath}");
-                        continue;
+                        return;
                     }
                     game.StateFlags = stateFlags;
                     game.Title = appManifestACF.Name;
@@ -197,26 +273,47 @@ internal partial class SteamLibrary : IGameLibrary
                     var baseDir = Path.GetDirectoryName(appManifestPath);
                     if (string.IsNullOrEmpty(baseDir))
                     {
-                        continue;
+                        return;
                     }
 
                     var installDir = PathHelpers.NormalizePath(Path.Combine(baseDir, "common", appManifestACF.InstallDir));
-                    if (Directory.Exists(installDir) == false)
+                    if (knownInstallPaths.Contains(installDir) == false
+                        && Directory.Exists(installDir) == false)
                     {
                         // If the install directory does not exist, skip this game.
                         Logger.Error($"SteamLibary could not load game {game.Title} ({game.PlatformId}) because install path does not exist: {installDir}");
-                        continue;
+                        return;
                     }
                     game.InstallPath = installDir;
+                    parsedGames[manifestIndex] = game;
                 }
             }
             catch (Exception err)
             {
-                Logger.Error(err);
+                Logger.Error(err, $"Unable to process Steam manifest {appManifestPath}.");
+                return;
+            }
+            finally
+            {
+                Interlocked.Decrement(ref activeManifestWorkers);
+            }
+        });
+        Logger.Info(
+            $"Parsed and validated {parsedGames.Count(static game => game is not null):N0} of " +
+            $"{appManifestPaths.Length:N0} Steam manifest(s) in " +
+            $"{manifestStartedAt.Elapsed.TotalSeconds:N2} seconds; " +
+            $"peak workers: {peakManifestWorkers}/{manifestWorkerCount}.");
+
+        var registrationStartedAt = Stopwatch.StartNew();
+        var games = new List<Game>(parsedGames.Length);
+        foreach (var game in parsedGames)
+        {
+            if (game is null)
+            {
                 continue;
             }
 
-            var cachedGame = GameManager.Instance.GetGame<SteamGame>(game.PlatformId);
+            cachedGamesByPlatformId.TryGetValue(game.PlatformId, out var cachedGame);
             var activeGame = cachedGame ?? game;
 
             if (activeGame.IsHidden is null && _defaultHiddenGames.Contains(activeGame.PlatformId))
@@ -224,8 +321,7 @@ internal partial class SteamLibrary : IGameLibrary
                 activeGame.IsHidden = true;
             }
 
-
-            activeGame.Title = game.Title;  // TODO: Will this be a problem if the game is already loaded
+            activeGame.Title = game.Title;
             activeGame.InstallPath = game.InstallPath;
             activeGame.StateFlags = game.StateFlags;
 
@@ -236,7 +332,6 @@ internal partial class SteamLibrary : IGameLibrary
 
             await activeGame.SaveToDatabaseAsync().ConfigureAwait(false);
 
-            // If the game is not from cache, force processing
             if (cachedGame is null)
             {
                 activeGame.NeedsProcessing = true;
@@ -244,11 +339,19 @@ internal partial class SteamLibrary : IGameLibrary
 
             if (activeGame.NeedsProcessing == true || forceNeedsProcessing == true)
             {
-                activeGame.ProcessGame(forceNeedsProcessing: forceNeedsProcessing);
+                activeGame.ProcessGame(
+                    forceNeedsProcessing: forceNeedsProcessing,
+                    installPathValidated: true);
             }
 
             games.Add(activeGame);
         }
+        Logger.Info(
+            $"Registered {games.Count:N0} Steam game(s) in " +
+            $"{registrationStartedAt.Elapsed.TotalSeconds:N2} seconds.");
+        var discoveredPlatformIds = games
+            .Select(static game => game.PlatformId)
+            .ToHashSet(StringComparer.Ordinal);
 
 
         if (libraryFoldersFileInfo is null)
@@ -257,7 +360,7 @@ internal partial class SteamLibrary : IGameLibrary
             // undiscovered library is uninstalled or currently available.
             foreach (var cachedGame in cachedGames)
             {
-                if (games.Contains(cachedGame) == false)
+                if (discoveredPlatformIds.Contains(cachedGame.PlatformId) == false)
                 {
                     games.Add(cachedGame);
                 }
@@ -268,7 +371,7 @@ internal partial class SteamLibrary : IGameLibrary
             // The Steam client index is authoritative for installed libraries.
             foreach (var cachedGame in cachedGames)
             {
-                if (games.Contains(cachedGame) == false)
+                if (discoveredPlatformIds.Contains(cachedGame.PlatformId) == false)
                 {
                     await cachedGame.DeleteAsync().ConfigureAwait(false);
                 }
