@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using DLSS_Swapper.Data.Steam;
 using DLSS_Swapper.Helpers;
@@ -54,24 +55,72 @@ public class ManuallyAddedGame : Game
         if (string.IsNullOrWhiteSpace(steamAppId))
         {
             steamAppId = await SteamArtworkLookup.ResolveAppIdAsync(Title, InstallPath).ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(steamAppId))
+            if (string.IsNullOrWhiteSpace(steamAppId) == false)
             {
-                return;
+                SteamAppId = steamAppId;
+                await SaveToDatabaseAsync().ConfigureAwait(false);
             }
-
-            SteamAppId = steamAppId;
-            await SaveToDatabaseAsync().ConfigureAwait(false);
         }
 
-        var steamGame = new SteamGame(steamAppId)
+        if (string.IsNullOrWhiteSpace(steamAppId) == false)
         {
-            Title = Title,
-            InstallPath = InstallPath,
-        };
-        var coverImagePath = await steamGame.AcquireCoverImagePathAsync().ConfigureAwait(false);
-        if (coverImagePath is not null)
+            var steamGame = new SteamGame(steamAppId)
+            {
+                Title = Title,
+                InstallPath = InstallPath,
+            };
+            var steamCoverImagePath = await steamGame.AcquireCoverImagePathAsync().ConfigureAwait(false);
+            if (steamCoverImagePath is not null)
+            {
+                UseLocalCoverImage(steamCoverImagePath);
+                return;
+            }
+        }
+
+        var cachedFallbackCover = WikipediaArtworkLookup.FindCachedCover(Title, InstallPath);
+        if (cachedFallbackCover is not null)
         {
-            UseLocalCoverImage(coverImagePath);
+            UseLocalCoverImage(cachedFallbackCover);
+            return;
+        }
+
+        var fallbackCoverUrl = await WikipediaArtworkLookup.ResolveCoverUrlAsync(
+            Title,
+            InstallPath).ConfigureAwait(false);
+        if (fallbackCoverUrl is null)
+        {
+            return;
+        }
+
+        if (await DownloadFallbackCoverAsync(fallbackCoverUrl).ConfigureAwait(false)
+            && File.Exists(ExpectedCoverImage))
+        {
+            var fallbackCoverPath = WikipediaArtworkLookup.PersistCover(
+                Title,
+                InstallPath,
+                ExpectedCoverImage);
+            UseLocalCoverImage(fallbackCoverPath);
+        }
+    }
+
+    async Task<bool> DownloadFallbackCoverAsync(string coverUrl)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, coverUrl);
+            request.Headers.UserAgent.ParseAdd("DLSS-Swapper-LLE/1.0");
+            using var response = await App.CurrentApp.HttpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            await using var imageStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            await ResizeCoverAsync(imageStream).ConfigureAwait(false);
+            return File.Exists(ExpectedCoverImage);
+        }
+        catch (Exception err)
+        {
+            Logger.Warning($"Unable to download fallback artwork for '{Title}'. {err.Message}");
+            return false;
         }
     }
 

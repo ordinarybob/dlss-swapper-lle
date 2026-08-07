@@ -103,7 +103,7 @@ internal static class SteamArtworkLookup
         }
     }
 
-    static string NormalizeTitle(string title)
+    internal static string NormalizeTitle(string title)
     {
         var decomposed = title.Normalize(NormalizationForm.FormD);
         var result = new StringBuilder(decomposed.Length);
@@ -149,14 +149,14 @@ internal static class SteamArtworkLookup
             : [wordsOnly, deltaAlias];
     }
 
-    static string GetLookupKey(string title)
+    internal static string GetLookupKey(string title)
     {
         var normalizedTitle = NormalizeTitle(title);
         var digest = SHA256.HashData(Encoding.UTF8.GetBytes(normalizedTitle));
         return Convert.ToHexString(digest.AsSpan(0, 12)).ToLowerInvariant();
     }
 
-    static string GetLookupDirectory(string installPath)
+    internal static string GetLookupDirectory(string installPath)
     {
         return SteamGame.GetSharedArtworkCacheDirectory(installPath)
             ?? Storage.GetImageCachePath();

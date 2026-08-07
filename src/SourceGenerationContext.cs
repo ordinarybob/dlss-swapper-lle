@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using DLSS_Swapper.Data.BattleNet;
 using DLSS_Swapper.Data.DLSS;
 using DLSS_Swapper.Data.EAApp;
+using DLSS_Swapper.Data.ManuallyAdded;
 using DLSS_Swapper.Data.Steam.SteamAPI;
 using Microsoft.UI.Windowing;
 
@@ -32,6 +33,7 @@ namespace DLSS_Swapper;
 [JsonSerializable(typeof(List<PresetOption>))]
 [JsonSerializable(typeof(GetItemsInput))]
 [JsonSerializable(typeof(SteamStoreSearchResponse))]
+[JsonSerializable(typeof(WikipediaResponse))]
 internal partial class SourceGenerationContext : JsonSerializerContext
 {
 }

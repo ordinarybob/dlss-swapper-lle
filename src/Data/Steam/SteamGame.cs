@@ -304,30 +304,56 @@ internal partial class SteamGame : Game
             }
 
             var libraryDirectory = currentDirectory?.Parent;
-            if (libraryDirectory is null
-                || libraryDirectory.Name.Equals("SteamLibrary", StringComparison.OrdinalIgnoreCase) == false)
+            if (libraryDirectory is not null
+                && libraryDirectory.Name.Equals("SteamLibrary", StringComparison.OrdinalIgnoreCase))
+            {
+                var directCache = GetRootLevelSharedArtworkCacheDirectory(libraryDirectory);
+                if (directCache is not null)
+                {
+                    return directCache;
+                }
+            }
+
+            // A manually added Epic/GOG game may live elsewhere on the same
+            // volume. Reuse the established sibling cache when that volume has
+            // a root-level SteamLibrary, without creating root folders on an
+            // unrelated drive.
+            var installVolumeRoot = Path.GetPathRoot(installPath);
+            if (string.IsNullOrWhiteSpace(installVolumeRoot))
             {
                 return null;
             }
 
-            var volumeRoot = Path.GetPathRoot(libraryDirectory.FullName);
-            var libraryParent = libraryDirectory.Parent?.FullName;
-            if (string.IsNullOrWhiteSpace(volumeRoot)
-                || string.IsNullOrWhiteSpace(libraryParent)
-                || Path.TrimEndingDirectorySeparator(volumeRoot).Equals(
-                    Path.TrimEndingDirectorySeparator(libraryParent),
-                    StringComparison.OrdinalIgnoreCase) == false)
-            {
-                return null;
-            }
-
-            return Path.Combine(volumeRoot, SharedArtworkCacheDirectoryName);
+            var rootSteamLibrary = new DirectoryInfo(
+                Path.Combine(installVolumeRoot, "SteamLibrary"));
+            var existingSharedCache = Path.Combine(
+                installVolumeRoot,
+                SharedArtworkCacheDirectoryName);
+            return rootSteamLibrary.Exists || Directory.Exists(existingSharedCache)
+                ? existingSharedCache
+                : null;
         }
         catch (Exception err)
         {
             Logger.Warning($"Unable to resolve a shared Steam artwork cache for {installPath}. {err.Message}");
             return null;
         }
+    }
+
+    static string? GetRootLevelSharedArtworkCacheDirectory(DirectoryInfo libraryDirectory)
+    {
+        var volumeRoot = Path.GetPathRoot(libraryDirectory.FullName);
+        var libraryParent = libraryDirectory.Parent?.FullName;
+        if (string.IsNullOrWhiteSpace(volumeRoot)
+            || string.IsNullOrWhiteSpace(libraryParent)
+            || Path.TrimEndingDirectorySeparator(volumeRoot).Equals(
+                Path.TrimEndingDirectorySeparator(libraryParent),
+                StringComparison.OrdinalIgnoreCase) == false)
+        {
+            return null;
+        }
+
+        return Path.Combine(volumeRoot, SharedArtworkCacheDirectoryName);
     }
 
     async Task<bool> DownloadCoverFromIStoreBrowseService()
