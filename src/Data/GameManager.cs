@@ -309,6 +309,7 @@ internal partial class GameManager : ObservableObject
                 }
             }
 
+            await gameAssetPathIndex.CompleteAsync().ConfigureAwait(false);
             await FlushPendingUiChangesAsync().ConfigureAwait(false);
             await GameScanQueue.Instance.WhenIdleAsync().ConfigureAwait(false);
         }

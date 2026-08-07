@@ -305,6 +305,8 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             HasSwappableItems = false;
         });
 
+        var assetScan = GameAssetPathIndex.PrepareFind(InstallPath);
+
         GameScanQueue.Instance.Enqueue(async () =>
         {
             var newHasSwappableItems = false;
@@ -318,7 +320,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 {
                     await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
                 }
-                var discoveredAssets = await GameAssetPathIndex.FindAsync(InstallPath).ConfigureAwait(false);
+                var discoveredAssets = await assetScan.ExecuteAsync().ConfigureAwait(false);
 
                 var dllHistory = new List<GameHistory>();
                 var unknownGameAssets = new List<GameAsset>();
