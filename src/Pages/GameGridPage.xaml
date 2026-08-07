@@ -224,14 +224,60 @@
                         <GroupStyle.HeaderTemplate>
                             <DataTemplate x:DataType="data:GameGroup">
                                 <Grid
-                                    Height="30"
-                                    Margin="52,0,2,0"
+                                    Height="32"
+                                    Margin="48,0,2,0"
                                     Visibility="{x:Bind Name, Converter={StaticResource StringVisibilityConverter}}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
                                     <TextBlock
                                         VerticalAlignment="Center"
                                         FontSize="17"
                                         FontWeight="SemiBold"
                                         Text="{x:Bind Name}" />
+                                    <StackPanel
+                                        Grid.Column="1"
+                                        Margin="8,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal"
+                                        Spacing="8"
+                                        Visibility="{x:Bind ShowGridDensityControls, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <Border
+                                            Width="1"
+                                            Height="18"
+                                            Background="{StaticResource AppBarSeparatorForegroundThemeBrush}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                FontSize="10"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="Columns" />
+                                            <ComboBox
+                                                x:Name="GridColumnsNumberBox"
+                                                Width="54"
+                                                Height="28"
+                                                Padding="7,0,2,0"
+                                                AutomationProperties.Name="Grid columns"
+                                                ItemsSource="{x:Bind GridColumnOptions}"
+                                                SelectedItem="{x:Bind GridViewPreferredColumns, Mode=TwoWay}" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                FontSize="10"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="Rows" />
+                                            <ComboBox
+                                                x:Name="GridRowsNumberBox"
+                                                Width="54"
+                                                Height="28"
+                                                Padding="7,0,2,0"
+                                                AutomationProperties.Name="Grid rows"
+                                                ItemsSource="{x:Bind GridRowOptions}"
+                                                SelectedItem="{x:Bind GridViewPreferredRows, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </StackPanel>
                                 </Grid>
                             </DataTemplate>
                         </GroupStyle.HeaderTemplate>
@@ -400,6 +446,13 @@
                     FontSize="24"
                     FontWeight="SemiBold"
                     Text="{x:Bind ViewModel.TranslationProperties.PageTitle, Mode=OneWay}"
+                    TextWrapping="NoWrap" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="16"
+                    FontWeight="SemiBold"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{x:Bind ViewModel.VisibleGameCountText, Mode=OneWay}"
                     TextWrapping="NoWrap" />
                 <muxc:ProgressRing
                     Width="20"

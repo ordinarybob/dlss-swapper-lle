@@ -330,6 +330,14 @@ public sealed partial class GameGridPage : Page
         _lastResponsiveRasterizationScale = double.NaN;
     }
 
+    internal void RefreshResponsiveGridLayout()
+    {
+        if (_responsiveGridView is not null)
+        {
+            UpdateResponsiveGridLayout(_responsiveGridView);
+        }
+    }
+
     void UpdateResponsiveGridLayout(
         GridView gridView,
         double immediateViewportWidth = 0,

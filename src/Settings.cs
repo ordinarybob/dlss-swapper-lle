@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using DLSS_Swapper.Data;
 using DLSS_Swapper.Interfaces;
+using DLSS_Swapper.Messages;
 using DLSS_Swapper.Pages;
 using Microsoft.UI.Xaml;
 using System;
@@ -17,7 +18,7 @@ internal enum GameLibraryStorageProfile
 
 public class Settings
 {
-    public const int DefaultGridViewPreferredColumns = 8;
+    public const int DefaultGridViewPreferredColumns = 6;
     public const int MinGridViewPreferredColumns = 1;
     public const int MaxGridViewPreferredColumns = 16;
 
@@ -352,6 +353,7 @@ public class Settings
             if (_gridViewPreferredColumns != normalizedValue)
             {
                 _gridViewPreferredColumns = normalizedValue;
+                WeakReferenceMessenger.Default.Send(new GridDensityChangedMessage());
                 if (_autoSave)
                 {
                     SaveJson();
@@ -373,6 +375,7 @@ public class Settings
             if (_gridViewPreferredRows != normalizedValue)
             {
                 _gridViewPreferredRows = normalizedValue;
+                WeakReferenceMessenger.Default.Send(new GridDensityChangedMessage());
                 if (_autoSave)
                 {
                     SaveJson();

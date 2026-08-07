@@ -7,8 +7,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using DLSS_Swapper.Data;
 using DLSS_Swapper.Helpers;
+using DLSS_Swapper.Messages;
 using DLSS_Swapper.UserControls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -134,6 +136,11 @@ public partial class SettingsPageModel : ObservableObject
     public SettingsPageModel(SettingsPage page)
     {
         _weakPage = new WeakReference<SettingsPage>(page);
+        WeakReferenceMessenger.Default.Register<GridDensityChangedMessage>(this, (sender, message) =>
+        {
+            GridViewPreferredColumns = Settings.Instance.GridViewPreferredColumns;
+            GridViewPreferredRows = Settings.Instance.GridViewPreferredRows;
+        });
 
         LanguageManager.Instance.OnLanguageChanged += () =>
         {

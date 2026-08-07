@@ -199,7 +199,7 @@
 
                     <StackPanel Grid.Row="0" VerticalAlignment="Center">
                         <TextBlock x:Name="GridColumnsLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Preferred columns" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Minimum card columns in grid view (1–16). Ctrl + mouse wheel over the grid also changes this. Recommended: 8." />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="Minimum card columns in grid view (1–16). Ctrl + mouse wheel over the grid also changes this. Recommended: 6." />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="0"

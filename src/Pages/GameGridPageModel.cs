@@ -75,6 +75,18 @@ public partial class GameGridPageModel : ObservableObject
     [ObservableProperty]
     public partial ICollectionView? CurrentCollectionView { get; set; } = null;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisibleGameCountText))]
+    public partial int VisibleGameCount { get; set; }
+
+    public string VisibleGameCountText => $"({VisibleGameCount:N0})";
+
+    [ObservableProperty]
+    public partial double GridViewPreferredColumns { get; set; } = Settings.Instance.GridViewPreferredColumns;
+
+    [ObservableProperty]
+    public partial double GridViewPreferredRows { get; set; } = Settings.Instance.GridViewPreferredRows;
+
 
     // Placeholder card size used until the first layout pass measures the real
     // grid viewport; UpdateResponsiveGridLayout keeps both in sync at 2:3.
@@ -86,7 +98,10 @@ public partial class GameGridPageModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(GameGridViewIcon))]
+    [NotifyPropertyChangedFor(nameof(IsGridView))]
     public partial GameGridViewType GameGridViewType { get; set; } = Settings.Instance.GameGridViewType;
+
+    public bool IsGridView => GameGridViewType == global::DLSS_Swapper.Pages.GameGridViewType.GridView;
 
     public FontIcon GameGridViewIcon => GameGridViewType switch
     {
@@ -147,9 +162,38 @@ public partial class GameGridPageModel : ObservableObject
             GameManager.Instance.RemoveAllGames();
             await InitialLoadAsync();
         });
+        WeakReferenceMessenger.Default.Register<GridDensityChangedMessage>(this, (sender, message) =>
+        {
+            GridViewPreferredColumns = Settings.Instance.GridViewPreferredColumns;
+            GridViewPreferredRows = Settings.Instance.GridViewPreferredRows;
+            gameGridPage.RefreshResponsiveGridLayout();
+        });
 
         this.gameGridPage = gameGridPage;
+        GameManager.Instance.AllGamesView.VectorChanged += (_, _) => UpdateVisibleGameCount();
         ApplyGameGroupFilter();
+        UpdateVisibleGameCount();
+    }
+
+    void UpdateVisibleGameCount()
+    {
+        VisibleGameCount = GameManager.Instance.AllGamesView.Count;
+    }
+
+    partial void OnGridViewPreferredColumnsChanged(double value)
+    {
+        if (double.IsFinite(value))
+        {
+            Settings.Instance.GridViewPreferredColumns = (int)Math.Round(value);
+        }
+    }
+
+    partial void OnGridViewPreferredRowsChanged(double value)
+    {
+        if (double.IsFinite(value))
+        {
+            Settings.Instance.GridViewPreferredRows = (int)Math.Round(value);
+        }
     }
 
     [RelayCommand]
