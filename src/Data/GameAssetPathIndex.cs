@@ -283,7 +283,7 @@ internal static class GameAssetPathIndex
                 var workerCount = GetWorkerCount();
 
                 Logger.Info($"Scanning {roots.Length:N0} game root(s) from {scanRoots.Length:N0} shared tree root(s) on {volumeRoot} with {workerCount} directory worker(s).");
-                await WalkTreesAsync(scanRoots, workerCount, asset =>
+                var statistics = await WalkTreesAsync(scanRoots, workerCount, asset =>
                 {
                     foreach (var root in roots)
                     {
@@ -303,7 +303,10 @@ internal static class GameAssetPathIndex
                     request.Completion.TrySetResult(assets);
                 }
 
-                Logger.Info($"Scanned {roots.Length:N0} game root(s) on {volumeRoot} in {startedAt.Elapsed.TotalSeconds:N2} seconds.");
+                Logger.Info(
+                    $"Scanned {roots.Length:N0} game root(s) and {statistics.Directories:N0} directories on {volumeRoot} " +
+                    $"in {startedAt.Elapsed.TotalSeconds:N2} seconds; peak directory workers: {statistics.PeakWorkers}/{workerCount}, " +
+                    $"peak pending directories: {statistics.PeakPendingDirectories:N0}.");
             }
             catch (Exception err)
             {
@@ -352,10 +355,13 @@ internal static class GameAssetPathIndex
 
         static int GetWorkerCount()
         {
-            return Math.Clamp((Settings.Instance.RecursiveScanConcurrency + 3) / 4, 1, 8);
+            return Settings.Instance.RecursiveScanConcurrency;
         }
 
-        static async Task WalkTreesAsync(string[] roots, int workerCount, Action<DiscoveredGameAsset> onAsset)
+        static async Task<WalkStatistics> WalkTreesAsync(
+            string[] roots,
+            int workerCount,
+            Action<DiscoveredGameAsset> onAsset)
         {
             var directories = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
             {
@@ -364,6 +370,10 @@ internal static class GameAssetPathIndex
                 AllowSynchronousContinuations = false,
             });
             var pendingDirectoryCount = roots.Length;
+            var peakPendingDirectories = roots.Length;
+            var activeWorkerCount = 0;
+            var peakWorkerCount = 0;
+            long scannedDirectoryCount = 0;
 
             foreach (var root in roots)
             {
@@ -382,13 +392,17 @@ internal static class GameAssetPathIndex
                 {
                     await foreach (var directory in directories.Reader.ReadAllAsync().ConfigureAwait(false))
                     {
+                        var activeWorkers = Interlocked.Increment(ref activeWorkerCount);
+                        UpdateMaximum(ref peakWorkerCount, activeWorkers);
+                        Interlocked.Increment(ref scannedDirectoryCount);
                         try
                         {
                             foreach (var entry in EnumerateDirectory(directory))
                             {
                                 if (entry.IsDirectory)
                                 {
-                                    Interlocked.Increment(ref pendingDirectoryCount);
+                                    var pendingDirectories = Interlocked.Increment(ref pendingDirectoryCount);
+                                    UpdateMaximum(ref peakPendingDirectories, pendingDirectories);
                                     if (directories.Writer.TryWrite(entry.Path) == false)
                                     {
                                         Interlocked.Decrement(ref pendingDirectoryCount);
@@ -406,6 +420,7 @@ internal static class GameAssetPathIndex
                         }
                         finally
                         {
+                            Interlocked.Decrement(ref activeWorkerCount);
                             if (Interlocked.Decrement(ref pendingDirectoryCount) == 0)
                             {
                                 directories.Writer.TryComplete();
@@ -416,6 +431,22 @@ internal static class GameAssetPathIndex
                 .ToArray();
 
             await Task.WhenAll(workers).ConfigureAwait(false);
+            return new WalkStatistics(scannedDirectoryCount, peakWorkerCount, peakPendingDirectories);
+        }
+
+        static void UpdateMaximum(ref int target, int candidate)
+        {
+            var current = Volatile.Read(ref target);
+            while (candidate > current)
+            {
+                var observed = Interlocked.CompareExchange(ref target, candidate, current);
+                if (observed == current)
+                {
+                    return;
+                }
+
+                current = observed;
+            }
         }
 
         static IEnumerable<WalkEntry> EnumerateDirectory(string directory)
@@ -471,4 +502,5 @@ internal static class GameAssetPathIndex
     }
 
     readonly record struct WalkEntry(string Path, bool IsDirectory, DiscoveredGameAsset? Asset);
+    readonly record struct WalkStatistics(long Directories, int PeakWorkers, int PeakPendingDirectories);
 }
