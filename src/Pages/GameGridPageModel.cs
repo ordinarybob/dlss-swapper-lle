@@ -12,6 +12,7 @@ using DLSS_Swapper.Helpers;
 using CommunityToolkit.Mvvm.Messaging;
 using DLSS_Swapper.Messages;
 using DLSS_Swapper.UserControls;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
@@ -26,7 +27,10 @@ public enum GameGridViewType
 
 public partial class GameGridPageModel : ObservableObject
 {
+    const int ScanProgressBatchSize = 100;
+
     GameGridPage gameGridPage;
+    readonly DispatcherQueueTimer _visibleGameCountTimer;
 
     [ObservableProperty]
     public partial Game? SelectedGame { get; set; } = null;
@@ -38,6 +42,7 @@ public partial class GameGridPageModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanToggleSelectionMode))]
     [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
     [NotifyPropertyChangedFor(nameof(CanRemoveSelectedGames))]
+    [NotifyPropertyChangedFor(nameof(VisibleGameCountText))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
     [NotifyCanExecuteChangedFor(nameof(RemoveSelectedGamesCommand))]
     public partial bool IsGameListLoading { get; set; } = true;
@@ -48,6 +53,7 @@ public partial class GameGridPageModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanToggleSelectionMode))]
     [NotifyPropertyChangedFor(nameof(CanApplyBatchDll))]
     [NotifyPropertyChangedFor(nameof(CanRemoveSelectedGames))]
+    [NotifyPropertyChangedFor(nameof(VisibleGameCountText))]
     [NotifyCanExecuteChangedFor(nameof(ApplyBatchDllCommand))]
     [NotifyCanExecuteChangedFor(nameof(RemoveSelectedGamesCommand))]
     public partial bool IsDLSSLoading { get; set; } = true;
@@ -59,6 +65,7 @@ public partial class GameGridPageModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanRefresh))]
     [NotifyPropertyChangedFor(nameof(CanToggleSelectionMode))]
+    [NotifyPropertyChangedFor(nameof(VisibleGameCountText))]
     public partial bool IsBackgroundScanRunning { get; set; }
 
     public bool CanRefresh => IsLoading == false
@@ -79,7 +86,9 @@ public partial class GameGridPageModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(VisibleGameCountText))]
     public partial int VisibleGameCount { get; set; }
 
-    public string VisibleGameCountText => $"({VisibleGameCount:N0})";
+    public string VisibleGameCountText => IsLoading || IsBackgroundScanRunning
+        ? string.Empty
+        : $"({VisibleGameCount:N0})";
 
     [ObservableProperty]
     public partial double GridViewPreferredColumns { get; set; } = Settings.Instance.GridViewPreferredColumns;
@@ -170,13 +179,37 @@ public partial class GameGridPageModel : ObservableObject
         });
 
         this.gameGridPage = gameGridPage;
-        GameManager.Instance.AllGamesView.VectorChanged += (_, _) => UpdateVisibleGameCount();
+        _visibleGameCountTimer = gameGridPage.DispatcherQueue.CreateTimer();
+        _visibleGameCountTimer.Interval = TimeSpan.FromMilliseconds(250);
+        _visibleGameCountTimer.IsRepeating = false;
+        _visibleGameCountTimer.Tick += (_, _) => UpdateVisibleGameCount();
+        GameManager.Instance.AllGamesView.VectorChanged += (_, _) => QueueVisibleGameCountUpdate();
         ApplyGameGroupFilter();
-        UpdateVisibleGameCount();
+    }
+
+    void QueueVisibleGameCountUpdate()
+    {
+        if (IsLoading == false
+            && IsBackgroundScanRunning == false
+            && _visibleGameCountTimer.IsRunning == false)
+        {
+            _visibleGameCountTimer.Start();
+        }
     }
 
     void UpdateVisibleGameCount()
     {
+        if (IsLoading || IsBackgroundScanRunning)
+        {
+            return;
+        }
+
+        VisibleGameCount = GameManager.Instance.AllGamesView.Count;
+    }
+
+    void PublishVisibleGameCount()
+    {
+        _visibleGameCountTimer.Stop();
         VisibleGameCount = GameManager.Instance.AllGamesView.Count;
     }
 
@@ -443,6 +476,7 @@ public partial class GameGridPageModel : ObservableObject
         }
         finally
         {
+            PublishVisibleGameCount();
             IsBackgroundScanRunning = false;
             IsDLSSLoading = false;
         }
@@ -485,7 +519,15 @@ public partial class GameGridPageModel : ObservableObject
         }
 
         var completed = Math.Clamp(currentProgress.Completed - initialProgress.Completed, 0, enqueued);
-        ScanProgressText = $"{ResourceHelper.GetString("General_Loading")} {completed:N0} / {enqueued:N0}";
+        var completedBatch = completed / ScanProgressBatchSize * ScanProgressBatchSize;
+        if (completedBatch == 0 && completed < enqueued)
+        {
+            ScanProgressText = ResourceHelper.GetString("General_Loading");
+            return;
+        }
+
+        var displayedCompleted = completed == enqueued ? completed : completedBatch;
+        ScanProgressText = $"{ResourceHelper.GetString("General_Loading")} {displayedCompleted:N0} / {enqueued:N0}";
     }
 
     public void SearchForGameEvent(object sender, TextChangedEventArgs e)
@@ -903,10 +945,15 @@ public partial class GameGridPageModel : ObservableObject
     async Task RefreshGamesButtonAsync()
     {
         IsDLSSLoading = true;
-
-        await LoadGamesWithProgressAsync(true);
-
-        IsDLSSLoading = false;
+        try
+        {
+            await LoadGamesWithProgressAsync(true);
+        }
+        finally
+        {
+            PublishVisibleGameCount();
+            IsDLSSLoading = false;
+        }
     }
 
     [RelayCommand]
@@ -945,6 +992,7 @@ public partial class GameGridPageModel : ObservableObject
         }
         finally
         {
+            PublishVisibleGameCount();
             IsDLSSLoading = false;
         }
     }
