@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DLSS_Swapper.Builders;
 using DLSS_Swapper.Data;
 using DLSS_Swapper.Data.ManuallyAdded;
 using DLSS_Swapper.Helpers;
@@ -513,21 +512,46 @@ public partial class GameGridPageModel : ObservableObject
     [RelayCommand]
     async Task AddManualGamesButtonAsync()
     {
-        if (Settings.Instance.HasShownAddMultipleGameFoldersMessage == false)
+        if (Settings.Instance.DontShowAddMultipleGameFoldersNotice == false)
         {
+            var dontShowAgainCheckbox = new CheckBox()
+            {
+                Content = new TextBlock()
+                {
+                    Text = ResourceHelper.GetString("General_DontShowAgain"),
+                },
+            };
+
             var explanation = new EasyContentDialog(gameGridPage.XamlRoot)
             {
                 Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultipleFoldersNoteTitle"),
                 PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectGameFolders"),
                 CloseButtonText = ResourceHelper.GetString("General_Cancel"),
                 DefaultButton = ContentDialogButton.Primary,
-                Content = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultipleFoldersDescription"),
+                Content = new StackPanel()
+                {
+                    Children =
+                    {
+                        new TextBlock()
+                        {
+                            TextWrapping = TextWrapping.Wrap,
+                            Text = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultipleFoldersDescription"),
+                        },
+                        dontShowAgainCheckbox,
+                    },
+                    Orientation = Orientation.Vertical,
+                    Spacing = 16,
+                },
             };
             if (await explanation.ShowAsync() != ContentDialogResult.Primary)
             {
                 return;
             }
-            Settings.Instance.HasShownAddMultipleGameFoldersMessage = true;
+
+            if (dontShowAgainCheckbox.IsChecked == true)
+            {
+                Settings.Instance.DontShowAddMultipleGameFoldersNotice = true;
+            }
         }
 
         try
@@ -551,17 +575,46 @@ public partial class GameGridPageModel : ObservableObject
     [RelayCommand]
     async Task AddManualGamesDirectoryButtonAsync()
     {
-        var explanation = new EasyContentDialog(gameGridPage.XamlRoot)
+        if (Settings.Instance.DontShowAddMultiGameDirectoryNotice == false)
         {
-            Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultiGameDirectoryNoteTitle"),
-            PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectMultiGameDirectory"),
-            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
-            DefaultButton = ContentDialogButton.Primary,
-            Content = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultiGameDirectoryDescription"),
-        };
-        if (await explanation.ShowAsync() != ContentDialogResult.Primary)
-        {
-            return;
+            var dontShowAgainCheckbox = new CheckBox()
+            {
+                Content = new TextBlock()
+                {
+                    Text = ResourceHelper.GetString("General_DontShowAgain"),
+                },
+            };
+
+            var explanation = new EasyContentDialog(gameGridPage.XamlRoot)
+            {
+                Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultiGameDirectoryNoteTitle"),
+                PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectMultiGameDirectory"),
+                CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+                DefaultButton = ContentDialogButton.Primary,
+                Content = new StackPanel()
+                {
+                    Children =
+                    {
+                        new TextBlock()
+                        {
+                            TextWrapping = TextWrapping.Wrap,
+                            Text = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultiGameDirectoryDescription"),
+                        },
+                        dontShowAgainCheckbox,
+                    },
+                    Orientation = Orientation.Vertical,
+                    Spacing = 16,
+                },
+            };
+            if (await explanation.ShowAsync() != ContentDialogResult.Primary)
+            {
+                return;
+            }
+
+            if (dontShowAgainCheckbox.IsChecked == true)
+            {
+                Settings.Instance.DontShowAddMultiGameDirectoryNotice = true;
+            }
         }
 
         try
@@ -715,28 +768,6 @@ public partial class GameGridPageModel : ObservableObject
 
     async Task AddGameManually()
     {
-        TextBlockBuilder textBlockBuilder = new TextBlockBuilder(ResourceHelper.GetString("GamesPage_ManuallyAdding_InfoHtml"));
-
-        if (Settings.Instance.HasShownAddGameFolderMessage == false)
-        {
-            var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
-            {
-                Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_AnotherNoteTitle"),
-                PrimaryButtonText = ResourceHelper.GetString("GamesPage_AddGame"),
-                CloseButtonText = ResourceHelper.GetString("General_Close"),
-                DefaultButton = ContentDialogButton.Primary,
-                Content = textBlockBuilder.Build()
-            };
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.None)
-            {
-                return;
-            }
-
-            Settings.Instance.HasShownAddGameFolderMessage = true;
-        }
-
         var installPath = string.Empty;
         try
         {

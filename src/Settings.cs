@@ -286,23 +286,6 @@ public class Settings
         }
     }
 
-    bool _hasShownAddGameFolderMessage;
-    public bool HasShownAddGameFolderMessage
-    {
-        get { return _hasShownAddGameFolderMessage; }
-        set
-        {
-            if (_hasShownAddGameFolderMessage != value)
-            {
-                _hasShownAddGameFolderMessage = value;
-                if (_autoSave)
-                {
-                    SaveJson();
-                }
-            }
-        }
-    }
-
     WindowPositionRect _lastWindowSizeAndPosition = new WindowPositionRect();
     public WindowPositionRect LastWindowSizeAndPosition
     {
@@ -417,15 +400,32 @@ public class Settings
         }
     }
 
-    bool _hasShownAddMultipleGameFoldersMessage;
-    public bool HasShownAddMultipleGameFoldersMessage
+    bool _dontShowAddMultipleGameFoldersNotice;
+    public bool DontShowAddMultipleGameFoldersNotice
     {
-        get { return _hasShownAddMultipleGameFoldersMessage; }
+        get { return _dontShowAddMultipleGameFoldersNotice; }
         set
         {
-            if (_hasShownAddMultipleGameFoldersMessage != value)
+            if (_dontShowAddMultipleGameFoldersNotice != value)
             {
-                _hasShownAddMultipleGameFoldersMessage = value;
+                _dontShowAddMultipleGameFoldersNotice = value;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    bool _dontShowAddMultiGameDirectoryNotice;
+    public bool DontShowAddMultiGameDirectoryNotice
+    {
+        get { return _dontShowAddMultiGameDirectoryNotice; }
+        set
+        {
+            if (_dontShowAddMultiGameDirectoryNotice != value)
+            {
+                _dontShowAddMultiGameDirectoryNotice = value;
                 if (_autoSave)
                 {
                     SaveJson();
