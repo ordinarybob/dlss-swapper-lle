@@ -8,12 +8,13 @@ namespace DLSS_Swapper.Data;
 internal sealed class GameScanQueue
 {
     internal readonly record struct Progress(long Enqueued, long Completed);
+    readonly record struct QueuedScan(Func<Task> Scan, bool TrackProgress);
 
     static readonly Lazy<GameScanQueue> _instance = new(() => new GameScanQueue());
 
     public static GameScanQueue Instance => _instance.Value;
 
-    readonly Channel<Func<Task>> _queue = Channel.CreateUnbounded<Func<Task>>(
+    readonly Channel<QueuedScan> _queue = Channel.CreateUnbounded<QueuedScan>(
         new UnboundedChannelOptions
         {
             SingleWriter = false,
@@ -42,7 +43,7 @@ internal sealed class GameScanQueue
         }
     }
 
-    public void Enqueue(Func<Task> scan)
+    public void Enqueue(Func<Task> scan, bool trackProgress = true)
     {
         lock (_idleLock)
         {
@@ -53,10 +54,17 @@ internal sealed class GameScanQueue
 
             _pendingCount++;
         }
-        Interlocked.Increment(ref _totalEnqueued);
-
-        if (_queue.Writer.TryWrite(scan) == false)
+        if (trackProgress)
         {
+            Interlocked.Increment(ref _totalEnqueued);
+        }
+
+        if (_queue.Writer.TryWrite(new QueuedScan(scan, trackProgress)) == false)
+        {
+            if (trackProgress)
+            {
+                Interlocked.Increment(ref _totalCompleted);
+            }
             MarkCompleted();
             throw new InvalidOperationException("Unable to queue game scan.");
         }
@@ -81,16 +89,19 @@ internal sealed class GameScanQueue
     {
         while (await _queue.Reader.WaitToReadAsync().ConfigureAwait(false))
         {
-            if (_queue.Reader.TryRead(out var scan) == false)
+            if (_queue.Reader.TryRead(out var queuedScan) == false)
             {
                 continue;
             }
 
             if (TryRetireWorker())
             {
-                if (_queue.Writer.TryWrite(scan) == false)
+                if (_queue.Writer.TryWrite(queuedScan) == false)
                 {
-                    Interlocked.Increment(ref _totalCompleted);
+                    if (queuedScan.TrackProgress)
+                    {
+                        Interlocked.Increment(ref _totalCompleted);
+                    }
                     MarkCompleted();
                 }
                 return;
@@ -98,7 +109,7 @@ internal sealed class GameScanQueue
 
             try
             {
-                await scan().ConfigureAwait(false);
+                await queuedScan.Scan().ConfigureAwait(false);
             }
             catch (Exception err)
             {
@@ -106,7 +117,10 @@ internal sealed class GameScanQueue
             }
             finally
             {
-                Interlocked.Increment(ref _totalCompleted);
+                if (queuedScan.TrackProgress)
+                {
+                    Interlocked.Increment(ref _totalCompleted);
+                }
                 MarkCompleted();
             }
         }

@@ -150,6 +150,16 @@ public class GameAsset : IEquatable<GameAsset>
         Hash = fileVersionInfo.GetMD5Hash();
     }
 
+    internal void LoadVersion()
+    {
+        if (File.Exists(Path) == false)
+        {
+            return;
+        }
+
+        Version = FileVersionInfo.GetVersionInfo(Path).GetFormattedFileVersion();
+    }
+
 
     public GameAsset? GetBackup()
     {

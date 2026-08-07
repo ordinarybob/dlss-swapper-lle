@@ -9,10 +9,24 @@ using System.Threading.Tasks;
 namespace DLSS_Swapper.Data;
 
 internal readonly record struct DiscoveredGameAsset(string Path, GameAssetType AssetType);
+internal readonly record struct GameAssetFileDefinition(string FileName, GameAssetType AssetType);
 
 internal static class GameAssetPathIndex
 {
     const int EnumerationBufferSize = 64 * 1024;
+
+    static readonly GameAssetFileDefinition[] _assetFiles =
+    [
+        new("nvngx_dlss.dll", GameAssetType.DLSS),
+        new("nvngx_dlssg.dll", GameAssetType.DLSS_G),
+        new("nvngx_dlssd.dll", GameAssetType.DLSS_D),
+        new("amd_fidelityfx_dx12.dll", GameAssetType.FSR_31_DX12),
+        new("amd_fidelityfx_vk.dll", GameAssetType.FSR_31_VK),
+        new("libxess.dll", GameAssetType.XeSS),
+        new("libxess_dx11.dll", GameAssetType.XeSS_DX11),
+        new("libxell.dll", GameAssetType.XeLL),
+        new("libxess_fg.dll", GameAssetType.XeSS_FG),
+    ];
 
     static readonly object _sessionLock = new();
     static ScanSession? _currentSession;
@@ -39,59 +53,31 @@ internal static class GameAssetPathIndex
             session = _currentSession;
         }
 
-        return new PreparedAssetScan(installPath, session?.Register(installPath));
+        var request = session?.Register(installPath);
+        return new PreparedAssetScan(
+            installPath,
+            request?.CandidateCompletion.Task,
+            request?.Completion.Task);
     }
 
     internal static bool TryGetAssetType(ReadOnlySpan<char> fileName, out GameAssetType assetType)
     {
-        if (fileName.Equals("nvngx_dlss.dll", StringComparison.OrdinalIgnoreCase))
+        foreach (var assetFile in _assetFiles)
         {
-            assetType = GameAssetType.DLSS;
-            return true;
-        }
-        if (fileName.Equals("nvngx_dlssg.dll", StringComparison.OrdinalIgnoreCase))
-        {
-            assetType = GameAssetType.DLSS_G;
-            return true;
-        }
-        if (fileName.Equals("nvngx_dlssd.dll", StringComparison.OrdinalIgnoreCase))
-        {
-            assetType = GameAssetType.DLSS_D;
-            return true;
-        }
-        if (fileName.Equals("amd_fidelityfx_dx12.dll", StringComparison.OrdinalIgnoreCase))
-        {
-            assetType = GameAssetType.FSR_31_DX12;
-            return true;
-        }
-        if (fileName.Equals("amd_fidelityfx_vk.dll", StringComparison.OrdinalIgnoreCase))
-        {
-            assetType = GameAssetType.FSR_31_VK;
-            return true;
-        }
-        if (fileName.Equals("libxess.dll", StringComparison.OrdinalIgnoreCase))
-        {
-            assetType = GameAssetType.XeSS;
-            return true;
-        }
-        if (fileName.Equals("libxess_dx11.dll", StringComparison.OrdinalIgnoreCase))
-        {
-            assetType = GameAssetType.XeSS_DX11;
-            return true;
-        }
-        if (fileName.Equals("libxell.dll", StringComparison.OrdinalIgnoreCase))
-        {
-            assetType = GameAssetType.XeLL;
-            return true;
-        }
-        if (fileName.Equals("libxess_fg.dll", StringComparison.OrdinalIgnoreCase))
-        {
-            assetType = GameAssetType.XeSS_FG;
-            return true;
+            if (fileName.Equals(assetFile.FileName, StringComparison.OrdinalIgnoreCase))
+            {
+                assetType = assetFile.AssetType;
+                return true;
+            }
         }
 
         assetType = GameAssetType.Unknown;
         return false;
+    }
+
+    internal static ReadOnlySpan<GameAssetFileDefinition> GetAssetFiles()
+    {
+        return _assetFiles;
     }
 
     static IReadOnlyList<DiscoveredGameAsset> EnumerateTree(string installPath)
@@ -147,12 +133,27 @@ internal static class GameAssetPathIndex
     internal sealed class PreparedAssetScan
     {
         readonly string _installPath;
+        readonly Task<IReadOnlyList<DiscoveredGameAsset>>? _candidateBatchResult;
         readonly Task<IReadOnlyList<DiscoveredGameAsset>>? _batchResult;
 
-        internal PreparedAssetScan(string installPath, Task<IReadOnlyList<DiscoveredGameAsset>>? batchResult)
+        internal PreparedAssetScan(
+            string installPath,
+            Task<IReadOnlyList<DiscoveredGameAsset>>? candidateBatchResult,
+            Task<IReadOnlyList<DiscoveredGameAsset>>? batchResult)
         {
             _installPath = installPath;
+            _candidateBatchResult = candidateBatchResult;
             _batchResult = batchResult;
+        }
+
+        internal Task<IReadOnlyList<DiscoveredGameAsset>> ExecuteCandidatesAsync()
+        {
+            if (_candidateBatchResult is not null)
+            {
+                return _candidateBatchResult;
+            }
+
+            return Task.FromResult(GameAssetCandidatePathIndex.EnumerateCandidates(_installPath));
         }
 
         internal Task<IReadOnlyList<DiscoveredGameAsset>> ExecuteAsync()
@@ -204,10 +205,11 @@ internal static class GameAssetPathIndex
     {
         readonly object _lock = new();
         readonly Dictionary<string, ScanRequest> _requests = new(StringComparer.OrdinalIgnoreCase);
+        readonly CancellationTokenSource _cancellation = new();
         bool _registrationComplete;
         bool _disposed;
 
-        internal Task<IReadOnlyList<DiscoveredGameAsset>>? Register(string installPath)
+        internal ScanRequest? Register(string installPath)
         {
             var normalizedPath = NormalizePath(installPath);
             lock (_lock)
@@ -219,12 +221,12 @@ internal static class GameAssetPathIndex
 
                 if (_requests.TryGetValue(normalizedPath, out var existing))
                 {
-                    return existing.Completion.Task;
+                    return existing;
                 }
 
                 var request = new ScanRequest(normalizedPath);
                 _requests.Add(normalizedPath, request);
-                return request.Completion.Task;
+                return request;
             }
         }
 
@@ -243,12 +245,13 @@ internal static class GameAssetPathIndex
                 requests = _requests.Values.ToArray();
             }
 
-            await ScanRootsAsync(requests).ConfigureAwait(false);
+            await ScanRootsAsync(requests, _cancellation.Token).ConfigureAwait(false);
         }
 
-        static async Task ScanRootsAsync(ScanRequest[] requests)
+        static async Task ScanRootsAsync(
+            ScanRequest[] requests,
+            CancellationToken cancellationToken)
         {
-            var startedAt = System.Diagnostics.Stopwatch.StartNew();
             var roots = requests
                 .GroupBy(static request => request.InstallPath, StringComparer.OrdinalIgnoreCase)
                 .Select(static group => new RootScan(group.Key, group.ToArray()))
@@ -263,9 +266,49 @@ internal static class GameAssetPathIndex
                     .Select(static group => $"{group.Key} ({group.Count():N0})"));
 
             Logger.Info($"Scanning {roots.Length:N0} game root(s) across {volumes} with {workerCount} worker(s).");
+            var candidateStartedAt = System.Diagnostics.Stopwatch.StartNew();
+            var candidateAssetCount = 0;
             await Parallel.ForEachAsync(
                 roots,
-                new ParallelOptions { MaxDegreeOfParallelism = workerCount },
+                new ParallelOptions
+                {
+                    CancellationToken = cancellationToken,
+                    MaxDegreeOfParallelism = workerCount,
+                },
+                (root, _) =>
+                {
+                    try
+                    {
+                        var assets = Directory.Exists(root.InstallPath)
+                            ? GameAssetCandidatePathIndex.EnumerateCandidates(root.InstallPath, cancellationToken)
+                            : [];
+                        Interlocked.Add(ref candidateAssetCount, assets.Count);
+                        root.CompleteCandidates(assets);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        root.CompleteCandidates([]);
+                    }
+                    catch (Exception err)
+                    {
+                        root.CompleteCandidates([]);
+                        Logger.Error(err, $"Unable to scan candidate paths for game root {root.InstallPath}.");
+                    }
+
+                    return ValueTask.CompletedTask;
+                }).ConfigureAwait(false);
+            Logger.Info(
+                $"Candidate path scan found {candidateAssetCount:N0} asset(s) across {roots.Length:N0} game root(s) " +
+                $"in {candidateStartedAt.Elapsed.TotalSeconds:N2} seconds.");
+
+            var recursiveStartedAt = System.Diagnostics.Stopwatch.StartNew();
+            await Parallel.ForEachAsync(
+                roots,
+                new ParallelOptions
+                {
+                    CancellationToken = cancellationToken,
+                    MaxDegreeOfParallelism = workerCount,
+                },
                 (root, _) =>
                 {
                     var activeWorkers = Interlocked.Increment(ref activeWorkerCount);
@@ -295,7 +338,7 @@ internal static class GameAssetPathIndex
                 }).ConfigureAwait(false);
 
             Logger.Info(
-                $"Scanned {roots.Length:N0} game root(s) in {startedAt.Elapsed.TotalSeconds:N2} seconds; " +
+                $"Scanned {roots.Length:N0} game root(s) exhaustively in {recursiveStartedAt.Elapsed.TotalSeconds:N2} seconds; " +
                 $"peak workers: {peakWorkerCount}/{workerCount}.");
         }
 
@@ -325,19 +368,23 @@ internal static class GameAssetPathIndex
                 }
 
                 _disposed = true;
+                _cancellation.Cancel();
                 requests = _requests.Values.ToArray();
             }
 
             foreach (var request in requests)
             {
+                request.CandidateCompletion.TrySetCanceled();
                 request.Completion.TrySetCanceled();
             }
         }
     }
 
-    sealed class ScanRequest
+    internal sealed class ScanRequest
     {
         internal string InstallPath { get; }
+        internal TaskCompletionSource<IReadOnlyList<DiscoveredGameAsset>> CandidateCompletion { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal TaskCompletionSource<IReadOnlyList<DiscoveredGameAsset>> Completion { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -367,6 +414,17 @@ internal static class GameAssetPathIndex
             foreach (var request in _requests)
             {
                 request.Completion.TrySetResult(orderedAssets);
+            }
+        }
+
+        internal void CompleteCandidates(IReadOnlyList<DiscoveredGameAsset> assets)
+        {
+            var orderedAssets = assets
+                .OrderBy(static asset => asset.Path, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            foreach (var request in _requests)
+            {
+                request.CandidateCompletion.TrySetResult(orderedAssets);
             }
         }
 
