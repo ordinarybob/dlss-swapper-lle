@@ -55,7 +55,13 @@ public partial class GameGridPageModel : ObservableObject
 
     public bool CanUseHeaderControls => IsGameListLoading == false && IsSelectionMode == false;
 
-    public bool CanRefresh => IsLoading == false && IsSelectionMode == false;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRefresh))]
+    public partial bool IsBackgroundScanRunning { get; set; }
+
+    public bool CanRefresh => IsLoading == false
+        && IsBackgroundScanRunning == false
+        && IsSelectionMode == false;
 
     [ObservableProperty]
     public partial string ScanProgressText { get; set; } = string.Empty;
@@ -375,17 +381,34 @@ public partial class GameGridPageModel : ObservableObject
         await GameManager.Instance.LoadGamesFromCacheAsync();
 
         IsGameListLoading = false;
+        gameGridPage.PrepareVisibleCoverWait();
 
-        await LoadGamesWithProgressAsync(false);
+        try
+        {
+            await LoadGamesWithProgressAsync(false, async () =>
+            {
+                IsBackgroundScanRunning = true;
+                IsDLSSLoading = false;
+                await gameGridPage.WaitForVisibleCoverAsync();
+            });
+        }
+        finally
+        {
+            IsBackgroundScanRunning = false;
+            IsDLSSLoading = false;
+        }
 
-        IsDLSSLoading = false;
     }
 
-    async Task LoadGamesWithProgressAsync(bool forceNeedsProcessing)
+    async Task LoadGamesWithProgressAsync(
+        bool forceNeedsProcessing,
+        Func<Task>? candidateLibraryReady = null)
     {
         var scanQueue = GameScanQueue.Instance;
         var initialProgress = scanQueue.GetProgress();
-        var loadTask = GameManager.Instance.LoadGamesAsync(forceNeedsProcessing);
+        var loadTask = GameManager.Instance.LoadGamesAsync(
+            forceNeedsProcessing,
+            candidateLibraryReady);
 
         try
         {

@@ -317,24 +317,20 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         var assetScan = GameAssetPathIndex.PrepareFind(InstallPath);
         var oldGameAssets = GameAssets.ToList();
 
-        async Task FinalizeScanAsync()
+        async Task<bool> FinalizeScanAsync(
+            Task<IReadOnlyList<DiscoveredGameAsset>> scanResultTask,
+            bool persistImmediately,
+            bool keepProcessingOnFailure)
         {
             var newHasSwappableItems = false;
             var scanCompleted = false;
             var exhaustiveResultsAvailable = false;
+            var replacementAssets = new List<GameAsset>();
 
             try
             {
-                var discoveredAssets = await assetScan.ExecuteAsync().ConfigureAwait(false);
+                var discoveredAssets = await scanResultTask.ConfigureAwait(false);
                 exhaustiveResultsAvailable = true;
-                GameAssets.Clear();
-                if (oldGameAssets.Count > 0)
-                {
-                    using (await Database.Instance.Mutex.LockAsync())
-                    {
-                        await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
-                    }
-                }
 
                 var dllHistory = new List<GameHistory>();
                 var unknownGameAssets = new List<GameAsset>();
@@ -409,7 +405,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         unknownGameAssets.Add(gameAsset);
                     }
 
-                    LoadBackupForGameAsset(gameAsset);
+                    LoadBackupForGameAsset(gameAsset, replacementAssets);
 
                 }
 
@@ -422,15 +418,18 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         Path = discoveredAsset.Path,
                     };
                     ProcessGame_ProcessGameAsset(gameAsset);
-                    GameAssets.Add(gameAsset);
+                    replacementAssets.Add(gameAsset);
                 }
 
-                App.CurrentApp.RunOnUIThread(() =>
+                if (oldGameAssets.Count > 0)
                 {
-                    UpdateCurrentDLLsFromGameAssets();
-                });
+                    using (await Database.Instance.Mutex.LockAsync())
+                    {
+                        await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
+                    }
+                }
 
-                if (GameAssets.Any())
+                if (replacementAssets.Any())
                 {
                     newHasSwappableItems = true;
 
@@ -439,7 +438,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     using (await Database.Instance.Mutex.LockAsync())
                     {
                         await Database.Instance.Connection.InsertAllAsync(dllHistory, false).ConfigureAwait(false);
-                        await Database.Instance.Connection.InsertAllAsync(GameAssets, false).ConfigureAwait(false);
+                        await Database.Instance.Connection.InsertAllAsync(replacementAssets, false).ConfigureAwait(false);
                     }
 
                     if (unknownGameAssets.Any())
@@ -490,14 +489,24 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         }
                     }
 
-                    if (shouldUpdatedCover)
+                    try
                     {
-                        GameCoverHydrationQueue.Instance.Enqueue(this, refreshFromSource: true);
+                        await GameCoverHydrationQueue.Instance.EnqueueAsync(
+                            this,
+                            refreshFromSource: shouldUpdatedCover).ConfigureAwait(false);
                     }
-                    else
+                    catch
                     {
-                        Logger.Verbose($"Skipping updating cover for {Title}");
+                        // Artwork failures are logged by the hydration queue and must
+                        // not hold up the usable-library barrier.
                     }
+
+                    // Cover implementations post their final property assignment to
+                    // the dispatcher. Drain that assignment before exhaustive work.
+                    await App.CurrentApp.RunOnUIThreadAsync(async () =>
+                    {
+                        await Task.Yield();
+                    }).ConfigureAwait(false);
                 }
 
                 scanCompleted = true;
@@ -509,7 +518,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             }
             finally
             {
-                // Now update all the data on the UI therad.
+                // Now update all the data on the UI thread.
                 await App.CurrentApp.RunOnUIThreadAsync(async () =>
                 {
                     NeedsProcessing = scanCompleted == false;
@@ -522,6 +531,12 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     }
                     else
                     {
+                        if (scanCompleted)
+                        {
+                            GameAssets.Clear();
+                            GameAssets.AddRange(replacementAssets);
+                            UpdateCurrentDLLsFromGameAssets();
+                        }
                         HasSwappableItems = scanCompleted && newHasSwappableItems;
                     }
                     if (scanCompleted)
@@ -531,19 +546,43 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
                     if (autoSave)
                     {
-                        await SaveToDatabaseAsync();
+                        scanCompleted &= await SaveToDatabaseAsync(persistImmediately);
                     }
 
-                    Processing = false;
-                });
+                    NeedsProcessing = scanCompleted == false;
+                    Processing = keepProcessingOnFailure && scanCompleted == false;
+                }).ConfigureAwait(false);
             }
+
+            return scanCompleted;
         }
 
         GameScanQueue.Instance.Enqueue(async () =>
         {
+            IReadOnlyList<DiscoveredGameAsset> candidateAssets = [];
             try
             {
-                var candidateAssets = await assetScan.ExecuteCandidatesAsync().ConfigureAwait(false);
+                candidateAssets = await assetScan.ExecuteCandidatesAsync().ConfigureAwait(false);
+                if (candidateAssets.Count > 0 && oldGameAssets.Count > 0)
+                {
+                    var retainedCandidates = candidateAssets.ToList();
+                    var retainedPaths = retainedCandidates
+                        .Select(static asset => asset.Path)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    foreach (var oldGameAsset in oldGameAssets)
+                    {
+                        if (File.Exists(oldGameAsset.Path)
+                            && GameAssetPathIndex.TryGetAssetType(
+                                Path.GetFileName(oldGameAsset.Path),
+                                out var assetType)
+                            && retainedPaths.Add(oldGameAsset.Path))
+                        {
+                            retainedCandidates.Add(new DiscoveredGameAsset(oldGameAsset.Path, assetType));
+                        }
+                    }
+
+                    candidateAssets = retainedCandidates;
+                }
                 if (candidateAssets.Count == 0)
                 {
                     return;
@@ -579,12 +618,51 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             }
             finally
             {
-                GameScanQueue.Instance.Enqueue(FinalizeScanAsync);
+                if (forceNeedsProcessing == false && candidateAssets.Count > 0)
+                {
+                    var candidateResultTask = Task.FromResult(candidateAssets);
+                    GameScanQueue.Instance.Enqueue(async () =>
+                    {
+                        var succeeded = false;
+                        try
+                        {
+                            succeeded = await FinalizeScanAsync(
+                                candidateResultTask,
+                                persistImmediately: true,
+                                keepProcessingOnFailure: true).ConfigureAwait(false);
+                        }
+                        finally
+                        {
+                            if (succeeded == false)
+                            {
+                                var exhaustiveResultTask = assetScan.ExecuteAsync();
+                                GameScanQueue.Instance.EnqueueAfter(
+                                    exhaustiveResultTask,
+                                    () => FinalizeScanAsync(
+                                        exhaustiveResultTask,
+                                        persistImmediately: false,
+                                        keepProcessingOnFailure: false));
+                            }
+
+                            assetScan.CompleteCandidateProcessing(succeeded);
+                        }
+                    });
+                }
+                else
+                {
+                    var exhaustiveResultTask = assetScan.ExecuteAsync();
+                    GameScanQueue.Instance.EnqueueAfter(
+                        exhaustiveResultTask,
+                        () => FinalizeScanAsync(
+                            exhaustiveResultTask,
+                            persistImmediately: false,
+                            keepProcessingOnFailure: false));
+                }
             }
         }, trackProgress: false);
     }
 
-    void LoadBackupForGameAsset(GameAsset gameAsset)
+    void LoadBackupForGameAsset(GameAsset gameAsset, List<GameAsset> replacementAssets)
     {
         var backupPath = $"{gameAsset.Path}.dlsss";
         if (File.Exists(backupPath))
@@ -596,7 +674,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 Path = backupPath,
             };
             gameAssetBackup.LoadVersionAndHash();
-            GameAssets.Add(gameAssetBackup);
+            replacementAssets.Add(gameAssetBackup);
         }
     }
 
@@ -1137,11 +1215,11 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
     }
 
-    public async Task<bool> SaveToDatabaseAsync()
+    public async Task<bool> SaveToDatabaseAsync(bool bypassBatch = false)
     {
         try
         {
-            if (GameDatabaseWriteBatch.Instance.TryEnqueue(this))
+            if (bypassBatch == false && GameDatabaseWriteBatch.Instance.TryEnqueue(this))
             {
                 return true;
             }

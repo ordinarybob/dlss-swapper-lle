@@ -47,6 +47,7 @@ public sealed partial class GameGridPage : Page
     double _lastResponsiveHorizontalPadding = double.NaN;
     double _lastResponsiveCardWidth = double.NaN;
     double _lastResponsiveRasterizationScale = double.NaN;
+    TaskCompletionSource? _visibleCoverOpened;
 
     public GameGridPageModel ViewModel { get; private set; }
 
@@ -56,6 +57,32 @@ public sealed partial class GameGridPage : Page
         ViewModel = new GameGridPageModel(this);
         DataContext = ViewModel;
         Unloaded += Page_Unloaded;
+    }
+
+    internal void PrepareVisibleCoverWait()
+    {
+        _visibleCoverOpened = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    internal async Task WaitForVisibleCoverAsync()
+    {
+        var visibleCoverOpened = _visibleCoverOpened;
+        if (visibleCoverOpened is null)
+        {
+            return;
+        }
+
+        await Task.WhenAny(visibleCoverOpened.Task, Task.Delay(750));
+        if (ReferenceEquals(_visibleCoverOpened, visibleCoverOpened))
+        {
+            _visibleCoverOpened = null;
+        }
+    }
+
+    void CoverImage_ImageOpened(object sender, RoutedEventArgs e)
+    {
+        _visibleCoverOpened?.TrySetResult();
     }
 
     bool hasFirstLoaded;

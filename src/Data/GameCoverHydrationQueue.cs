@@ -7,7 +7,10 @@ namespace DLSS_Swapper.Data;
 
 internal sealed class GameCoverHydrationQueue
 {
-    readonly record struct WorkItem(Game Game, bool RefreshFromSource);
+    readonly record struct WorkItem(
+        Game Game,
+        bool RefreshFromSource,
+        TaskCompletionSource Completion);
 
     static readonly Lazy<GameCoverHydrationQueue> _instance = new(() => new GameCoverHydrationQueue());
 
@@ -20,7 +23,7 @@ internal sealed class GameCoverHydrationQueue
             SingleReader = false,
         });
 
-    readonly ConcurrentDictionary<(string GameId, bool RefreshFromSource), byte> _queuedWork = new();
+    readonly ConcurrentDictionary<(string GameId, bool RefreshFromSource), TaskCompletionSource> _queuedWork = new();
 
     GameCoverHydrationQueue()
     {
@@ -33,23 +36,47 @@ internal sealed class GameCoverHydrationQueue
 
     public void Enqueue(Game game, bool refreshFromSource = false)
     {
-        var workKey = (game.ID, refreshFromSource);
-        if (_queuedWork.TryAdd(workKey, 0) == false)
+        _ = ObserveCompletionAsync(EnqueueAsync(game, refreshFromSource));
+    }
+
+    static async Task ObserveCompletionAsync(Task completion)
+    {
+        try
         {
-            return;
+            await completion.ConfigureAwait(false);
+        }
+        catch
+        {
+            // The worker already logs artwork failures for fire-and-forget callers.
+        }
+    }
+
+    public Task EnqueueAsync(Game game, bool refreshFromSource = false)
+    {
+        var workKey = (game.ID, refreshFromSource);
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var queuedCompletion = _queuedWork.GetOrAdd(workKey, completion);
+        if (ReferenceEquals(queuedCompletion, completion) == false)
+        {
+            return queuedCompletion.Task;
         }
 
-        if (_queue.Writer.TryWrite(new WorkItem(game, refreshFromSource)) == false)
+        if (_queue.Writer.TryWrite(new WorkItem(game, refreshFromSource, completion)) == false)
         {
             _queuedWork.TryRemove(workKey, out _);
-            throw new InvalidOperationException("Unable to queue game artwork.");
+            var error = new InvalidOperationException("Unable to queue game artwork.");
+            completion.TrySetException(error);
+            throw error;
         }
+
+        return completion.Task;
     }
 
     async Task RunWorkerAsync()
     {
         await foreach (var workItem in _queue.Reader.ReadAllAsync())
         {
+            Exception? failure = null;
             try
             {
                 if (workItem.RefreshFromSource)
@@ -63,11 +90,20 @@ internal sealed class GameCoverHydrationQueue
             }
             catch (Exception err)
             {
+                failure = err;
                 Logger.Error(err, $"Unable to load artwork for {workItem.Game.Title}.");
             }
             finally
             {
                 _queuedWork.TryRemove((workItem.Game.ID, workItem.RefreshFromSource), out _);
+                if (failure is null)
+                {
+                    workItem.Completion.TrySetResult();
+                }
+                else
+                {
+                    workItem.Completion.TrySetException(failure);
+                }
             }
         }
     }

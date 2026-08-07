@@ -272,14 +272,16 @@ internal partial class GameManager : ObservableObject
         }
     }
 
-    public async Task LoadGamesAsync(bool forceNeedsProcessing = false)
+    public async Task LoadGamesAsync(
+        bool forceNeedsProcessing = false,
+        Func<Task>? candidateLibraryReady = null)
     {
         var loadStopwatch = Stopwatch.StartNew();
         Logger.Info("Game library discovery started.");
         await _loadGate.WaitAsync().ConfigureAwait(false);
         BeginUiBatch();
         GameDatabaseWriteBatch.Instance.Begin();
-        using var gameAssetPathIndex = GameAssetPathIndex.BeginBatch();
+        using var gameAssetPathIndex = GameAssetPathIndex.BeginBatch(forceNeedsProcessing);
         try
         {
             var tasks = new List<Task<List<Game>>>();
@@ -314,6 +316,26 @@ internal partial class GameManager : ObservableObject
             Logger.Info($"Game library discovery registered all scan work in {loadStopwatch.Elapsed.TotalSeconds:N2} seconds.");
             var assetScanTask = gameAssetPathIndex.CompleteAsync();
             await FlushPendingUiChangesAsync().ConfigureAwait(false);
+            try
+            {
+                await gameAssetPathIndex.WhenCandidateLibraryReadyAsync().ConfigureAwait(false);
+                await FlushPendingUiChangesAsync().ConfigureAwait(false);
+                await App.CurrentApp.RunOnUIThreadAsync(async () =>
+                {
+                    if (forceNeedsProcessing == false)
+                    {
+                        if (candidateLibraryReady is not null)
+                        {
+                            await candidateLibraryReady().ConfigureAwait(true);
+                        }
+                    }
+                    await Task.Yield();
+                }).ConfigureAwait(false);
+            }
+            finally
+            {
+                gameAssetPathIndex.ReleaseExhaustiveScan();
+            }
             await assetScanTask.ConfigureAwait(false);
             await GameScanQueue.Instance.WhenIdleAsync().ConfigureAwait(false);
             Logger.Info($"Game library discovery and processing completed in {loadStopwatch.Elapsed.TotalSeconds:N2} seconds.");

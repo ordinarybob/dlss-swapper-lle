@@ -125,6 +125,7 @@
                                         <ImageBrush.ImageSource>
                                             <BitmapImage
                                                 CreateOptions="IgnoreImageCache"
+                                                ImageOpened="CoverImage_ImageOpened"
                                                 UriSource="{x:Bind CoverImage, Mode=OneWay, Converter={StaticResource BitmapImageUriConverter}}" />
                                         </ImageBrush.ImageSource>
                                     </ImageBrush>
@@ -248,6 +249,7 @@
                                         <ImageBrush.ImageSource>
                                             <BitmapImage
                                                 CreateOptions="IgnoreImageCache"
+                                                ImageOpened="CoverImage_ImageOpened"
                                                 UriSource="{x:Bind CoverImage, Mode=OneWay, Converter={StaticResource BitmapImageUriConverter}}" />
                                         </ImageBrush.ImageSource>
                                     </ImageBrush>

@@ -45,6 +45,18 @@ internal sealed class GameScanQueue
 
     public void Enqueue(Func<Task> scan, bool trackProgress = true)
     {
+        RegisterPendingWork(trackProgress);
+        QueueRegisteredWork(new QueuedScan(scan, trackProgress));
+    }
+
+    public void EnqueueAfter(Task readiness, Func<Task> scan, bool trackProgress = true)
+    {
+        RegisterPendingWork(trackProgress);
+        _ = QueueWhenReadyAsync(readiness, new QueuedScan(scan, trackProgress));
+    }
+
+    void RegisterPendingWork(bool trackProgress)
+    {
         lock (_idleLock)
         {
             if (_pendingCount == 0)
@@ -58,10 +70,27 @@ internal sealed class GameScanQueue
         {
             Interlocked.Increment(ref _totalEnqueued);
         }
+    }
 
-        if (_queue.Writer.TryWrite(new QueuedScan(scan, trackProgress)) == false)
+    async Task QueueWhenReadyAsync(Task readiness, QueuedScan queuedScan)
+    {
+        try
         {
-            if (trackProgress)
+            await readiness.ConfigureAwait(false);
+        }
+        catch
+        {
+            // The queued scan owns readiness failure handling and state restoration.
+        }
+
+        QueueRegisteredWork(queuedScan);
+    }
+
+    void QueueRegisteredWork(QueuedScan queuedScan)
+    {
+        if (_queue.Writer.TryWrite(queuedScan) == false)
+        {
+            if (queuedScan.TrackProgress)
             {
                 Interlocked.Increment(ref _totalCompleted);
             }
