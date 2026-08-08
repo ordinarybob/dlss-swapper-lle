@@ -230,8 +230,17 @@ public partial class SettingsPageModel : ObservableObject
         LoggingLevel = LoggingLevelOptions.FirstOrDefault(x => x.Value == (int)loggingLevel) ?? LoggingLevelOptions.Last();
 
         IgnoredPaths = new ObservableCollection<string>(Settings.Instance.IgnoredPaths);
-        CustomGameAssetDirectoryPatterns = new ObservableCollection<string>(
+        var normalizedCustomPatterns = GameAssetCandidatePathIndex.NormalizeCustomDirectoryPatterns(
             Settings.Instance.CustomGameAssetDirectoryPatterns);
+        if (Settings.Instance.CustomGameAssetDirectoryPatterns.SequenceEqual(
+            normalizedCustomPatterns,
+            StringComparer.OrdinalIgnoreCase) == false)
+        {
+            Settings.Instance.CustomGameAssetDirectoryPatterns = normalizedCustomPatterns;
+        }
+
+        CustomGameAssetDirectoryPatterns = new ObservableCollection<string>(
+            normalizedCustomPatterns);
         FallbackCoverArtApiUrl = Settings.Instance.FallbackCoverArtApiUrl;
         FallbackCoverArtImageHost = Settings.Instance.FallbackCoverArtImageHost;
 
@@ -577,9 +586,21 @@ public partial class SettingsPageModel : ObservableObject
             return;
         }
 
-        CustomGameAssetDirectoryPatterns.Add(normalizedPattern);
-        Settings.Instance.CustomGameAssetDirectoryPatterns =
-            CustomGameAssetDirectoryPatterns.ToArray();
+        var normalizedCustomPatterns = GameAssetCandidatePathIndex.NormalizeCustomDirectoryPatterns(
+            CustomGameAssetDirectoryPatterns.Append(normalizedPattern));
+        if (normalizedCustomPatterns.Contains(normalizedPattern, StringComparer.OrdinalIgnoreCase) == false)
+        {
+            GameAssetDirectoryPatternError = "A broader directory pattern already includes that path.";
+            return;
+        }
+
+        CustomGameAssetDirectoryPatterns.Clear();
+        foreach (var pattern in normalizedCustomPatterns)
+        {
+            CustomGameAssetDirectoryPatterns.Add(pattern);
+        }
+
+        Settings.Instance.CustomGameAssetDirectoryPatterns = normalizedCustomPatterns;
         NewGameAssetDirectoryPattern = string.Empty;
         GameAssetDirectoryPatternError = string.Empty;
     }

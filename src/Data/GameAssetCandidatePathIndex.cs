@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Enumeration;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 namespace DLSS_Swapper.Data;
@@ -12,21 +13,16 @@ internal static class GameAssetCandidatePathIndex
     const int EnumerationBufferSize = 64 * 1024;
     const string Wildcard = "*";
 
-    // Relative directory shapes derived from confirmed game-asset paths. The first
-    // component represents a game/project directory. Additional wildcards are kept
-    // only for shapes shared by more than one game in the source data.
+    // Relative directory shapes derived from confirmed game-asset paths. This list
+    // is an antichain: no entry is retained when another same-depth wildcard pattern
+    // already covers every path it could match.
     static readonly string[] _directoryPatterns =
     [
         "",
         "*",
         @"*\*",
-        @"*\.trex",
-        @"*\seekeroffire_2",
-        @"*\x64",
-        @"*\x64_dx12",
         @"*\*\win64",
         @"*\binaries\*",
-        @"*\binaries\win64",
         @"*\windows\x64",
         @"*\x64\dxr",
         @"*\x64\dxr2",
@@ -51,24 +47,16 @@ internal static class GameAssetCandidatePathIndex
         @"*\binaries\thirdparty\*\ngx\win64",
         @"*\binaries\thirdparty\nvidia\*\win64",
         @"*\binaries\thirdparty\nvidia\ngx\*",
-        @"*\binaries\thirdparty\nvidia\ngx\win64",
         @"*\plugins\*\binaries\thirdparty\win64",
         @"*\plugins\dlss\*\thirdparty\win64",
         @"*\plugins\dlss\binaries\*\win64",
         @"*\plugins\dlss\binaries\thirdparty\*",
-        @"*\plugins\dlss\binaries\thirdparty\win64",
-        @"*\plugins\intel\binaries\thirdparty\win64",
-        @"*\plugins\intel-xess\binaries\thirdparty\win64",
         @"*\plugins\streamline\*\thirdparty\win64",
         @"*\plugins\streamline\binaries\*\win64",
         @"*\plugins\streamline\binaries\thirdparty\*",
-        @"*\plugins\streamline\binaries\thirdparty\win64",
-        @"*\plugins\streamlinecore\binaries\thirdparty\win64",
         @"*\plugins\xess\*\thirdparty\win64",
         @"*\plugins\xess\binaries\*\win64",
         @"*\plugins\xess\binaries\thirdparty\*",
-        @"*\plugins\xess\binaries\thirdparty\win64",
-        @"*\plugins\xess_ue5.6_plugin_v2.1.1.1\binaries\thirdparty\win64",
         @"*\*\marketplace\dlss\binaries\thirdparty\win64",
         @"*\*\marketplace\xess\binaries\thirdparty\win64",
         @"*\*\nvidia\dlss\binaries\thirdparty\win64",
@@ -76,32 +64,18 @@ internal static class GameAssetCandidatePathIndex
         @"*\plugins\*\streamline\binaries\thirdparty\win64",
         @"*\plugins\*\xess\binaries\thirdparty\win64",
         @"*\plugins\dlss\binaries\thirdparty\win64\development",
-        @"*\plugins\dlssplugin\dlss\binaries\thirdparty\win64",
         @"*\plugins\dlssplugin\streamlinecore\binaries\thirdparty\win64",
-        @"*\plugins\frogwaresplugins\dlss\binaries\thirdparty\win64",
         @"*\plugins\marketplace\*\binaries\thirdparty\win64",
         @"*\plugins\marketplace\dlss\*\thirdparty\win64",
         @"*\plugins\marketplace\dlss\binaries\*\win64",
         @"*\plugins\marketplace\dlss\binaries\thirdparty\*",
-        @"*\plugins\marketplace\dlss\binaries\thirdparty\win64",
-        @"*\plugins\marketplace\streamline\binaries\thirdparty\win64",
         @"*\plugins\marketplace\xess\*\thirdparty\win64",
         @"*\plugins\marketplace\xess\binaries\*\win64",
         @"*\plugins\marketplace\xess\binaries\thirdparty\*",
-        @"*\plugins\marketplace\xess\binaries\thirdparty\win64",
         @"*\plugins\nvidia\*\binaries\thirdparty\win64",
         @"*\plugins\nvidia\dlss\*\thirdparty\win64",
         @"*\plugins\nvidia\dlss\binaries\*\win64",
         @"*\plugins\nvidia\dlss\binaries\thirdparty\*",
-        @"*\plugins\nvidia\dlss\binaries\thirdparty\win64",
-        @"*\plugins\nvidia\dlss-plugin-4.26.1\binaries\thirdparty\win64",
-        @"*\plugins\nvidia\streamline\binaries\thirdparty\win64",
-        @"*\plugins\nvidiadlss\dlss\binaries\thirdparty\win64",
-        @"*\plugins\shared\dlss\binaries\thirdparty\win64",
-        @"*\plugins\shared\streamline\binaries\thirdparty\win64",
-        @"*\plugins\shared\xess\binaries\thirdparty\win64",
-        @"*\plugins\thirdparty\xess\binaries\thirdparty\win64",
-        @"*\plugins\upscaling\dlss\binaries\thirdparty\win64",
         @"*\*\runtime\intel\xess\binaries\thirdparty\win64",
         @"*\*\runtime\nvidia\dlss\binaries\thirdparty\win64",
         @"*\*\runtime\nvidia\streamline\binaries\thirdparty\win64",
@@ -109,9 +83,6 @@ internal static class GameAssetCandidatePathIndex
         @"*\plugins\*\intel\xess\binaries\thirdparty\win64",
         @"*\plugins\*\nvidia\dlss\binaries\thirdparty\win64",
         @"*\plugins\*\nvidia\streamline\binaries\thirdparty\win64",
-        @"*\plugins\marketplace\intel\xess\binaries\thirdparty\win64",
-        @"*\plugins\marketplace\nvidia\dlss\binaries\thirdparty\win64",
-        @"*\plugins\marketplace\nvidia\streamline\binaries\thirdparty\win64",
         @"*\plugins\runtime\*\dlss\binaries\thirdparty\win64",
         @"*\plugins\runtime\*\streamline\binaries\thirdparty\win64",
         @"*\plugins\runtime\*\xess\binaries\thirdparty\win64",
@@ -119,36 +90,34 @@ internal static class GameAssetCandidatePathIndex
         @"*\plugins\runtime\intel\xess\*\thirdparty\win64",
         @"*\plugins\runtime\intel\xess\binaries\*\win64",
         @"*\plugins\runtime\intel\xess\binaries\thirdparty\*",
-        @"*\plugins\runtime\intel\xess\binaries\thirdparty\win64",
         @"*\plugins\runtime\nvidia\*\binaries\thirdparty\win64",
         @"*\plugins\runtime\nvidia\dlss\*\thirdparty\win64",
         @"*\plugins\runtime\nvidia\dlss\binaries\*\win64",
         @"*\plugins\runtime\nvidia\dlss\binaries\thirdparty\*",
-        @"*\plugins\runtime\nvidia\dlss\binaries\thirdparty\win64",
         @"*\plugins\runtime\nvidia\streamline\*\thirdparty\win64",
         @"*\plugins\runtime\nvidia\streamline\binaries\*\win64",
         @"*\plugins\runtime\nvidia\streamline\binaries\thirdparty\*",
-        @"*\plugins\runtime\nvidia\streamline\binaries\thirdparty\win64",
-        @"*\plugins\runtime\nvidia\streamlinecore\binaries\thirdparty\win64",
-        @"*\plugins\thirdparty\nvidia\dlss\binaries\thirdparty\win64",
-        @"*\plugins\thirdparty\nvidia\streamline\binaries\thirdparty\win64",
         @"*\engine\plugins\*\nvidia\dlss\binaries\thirdparty\win64",
         @"*\engine\plugins\marketplace\*\dlss\binaries\thirdparty\win64",
         @"*\engine\plugins\marketplace\*\streamline\binaries\thirdparty\win64",
-        @"*\engine\plugins\marketplace\dlss\dlss\binaries\thirdparty\win64",
-        @"*\engine\plugins\marketplace\dlss\streamline\binaries\thirdparty\win64",
-        @"*\engine\plugins\marketplace\nvidia\dlss\binaries\thirdparty\win64",
-        @"*\engine\plugins\marketplace\nvidia\streamline\binaries\thirdparty\win64",
-        @"*\engine\plugins\runtime\nvidia\dlss\binaries\thirdparty\win64",
     ];
 
     static readonly object _patternLock = new();
     static string[] _cachedCustomPatterns = [];
-    static PatternNode _patternRoot = CreatePatternTree(_directoryPatterns);
+    static PatternNode _patternRoot = CreatePatternGraph(_directoryPatterns);
 
     internal static IReadOnlyList<string> GetBuiltInDirectoryPatterns()
     {
         return _directoryPatterns;
+    }
+
+    internal static string[] NormalizeCustomDirectoryPatterns(IEnumerable<string> patterns)
+    {
+        var builtInPatterns = _directoryPatterns.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return RemoveSubsumedPatterns(_directoryPatterns.Concat(patterns))
+            .Where(pattern => builtInPatterns.Contains(pattern) == false)
+            .OrderBy(static pattern => pattern, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     internal static bool TryCreateAdaptiveDirectoryPattern(
@@ -190,31 +159,23 @@ internal static class GameAssetCandidatePathIndex
 
     internal static int AddAdaptiveDirectoryPatterns(IEnumerable<string> patterns)
     {
-        var builtInPatterns = _directoryPatterns.ToHashSet(StringComparer.OrdinalIgnoreCase);
         lock (_patternLock)
         {
             var existingPatterns = Settings.Instance.CustomGameAssetDirectoryPatterns;
-            var existingPatternSet = existingPatterns.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var newPatterns = patterns
-                .Where(pattern => builtInPatterns.Contains(pattern) == false)
-                .Where(pattern => existingPatternSet.Contains(pattern) == false)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-            if (newPatterns.Length == 0)
+            var normalizedExistingPatterns = NormalizeCustomDirectoryPatterns(existingPatterns);
+            var mergedPatterns = NormalizeCustomDirectoryPatterns(existingPatterns.Concat(patterns));
+            var newPatternCount = mergedPatterns
+                .Except(normalizedExistingPatterns, StringComparer.OrdinalIgnoreCase)
+                .Count();
+
+            if (existingPatterns.SequenceEqual(mergedPatterns, StringComparer.OrdinalIgnoreCase) == false)
             {
-                return 0;
+                Settings.Instance.CustomGameAssetDirectoryPatterns = mergedPatterns;
             }
 
-            var mergedPatterns = existingPatterns
-                .Concat(newPatterns)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(static pattern => pattern, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            Settings.Instance.CustomGameAssetDirectoryPatterns = mergedPatterns;
             _cachedCustomPatterns = mergedPatterns;
-            _patternRoot = CreatePatternTree(_directoryPatterns.Concat(mergedPatterns));
-            return newPatterns.Length;
+            _patternRoot = CreatePatternGraph(_directoryPatterns.Concat(mergedPatterns));
+            return newPatternCount;
         }
     }
 
@@ -235,7 +196,7 @@ internal static class GameAssetCandidatePathIndex
         while (pending.TryPop(out var current))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            foreach (var directory in EnumerateDirectories(current.Path))
+            foreach (var directory in EnumerateNextDirectories(current))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var directoryName = Path.GetFileName(directory);
@@ -258,6 +219,45 @@ internal static class GameAssetCandidatePathIndex
         }
 
         return results;
+    }
+
+    static IEnumerable<string> EnumerateNextDirectories(PendingDirectory current)
+    {
+        if (current.States.Any(static state => state.WildcardChild is not null))
+        {
+            foreach (var directory in EnumerateDirectories(current.Path))
+            {
+                yield return directory;
+            }
+
+            yield break;
+        }
+
+        var literalDirectoryNames = current.States
+            .SelectMany(static state => state.LiteralChildren.Keys)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        foreach (var directoryName in literalDirectoryNames)
+        {
+            var directory = Path.Combine(current.Path, directoryName);
+            var isCandidateDirectory = false;
+            try
+            {
+                var attributes = File.GetAttributes(directory);
+                isCandidateDirectory = (attributes & FileAttributes.Directory) != 0
+                    && (attributes & FileAttributes.ReparsePoint) == 0;
+            }
+            catch (Exception err) when (err is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException)
+            {
+                // A missing or inaccessible literal path is simply not a candidate.
+            }
+
+            if (isCandidateDirectory)
+            {
+                yield return directory;
+            }
+        }
     }
 
     static IEnumerable<string> EnumerateDirectories(string path)
@@ -286,16 +286,24 @@ internal static class GameAssetCandidatePathIndex
         {
             if (state.LiteralChildren.TryGetValue(directoryName, out var literalChild))
             {
-                nextStates.Add(literalChild);
+                AddNextState(nextStates, literalChild);
             }
 
-            if (state.WildcardChild is not null && nextStates.Contains(state.WildcardChild) == false)
+            if (state.WildcardChild is not null)
             {
-                nextStates.Add(state.WildcardChild);
+                AddNextState(nextStates, state.WildcardChild);
             }
         }
 
         return nextStates;
+    }
+
+    static void AddNextState(List<PatternNode> states, PatternNode state)
+    {
+        if (states.Contains(state) == false)
+        {
+            states.Add(state);
+        }
     }
 
     static void ProbeCandidateDirectory(
@@ -316,24 +324,61 @@ internal static class GameAssetCandidatePathIndex
 
     static PatternNode GetPatternRoot()
     {
-        var customPatterns = Settings.Instance.CustomGameAssetDirectoryPatterns;
+        var configuredCustomPatterns = Settings.Instance.CustomGameAssetDirectoryPatterns;
+        var customPatterns = NormalizeCustomDirectoryPatterns(configuredCustomPatterns);
         lock (_patternLock)
         {
+            if (configuredCustomPatterns.SequenceEqual(customPatterns, StringComparer.OrdinalIgnoreCase) == false)
+            {
+                Settings.Instance.CustomGameAssetDirectoryPatterns = customPatterns;
+            }
+
             if (_cachedCustomPatterns.SequenceEqual(customPatterns, StringComparer.OrdinalIgnoreCase))
             {
                 return _patternRoot;
             }
 
             _cachedCustomPatterns = customPatterns.ToArray();
-            _patternRoot = CreatePatternTree(_directoryPatterns.Concat(_cachedCustomPatterns));
+            _patternRoot = CreatePatternGraph(_directoryPatterns.Concat(_cachedCustomPatterns));
             return _patternRoot;
         }
     }
 
-    static PatternNode CreatePatternTree(IEnumerable<string> patterns)
+    static string[] RemoveSubsumedPatterns(IEnumerable<string> patterns)
+    {
+        var distinctPatterns = patterns
+            .Where(static pattern => string.IsNullOrWhiteSpace(pattern) == false || pattern.Length == 0)
+            .Select(static pattern => pattern.Trim()
+                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+                .Trim(Path.DirectorySeparatorChar))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return distinctPatterns
+            .Where(pattern => distinctPatterns.Any(otherPattern =>
+                otherPattern.Equals(pattern, StringComparison.OrdinalIgnoreCase) == false
+                && PatternSubsumes(otherPattern, pattern)) == false)
+            .ToArray();
+    }
+
+    static bool PatternSubsumes(string broaderPattern, string narrowerPattern)
+    {
+        var broaderComponents = broaderPattern.Length == 0
+            ? []
+            : broaderPattern.Split(Path.DirectorySeparatorChar);
+        var narrowerComponents = narrowerPattern.Length == 0
+            ? []
+            : narrowerPattern.Split(Path.DirectorySeparatorChar);
+        return broaderComponents.Length == narrowerComponents.Length
+            && broaderComponents.Zip(narrowerComponents).All(pair =>
+                pair.First == Wildcard
+                || pair.First.Equals(pair.Second, StringComparison.OrdinalIgnoreCase));
+    }
+
+    static PatternNode CreatePatternGraph(IEnumerable<string> patterns)
     {
         var root = new PatternNode();
-        foreach (var pattern in patterns)
+        foreach (var pattern in RemoveSubsumedPatterns(patterns))
         {
             var current = root;
             if (pattern.Length > 0)
@@ -349,7 +394,61 @@ internal static class GameAssetCandidatePathIndex
             current.IsCandidate = true;
         }
 
-        return root;
+        return CanonicalizePatternTree(root);
+    }
+
+    static PatternNode CanonicalizePatternTree(PatternNode root)
+    {
+        var canonicalNodes = new Dictionary<string, PatternNode>(StringComparer.Ordinal);
+        var canonicalNodeIds = new Dictionary<PatternNode, int>();
+
+        PatternNode Canonicalize(PatternNode node)
+        {
+            var wildcardChild = node.WildcardChild is null
+                ? null
+                : Canonicalize(node.WildcardChild);
+            var literalChildren = node.LiteralChildren
+                .OrderBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(pair => new KeyValuePair<string, PatternNode>(pair.Key, Canonicalize(pair.Value)))
+                .ToArray();
+
+            var signature = new StringBuilder()
+                .Append(node.IsCandidate ? '1' : '0')
+                .Append('|')
+                .Append(wildcardChild is null ? -1 : canonicalNodeIds[wildcardChild])
+                .Append('|')
+                .Append(literalChildren.Length)
+                .Append('|');
+            foreach (var child in literalChildren)
+            {
+                var normalizedName = child.Key.ToUpperInvariant();
+                signature.Append(normalizedName.Length)
+                    .Append(':')
+                    .Append(normalizedName)
+                    .Append(':')
+                    .Append(canonicalNodeIds[child.Value])
+                    .Append('|');
+            }
+
+            var signatureText = signature.ToString();
+            if (canonicalNodes.TryGetValue(signatureText, out var canonicalNode))
+            {
+                return canonicalNode;
+            }
+
+            node.WildcardChild = wildcardChild;
+            node.LiteralChildren.Clear();
+            foreach (var child in literalChildren)
+            {
+                node.LiteralChildren.Add(child.Key, child.Value);
+            }
+
+            canonicalNodes.Add(signatureText, node);
+            canonicalNodeIds.Add(node, canonicalNodeIds.Count);
+            return node;
+        }
+
+        return Canonicalize(root);
     }
 
     readonly record struct PendingDirectory(string Path, List<PatternNode> States);

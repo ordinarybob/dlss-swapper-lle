@@ -714,6 +714,16 @@ public class Settings
         }
 
         var shouldSave = settings.CheckGameLibraries();
+        var normalizedCustomPatterns = GameAssetCandidatePathIndex.NormalizeCustomDirectoryPatterns(
+            settings.CustomGameAssetDirectoryPatterns);
+        if (settings.CustomGameAssetDirectoryPatterns.SequenceEqual(
+            normalizedCustomPatterns,
+            StringComparer.OrdinalIgnoreCase) == false)
+        {
+            settings.CustomGameAssetDirectoryPatterns = normalizedCustomPatterns;
+            shouldSave = true;
+        }
+
         if (shouldSave)
         {
             settings.SaveJson();
