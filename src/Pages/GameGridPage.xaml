@@ -428,10 +428,6 @@
                             <Setter Target="HeaderCommands.(Grid.RowSpan)" Value="1" />
                             <Setter Target="HeaderCommands.(Grid.Column)" Value="0" />
                             <Setter Target="HeaderCommands.(Grid.ColumnSpan)" Value="2" />
-                            <Setter Target="SelectionCommandsHost.(Grid.Row)" Value="2" />
-                            <Setter Target="SelectionCommandsHost.(Grid.RowSpan)" Value="1" />
-                            <Setter Target="SelectionCommandsHost.(Grid.Column)" Value="0" />
-                            <Setter Target="SelectionCommandsHost.(Grid.ColumnSpan)" Value="2" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState x:Name="WideHeader">
@@ -559,8 +555,7 @@
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.AddGamesText, Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.AddGamesText, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.AddGamesText, Mode=OneWay}">
                     <Button.Content>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -601,8 +596,7 @@
                     Command="{x:Bind ViewModel.DeepScanCommand}"
                     IsEnabled="{x:Bind ViewModel.CanRefresh, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.DeepScanText, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.DeepScanText, Mode=OneWay}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="22" />
@@ -622,8 +616,7 @@
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.CanRefresh, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}">
                     <Button.Content>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -688,8 +681,7 @@
                     Click="FilterButton_Click"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="24" />
@@ -714,8 +706,7 @@
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}">
                     <Button.Content>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -758,8 +749,7 @@
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.SortText, Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.SortText, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.SortText, Mode=OneWay}">
                     <Button.Content>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -799,90 +789,6 @@
                 </Button>
             </StackPanel>
 
-            <Border
-                x:Name="SelectionCommandsHost"
-                Grid.Row="0"
-                Grid.RowSpan="2"
-                Grid.Column="1"
-                Margin="0,0,53,0"
-                Padding="4"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Bottom"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="4"
-                Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                <Grid ColumnSpacing="4" RowSpacing="4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <VisualStateManager.VisualStateGroups>
-                        <VisualStateGroup>
-                            <VisualState x:Name="NarrowSelectionCommands">
-                                <VisualState.StateTriggers>
-                                    <AdaptiveTrigger MinWindowWidth="0" />
-                                </VisualState.StateTriggers>
-                                <VisualState.Setters>
-                                    <Setter Target="SelectionCount.(Grid.Column)" Value="0" />
-                                    <Setter Target="SelectAllButton.(Grid.Column)" Value="1" />
-                                    <Setter Target="ApplyDllButton.(Grid.Row)" Value="1" />
-                                    <Setter Target="ApplyDllButton.(Grid.Column)" Value="0" />
-                                    <Setter Target="RemoveGamesButton.(Grid.Row)" Value="1" />
-                                    <Setter Target="RemoveGamesButton.(Grid.Column)" Value="1" />
-                                </VisualState.Setters>
-                            </VisualState>
-                            <VisualState x:Name="WideSelectionCommands">
-                                <VisualState.StateTriggers>
-                                    <AdaptiveTrigger MinWindowWidth="620" />
-                                </VisualState.StateTriggers>
-                            </VisualState>
-                        </VisualStateGroup>
-                    </VisualStateManager.VisualStateGroups>
-                    <TextBlock
-                        x:Name="SelectionCount"
-                        Grid.Column="0"
-                        Margin="3,0"
-                        VerticalAlignment="Center"
-                        Text="{x:Bind ViewModel.SelectedGamesCountText, Mode=OneWay}" />
-                    <Button
-                        x:Name="SelectAllButton"
-                        Grid.Column="1"
-                        Height="28"
-                        MinWidth="0"
-                        Padding="8,0"
-                        Command="{x:Bind ViewModel.ToggleSelectAllCommand}"
-                        Content="{x:Bind ViewModel.SelectAllButtonText, Mode=OneWay}"
-                        IsEnabled="{x:Bind ViewModel.IsBatchUpdateRunning, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
-                    <Button
-                        x:Name="ApplyDllButton"
-                        Grid.Column="2"
-                        Height="28"
-                        MinWidth="0"
-                        Padding="8,0"
-                        Command="{x:Bind ViewModel.ApplyBatchDllCommand}"
-                        Content="{x:Bind ViewModel.TranslationProperties.ApplyDllText, Mode=OneWay}"
-                        IsEnabled="{x:Bind ViewModel.CanApplyBatchDll, Mode=OneWay}"
-                        Style="{StaticResource AccentButtonStyle}" />
-                    <Button
-                        x:Name="RemoveGamesButton"
-                        Grid.Column="3"
-                        Height="28"
-                        MinWidth="0"
-                        Padding="8,0"
-                        Command="{x:Bind ViewModel.RemoveSelectedGamesCommand}"
-                        Content="{x:Bind ViewModel.TranslationProperties.RemoveText, Mode=OneWay}"
-                        IsEnabled="{x:Bind ViewModel.CanRemoveSelectedGames, Mode=OneWay}" />
-                </Grid>
-            </Border>
-
             <InfoBar
                 x:Name="AdminInfoBar"
                 Grid.Row="4"
@@ -894,6 +800,63 @@
                 Title="Warning"
                 Visibility="{x:Bind system:Environment.IsPrivilegedProcess, Converter={StaticResource BoolToVisibilityConverter}}" />
         </Grid>
+
+        <Border
+            x:Name="SelectionCommandsHost"
+            Grid.Row="1"
+            Margin="0,1,14,0"
+            Padding="2"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Canvas.ZIndex="10"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Grid ColumnSpacing="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    x:Name="SelectionCount"
+                    Grid.Column="0"
+                    Margin="3,0"
+                    VerticalAlignment="Center"
+                    Text="{x:Bind ViewModel.SelectedGamesCountText, Mode=OneWay}" />
+                <Button
+                    x:Name="SelectAllButton"
+                    Grid.Column="1"
+                    Height="26"
+                    MinWidth="0"
+                    Padding="8,0"
+                    Command="{x:Bind ViewModel.ToggleSelectAllCommand}"
+                    Content="{x:Bind ViewModel.SelectAllButtonText, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.IsBatchUpdateRunning, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+                <Button
+                    x:Name="ApplyDllButton"
+                    Grid.Column="2"
+                    Height="26"
+                    MinWidth="0"
+                    Padding="8,0"
+                    Command="{x:Bind ViewModel.ApplyBatchDllCommand}"
+                    Content="{x:Bind ViewModel.TranslationProperties.ApplyDllText, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.CanApplyBatchDll, Mode=OneWay}"
+                    Style="{StaticResource AccentButtonStyle}" />
+                <Button
+                    x:Name="RemoveGamesButton"
+                    Grid.Column="3"
+                    Height="26"
+                    MinWidth="0"
+                    Padding="8,0"
+                    Command="{x:Bind ViewModel.RemoveSelectedGamesCommand}"
+                    Content="{x:Bind ViewModel.TranslationProperties.RemoveText, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.CanRemoveSelectedGames, Mode=OneWay}" />
+            </Grid>
+        </Border>
 
         <ContentControl
             x:Name="MainContentControl"

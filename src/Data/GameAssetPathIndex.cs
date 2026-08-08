@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Enumeration;
@@ -423,6 +424,7 @@ internal static class GameAssetPathIndex
 
             await continueExhaustiveScan.WaitAsync(cancellationToken).ConfigureAwait(false);
             var recursiveStartedAt = System.Diagnostics.Stopwatch.StartNew();
+            var adaptivePatterns = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
             await Parallel.ForEachAsync(
                 exhaustiveRoots,
                 new ParallelOptions
@@ -438,7 +440,22 @@ internal static class GameAssetPathIndex
                     {
                         if (Directory.Exists(root.InstallPath))
                         {
-                            root.Complete(EnumerateTree(root.InstallPath));
+                            var assets = EnumerateTree(root.InstallPath);
+                            var candidatePaths = root.CandidateAssets
+                                .Select(static asset => asset.Path)
+                                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                            foreach (var asset in assets.Where(asset => candidatePaths.Contains(asset.Path) == false))
+                            {
+                                if (GameAssetCandidatePathIndex.TryCreateAdaptiveDirectoryPattern(
+                                    root.InstallPath,
+                                    asset.Path,
+                                    out var pattern))
+                                {
+                                    adaptivePatterns.TryAdd(pattern, 0);
+                                }
+                            }
+
+                            root.Complete(assets);
                         }
                         else
                         {
@@ -458,9 +475,16 @@ internal static class GameAssetPathIndex
                     return ValueTask.CompletedTask;
                 }).ConfigureAwait(false);
 
+            var learnedPatternCount = GameAssetCandidatePathIndex.AddAdaptiveDirectoryPatterns(
+                adaptivePatterns.Keys);
+
             Logger.Info(
                 $"Scanned {exhaustiveRoots.Length:N0} game root(s) exhaustively in {recursiveStartedAt.Elapsed.TotalSeconds:N2} seconds; " +
                 $"peak workers: {peakWorkerCount}/{workerCount}.");
+            Logger.Info(
+                learnedPatternCount == 0
+                    ? "Deep Scan found no new fast-scan directory patterns."
+                    : $"Deep Scan learned and saved {learnedPatternCount:N0} new fast-scan directory pattern(s).");
         }
 
         static void UpdateMaximum(ref int target, int candidate)

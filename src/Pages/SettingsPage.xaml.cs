@@ -16,5 +16,6 @@ public sealed partial class SettingsPage : Page
         this.InitializeComponent();
         ViewModel = new SettingsPageModel(this);
         DataContext = ViewModel;
+        Loaded += (_, _) => ViewModel.RefreshGameAssetDirectoryPatterns();
     }
 }

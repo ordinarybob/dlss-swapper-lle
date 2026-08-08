@@ -151,6 +151,73 @@ internal static class GameAssetCandidatePathIndex
         return _directoryPatterns;
     }
 
+    internal static bool TryCreateAdaptiveDirectoryPattern(
+        string installPath,
+        string assetPath,
+        out string pattern)
+    {
+        pattern = string.Empty;
+        var assetDirectory = Path.GetDirectoryName(Path.GetFullPath(assetPath));
+        if (assetDirectory is null)
+        {
+            return false;
+        }
+
+        var relativeDirectory = Path.GetRelativePath(
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(installPath)),
+            assetDirectory);
+        if (relativeDirectory == ".")
+        {
+            return true;
+        }
+
+        var components = relativeDirectory.Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries);
+        if (components.Length == 0
+            || components.Any(static component => component is "." or ".."))
+        {
+            return false;
+        }
+
+        // Game/project folder names vary, but the layout beneath that first
+        // directory is reusable. This is the same generalization used by the
+        // built-in index and avoids learning a one-game-only absolute shape.
+        components[0] = Wildcard;
+        pattern = string.Join(Path.DirectorySeparatorChar, components);
+        return true;
+    }
+
+    internal static int AddAdaptiveDirectoryPatterns(IEnumerable<string> patterns)
+    {
+        var builtInPatterns = _directoryPatterns.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        lock (_patternLock)
+        {
+            var existingPatterns = Settings.Instance.CustomGameAssetDirectoryPatterns;
+            var existingPatternSet = existingPatterns.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var newPatterns = patterns
+                .Where(pattern => builtInPatterns.Contains(pattern) == false)
+                .Where(pattern => existingPatternSet.Contains(pattern) == false)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (newPatterns.Length == 0)
+            {
+                return 0;
+            }
+
+            var mergedPatterns = existingPatterns
+                .Concat(newPatterns)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(static pattern => pattern, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            Settings.Instance.CustomGameAssetDirectoryPatterns = mergedPatterns;
+            _cachedCustomPatterns = mergedPatterns;
+            _patternRoot = CreatePatternTree(_directoryPatterns.Concat(mergedPatterns));
+            return newPatterns.Length;
+        }
+    }
+
     internal static IReadOnlyList<DiscoveredGameAsset> EnumerateCandidates(
         string installPath,
         CancellationToken cancellationToken = default)

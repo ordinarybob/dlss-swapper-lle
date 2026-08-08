@@ -625,6 +625,23 @@ public partial class SettingsPageModel : ObservableObject
         }
     }
 
+    internal void RefreshGameAssetDirectoryPatterns()
+    {
+        var storedPatterns = Settings.Instance.CustomGameAssetDirectoryPatterns;
+        if (CustomGameAssetDirectoryPatterns.SequenceEqual(
+            storedPatterns,
+            StringComparer.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        CustomGameAssetDirectoryPatterns.Clear();
+        foreach (var pattern in storedPatterns)
+        {
+            CustomGameAssetDirectoryPatterns.Add(pattern);
+        }
+    }
+
     static bool TryNormalizeGameAssetDirectoryPattern(
         string value,
         out string normalizedPattern,
