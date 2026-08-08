@@ -464,15 +464,24 @@ public partial class GameGridPageModel : ObservableObject
 
         IsGameListLoading = false;
         gameGridPage.PrepareVisibleCoverWait();
+        var runInitialDeepScan = Settings.Instance.HasCompletedInitialDeepScan == false;
 
         try
         {
-            await LoadGamesWithProgressAsync(false, candidateLibraryReady: async () =>
+            await LoadGamesWithProgressAsync(
+                forceNeedsProcessing: runInitialDeepScan,
+                exhaustiveScan: runInitialDeepScan,
+                candidateLibraryReady: async () =>
+                {
+                    IsBackgroundScanRunning = true;
+                    IsDLSSLoading = false;
+                    await gameGridPage.WaitForVisibleCoverAsync();
+                });
+
+            if (runInitialDeepScan)
             {
-                IsBackgroundScanRunning = true;
-                IsDLSSLoading = false;
-                await gameGridPage.WaitForVisibleCoverAsync();
-            });
+                Settings.Instance.HasCompletedInitialDeepScan = true;
+            }
         }
         finally
         {
@@ -962,6 +971,7 @@ public partial class GameGridPageModel : ObservableObject
             await LoadGamesWithProgressAsync(
                 forceNeedsProcessing: true,
                 exhaustiveScan: true);
+            Settings.Instance.HasCompletedInitialDeepScan = true;
         }
         finally
         {

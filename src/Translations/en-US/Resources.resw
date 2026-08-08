@@ -1427,6 +1427,6 @@ Because of this we recommend using caution for multiplayer games.</value>
     <value>Start Deep Scan</value>
   </data>
   <data name="GamesPage_DeepScan_Description" xml:space="preserve">
-    <value>The fast scan normally finds every supported game. Use a deep scan only if you think a game was missed. If you know which game is missing, use Add Game instead—it is faster.</value>
+    <value>Deep Scan runs automatically after your first launch and learns path patterns for anything missed by Fast Scan. Run it again only if your library has changed and a game is missing.</value>
   </data>
 </root>

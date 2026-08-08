@@ -111,6 +111,23 @@ public class Settings
         }
     }
 
+    bool _hasCompletedInitialDeepScan;
+    public bool HasCompletedInitialDeepScan
+    {
+        get { return _hasCompletedInitialDeepScan; }
+        set
+        {
+            if (_hasCompletedInitialDeepScan != value)
+            {
+                _hasCompletedInitialDeepScan = value;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
     bool _hideNonDLSSGames = true;
     public bool HideNonDLSSGames
     {

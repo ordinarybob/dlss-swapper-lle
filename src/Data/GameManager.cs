@@ -338,12 +338,9 @@ internal partial class GameManager : ObservableObject
                 await FlushPendingUiChangesAsync().ConfigureAwait(false);
                 await App.CurrentApp.RunOnUIThreadAsync(async () =>
                 {
-                    if (forceNeedsProcessing == false)
+                    if (candidateLibraryReady is not null)
                     {
-                        if (candidateLibraryReady is not null)
-                        {
-                            await candidateLibraryReady().ConfigureAwait(true);
-                        }
+                        await candidateLibraryReady().ConfigureAwait(true);
                     }
                     await Task.Yield();
                 }).ConfigureAwait(false);
