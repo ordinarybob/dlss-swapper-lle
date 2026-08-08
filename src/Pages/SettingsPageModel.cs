@@ -17,6 +17,7 @@ using Microsoft.UI.Xaml.Controls;
 using DLSS_Swapper.Collections;
 using System.Collections.Specialized;
 using DLSS_Swapper.Data.DLSS;
+using DLSS_Swapper.Data.ManuallyAdded;
 using Windows.System;
 using Windows.ApplicationModel.DataTransfer;
 
@@ -142,6 +143,15 @@ public partial class SettingsPageModel : ObservableObject
     [ObservableProperty]
     public partial string GameAssetDirectoryPatternError { get; set; } = string.Empty;
 
+    [ObservableProperty]
+    public partial string FallbackCoverArtApiUrl { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string FallbackCoverArtImageHost { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string FallbackCoverArtSourceError { get; set; } = string.Empty;
+
     bool _hasSetDefaults;
 
     public SettingsPageModelTranslationProperties TranslationProperties { get; } = new SettingsPageModelTranslationProperties();
@@ -222,6 +232,8 @@ public partial class SettingsPageModel : ObservableObject
         IgnoredPaths = new ObservableCollection<string>(Settings.Instance.IgnoredPaths);
         CustomGameAssetDirectoryPatterns = new ObservableCollection<string>(
             Settings.Instance.CustomGameAssetDirectoryPatterns);
+        FallbackCoverArtApiUrl = Settings.Instance.FallbackCoverArtApiUrl;
+        FallbackCoverArtImageHost = Settings.Instance.FallbackCoverArtImageHost;
 
         if (NVAPIHelper.Instance.IsSupported)
         {
@@ -570,6 +582,37 @@ public partial class SettingsPageModel : ObservableObject
             CustomGameAssetDirectoryPatterns.ToArray();
         NewGameAssetDirectoryPattern = string.Empty;
         GameAssetDirectoryPatternError = string.Empty;
+    }
+
+    [RelayCommand]
+    void SaveFallbackCoverArtSource()
+    {
+        if (WikipediaArtworkLookup.TryValidateSource(
+            FallbackCoverArtApiUrl,
+            FallbackCoverArtImageHost,
+            out var apiEndpoint,
+            out var normalizedImageHost,
+            out var error) == false)
+        {
+            FallbackCoverArtSourceError = error;
+            return;
+        }
+
+        FallbackCoverArtApiUrl = apiEndpoint!.AbsoluteUri;
+        FallbackCoverArtImageHost = normalizedImageHost!;
+        Settings.Instance.FallbackCoverArtApiUrl = FallbackCoverArtApiUrl;
+        Settings.Instance.FallbackCoverArtImageHost = FallbackCoverArtImageHost;
+        FallbackCoverArtSourceError = string.Empty;
+    }
+
+    [RelayCommand]
+    void ResetFallbackCoverArtSource()
+    {
+        FallbackCoverArtApiUrl = Settings.DefaultFallbackCoverArtApiUrl;
+        FallbackCoverArtImageHost = Settings.DefaultFallbackCoverArtImageHost;
+        Settings.Instance.FallbackCoverArtApiUrl = FallbackCoverArtApiUrl;
+        Settings.Instance.FallbackCoverArtImageHost = FallbackCoverArtImageHost;
+        FallbackCoverArtSourceError = string.Empty;
     }
 
     [RelayCommand]

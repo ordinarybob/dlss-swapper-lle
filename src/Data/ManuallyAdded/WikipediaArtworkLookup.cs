@@ -36,10 +36,21 @@ internal static class WikipediaArtworkLookup
         {
             try
             {
-                var searchUrl = "https://en.wikipedia.org/w/api.php"
-                    + "?action=query&generator=search&gsrnamespace=0&gsrlimit=5"
+                if (TryValidateSource(
+                    Settings.Instance.FallbackCoverArtApiUrl,
+                    Settings.Instance.FallbackCoverArtImageHost,
+                    out var apiEndpoint,
+                    out var allowedImageHost,
+                    out var sourceError) == false)
+                {
+                    Logger.Warning($"Fallback cover art source is invalid. {sourceError}");
+                    return null;
+                }
+
+                var searchUrl = BuildApiUrl(apiEndpoint!,
+                    "action=query&generator=search&gsrnamespace=0&gsrlimit=5"
                     + "&redirects=1&prop=images&imlimit=max&format=json&formatversion=2&maxlag=5"
-                    + $"&gsrsearch={Uri.EscapeDataString(title + " video game")}";
+                    + $"&gsrsearch={Uri.EscapeDataString(title + " video game")}");
                 var searchResponse = await GetResponseAsync(searchUrl).ConfigureAwait(false);
                 if (searchResponse is null)
                 {
@@ -59,15 +70,15 @@ internal static class WikipediaArtworkLookup
                     return null;
                 }
 
-                var imageInfoUrl = "https://en.wikipedia.org/w/api.php"
-                    + "?action=query&prop=imageinfo&iiprop=url%7Cmime%7Csize"
+                var imageInfoUrl = BuildApiUrl(apiEndpoint!,
+                    "action=query&prop=imageinfo&iiprop=url%7Cmime%7Csize"
                     + "&format=json&formatversion=2&maxlag=5"
-                    + $"&titles={Uri.EscapeDataString(imageTitle)}";
+                    + $"&titles={Uri.EscapeDataString(imageTitle)}");
                 var imageResponse = await GetResponseAsync(imageInfoUrl).ConfigureAwait(false);
                 var imageInfo = imageResponse?.Query?.Pages
                     .SelectMany(candidate => candidate.ImageInfo)
                     .FirstOrDefault();
-                if (IsUsablePortraitCover(imageInfo) == false)
+                if (IsUsablePortraitCover(imageInfo, allowedImageHost!) == false)
                 {
                     MarkLookupUnavailable(title, installPath);
                     return null;
@@ -80,7 +91,7 @@ internal static class WikipediaArtworkLookup
             {
                 // Network and parsing failures remain retryable. Only a successful
                 // lookup with no safe cover candidate receives a negative marker.
-                Logger.Warning($"Unable to find Wikipedia artwork for manually added game '{title}'. {err.Message}");
+                Logger.Warning($"Unable to find fallback artwork for manually added game '{title}'. {err.Message}");
                 return null;
             }
         }
@@ -102,7 +113,7 @@ internal static class WikipediaArtworkLookup
         }
         catch (Exception err)
         {
-            Logger.Warning($"Unable to persist Wikipedia artwork in {coverPath}. {err.Message}");
+            Logger.Warning($"Unable to persist fallback artwork in {coverPath}. {err.Message}");
             return sourcePath;
         }
     }
@@ -124,7 +135,7 @@ internal static class WikipediaArtworkLookup
             HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
         if (response.IsSuccessStatusCode == false)
         {
-            Logger.Warning($"Wikipedia artwork lookup returned {response.StatusCode}.");
+            Logger.Warning($"Fallback cover art lookup returned {response.StatusCode}.");
             return null;
         }
 
@@ -225,7 +236,7 @@ internal static class WikipediaArtworkLookup
         return 3;
     }
 
-    static bool IsUsablePortraitCover(WikipediaImageInfo? imageInfo)
+    static bool IsUsablePortraitCover(WikipediaImageInfo? imageInfo, string allowedImageHost)
     {
         if (imageInfo is null
             || imageInfo.Width < 200
@@ -241,21 +252,76 @@ internal static class WikipediaArtworkLookup
         }
 
         return imageUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
-            && imageUri.Host.Equals("upload.wikimedia.org", StringComparison.OrdinalIgnoreCase);
+            && imageUri.Host.Equals(allowedImageHost, StringComparison.OrdinalIgnoreCase);
+    }
+
+    internal static bool TryValidateSource(
+        string apiUrl,
+        string imageHost,
+        out Uri? apiEndpoint,
+        out string? normalizedImageHost,
+        out string error)
+    {
+        apiEndpoint = null;
+        normalizedImageHost = imageHost.Trim().TrimEnd('.');
+        error = string.Empty;
+        if (Uri.TryCreate(apiUrl.Trim(), UriKind.Absolute, out var parsedApiEndpoint) == false
+            || parsedApiEndpoint.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) == false
+            || string.IsNullOrWhiteSpace(parsedApiEndpoint.Host)
+            || string.IsNullOrEmpty(parsedApiEndpoint.UserInfo) == false
+            || string.IsNullOrEmpty(parsedApiEndpoint.Query) == false
+            || string.IsNullOrEmpty(parsedApiEndpoint.Fragment) == false)
+        {
+            error = "Enter an absolute HTTPS MediaWiki API URL without credentials, a query, or a fragment.";
+            return false;
+        }
+
+        if (normalizedImageHost.Length == 0
+            || normalizedImageHost.Contains('/')
+            || normalizedImageHost.Contains(':')
+            || Uri.CheckHostName(normalizedImageHost) != UriHostNameType.Dns)
+        {
+            error = "Enter one DNS host name for cover images, without a scheme or path.";
+            return false;
+        }
+
+        apiEndpoint = parsedApiEndpoint;
+        return true;
+    }
+
+    static string BuildApiUrl(Uri apiEndpoint, string query)
+    {
+        return new UriBuilder(apiEndpoint)
+        {
+            Query = query,
+        }.Uri.AbsoluteUri;
     }
 
     static string GetCoverPath(string title, string installPath)
     {
         return Path.Combine(
             SteamArtworkLookup.GetLookupDirectory(installPath),
-            $"manual_{SteamArtworkLookup.GetLookupKey(title)}_wikipedia_400_600.png");
+            $"manual_{SteamArtworkLookup.GetLookupKey(title)}_{GetSourceCacheKey()}_400_600.png");
     }
 
     static string GetMissingLookupMarkerPath(string title, string installPath)
     {
         return Path.Combine(
             SteamArtworkLookup.GetLookupDirectory(installPath),
-            $"manual_{SteamArtworkLookup.GetLookupKey(title)}.wikipedia-lookup.missing");
+            $"manual_{SteamArtworkLookup.GetLookupKey(title)}.{GetSourceCacheKey()}-lookup.missing");
+    }
+
+    static string GetSourceCacheKey()
+    {
+        var apiUrl = Settings.Instance.FallbackCoverArtApiUrl;
+        var imageHost = Settings.Instance.FallbackCoverArtImageHost;
+        if (apiUrl.Equals(Settings.DefaultFallbackCoverArtApiUrl, StringComparison.OrdinalIgnoreCase)
+            && imageHost.Equals(Settings.DefaultFallbackCoverArtImageHost, StringComparison.OrdinalIgnoreCase))
+        {
+            return "wikipedia";
+        }
+
+        return $"mediawiki_{SteamArtworkLookup.GetLookupKey($"{apiUrl}|{imageHost}")[..16]}";
     }
 
     static bool HasRecentMissingLookupMarker(string title, string installPath)
@@ -268,7 +334,7 @@ internal static class WikipediaArtworkLookup
         }
         catch (Exception err)
         {
-            Logger.Warning($"Unable to read manual Wikipedia artwork marker {markerPath}. {err.Message}");
+            Logger.Warning($"Unable to read manual fallback artwork marker {markerPath}. {err.Message}");
             return false;
         }
     }
@@ -283,7 +349,7 @@ internal static class WikipediaArtworkLookup
         }
         catch (Exception err)
         {
-            Logger.Warning($"Unable to persist manual Wikipedia artwork marker {markerPath}. {err.Message}");
+            Logger.Warning($"Unable to persist manual fallback artwork marker {markerPath}. {err.Message}");
         }
     }
 
@@ -299,7 +365,7 @@ internal static class WikipediaArtworkLookup
         }
         catch (Exception err)
         {
-            Logger.Warning($"Unable to clear manual Wikipedia artwork marker {markerPath}. {err.Message}");
+            Logger.Warning($"Unable to clear manual fallback artwork marker {markerPath}. {err.Message}");
         }
     }
 }

@@ -428,6 +428,10 @@
                             <Setter Target="HeaderCommands.(Grid.RowSpan)" Value="1" />
                             <Setter Target="HeaderCommands.(Grid.Column)" Value="0" />
                             <Setter Target="HeaderCommands.(Grid.ColumnSpan)" Value="2" />
+                            <Setter Target="SelectionCommandsHost.(Grid.Row)" Value="2" />
+                            <Setter Target="SelectionCommandsHost.(Grid.RowSpan)" Value="1" />
+                            <Setter Target="SelectionCommandsHost.(Grid.Column)" Value="0" />
+                            <Setter Target="SelectionCommandsHost.(Grid.ColumnSpan)" Value="2" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState x:Name="WideHeader">
@@ -555,7 +559,8 @@
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.AddGamesText, Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.AddGamesText, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.AddGamesText, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                     <Button.Content>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -596,7 +601,8 @@
                     Command="{x:Bind ViewModel.DeepScanCommand}"
                     IsEnabled="{x:Bind ViewModel.CanRefresh, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.DeepScanText, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.DeepScanText, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="22" />
@@ -616,7 +622,8 @@
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.CanRefresh, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.RefreshText, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                     <Button.Content>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -681,7 +688,8 @@
                     Click="FilterButton_Click"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.FilterText, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="24" />
@@ -706,7 +714,8 @@
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.ViewTypeText, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                     <Button.Content>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -749,7 +758,8 @@
                     AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.SortText, Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.SortText, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.SortText, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.IsSelectionMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                     <Button.Content>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -790,11 +800,14 @@
             </StackPanel>
 
             <Border
-                Grid.Row="3"
-                Grid.ColumnSpan="2"
-                Margin="0,3,0,2"
+                x:Name="SelectionCommandsHost"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="1"
+                Margin="0,0,53,0"
                 Padding="4"
                 HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"

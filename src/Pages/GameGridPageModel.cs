@@ -562,7 +562,6 @@ public partial class GameGridPageModel : ObservableObject
 
             var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
             {
-                Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_SingleFolderNoteTitle"),
                 PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectGameFolder"),
                 CloseButtonText = ResourceHelper.GetString("General_Cancel"),
                 DefaultButton = ContentDialogButton.Primary,
@@ -620,7 +619,6 @@ public partial class GameGridPageModel : ObservableObject
 
             var explanation = new EasyContentDialog(gameGridPage.XamlRoot)
             {
-                Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultipleFoldersNoteTitle"),
                 PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectGameFolders"),
                 CloseButtonText = ResourceHelper.GetString("General_Cancel"),
                 DefaultButton = ContentDialogButton.Primary,
@@ -683,7 +681,6 @@ public partial class GameGridPageModel : ObservableObject
 
             var explanation = new EasyContentDialog(gameGridPage.XamlRoot)
             {
-                Title = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultiGameDirectoryNoteTitle"),
                 PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectMultiGameDirectory"),
                 CloseButtonText = ResourceHelper.GetString("General_Cancel"),
                 DefaultButton = ContentDialogButton.Primary,

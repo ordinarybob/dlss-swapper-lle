@@ -19,6 +19,8 @@ internal enum GameLibraryStorageProfile
 
 public class Settings
 {
+    public const string DefaultFallbackCoverArtApiUrl = "https://en.wikipedia.org/w/api.php";
+    public const string DefaultFallbackCoverArtImageHost = "upload.wikimedia.org";
     public const int DefaultGridViewPreferredColumns = 6;
     public const int MinGridViewPreferredColumns = 1;
     public const int MaxGridViewPreferredColumns = 16;
@@ -579,6 +581,42 @@ public class Settings
             if (_customGameAssetDirectoryPatterns.SequenceEqual(normalizedPatterns, StringComparer.OrdinalIgnoreCase) == false)
             {
                 _customGameAssetDirectoryPatterns = normalizedPatterns;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    string _fallbackCoverArtApiUrl = DefaultFallbackCoverArtApiUrl;
+    public string FallbackCoverArtApiUrl
+    {
+        get { return _fallbackCoverArtApiUrl; }
+        set
+        {
+            var normalizedValue = value?.Trim() ?? string.Empty;
+            if (_fallbackCoverArtApiUrl != normalizedValue)
+            {
+                _fallbackCoverArtApiUrl = normalizedValue;
+                if (_autoSave)
+                {
+                    SaveJson();
+                }
+            }
+        }
+    }
+
+    string _fallbackCoverArtImageHost = DefaultFallbackCoverArtImageHost;
+    public string FallbackCoverArtImageHost
+    {
+        get { return _fallbackCoverArtImageHost; }
+        set
+        {
+            var normalizedValue = value?.Trim().TrimEnd('.') ?? string.Empty;
+            if (_fallbackCoverArtImageHost.Equals(normalizedValue, StringComparison.OrdinalIgnoreCase) == false)
+            {
+                _fallbackCoverArtImageHost = normalizedValue;
                 if (_autoSave)
                 {
                     SaveJson();
