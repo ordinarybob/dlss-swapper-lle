@@ -86,6 +86,7 @@
                 IsItemClickEnabled="True"
                 ItemClick="GridAndListView_ItemClick"
                 ItemsSource="{x:Bind CurrentCollectionView, Mode=OneWay}"
+                Loaded="MainListView_Loaded"
                 Padding="18,0,8,2"
                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                 ScrollViewer.HorizontalScrollMode="Disabled"

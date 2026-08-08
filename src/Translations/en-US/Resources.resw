@@ -237,8 +237,20 @@
   <data name="GamePage_ClickToFavorite" xml:space="preserve">
     <value>Click to favorite</value>
   </data>
+  <data name="GamePage_Favorite" xml:space="preserve">
+    <value>Favorite</value>
+  </data>
+  <data name="GamePage_Unfavorite" xml:space="preserve">
+    <value>Unfavorite</value>
+  </data>
   <data name="GamePage_ClickToHide" xml:space="preserve">
     <value>Click to hide</value>
+  </data>
+  <data name="GamePage_Hide" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="GamePage_Show" xml:space="preserve">
+    <value>Show</value>
   </data>
   <data name="GamePage_CouldNotFindGameInstallPathTemplate" xml:space="preserve">
     <value>Could not find path "{0}".</value>

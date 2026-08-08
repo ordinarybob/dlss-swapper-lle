@@ -37,6 +37,12 @@ public class GameControlModelTranslationProperties : LocalizedViewModelBase
     public string ClickToFavouriteText => ResourceHelper.GetString("GamePage_ClickToFavorite");
 
     [TranslationProperty]
+    public string FavouriteText => ResourceHelper.GetString("GamePage_Favorite");
+
+    [TranslationProperty]
+    public string UnfavouriteText => ResourceHelper.GetString("GamePage_Unfavorite");
+
+    [TranslationProperty]
     public string NotesText => ResourceHelper.GetString("GamePage_Notes");
 
     [TranslationProperty]
@@ -62,6 +68,12 @@ public class GameControlModelTranslationProperties : LocalizedViewModelBase
 
     [TranslationProperty]
     public string ClickToHideText => ResourceHelper.GetString("GamePage_ClickToHide");
+
+    [TranslationProperty]
+    public string HideText => ResourceHelper.GetString("GamePage_Hide");
+
+    [TranslationProperty]
+    public string ShowText => ResourceHelper.GetString("GamePage_Show");
 
     [TranslationProperty]
     public string HiddenText => ResourceHelper.GetString("General_Hidden");

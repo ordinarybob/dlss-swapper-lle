@@ -2,11 +2,13 @@ using DLSS_Swapper.Data;
 using DLSS_Swapper.UserControls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Windows.System;
 using AsyncAwaitBestPractices;
 using CommunityToolkit.WinUI;
@@ -200,6 +202,74 @@ public sealed partial class GameGridPage : Page
         }
     }
 
+    void GridAndListView_RightTapped(object sender, RightTappedRoutedEventArgs args)
+    {
+        if (sender is not ListViewBase listControl
+            || args.OriginalSource is not DependencyObject source)
+        {
+            return;
+        }
+
+        DependencyObject? current = source;
+        while (current is not null
+            && current is not SelectorItem
+            && ReferenceEquals(current, listControl) == false)
+        {
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        if (current is not SelectorItem gameContainer
+            || gameContainer.Content is not Game game)
+        {
+            return;
+        }
+
+        var actionModel = new GameControlModel(this, game);
+        var menu = new MenuFlyout();
+
+        void AddItem(string text, ICommand command)
+        {
+            menu.Items.Add(new MenuFlyoutItem
+            {
+                Text = text,
+                Command = command,
+                IsEnabled = game.Processing == false && command.CanExecute(null),
+            });
+        }
+
+        AddItem(actionModel.TranslationProperties.LaunchText, actionModel.LaunchCommand);
+        AddItem(actionModel.TranslationProperties.NotesText, actionModel.EditNotesCommand);
+        AddItem(actionModel.TranslationProperties.HistoryText, actionModel.ViewHistoryCommand);
+        AddItem(
+            game.IsFavourite
+                ? actionModel.TranslationProperties.UnfavouriteText
+                : actionModel.TranslationProperties.FavouriteText,
+            actionModel.FavouriteCommand);
+        AddItem(actionModel.TranslationProperties.ReloadText, actionModel.ReloadGameCommand);
+        AddItem(
+            game.IsHidden == true
+                ? actionModel.TranslationProperties.ShowText
+                : actionModel.TranslationProperties.HideText,
+            actionModel.ShowHideGameCommand);
+        AddItem(actionModel.TranslationProperties.AddCustomCoverText, actionModel.AddCoverImageCommand);
+
+        menu.Items.Add(new MenuFlyoutSeparator());
+        AddItem(
+            actionModel.TranslationProperties.UpdateDetectedDllsText,
+            actionModel.UpdateDetectedDllsToLatestCommand);
+
+        menu.Items.Add(new MenuFlyoutSeparator());
+        AddItem(actionModel.TranslationProperties.RemoveText, actionModel.RemoveCommand);
+
+        var showOptions = new FlyoutShowOptions
+        {
+            Position = args.GetPosition(gameContainer),
+        };
+
+        menu.ShowAt(gameContainer, showOptions);
+        args.Handled = true;
+    }
+
 
     static readonly SolidColorBrush _cardHoverRestBrush = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
 
@@ -221,6 +291,21 @@ public sealed partial class GameGridPage : Page
         }
     }
 
+    void MainListView_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is ListView listView)
+        {
+            AttachGameRightTappedHandler(listView);
+        }
+    }
+
+    void AttachGameRightTappedHandler(ListViewBase listControl)
+    {
+        var handler = new RightTappedEventHandler(GridAndListView_RightTapped);
+        listControl.RemoveHandler(UIElement.RightTappedEvent, handler);
+        listControl.AddHandler(UIElement.RightTappedEvent, handler, true);
+    }
+
     void MainGridView_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not GridView gridView)
@@ -228,6 +313,7 @@ public sealed partial class GameGridPage : Page
             return;
         }
 
+        AttachGameRightTappedHandler(gridView);
         AttachResponsiveGridLayout(gridView);
         gridView.DispatcherQueue.TryEnqueue(() =>
         {

@@ -18,7 +18,8 @@ namespace DLSS_Swapper.UserControls;
 
 public partial class GameControlModel : ObservableObject
 {
-    WeakReference<GameControl> gameControlWeakReference;
+    readonly WeakReference<Control> actionHostWeakReference;
+    readonly WeakReference<GameControl>? gameControlWeakReference;
 
     public Game Game { get; init; }
 
@@ -79,9 +80,18 @@ public partial class GameControlModel : ObservableObject
 
     public GameControlModelTranslationProperties TranslationProperties { get; } = new GameControlModelTranslationProperties();
 
-    public GameControlModel(GameControl gameControl, Game game) : base()
+    public GameControlModel(GameControl gameControl, Game game)
+        : this((Control)gameControl, game)
     {
-        gameControlWeakReference = new WeakReference<GameControl>(gameControl);
+    }
+
+    public GameControlModel(Control actionHost, Game game) : base()
+    {
+        actionHostWeakReference = new WeakReference<Control>(actionHost);
+        if (actionHost is GameControl gameControl)
+        {
+            gameControlWeakReference = new WeakReference<GameControl>(gameControl);
+        }
         Game = game;
         GameTitle = game.Title;
 
@@ -179,6 +189,31 @@ public partial class GameControlModel : ObservableObject
         }
     }
 
+    bool TryGetActionHost(out Control actionHost)
+    {
+        if (actionHostWeakReference.TryGetTarget(out var target))
+        {
+            actionHost = target;
+            return true;
+        }
+
+        actionHost = null!;
+        return false;
+    }
+
+    bool TryGetGameControl(out GameControl gameControl)
+    {
+        if (gameControlWeakReference is not null
+            && gameControlWeakReference.TryGetTarget(out var target))
+        {
+            gameControl = target;
+            return true;
+        }
+
+        gameControl = null!;
+        return false;
+    }
+
     partial void OnSelectedDlssPresetChanging(PresetOption? value)
     {
         _previousDlssPreset = SelectedDlssPreset;
@@ -206,13 +241,13 @@ public partial class GameControlModel : ObservableObject
                 var result = NVAPIHelper.Instance.SetGameDLSSPreset(Game, SelectedDlssPreset.Value);
                 if (result.Success == false)
                 {
-                    if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+                    if (TryGetActionHost(out var actionHost))
                     {
-                        gameControl.DispatcherQueue.TryEnqueue(() =>
+                        actionHost.DispatcherQueue.TryEnqueue(() =>
                         {
                             SelectedDlssPreset = _previousDlssPreset;
                         });
-                        _ = NVAPIHelper.Instance.DisplayNVAPIErrorAsync(gameControl.XamlRoot);
+                        _ = NVAPIHelper.Instance.DisplayNVAPIErrorAsync(actionHost.XamlRoot);
                     }
                 }
             }
@@ -224,13 +259,13 @@ public partial class GameControlModel : ObservableObject
                 var result = NVAPIHelper.Instance.SetGameDLSSDPreset(Game, SelectedDlssDPreset.Value);
                 if (result.Success == false)
                 {
-                    if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+                    if (TryGetActionHost(out var actionHost))
                     {
-                        gameControl.DispatcherQueue.TryEnqueue(() =>
+                        actionHost.DispatcherQueue.TryEnqueue(() =>
                         {
                             SelectedDlssDPreset = _previousDlssDPreset;
                         });
-                        _ = NVAPIHelper.Instance.DisplayNVAPIErrorAsync(gameControl.XamlRoot);
+                        _ = NVAPIHelper.Instance.DisplayNVAPIErrorAsync(actionHost.XamlRoot);
                     }
                 }
             }
@@ -242,13 +277,13 @@ public partial class GameControlModel : ObservableObject
                 var result = NVAPIHelper.Instance.SetGameDLSSGPreset(Game, SelectedDlssGPreset.Value);
                 if (result.Success == false)
                 {
-                    if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+                    if (TryGetActionHost(out var actionHost))
                     {
-                        gameControl.DispatcherQueue.TryEnqueue(() =>
+                        actionHost.DispatcherQueue.TryEnqueue(() =>
                         {
                             SelectedDlssGPreset = _previousDlssGPreset;
                         });
-                        _ = NVAPIHelper.Instance.DisplayNVAPIErrorAsync(gameControl.XamlRoot);
+                        _ = NVAPIHelper.Instance.DisplayNVAPIErrorAsync(actionHost.XamlRoot);
                     }
                 }
             }
@@ -273,9 +308,9 @@ public partial class GameControlModel : ObservableObject
         {
             Logger.Error(err);
 
-            if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+            if (TryGetActionHost(out var actionHost))
             {
-                var dialog = new EasyContentDialog(gameControl.XamlRoot)
+                var dialog = new EasyContentDialog(actionHost.XamlRoot)
                 {
                     Title = ResourceHelper.GetString("General_Error"),
                     CloseButtonText = ResourceHelper.GetString("General_Okay"),
@@ -295,9 +330,9 @@ public partial class GameControlModel : ObservableObject
         }
         else
         {
-            if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+            if (TryGetActionHost(out var actionHost))
             {
-                var dialog = new EasyContentDialog(gameControl.XamlRoot)
+                var dialog = new EasyContentDialog(actionHost.XamlRoot)
                 {
                     Title = ResourceHelper.GetString("General_Error"),
                     CloseButtonText = ResourceHelper.GetString("General_Okay"),
@@ -312,7 +347,7 @@ public partial class GameControlModel : ObservableObject
     [RelayCommand]
     async Task EditNotesAsync()
     {
-        if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+        if (TryGetActionHost(out var actionHost))
         {
             var textBox = new TextBox()
             {
@@ -323,7 +358,7 @@ public partial class GameControlModel : ObservableObject
             // This needs to be set after AcceptsReturn otherwise it will strip out the \r
             textBox.Text = Game.Notes;
 
-            var dialog = new EasyContentDialog(gameControl.XamlRoot)
+            var dialog = new EasyContentDialog(actionHost.XamlRoot)
             {
                 Title = $"{ResourceHelper.GetString("GamePage_Notes")} - {Game.Title}",
                 PrimaryButtonText = ResourceHelper.GetString("General_Save"),
@@ -344,9 +379,9 @@ public partial class GameControlModel : ObservableObject
     [RelayCommand]
     async Task ViewHistoryAsync()
     {
-        if (gameControlWeakReference.TryGetTarget(out var control))
+        if (TryGetActionHost(out var actionHost))
         {
-            var dialog = new EasyContentDialog(control.XamlRoot)
+            var dialog = new EasyContentDialog(actionHost.XamlRoot)
             {
                 Title = $"{ResourceHelper.GetFormattedResourceTemplate("GamePage_History")} - {Game.Title}",
                 PrimaryButtonText = ResourceHelper.GetString("General_Close"),
@@ -374,7 +409,7 @@ public partial class GameControlModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanUpdateDetectedDllsToLatest))]
     async Task UpdateDetectedDllsToLatestAsync()
     {
-        if (gameControlWeakReference.TryGetTarget(out var gameControl) == false)
+        if (TryGetActionHost(out var actionHost) == false)
         {
             return;
         }
@@ -382,7 +417,7 @@ public partial class GameControlModel : ObservableObject
         var selections = DllUpdateWorkflow.GetLatestSelections([Game]);
         if (selections.Count == 0)
         {
-            var noActionsDialog = new EasyContentDialog(gameControl.XamlRoot)
+            var noActionsDialog = new EasyContentDialog(actionHost.XamlRoot)
             {
                 Title = TranslationProperties.UpdateDetectedDllsText,
                 CloseButtonText = ResourceHelper.GetString("General_Close"),
@@ -413,7 +448,7 @@ public partial class GameControlModel : ObservableObject
                 },
             },
         };
-        var confirmationDialog = new EasyContentDialog(gameControl.XamlRoot)
+        var confirmationDialog = new EasyContentDialog(actionHost.XamlRoot)
         {
             Title = TranslationProperties.UpdateDetectedDllsText,
             PrimaryButtonText = ResourceHelper.GetString("General_Update"),
@@ -428,18 +463,18 @@ public partial class GameControlModel : ObservableObject
 
         List<BatchSwapResult> results;
         IsUpdatingDetectedDlls = true;
-        gameControl.IsEnabled = false;
+        actionHost.IsEnabled = false;
         try
         {
             results = await DllUpdateWorkflow.ApplyAsync([Game], selections);
         }
         finally
         {
-            gameControl.IsEnabled = true;
+            actionHost.IsEnabled = true;
             IsUpdatingDetectedDlls = false;
         }
 
-        var summaryDialog = new EasyContentDialog(gameControl.XamlRoot)
+        var summaryDialog = new EasyContentDialog(actionHost.XamlRoot)
         {
             Title = ResourceHelper.GetString("GamesPage_Batch_Summary_Title"),
             CloseButtonText = ResourceHelper.GetString("General_Close"),
@@ -452,7 +487,7 @@ public partial class GameControlModel : ObservableObject
     [RelayCommand]
     void Close()
     {
-        if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+        if (TryGetGameControl(out var gameControl))
         {
             gameControl.Hide();
         }
@@ -461,10 +496,10 @@ public partial class GameControlModel : ObservableObject
     [RelayCommand]
     async Task RemoveAsync()
     {
-        if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+        if (TryGetActionHost(out var actionHost))
         {
             // This needs to be set after AcceptsReturn otherwise it will strip out the \r
-            var dialog = new EasyContentDialog(gameControl.XamlRoot)
+            var dialog = new EasyContentDialog(actionHost.XamlRoot)
             {
                 Title = $"{ResourceHelper.GetString("General_Remove")} {Game.Title}?",
                 PrimaryButtonText = ResourceHelper.GetString("General_Remove"),
@@ -489,7 +524,10 @@ public partial class GameControlModel : ObservableObject
                     Game.IsHidden = true;
                     await Game.SaveToDatabaseAsync();
                 }
-                gameControl.Hide();
+                if (TryGetGameControl(out var gameControl))
+                {
+                    gameControl.Hide();
+                }
             }
         }
     }
@@ -504,7 +542,7 @@ public partial class GameControlModel : ObservableObject
     [RelayCommand]
     async Task ChangeRecordAsync(GameAssetType gameAssetType)
     {
-        if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+        if (TryGetGameControl(out var gameControl))
         {
             var currentAssets = Game.GameAssets
                 .Where(asset => asset.AssetType == gameAssetType)
@@ -537,7 +575,7 @@ public partial class GameControlModel : ObservableObject
     [RelayCommand]
     async Task MultipleDLLsFoundAsync(GameAssetType gameAssetType)
     {
-        if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+        if (TryGetGameControl(out var gameControl))
         {
             var dialog = new EasyContentDialog(gameControl.XamlRoot)
             {
@@ -560,7 +598,7 @@ public partial class GameControlModel : ObservableObject
     [RelayCommand]
     async Task DLSSPresetInfoAsync()
     {
-        if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
+        if (TryGetGameControl(out var gameControl))
         {
             var dialog = new EasyContentDialog(gameControl.XamlRoot)
             {
@@ -589,7 +627,7 @@ public partial class GameControlModel : ObservableObject
             _reloadGameTaskCompletionSource.SetCanceled();
         }
 
-        if (gameControlWeakReference.TryGetTarget(out var control))
+        if (TryGetActionHost(out _))
         {
             _reloadGameTaskCompletionSource = new TaskCompletionSource();
 
@@ -614,6 +652,7 @@ public partial class GameControlModel : ObservableObject
 
             Game.PropertyChanged -= Game_PropertyChanged;
 
+            var reopenGameControl = TryGetGameControl(out _);
 
             if (dialogTask.IsCompleted)
             {
@@ -640,8 +679,11 @@ public partial class GameControlModel : ObservableObject
                 // Game finished reloading so re-launch the GameControl.
                 _reloadGameTaskCompletionSource = null;
                 dialog.Hide();
-                var gameControl = new GameControl(Game);
-                _ = gameControl.ShowAsync();
+                if (reopenGameControl)
+                {
+                    var gameControl = new GameControl(Game);
+                    _ = gameControl.ShowAsync();
+                }
             }
         }
     }
@@ -674,9 +716,9 @@ public partial class GameControlModel : ObservableObject
     [RelayCommand]
     async Task NVAPIErrorAsync()
     {
-        if (gameControlWeakReference.TryGetTarget(out var control))
+        if (TryGetActionHost(out var actionHost))
         {
-            await NVAPIHelper.Instance.DisplayNVAPIErrorAsync(control.XamlRoot);
+            await NVAPIHelper.Instance.DisplayNVAPIErrorAsync(actionHost.XamlRoot);
         }
     }
 }
