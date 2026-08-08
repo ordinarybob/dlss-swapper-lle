@@ -388,7 +388,8 @@ public partial class GameControlModel : ObservableObject
                 DefaultButton = ContentDialogButton.Primary,
                 Content = new GameHistoryControl(Game),
             };
-            dialog.Resources["ContentDialogMinWidth"] = 800;
+            dialog.Resources["ContentDialogMinWidth"] = 0d;
+            dialog.Resources["ContentDialogMaxWidth"] = 800d;
 
             await dialog.ShowAsync();
         }
