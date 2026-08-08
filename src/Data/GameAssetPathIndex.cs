@@ -341,15 +341,23 @@ internal static class GameAssetPathIndex
                     CancellationToken = cancellationToken,
                     MaxDegreeOfParallelism = workerCount,
                 },
-                (root, _) =>
+                (root, iterationCancellationToken) =>
                 {
                     try
                     {
                         var assets = Directory.Exists(root.InstallPath)
-                            ? GameAssetCandidatePathIndex.EnumerateCandidates(root.InstallPath, cancellationToken)
+                            ? GameAssetCandidatePathIndex.EnumerateCandidates(
+                                root.InstallPath,
+                                iterationCancellationToken)
                             : [];
                         Interlocked.Add(ref candidateAssetCount, assets.Count);
                         root.CompleteCandidates(assets);
+                        if (assets.Count > 0)
+                        {
+                            _ = SignalCandidateLibraryReadyAfterPublicationAsync(
+                                root,
+                                candidateLibraryReady);
+                        }
                     }
                     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                     {
@@ -485,6 +493,24 @@ internal static class GameAssetPathIndex
                 learnedPatternCount == 0
                     ? "Deep Scan found no new fast-scan directory patterns."
                     : $"Deep Scan learned and saved {learnedPatternCount:N0} new fast-scan directory pattern(s).");
+        }
+
+        static async Task SignalCandidateLibraryReadyAfterPublicationAsync(
+            RootScan root,
+            TaskCompletionSource candidateLibraryReady)
+        {
+            try
+            {
+                if (await root.WhenCandidatePublicationCompleteAsync().ConfigureAwait(false))
+                {
+                    candidateLibraryReady.TrySetResult();
+                }
+            }
+            catch
+            {
+                // The full candidate pass below remains the fallback readiness
+                // barrier if this root is canceled or cannot be published.
+            }
         }
 
         static void UpdateMaximum(ref int target, int candidate)
