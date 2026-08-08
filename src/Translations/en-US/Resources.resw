@@ -371,6 +371,9 @@ To verify what preset is being used please enable the DLSS on-screen indicator.<
   <data name="GamesPage_AddGame" xml:space="preserve">
     <value>Add Game</value>
   </data>
+  <data name="GamesPage_AddGames" xml:space="preserve">
+    <value>Add Games</value>
+  </data>
   <data name="GamesPage_GroupGamesFromTheSameLibraryTogether" xml:space="preserve">
     <value>Group games from the same library together</value>
   </data>
@@ -511,7 +514,7 @@ If you have checked these and your game is still not showing up there may be a b
     <value>Games</value>
   </data>
   <data name="GamesPage_ViewType" xml:space="preserve">
-    <value>View Type</value>
+    <value>View</value>
   </data>
   <data name="GamesPage_ViewType_GridView" xml:space="preserve">
     <value>Grid View</value>

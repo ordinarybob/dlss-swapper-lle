@@ -7,7 +7,7 @@ namespace DLSS_Swapper.Pages;
 public class GameGridPageModelTranslationProperties : LocalizedViewModelBase
 {
     [TranslationProperty]
-    public string AddGameText => ResourceHelper.GetString("GamesPage_AddGame");
+    public string AddGamesText => ResourceHelper.GetString("GamesPage_AddGames");
 
     [TranslationProperty]
     public string DeepScanText => ResourceHelper.GetString("GamesPage_DeepScan");

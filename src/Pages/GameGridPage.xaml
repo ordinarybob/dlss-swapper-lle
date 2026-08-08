@@ -538,26 +538,36 @@
                         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
                         <Setter Property="TextWrapping" Value="NoWrap" />
                     </Style>
+                    <Style x:Key="HeaderCommandWrappedLabelStyle" TargetType="TextBlock">
+                        <Setter Property="Width" Value="42" />
+                        <Setter Property="HorizontalAlignment" Value="Center" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                        <Setter Property="FontSize" Value="10" />
+                        <Setter Property="LineHeight" Value="11" />
+                        <Setter Property="MaxLines" Value="2" />
+                        <Setter Property="TextAlignment" Value="Center" />
+                        <Setter Property="TextWrapping" Value="WrapWholeWords" />
+                    </Style>
                 </StackPanel.Resources>
 
                 <Button
                     Width="50"
-                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.AddGameText, Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind ViewModel.TranslationProperties.AddGamesText, Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
                     Style="{StaticResource HeaderCommandButtonStyle}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.AddGameText, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.AddGamesText, Mode=OneWay}">
                     <Button.Content>
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="22" />
                                 <RowDefinition Height="24" />
-                                <RowDefinition Height="16" />
                                 <RowDefinition Height="10" />
                             </Grid.RowDefinitions>
                             <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE710;" />
                             <TextBlock
                                 Grid.Row="1"
-                                Style="{StaticResource HeaderCommandLabelStyle}"
-                                Text="{x:Bind ViewModel.TranslationProperties.AddGameText, Mode=OneWay}" />
+                                Style="{StaticResource HeaderCommandWrappedLabelStyle}"
+                                Text="{x:Bind ViewModel.TranslationProperties.AddGamesText, Mode=OneWay}" />
                             <FontIcon
                                 Grid.Row="2"
                                 FontSize="8"
@@ -589,14 +599,14 @@
                     ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.DeepScanText, Mode=OneWay}">
                     <Grid>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="22" />
                             <RowDefinition Height="24" />
-                            <RowDefinition Height="16" />
                             <RowDefinition Height="10" />
                         </Grid.RowDefinitions>
                         <FontIcon Grid.Row="0" FontSize="18" Glyph="&#xE721;" />
                         <TextBlock
                             Grid.Row="1"
-                            Style="{StaticResource HeaderCommandLabelStyle}"
+                            Style="{StaticResource HeaderCommandWrappedLabelStyle}"
                             Text="{x:Bind ViewModel.TranslationProperties.DeepScanText, Mode=OneWay}" />
                     </Grid>
                 </Button>

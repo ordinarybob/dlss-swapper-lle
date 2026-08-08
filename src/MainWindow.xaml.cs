@@ -23,7 +23,7 @@ public sealed partial class MainWindow : Window
     // Matches the compact six-column reference window at the current 150% DPI:
     // approximately 1,100 x 1,527 physical pixels.
     const double DefaultWindowWidthDip = 734;
-    const double DefaultWindowHeightDip = 1018;
+    const double DefaultWindowHeightDip = 1000;
     const double DefaultWindowMarginDip = 16;
     const int MinimumRestoredDimension = 512;
     const int MaximumRestoredDimension = 32_768;
