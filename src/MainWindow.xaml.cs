@@ -20,7 +20,10 @@ namespace DLSS_Swapper;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
-    const double DefaultWindowWidthDip = 842;
+    // Matches the compact six-column reference window at the current 150% DPI:
+    // approximately 1,100 x 1,527 physical pixels.
+    const double DefaultWindowWidthDip = 734;
+    const double DefaultWindowHeightDip = 1018;
     const double DefaultWindowMarginDip = 16;
     const int MinimumRestoredDimension = 512;
     const int MaximumRestoredDimension = 32_768;
@@ -172,16 +175,17 @@ public sealed partial class MainWindow : Window
         var scale = dpi > 0 ? dpi / 96d : 1d;
 
         var desiredWidth = (int)Math.Ceiling(DefaultWindowWidthDip * scale);
+        var desiredHeight = (int)Math.Ceiling(DefaultWindowHeightDip * scale);
         var margin = Math.Max(1, (int)Math.Ceiling(DefaultWindowMarginDip * scale));
 
         var displayArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary);
         var workArea = displayArea.WorkArea;
         var width = Math.Min(desiredWidth, Math.Max(1, workArea.Width - (margin * 2)));
-        var height = Math.Max(1, workArea.Height - (margin * 2));
+        var height = Math.Min(desiredHeight, Math.Max(1, workArea.Height - (margin * 2)));
 
         return new RectInt32(
-            workArea.X + margin,
-            workArea.Y + margin,
+            workArea.X + ((workArea.Width - width) / 2),
+            workArea.Y + ((workArea.Height - height) / 2),
             width,
             height);
     }

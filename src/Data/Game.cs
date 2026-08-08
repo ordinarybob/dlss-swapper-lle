@@ -572,7 +572,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             try
             {
                 candidateAssets = await assetScan.ExecuteCandidatesAsync().ConfigureAwait(false);
-                if (candidateAssets.Count > 0 && oldGameAssets.Count > 0)
+                // A prior deep scan may have found a valid nonstandard path. Recheck
+                // that exact path directly so later fast scans remain fast and do not
+                // discard a previously confirmed asset.
+                if (oldGameAssets.Count > 0)
                 {
                     var retainedCandidates = candidateAssets.ToList();
                     var retainedPaths = retainedCandidates
@@ -644,7 +647,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             finally
             {
                 assetScan.CompleteCandidatePublication(candidatePublished);
-                if (forceNeedsProcessing == false && candidateAssets.Count > 0)
+                if (assetScan.ExhaustiveScan == false && candidateAssets.Count > 0)
                 {
                     var candidateResultTask = Task.FromResult(candidateAssets);
                     GameScanQueue.Instance.Enqueue(async () =>

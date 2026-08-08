@@ -208,6 +208,21 @@ internal partial class GameManager : ObservableObject
 
     }
 
+    public void SetGridDensityHeaderWidth(double width)
+    {
+        if (double.IsFinite(width) == false || width <= 0)
+        {
+            return;
+        }
+
+        allGamesGroup.GridDensityHeaderWidth = width;
+        favouriteGamesGroup.GridDensityHeaderWidth = width;
+        foreach (var gameGroup in libraryGameGroups.Values)
+        {
+            gameGroup.GridDensityHeaderWidth = width;
+        }
+    }
+
     IEnumerable<AdvancedCollectionView> GetSortableViews()
     {
         yield return FavouriteGamesView;
@@ -274,6 +289,7 @@ internal partial class GameManager : ObservableObject
 
     public async Task LoadGamesAsync(
         bool forceNeedsProcessing = false,
+        bool exhaustiveScan = false,
         Func<Task>? candidateLibraryReady = null)
     {
         var loadStopwatch = Stopwatch.StartNew();
@@ -281,7 +297,7 @@ internal partial class GameManager : ObservableObject
         await _loadGate.WaitAsync().ConfigureAwait(false);
         BeginUiBatch();
         GameDatabaseWriteBatch.Instance.Begin();
-        using var gameAssetPathIndex = GameAssetPathIndex.BeginBatch(forceNeedsProcessing);
+        using var gameAssetPathIndex = GameAssetPathIndex.BeginBatch(exhaustiveScan);
         try
         {
             var tasks = new List<Task<List<Game>>>();

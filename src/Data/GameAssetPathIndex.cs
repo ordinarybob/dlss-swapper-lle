@@ -31,7 +31,7 @@ internal static class GameAssetPathIndex
     static readonly object _sessionLock = new();
     static ScanSession? _currentSession;
 
-    internal static ScanBatch BeginBatch(bool exhaustCandidateRoots = false)
+    internal static ScanBatch BeginBatch(bool exhaustiveScan = false)
     {
         lock (_sessionLock)
         {
@@ -40,7 +40,7 @@ internal static class GameAssetPathIndex
                 throw new InvalidOperationException("A game asset scan batch is already active.");
             }
 
-            _currentSession = new ScanSession(exhaustCandidateRoots);
+            _currentSession = new ScanSession(exhaustiveScan);
             return new ScanBatch(_currentSession);
         }
     }
@@ -58,6 +58,7 @@ internal static class GameAssetPathIndex
             installPath,
             request?.CandidateCompletion.Task,
             request?.Completion.Task,
+            session?.ExhaustiveScan == true,
             request is null ? null : request.CompleteCandidatePublication,
             request is null ? null : request.CompleteCandidateProcessing);
     }
@@ -144,15 +145,19 @@ internal static class GameAssetPathIndex
             string installPath,
             Task<IReadOnlyList<DiscoveredGameAsset>>? candidateBatchResult,
             Task<IReadOnlyList<DiscoveredGameAsset>>? batchResult,
+            bool exhaustiveScan,
             Action<bool>? completeCandidatePublication,
             Action<bool>? completeCandidateProcessing)
         {
             _installPath = installPath;
             _candidateBatchResult = candidateBatchResult;
             _batchResult = batchResult;
+            ExhaustiveScan = exhaustiveScan;
             _completeCandidatePublication = completeCandidatePublication;
             _completeCandidateProcessing = completeCandidateProcessing;
         }
+
+        internal bool ExhaustiveScan { get; }
 
         internal Task<IReadOnlyList<DiscoveredGameAsset>> ExecuteCandidatesAsync()
         {
@@ -237,14 +242,16 @@ internal static class GameAssetPathIndex
         readonly object _lock = new();
         readonly Dictionary<string, ScanRequest> _requests = new(StringComparer.OrdinalIgnoreCase);
         readonly CancellationTokenSource _cancellation = new();
-        readonly bool _exhaustCandidateRoots;
+        readonly bool _exhaustiveScan;
         bool _registrationComplete;
         bool _disposed;
 
-        internal ScanSession(bool exhaustCandidateRoots)
+        internal ScanSession(bool exhaustiveScan)
         {
-            _exhaustCandidateRoots = exhaustCandidateRoots;
+            _exhaustiveScan = exhaustiveScan;
         }
+
+        internal bool ExhaustiveScan => _exhaustiveScan;
 
         internal TaskCompletionSource CandidateLibraryReady { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -292,7 +299,7 @@ internal static class GameAssetPathIndex
             {
                 await ScanRootsAsync(
                     requests,
-                    _exhaustCandidateRoots,
+                    _exhaustiveScan,
                     CandidateLibraryReady,
                     ContinueExhaustiveScan.Task,
                     _cancellation.Token).ConfigureAwait(false);
@@ -305,7 +312,7 @@ internal static class GameAssetPathIndex
 
         static async Task ScanRootsAsync(
             ScanRequest[] requests,
-            bool exhaustCandidateRoots,
+            bool exhaustiveScan,
             TaskCompletionSource candidateLibraryReady,
             Task continueExhaustiveScan,
             CancellationToken cancellationToken)
@@ -360,7 +367,7 @@ internal static class GameAssetPathIndex
                 $"in {candidateStartedAt.Elapsed.TotalSeconds:N2} seconds.");
 
             RootScan[] exhaustiveRoots;
-            if (exhaustCandidateRoots == false)
+            if (exhaustiveScan == false)
             {
                 var candidateRoots = roots
                     .Where(static root => root.CandidateAssets.Count > 0)
@@ -386,15 +393,27 @@ internal static class GameAssetPathIndex
                 Logger.Info(
                     $"Published and hydrated {candidateResults.Count(static result => result.Succeeded):N0} " +
                     $"of {candidateRoots.Length:N0} candidate-positive game root(s) " +
-                    "before exhaustive fallback.");
+                    "without exhaustive fallback.");
 
-                var failedCandidateRoots = candidateResults
-                    .Where(static result => result.Succeeded == false)
-                    .Select(static result => result.Root)
-                    .ToHashSet();
-                exhaustiveRoots = roots
-                    .Where(root => root.CandidateAssets.Count == 0 || failedCandidateRoots.Contains(root))
+                var fastScanMisses = roots
+                    .Where(static root => root.CandidateAssets.Count == 0)
                     .ToArray();
+                foreach (var root in fastScanMisses)
+                {
+                    root.Complete([]);
+                }
+
+                foreach (var failedCandidateRoot in candidateResults
+                    .Where(static result => result.Succeeded == false)
+                    .Select(static result => result.Root))
+                {
+                    failedCandidateRoot.Complete([]);
+                }
+
+                Logger.Info(
+                    $"Fast scan completed without exhaustive fallback; " +
+                    $"{fastScanMisses.Length:N0} candidate-negative game root(s) were not traversed recursively.");
+                return;
             }
             else
             {

@@ -129,6 +129,19 @@ public partial class SettingsPageModel : ObservableObject
 
     public ObservableCollection<string> IgnoredPaths { get; set; }
 
+    public IReadOnlyList<string> BuiltInGameAssetDirectoryPatterns { get; } =
+        GameAssetCandidatePathIndex.GetBuiltInDirectoryPatterns()
+            .Select(static pattern => pattern.Length == 0 ? "(game folder root)" : pattern)
+            .ToArray();
+
+    public ObservableCollection<string> CustomGameAssetDirectoryPatterns { get; }
+
+    [ObservableProperty]
+    public partial string NewGameAssetDirectoryPattern { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string GameAssetDirectoryPatternError { get; set; } = string.Empty;
+
     bool _hasSetDefaults;
 
     public SettingsPageModelTranslationProperties TranslationProperties { get; } = new SettingsPageModelTranslationProperties();
@@ -207,6 +220,8 @@ public partial class SettingsPageModel : ObservableObject
         LoggingLevel = LoggingLevelOptions.FirstOrDefault(x => x.Value == (int)loggingLevel) ?? LoggingLevelOptions.Last();
 
         IgnoredPaths = new ObservableCollection<string>(Settings.Instance.IgnoredPaths);
+        CustomGameAssetDirectoryPatterns = new ObservableCollection<string>(
+            Settings.Instance.CustomGameAssetDirectoryPatterns);
 
         if (NVAPIHelper.Instance.IsSupported)
         {
@@ -528,6 +543,89 @@ public partial class SettingsPageModel : ObservableObject
     {
         var diagnosticsWindow = new DiagnosticsWindow();
         App.CurrentApp.WindowManager.ShowWindow(diagnosticsWindow);
+    }
+
+    [RelayCommand]
+    void AddGameAssetDirectoryPattern()
+    {
+        if (TryNormalizeGameAssetDirectoryPattern(
+            NewGameAssetDirectoryPattern,
+            out var normalizedPattern,
+            out var error) == false)
+        {
+            GameAssetDirectoryPatternError = error;
+            return;
+        }
+
+        if (GameAssetCandidatePathIndex.GetBuiltInDirectoryPatterns()
+                .Contains(normalizedPattern, StringComparer.OrdinalIgnoreCase)
+            || CustomGameAssetDirectoryPatterns.Contains(normalizedPattern, StringComparer.OrdinalIgnoreCase))
+        {
+            GameAssetDirectoryPatternError = "That directory pattern is already included.";
+            return;
+        }
+
+        CustomGameAssetDirectoryPatterns.Add(normalizedPattern);
+        Settings.Instance.CustomGameAssetDirectoryPatterns =
+            CustomGameAssetDirectoryPatterns.ToArray();
+        NewGameAssetDirectoryPattern = string.Empty;
+        GameAssetDirectoryPatternError = string.Empty;
+    }
+
+    [RelayCommand]
+    void DeleteGameAssetDirectoryPattern(string pattern)
+    {
+        if (CustomGameAssetDirectoryPatterns.Remove(pattern))
+        {
+            Settings.Instance.CustomGameAssetDirectoryPatterns =
+                CustomGameAssetDirectoryPatterns.ToArray();
+        }
+    }
+
+    static bool TryNormalizeGameAssetDirectoryPattern(
+        string value,
+        out string normalizedPattern,
+        out string error)
+    {
+        normalizedPattern = value.Trim()
+            .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+            .Trim(Path.DirectorySeparatorChar);
+        error = string.Empty;
+        if (normalizedPattern.Length == 0)
+        {
+            error = "Enter a directory path relative to a game folder.";
+            return false;
+        }
+
+        if (Path.IsPathRooted(normalizedPattern))
+        {
+            error = "Use a relative directory pattern, not a drive or absolute path.";
+            return false;
+        }
+
+        var components = normalizedPattern.Split(
+            Path.DirectorySeparatorChar,
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var component in components)
+        {
+            if (component is "." or "..")
+            {
+                error = "Directory patterns cannot contain . or .. components.";
+                return false;
+            }
+
+            if (component != "*"
+                && (component.Contains('*')
+                    || component.Contains('?')
+                    || component.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0))
+            {
+                error = "Use literal directory names or * for one directory level.";
+                return false;
+            }
+        }
+
+        normalizedPattern = string.Join(Path.DirectorySeparatorChar, components);
+        return true;
     }
 
     [RelayCommand]

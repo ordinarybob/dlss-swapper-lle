@@ -32,6 +32,9 @@ internal partial class GameGroup : ObservableObject
     [ObservableProperty]
     public partial double GridViewPreferredRows { get; set; }
 
+    [ObservableProperty]
+    public partial double GridDensityHeaderWidth { get; set; } = 364;
+
     public GameGroup(string name, GameLibrary? gameLibrary, AdvancedCollectionView games)
     {
         Name = name;

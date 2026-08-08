@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Enumeration;
+using System.Linq;
 using System.Threading;
 
 namespace DLSS_Swapper.Data;
@@ -141,20 +142,29 @@ internal static class GameAssetCandidatePathIndex
         @"*\engine\plugins\runtime\nvidia\dlss\binaries\thirdparty\win64",
     ];
 
-    static readonly PatternNode _patternRoot = CreatePatternTree();
+    static readonly object _patternLock = new();
+    static string[] _cachedCustomPatterns = [];
+    static PatternNode _patternRoot = CreatePatternTree(_directoryPatterns);
+
+    internal static IReadOnlyList<string> GetBuiltInDirectoryPatterns()
+    {
+        return _directoryPatterns;
+    }
+
     internal static IReadOnlyList<DiscoveredGameAsset> EnumerateCandidates(
         string installPath,
         CancellationToken cancellationToken = default)
     {
+        var patternRoot = GetPatternRoot();
         var results = new List<DiscoveredGameAsset>();
         var discoveredPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (_patternRoot.IsCandidate)
+        if (patternRoot.IsCandidate)
         {
             ProbeCandidateDirectory(installPath, results, discoveredPaths);
         }
 
         var pending = new Stack<PendingDirectory>();
-        pending.Push(new PendingDirectory(installPath, [_patternRoot]));
+        pending.Push(new PendingDirectory(installPath, [patternRoot]));
         while (pending.TryPop(out var current))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -237,10 +247,26 @@ internal static class GameAssetCandidatePathIndex
         }
     }
 
-    static PatternNode CreatePatternTree()
+    static PatternNode GetPatternRoot()
+    {
+        var customPatterns = Settings.Instance.CustomGameAssetDirectoryPatterns;
+        lock (_patternLock)
+        {
+            if (_cachedCustomPatterns.SequenceEqual(customPatterns, StringComparer.OrdinalIgnoreCase))
+            {
+                return _patternRoot;
+            }
+
+            _cachedCustomPatterns = customPatterns.ToArray();
+            _patternRoot = CreatePatternTree(_directoryPatterns.Concat(_cachedCustomPatterns));
+            return _patternRoot;
+        }
+    }
+
+    static PatternNode CreatePatternTree(IEnumerable<string> patterns)
     {
         var root = new PatternNode();
-        foreach (var pattern in _directoryPatterns)
+        foreach (var pattern in patterns)
         {
             var current = root;
             if (pattern.Length > 0)

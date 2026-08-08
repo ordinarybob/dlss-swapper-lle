@@ -6,6 +6,7 @@ using DLSS_Swapper.Pages;
 using Microsoft.UI.Xaml;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace DLSS_Swapper;
@@ -556,6 +557,31 @@ public class Settings
                 {
                     SaveJson();
                     WeakReferenceMessenger.Default.Send(new Messages.GameLibrariesStateChangedMessage());
+                }
+            }
+        }
+    }
+
+    string[] _customGameAssetDirectoryPatterns = Array.Empty<string>();
+    public string[] CustomGameAssetDirectoryPatterns
+    {
+        get { return _customGameAssetDirectoryPatterns; }
+        set
+        {
+            var normalizedPatterns = (value ?? Array.Empty<string>())
+                .Select(static pattern => pattern?.Trim())
+                .Where(static pattern => string.IsNullOrWhiteSpace(pattern) == false)
+                .Select(static pattern => pattern!.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar))
+                .Select(static pattern => pattern.Trim(Path.DirectorySeparatorChar))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(static pattern => pattern, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (_customGameAssetDirectoryPatterns.SequenceEqual(normalizedPatterns, StringComparer.OrdinalIgnoreCase) == false)
+            {
+                _customGameAssetDirectoryPatterns = normalizedPatterns;
+                if (_autoSave)
+                {
+                    SaveJson();
                 }
             }
         }

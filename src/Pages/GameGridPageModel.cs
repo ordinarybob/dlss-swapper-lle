@@ -467,7 +467,7 @@ public partial class GameGridPageModel : ObservableObject
 
         try
         {
-            await LoadGamesWithProgressAsync(false, async () =>
+            await LoadGamesWithProgressAsync(false, candidateLibraryReady: async () =>
             {
                 IsBackgroundScanRunning = true;
                 IsDLSSLoading = false;
@@ -485,12 +485,14 @@ public partial class GameGridPageModel : ObservableObject
 
     async Task LoadGamesWithProgressAsync(
         bool forceNeedsProcessing,
+        bool exhaustiveScan = false,
         Func<Task>? candidateLibraryReady = null)
     {
         var scanQueue = GameScanQueue.Instance;
         var initialProgress = scanQueue.GetProgress();
         var loadTask = GameManager.Instance.LoadGamesAsync(
             forceNeedsProcessing,
+            exhaustiveScan,
             candidateLibraryReady);
 
         try
@@ -938,6 +940,36 @@ public partial class GameGridPageModel : ObservableObject
                 Content = $"{ResourceHelper.GetString("GamesPage_ManuallyAdding_CouldntAddError")}\n\n{ResourceHelper.GetString("General_ErrorMessage")}: {err.Message}",
             };
             await dialog.ShowAsync();
+        }
+    }
+
+    [RelayCommand]
+    async Task DeepScanAsync()
+    {
+        var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
+        {
+            Title = ResourceHelper.GetString("GamesPage_DeepScan_Title"),
+            PrimaryButtonText = ResourceHelper.GetString("GamesPage_DeepScan_Start"),
+            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+            DefaultButton = ContentDialogButton.Close,
+            Content = ResourceHelper.GetString("GamesPage_DeepScan_Description"),
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        IsDLSSLoading = true;
+        try
+        {
+            await LoadGamesWithProgressAsync(
+                forceNeedsProcessing: true,
+                exhaustiveScan: true);
+        }
+        finally
+        {
+            PublishVisibleGameCount();
+            IsDLSSLoading = false;
         }
     }
 

@@ -1370,7 +1370,7 @@ Because of this we recommend using caution for multiplayer games.</value>
     <value>Deselect all</value>
   </data>
   <data name="GamesPage_SelectionMode_SelectGames" xml:space="preserve">
-    <value>Select games</value>
+    <value>Batch</value>
   </data>
   <data name="GamesPage_SelectionMode_SelectAll" xml:space="preserve">
     <value>Select all</value>
@@ -1410,5 +1410,17 @@ Because of this we recommend using caution for multiplayer games.</value>
   </data>
   <data name="GamesPage_ManuallyAdding_MultiGameDirectoryDescription" xml:space="preserve">
     <value>Select one parent directory. Each immediate child folder will be imported as a separate manually added game. The parent itself is not added, and nested folders are not searched recursively.</value>
+  </data>
+  <data name="GamesPage_DeepScan" xml:space="preserve">
+    <value>Deep Scan</value>
+  </data>
+  <data name="GamesPage_DeepScan_Title" xml:space="preserve">
+    <value>Deep scan all games?</value>
+  </data>
+  <data name="GamesPage_DeepScan_Start" xml:space="preserve">
+    <value>Start Deep Scan</value>
+  </data>
+  <data name="GamesPage_DeepScan_Description" xml:space="preserve">
+    <value>The fast scan normally finds every supported game. Use a deep scan only if you think a game was missed. If you know which game is missing, use Add Game instead—it is faster.</value>
   </data>
 </root>

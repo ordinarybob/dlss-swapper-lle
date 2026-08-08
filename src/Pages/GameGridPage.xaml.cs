@@ -87,6 +87,13 @@ public sealed partial class GameGridPage : Page
         _visibleCoverOpened?.TrySetResult();
     }
 
+    void SearchHost_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // The header starts four DIPs before the Steam glyph and its controls
+        // overhang by four DIPs; subtract the combined offset at the right edge.
+        GameManager.Instance.SetGridDensityHeaderWidth(e.NewSize.Width - 4);
+    }
+
     bool hasFirstLoaded;
     void Page_Loaded(object sender, RoutedEventArgs e)
     {

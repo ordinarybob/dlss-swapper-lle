@@ -10,6 +10,9 @@ public class GameGridPageModelTranslationProperties : LocalizedViewModelBase
     public string AddGameText => ResourceHelper.GetString("GamesPage_AddGame");
 
     [TranslationProperty]
+    public string DeepScanText => ResourceHelper.GetString("GamesPage_DeepScan");
+
+    [TranslationProperty]
     public string AddSingleGameText => ResourceHelper.GetString("GamesPage_ManuallyAdding_AddSingleGame");
 
     [TranslationProperty]
