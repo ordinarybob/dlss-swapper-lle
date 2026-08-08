@@ -142,22 +142,21 @@ internal static class DllUpdateWorkflow
                         asset.Version,
                         selection.Record.Version,
                         StringComparison.OrdinalIgnoreCase));
-                if (versionsMatch)
+                var hasKnownDifferentBuild = targetAssets.Any(asset =>
+                    string.IsNullOrWhiteSpace(asset.Hash) == false
+                    && string.Equals(
+                        asset.Hash,
+                        selection.Record.MD5Hash,
+                        StringComparison.OrdinalIgnoreCase) == false);
+                if (versionsMatch && hasKnownDifferentBuild == false)
                 {
-                    await game.EnsureAssetHashesAsync(targetAssets).ConfigureAwait(false);
-                    if (targetAssets.All(asset => string.Equals(
-                            asset.Hash,
-                            selection.Record.MD5Hash,
-                            StringComparison.OrdinalIgnoreCase)))
-                    {
-                        completedResults.Add((
-                            actionSequence,
-                            CreateResult(
-                                game,
-                                BatchSwapStatus.AlreadyCurrent,
-                                actionLabel)));
-                        continue;
-                    }
+                    completedResults.Add((
+                        actionSequence,
+                        CreateResult(
+                            game,
+                            BatchSwapStatus.AlreadyCurrent,
+                            actionLabel)));
+                    continue;
                 }
 
                 plannedUpdates.Add(new PlannedUpdate(
