@@ -138,28 +138,93 @@ public class GameAsset : IEquatable<GameAsset>
     [property: Column("hash")]
     public string Hash { get; set; } = string.Empty;
 
-    public void LoadVersionAndHash()
+    [property: Column("file_length")]
+    public long FileLength { get; set; }
+
+    [property: Column("last_write_time_utc_ticks")]
+    public long LastWriteTimeUtcTicks { get; set; }
+
+    internal void LoadVersion(GameAsset? cachedAsset = null)
     {
         if (File.Exists(Path) == false)
         {
             return;
+        }
+
+        var fileInfo = new FileInfo(Path);
+        Version = FileVersionInfo.GetVersionInfo(Path).GetFormattedFileVersion();
+        var reusableHash = cachedAsset is not null && cachedAsset.HasHashFor(fileInfo)
+            ? cachedAsset.Hash
+            : string.Empty;
+        CaptureFileIdentity(fileInfo);
+        Hash = reusableHash;
+    }
+
+    internal bool HasCurrentHash()
+    {
+        if (string.IsNullOrWhiteSpace(Hash) || File.Exists(Path) == false)
+        {
+            return false;
+        }
+
+        return HasHashFor(new FileInfo(Path));
+    }
+
+    internal string EnsureHashLoaded()
+    {
+        if (File.Exists(Path) == false)
+        {
+            Hash = string.Empty;
+            return Hash;
+        }
+
+        var fileInfo = new FileInfo(Path);
+        if (HasHashFor(fileInfo))
+        {
+            return Hash;
         }
 
         var fileVersionInfo = FileVersionInfo.GetVersionInfo(Path);
+        var initialLength = fileInfo.Length;
+        var initialLastWriteTimeUtcTicks = fileInfo.LastWriteTimeUtc.Ticks;
+        var hash = fileVersionInfo.GetMD5Hash();
+        fileInfo.Refresh();
+
         Version = fileVersionInfo.GetFormattedFileVersion();
-        Hash = fileVersionInfo.GetMD5Hash();
+        CaptureFileIdentity(fileInfo);
+        Hash = fileInfo.Length == initialLength
+            && fileInfo.LastWriteTimeUtc.Ticks == initialLastWriteTimeUtcTicks
+            ? hash
+            : string.Empty;
+        _displayVersion = string.Empty;
+        _displayName = string.Empty;
+        return Hash;
     }
 
-    internal void LoadVersion()
+    internal void SetKnownVersionAndHash(string version, string hash)
     {
-        if (File.Exists(Path) == false)
+        Version = version;
+        Hash = hash;
+        if (File.Exists(Path))
         {
-            return;
+            CaptureFileIdentity(new FileInfo(Path));
         }
-
-        Version = FileVersionInfo.GetVersionInfo(Path).GetFormattedFileVersion();
+        _displayVersion = string.Empty;
+        _displayName = string.Empty;
     }
 
+    bool HasHashFor(FileInfo fileInfo)
+    {
+        return string.IsNullOrWhiteSpace(Hash) == false
+            && FileLength == fileInfo.Length
+            && LastWriteTimeUtcTicks == fileInfo.LastWriteTimeUtc.Ticks;
+    }
+
+    void CaptureFileIdentity(FileInfo fileInfo)
+    {
+        FileLength = fileInfo.Length;
+        LastWriteTimeUtcTicks = fileInfo.LastWriteTimeUtc.Ticks;
+    }
 
     public GameAsset? GetBackup()
     {
@@ -195,7 +260,7 @@ public class GameAsset : IEquatable<GameAsset>
             AssetType = backypType,
             Path = backupPath,
         };
-        backupGameAsset.LoadVersionAndHash();
+        backupGameAsset.LoadVersion();
 
         return backupGameAsset;
     }
@@ -216,6 +281,8 @@ public class GameAsset : IEquatable<GameAsset>
             AssetType.Equals(other.AssetType) &&
             Path.Equals(other.Path) &&
             Version.Equals(other.Version) &&
-            Hash.Equals(other.Hash);
+            Hash.Equals(other.Hash) &&
+            FileLength.Equals(other.FileLength) &&
+            LastWriteTimeUtcTicks.Equals(other.LastWriteTimeUtcTicks);
     }
 }

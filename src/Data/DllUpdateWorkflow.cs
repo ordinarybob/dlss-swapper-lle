@@ -137,19 +137,27 @@ internal static class DllUpdateWorkflow
                 var targetAssets = game.GameAssets
                     .Where(asset => asset.AssetType == selection.Type)
                     .ToList();
-                if (targetAssets.Count > 0
+                var versionsMatch = targetAssets.Count > 0
                     && targetAssets.All(asset => string.Equals(
-                        asset.Hash,
-                        selection.Record.MD5Hash,
-                        StringComparison.OrdinalIgnoreCase)))
+                        asset.Version,
+                        selection.Record.Version,
+                        StringComparison.OrdinalIgnoreCase));
+                if (versionsMatch)
                 {
-                    completedResults.Add((
-                        actionSequence,
-                        CreateResult(
-                            game,
-                            BatchSwapStatus.AlreadyCurrent,
-                            actionLabel)));
-                    continue;
+                    await game.EnsureAssetHashesAsync(targetAssets).ConfigureAwait(false);
+                    if (targetAssets.All(asset => string.Equals(
+                            asset.Hash,
+                            selection.Record.MD5Hash,
+                            StringComparison.OrdinalIgnoreCase)))
+                    {
+                        completedResults.Add((
+                            actionSequence,
+                            CreateResult(
+                                game,
+                                BatchSwapStatus.AlreadyCurrent,
+                                actionLabel)));
+                        continue;
+                    }
                 }
 
                 plannedUpdates.Add(new PlannedUpdate(

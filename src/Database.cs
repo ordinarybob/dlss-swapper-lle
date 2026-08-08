@@ -153,6 +153,11 @@ internal class Database
                 "hash",
                 "last",
                 "scan",
+                "file",
+                "length",
+                "write",
+                "utc",
+                "ticks",
             };
 
             var hasIssues = false;

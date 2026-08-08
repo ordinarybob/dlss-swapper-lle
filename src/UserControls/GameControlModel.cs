@@ -506,6 +506,11 @@ public partial class GameControlModel : ObservableObject
     {
         if (gameControlWeakReference.TryGetTarget(out GameControl? gameControl))
         {
+            var currentAssets = Game.GameAssets
+                .Where(asset => asset.AssetType == gameAssetType)
+                .ToList();
+            await Game.EnsureAssetHashesAsync(currentAssets);
+
             var dialog = new EasyContentDialog(gameControl.XamlRoot)
             {
                 Title = ResourceHelper.GetFormattedResourceTemplate("GamePage_SelectDllTemplateTitle", DLLManager.Instance.GetAssetTypeName(gameAssetType)),

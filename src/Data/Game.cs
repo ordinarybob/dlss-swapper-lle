@@ -341,9 +341,8 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
                 void ProcessGame_ProcessGameAsset(GameAsset gameAsset)
                 {
-                    gameAsset.LoadVersionAndHash();
-
                     var oldGameAsset = oldGameAssets.FirstOrDefault(x => x.Path.Equals(gameAsset.Path, StringComparison.OrdinalIgnoreCase));
+                    gameAsset.LoadVersion(oldGameAsset);
 
                     if (oldGameAsset is not null) // DLL existed previously
                     {
@@ -375,7 +374,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                                     AssetType = DLLManager.Instance.GetAssetBackupType(gameAsset.AssetType),
                                     Path = expectedBackupPath,
                                 };
-                                tempBackupGameAsset.LoadVersionAndHash();
+                                tempBackupGameAsset.LoadVersion();
 
                                 dllHistory.Add(new GameHistory()
                                 {
@@ -404,12 +403,13 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         });
                     }
 
-                    if (DLLManager.Instance.IsInKnownGameAsset(gameAsset, this) == false)
+                    if (gameAsset.HasCurrentHash()
+                        && DLLManager.Instance.IsInKnownGameAsset(gameAsset, this) == false)
                     {
                         unknownGameAssets.Add(gameAsset);
                     }
 
-                    LoadBackupForGameAsset(gameAsset, replacementAssets);
+                    LoadBackupForGameAsset(gameAsset, replacementAssets, oldGameAssets);
 
                 }
 
@@ -607,7 +607,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     .ToList();
                 foreach (var provisionalAsset in provisionalAssets)
                 {
-                    provisionalAsset.LoadVersion();
+                    var cachedAsset = oldGameAssets.FirstOrDefault(x =>
+                        x.Path.Equals(provisionalAsset.Path, StringComparison.OrdinalIgnoreCase));
+                    provisionalAsset.LoadVersion(cachedAsset);
                 }
 
                 var localCoverImage = FindLocalCoverImage();
@@ -686,7 +688,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }, trackProgress: false);
     }
 
-    void LoadBackupForGameAsset(GameAsset gameAsset, List<GameAsset> replacementAssets)
+    void LoadBackupForGameAsset(
+        GameAsset gameAsset,
+        List<GameAsset> replacementAssets,
+        IReadOnlyList<GameAsset> cachedAssets)
     {
         var backupPath = $"{gameAsset.Path}.dlsss";
         if (File.Exists(backupPath))
@@ -697,7 +702,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 AssetType = DLLManager.Instance.GetAssetBackupType(gameAsset.AssetType),
                 Path = backupPath,
             };
-            gameAssetBackup.LoadVersionAndHash();
+            var cachedBackup = cachedAssets.FirstOrDefault(x =>
+                x.Path.Equals(backupPath, StringComparison.OrdinalIgnoreCase));
+            gameAssetBackup.LoadVersion(cachedBackup);
             replacementAssets.Add(gameAssetBackup);
         }
     }
@@ -790,6 +797,52 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
     }
 
+    internal async Task EnsureAssetHashesAsync(IReadOnlyList<GameAsset> assets)
+    {
+        var assetsToCheck = assets
+            .GroupBy(asset => asset.Path, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .ToList();
+        if (assetsToCheck.Count == 0)
+        {
+            return;
+        }
+
+        var assetsToPersist = await Task.Run(() =>
+        {
+            var changedAssets = new List<GameAsset>();
+            foreach (var asset in assetsToCheck)
+            {
+                if (asset.HasCurrentHash() == false)
+                {
+                    asset.EnsureHashLoaded();
+                    changedAssets.Add(asset);
+                }
+            }
+            return changedAssets;
+        }).ConfigureAwait(false);
+        if (assetsToPersist.Count == 0)
+        {
+            return;
+        }
+
+        using (await Database.Instance.Mutex.LockAsync())
+        {
+            foreach (var asset in assetsToPersist)
+            {
+                await Database.Instance.Connection.ExecuteAsync(
+                    "UPDATE game_asset SET version = ?, hash = ?, file_length = ?, last_write_time_utc_ticks = ? WHERE id = ? AND asset_type = ? AND path = ?",
+                    asset.Version,
+                    asset.Hash,
+                    asset.FileLength,
+                    asset.LastWriteTimeUtcTicks,
+                    asset.Id,
+                    asset.AssetType,
+                    asset.Path).ConfigureAwait(false);
+            }
+        }
+    }
+
     internal async Task<(bool Success, string Message, bool PromptToRelaunchAsAdmin)> ResetDllAsync(GameAssetType gameAssetType)
     {
         var backupRecordType = DLLManager.Instance.GetAssetBackupType(gameAssetType);
@@ -815,6 +868,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 }
 
                 var existingRecord = existingRecords[0];
+                var backupHash = existingBackupRecord.HasCurrentHash()
+                    ? existingBackupRecord.Hash
+                    : string.Empty;
 
                 try
                 {
@@ -843,9 +899,8 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     Id = ID,
                     AssetType = gameAssetType,
                     Path = existingRecord.Path,
-                    Version = existingBackupRecord.Version,
-                    Hash = existingBackupRecord.Hash,
                 };
+                newGameAsset.SetKnownVersionAndHash(existingBackupRecord.Version, backupHash);
 
 
                 dllHistory.Add(new GameHistory()
@@ -955,9 +1010,11 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                             Id = ID,
                             AssetType = backupRecordType,
                             Path = backupDllPath,
-                            Version = existingRecord.Version,
-                            Hash = existingRecord.Hash,
                         };
+                        var existingHash = existingRecord.HasCurrentHash()
+                            ? existingRecord.Hash
+                            : string.Empty;
+                        backupGameAsset.SetKnownVersionAndHash(existingRecord.Version, existingHash);
                         newGameAssets.Add(backupGameAsset);
                     }
                     catch (UnauthorizedAccessException err)
@@ -996,10 +1053,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     Id = ID,
                     AssetType = dllRecord.AssetType,
                     Path = existingRecord.Path,
-                    Version = dllVersion,
-                    Hash = dllRecord.MD5Hash,
                 };
-                // No need to call LoadVersionAndHash, the data is already here.
+                newGameAsset.SetKnownVersionAndHash(dllVersion, dllRecord.MD5Hash);
+                // The downloaded record already supplies the exact version and hash.
                 newGameAssets.Add(newGameAsset);
 
                 dllHistory.Add(new GameHistory()
@@ -1675,7 +1731,17 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 var unknownGameAssets = new List<GameAsset>();
                 foreach (var gameAsset in GameAssets)
                 {
-                    if (DLLManager.Instance.IsInKnownGameAsset(gameAsset, this) == false)
+                    var cachedVersion = gameAsset.Version;
+                    gameAsset.LoadVersion(gameAsset);
+
+                    if (gameAsset.Version != cachedVersion)
+                    {
+                        NeedsProcessing = true;
+                        break;
+                    }
+
+                    if (gameAsset.HasCurrentHash()
+                        && DLLManager.Instance.IsInKnownGameAsset(gameAsset, this) == false)
                     {
                         unknownGameAssets.Add(gameAsset);
                     }
@@ -1684,19 +1750,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 {
                     GameManager.Instance.AddUnknownGameAssets(GameLibrary, Title, unknownGameAssets);
                 }
-
-                foreach (var gameAsset in GameAssets)
-                {
-                    var fileVersionInfo = FileVersionInfo.GetVersionInfo(gameAsset.Path);
-                    var freshVersion = fileVersionInfo.GetFormattedFileVersion();
-
-                    if (gameAsset.Version != freshVersion)
-                    {
-                        NeedsProcessing = true;
-                        break;
-                    }
-                }
-
             }
         }
         else
