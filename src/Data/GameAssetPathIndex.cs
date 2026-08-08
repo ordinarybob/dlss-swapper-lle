@@ -58,6 +58,7 @@ internal static class GameAssetPathIndex
             installPath,
             request?.CandidateCompletion.Task,
             request?.Completion.Task,
+            request is null ? null : request.CompleteCandidatePublication,
             request is null ? null : request.CompleteCandidateProcessing);
     }
 
@@ -136,17 +137,20 @@ internal static class GameAssetPathIndex
         readonly string _installPath;
         readonly Task<IReadOnlyList<DiscoveredGameAsset>>? _candidateBatchResult;
         readonly Task<IReadOnlyList<DiscoveredGameAsset>>? _batchResult;
+        readonly Action<bool>? _completeCandidatePublication;
         readonly Action<bool>? _completeCandidateProcessing;
 
         internal PreparedAssetScan(
             string installPath,
             Task<IReadOnlyList<DiscoveredGameAsset>>? candidateBatchResult,
             Task<IReadOnlyList<DiscoveredGameAsset>>? batchResult,
+            Action<bool>? completeCandidatePublication,
             Action<bool>? completeCandidateProcessing)
         {
             _installPath = installPath;
             _candidateBatchResult = candidateBatchResult;
             _batchResult = batchResult;
+            _completeCandidatePublication = completeCandidatePublication;
             _completeCandidateProcessing = completeCandidateProcessing;
         }
 
@@ -174,6 +178,11 @@ internal static class GameAssetPathIndex
         internal void CompleteCandidateProcessing(bool succeeded)
         {
             _completeCandidateProcessing?.Invoke(succeeded);
+        }
+
+        internal void CompleteCandidatePublication(bool succeeded)
+        {
+            _completeCandidatePublication?.Invoke(succeeded);
         }
     }
 
@@ -356,6 +365,14 @@ internal static class GameAssetPathIndex
                 var candidateRoots = roots
                     .Where(static root => root.CandidateAssets.Count > 0)
                     .ToArray();
+                var candidatePublicationResults = await Task.WhenAll(
+                    candidateRoots.Select(static root => root.WhenCandidatePublicationCompleteAsync()))
+                    .ConfigureAwait(false);
+                Logger.Info(
+                    $"Published {candidatePublicationResults.Count(static result => result):N0} " +
+                    $"of {candidateRoots.Length:N0} candidate-positive game root(s) before metadata hydration.");
+                candidateLibraryReady.TrySetResult();
+
                 var candidateResults = await Task.WhenAll(
                     candidateRoots.Select(static async root => new
                     {
@@ -382,9 +399,9 @@ internal static class GameAssetPathIndex
             else
             {
                 exhaustiveRoots = roots;
+                candidateLibraryReady.TrySetResult();
             }
 
-            candidateLibraryReady.TrySetResult();
             await continueExhaustiveScan.WaitAsync(cancellationToken).ConfigureAwait(false);
             var recursiveStartedAt = System.Diagnostics.Stopwatch.StartNew();
             await Parallel.ForEachAsync(
@@ -461,6 +478,7 @@ internal static class GameAssetPathIndex
             {
                 request.CandidateCompletion.TrySetCanceled();
                 request.Completion.TrySetCanceled();
+                request.PublicationCompletion.TrySetCanceled();
                 request.ProcessingCompletion.TrySetCanceled();
             }
             CandidateLibraryReady.TrySetCanceled();
@@ -471,6 +489,8 @@ internal static class GameAssetPathIndex
     internal sealed class ScanRequest
     {
         int _consumerCount = 1;
+        int _publishedConsumerCount;
+        int _failedPublicationCount;
         int _completedConsumerCount;
         int _failedConsumerCount;
 
@@ -478,6 +498,8 @@ internal static class GameAssetPathIndex
         internal TaskCompletionSource<IReadOnlyList<DiscoveredGameAsset>> CandidateCompletion { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal TaskCompletionSource<IReadOnlyList<DiscoveredGameAsset>> Completion { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal TaskCompletionSource<bool> PublicationCompletion { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal TaskCompletionSource<bool> ProcessingCompletion { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -502,6 +524,19 @@ internal static class GameAssetPathIndex
             if (Interlocked.Increment(ref _completedConsumerCount) == _consumerCount)
             {
                 ProcessingCompletion.TrySetResult(Volatile.Read(ref _failedConsumerCount) == 0);
+            }
+        }
+
+        internal void CompleteCandidatePublication(bool succeeded)
+        {
+            if (succeeded == false)
+            {
+                Interlocked.Increment(ref _failedPublicationCount);
+            }
+
+            if (Interlocked.Increment(ref _publishedConsumerCount) == _consumerCount)
+            {
+                PublicationCompletion.TrySetResult(Volatile.Read(ref _failedPublicationCount) == 0);
             }
         }
     }
@@ -546,6 +581,14 @@ internal static class GameAssetPathIndex
         {
             var results = await Task.WhenAll(
                 _requests.Select(static request => request.ProcessingCompletion.Task))
+                .ConfigureAwait(false);
+            return results.All(static succeeded => succeeded);
+        }
+
+        internal async Task<bool> WhenCandidatePublicationCompleteAsync()
+        {
+            var results = await Task.WhenAll(
+                _requests.Select(static request => request.PublicationCompletion.Task))
                 .ConfigureAwait(false);
             return results.All(static succeeded => succeeded);
         }

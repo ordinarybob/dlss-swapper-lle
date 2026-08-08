@@ -319,6 +319,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
         var assetScan = GameAssetPathIndex.PrepareFind(InstallPath);
         var oldGameAssets = GameAssets.ToList();
+        var candidateArtworkQueued = false;
 
         async Task<bool> FinalizeScanAsync(
             Task<IReadOnlyList<DiscoveredGameAsset>> scanResultTask,
@@ -495,9 +496,12 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
                     try
                     {
-                        await GameCoverHydrationQueue.Instance.EnqueueAsync(
-                            this,
-                            refreshFromSource: shouldUpdatedCover).ConfigureAwait(false);
+                        if (candidateArtworkQueued == false)
+                        {
+                            await GameCoverHydrationQueue.Instance.EnqueueAsync(
+                                this,
+                                refreshFromSource: shouldUpdatedCover).ConfigureAwait(false);
+                        }
                     }
                     catch
                     {
@@ -564,6 +568,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         GameScanQueue.Instance.Enqueue(async () =>
         {
             IReadOnlyList<DiscoveredGameAsset> candidateAssets = [];
+            var candidatePublished = false;
             try
             {
                 candidateAssets = await assetScan.ExecuteCandidatesAsync().ConfigureAwait(false);
@@ -605,14 +610,28 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     provisionalAsset.LoadVersion();
                 }
 
+                var localCoverImage = FindLocalCoverImage();
+
                 await App.CurrentApp.RunOnUIThreadAsync(() =>
                 {
+                    if (localCoverImage is not null)
+                    {
+                        CoverImage = localCoverImage;
+                    }
                     GameAssets.Clear();
                     GameAssets.AddRange(provisionalAssets);
                     UpdateCurrentDLLsFromGameAssets();
                     HasSwappableItems = true;
                     return Task.CompletedTask;
                 }).ConfigureAwait(false);
+
+                if (localCoverImage is null)
+                {
+                    candidateArtworkQueued = true;
+                    GameCoverHydrationQueue.Instance.Enqueue(this);
+                }
+
+                candidatePublished = true;
             }
             catch (Exception err)
             {
@@ -622,6 +641,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             }
             finally
             {
+                assetScan.CompleteCandidatePublication(candidatePublished);
                 if (forceNeedsProcessing == false && candidateAssets.Count > 0)
                 {
                     var candidateResultTask = Task.FromResult(candidateAssets);
@@ -728,6 +748,11 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
 
         return null;
+    }
+
+    protected virtual string? FindLocalCoverImage()
+    {
+        return GetCachedCoverImage();
     }
 
     internal bool PrimeCachedCoverImage()

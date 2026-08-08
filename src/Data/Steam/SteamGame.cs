@@ -133,8 +133,14 @@ internal partial class SteamGame : Game
         }
     }
 
-    string? FindLocalCoverImage()
+    protected override string? FindLocalCoverImage()
     {
+        var cachedCoverImage = base.FindLocalCoverImage();
+        if (cachedCoverImage is not null)
+        {
+            return cachedCoverImage;
+        }
+
         var steamInstallPath = SteamLibrary.GetInstallPath();
         if (string.IsNullOrWhiteSpace(steamInstallPath) == false)
         {
