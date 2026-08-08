@@ -406,8 +406,8 @@
 
         <Grid Grid.Row="0" Padding="56,2,8,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" MinWidth="160" MaxWidth="360" />
-                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="*" MinWidth="0" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="32" />
@@ -441,8 +441,9 @@
 
             <StackPanel
                 Grid.Row="0"
-                Grid.ColumnSpan="2"
-                HorizontalAlignment="Left"
+                Grid.Column="0"
+                MinWidth="0"
+                HorizontalAlignment="Stretch"
                 Orientation="Horizontal"
                 Spacing="8">
                 <TextBlock
