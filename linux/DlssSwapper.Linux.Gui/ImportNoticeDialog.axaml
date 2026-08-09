@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DlssSwapper.Linux.Gui.ImportNoticeDialog"
+        Width="560"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,Auto" MinHeight="170">
+    <StackPanel Grid.Row="0" Spacing="12" Margin="24,20,24,16">
+      <TextBlock x:Name="BodyTextBlock"
+                 FontSize="17"
+                 TextWrapping="Wrap" />
+      <CheckBox x:Name="DontShowAgainCheckBox"
+                Content="Don't show again" />
+    </StackPanel>
+    <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="#404040"
+            Padding="24,14">
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+        <Button x:Name="ProceedButton" Grid.Column="0" Classes="primary"
+                Click="Proceed_Click" />
+        <Button Grid.Column="1" Content="Cancel" Click="Cancel_Click" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

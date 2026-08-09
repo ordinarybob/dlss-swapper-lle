@@ -55,6 +55,12 @@ public sealed class LinuxLibraryState
 
     public bool GridView { get; set; } = true;
 
+    public bool SuppressSingleFolderNotice { get; set; }
+
+    public bool SuppressMultipleFoldersNotice { get; set; }
+
+    public bool SuppressMultiGameDirectoryNotice { get; set; }
+
     public string MediaWikiApiEndpoint { get; set; } = DefaultMediaWikiApiEndpoint;
 
     public string MediaWikiImageHost { get; set; } = DefaultMediaWikiImageHost;

@@ -33,7 +33,7 @@
             Classes="card"
             Margin="0,14,0,14">
       <StackPanel Spacing="10">
-        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+        <Grid ColumnDefinitions="*" ColumnSpacing="10">
           <StackPanel Grid.Column="0" Spacing="5">
             <TextBlock Text="Additional Steam roots" FontWeight="SemiBold" />
             <TextBox x:Name="SteamRootsTextBox"
@@ -41,22 +41,6 @@
                      AcceptsReturn="True"
                      TextWrapping="Wrap"
                      PlaceholderText="One optional Steam root per line" />
-          </StackPanel>
-          <StackPanel Grid.Column="1" Spacing="5">
-            <TextBlock Text="Explicit game paths" FontWeight="SemiBold" />
-            <TextBox x:Name="ExplicitPathsTextBox"
-                     Height="72"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     PlaceholderText="One game directory per line" />
-          </StackPanel>
-          <StackPanel Grid.Column="2" Spacing="5">
-            <TextBlock Text="Multi-game roots" FontWeight="SemiBold" />
-            <TextBox x:Name="GameRootsTextBox"
-                     Height="72"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     PlaceholderText="Immediate child directories become games" />
           </StackPanel>
         </Grid>
 
@@ -66,10 +50,18 @@
                   Margin="0,0,8,8"
                   IsEnabled="{Binding CanInteract}"
                   Click="DiscoverSteam_Click" />
-          <Button Content="Add paths and roots"
+          <Button Content="Add one game"
                   Margin="0,0,8,8"
                   IsEnabled="{Binding CanInteract}"
-                  Click="AddPaths_Click" />
+                  Click="AddOneGame_Click" />
+          <Button Content="Add separate games"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="AddSeparateGames_Click" />
+          <Button Content="Add parent directory"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="AddParentDirectory_Click" />
           <Button Content="Deep Scan"
                   Margin="0,0,8,8"
                   IsEnabled="{Binding CanInteract}"

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using DlssSwapper.Linux.Cli.Core;
 using DlssSwapper.Linux.Cli.Platform;
@@ -28,8 +29,6 @@ public sealed partial class MainWindow : Window
         Timeout = TimeSpan.FromMinutes(2),
     };
     private readonly TextBox _steamRootsTextBox;
-    private readonly TextBox _explicitPathsTextBox;
-    private readonly TextBox _gameRootsTextBox;
     private readonly TextBox _searchTextBox;
     private readonly ComboBox _filterComboBox;
     private readonly ComboBox _sortComboBox;
@@ -53,8 +52,6 @@ public sealed partial class MainWindow : Window
         DataContext = _viewModel;
 
         _steamRootsTextBox = FindRequiredTextBox("SteamRootsTextBox");
-        _explicitPathsTextBox = FindRequiredTextBox("ExplicitPathsTextBox");
-        _gameRootsTextBox = FindRequiredTextBox("GameRootsTextBox");
         _searchTextBox = FindRequiredTextBox("SearchTextBox");
         _filterComboBox = this.FindControl<ComboBox>("FilterComboBox")
             ?? throw new InvalidOperationException("Required filter control is missing.");
@@ -132,62 +129,89 @@ public sealed partial class MainWindow : Window
         await RefreshLibraryAsync(runInitialDeepScan: false);
     }
 
-    private async void AddPaths_Click(object? sender, RoutedEventArgs e)
+    private async void AddOneGame_Click(object? sender, RoutedEventArgs e) =>
+        await ImportGamesAsync(ManualImportKind.Single);
+
+    private async void AddSeparateGames_Click(object? sender, RoutedEventArgs e) =>
+        await ImportGamesAsync(ManualImportKind.Multiple);
+
+    private async void AddParentDirectory_Click(object? sender, RoutedEventArgs e) =>
+        await ImportGamesAsync(ManualImportKind.Parent);
+
+    private async Task ImportGamesAsync(ManualImportKind kind)
     {
         if (!TryGetLibrary(out var library))
         {
             return;
         }
 
-        var explicitPaths = ParseLines(_explicitPathsTextBox.Text);
-        var roots = ParseLines(_gameRootsTextBox.Text);
-        InvalidatePreview();
-        await RunBusyAsync("Adding explicit game paths…", async () =>
+        var (suppressed, body, action, pickerTitle) = kind switch
         {
-            var added = 0;
-            var warnings = new List<string>();
-            await Task.Run(() =>
-            {
-                foreach (var path in explicitPaths)
-                {
-                    try
-                    {
-                        added += library.AddManualGames([path]);
-                    }
-                    catch (Exception exception) when (exception is IOException
-                        or UnauthorizedAccessException
-                        or ArgumentException
-                        or NotSupportedException)
-                    {
-                        warnings.Add($"Could not add game path '{path}': {exception.Message}");
-                    }
-                }
+            ManualImportKind.Single => (
+                library.State.SuppressSingleFolderNotice,
+                "Select a single games installation folder.",
+                "Select Game Folder",
+                "Select Game Folder"),
+            ManualImportKind.Multiple => (
+                library.State.SuppressMultipleFoldersNotice,
+                "Select multiple separate game installation folders.",
+                "Select Game Folders",
+                "Select Game Folders"),
+            ManualImportKind.Parent => (
+                library.State.SuppressMultiGameDirectoryNotice,
+                "Select the main folder where the games you want to add are installed. Each immediate child folder will be added as a separate manually added game. The parent folder itself is not added, and nested folders are not searched.",
+                "Select Multi-Game Directory",
+                "Select Multi-Game Directory"),
+            _ => throw new InvalidOperationException("Unknown manual import kind."),
+        };
 
-                foreach (var root in roots)
-                {
-                    try
-                    {
-                        added += library.AddImmediateChildren(root);
-                    }
-                    catch (Exception exception) when (exception is IOException
-                        or UnauthorizedAccessException
-                        or ArgumentException
-                        or NotSupportedException)
-                    {
-                        warnings.Add($"Could not expand game root '{root}': {exception.Message}");
-                    }
-                }
-            });
-
-            _viewModel.Results.Clear();
-            foreach (var warning in warnings)
+        if (!suppressed)
+        {
+            var notice = await new ImportNoticeDialog(body, action)
+                .ShowDialog<ImportNoticeResult>(this);
+            if (!notice.Proceed)
             {
-                AddResult("Path import", "Filesystem", "—", "Warning", warning);
+                return;
             }
 
-            _viewModel.StatusText =
-                $"Persisted {added} new game path{Plural(added)}. Multi-game roots include immediate children only.";
-        });
+            if (notice.DontShowAgain)
+            {
+                switch (kind)
+                {
+                    case ManualImportKind.Single:
+                        library.State.SuppressSingleFolderNotice = true;
+                        break;
+                    case ManualImportKind.Multiple:
+                        library.State.SuppressMultipleFoldersNotice = true;
+                        break;
+                    case ManualImportKind.Parent:
+                        library.State.SuppressMultiGameDirectoryNotice = true;
+                        break;
+                }
+
+                library.Save();
+            }
+        }
+
+        var folders = await StorageProvider.OpenFolderPickerAsync(
+            new FolderPickerOpenOptions
+            {
+                Title = pickerTitle,
+                AllowMultiple = kind == ManualImportKind.Multiple,
+            });
+        if (folders.Count == 0)
+        {
+            return;
+        }
+
+        var localPaths = folders
+            .Select(folder => folder.Path.LocalPath)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .ToArray();
+        var added = kind == ManualImportKind.Parent
+            ? library.AddImmediateChildren(localPaths[0])
+            : library.AddManualGames(localPaths);
+        _viewModel.StatusText = $"Persisted {added} new game path{Plural(added)}.";
         await RefreshLibraryAsync(runInitialDeepScan: false);
     }
 
@@ -202,7 +226,7 @@ public sealed partial class MainWindow : Window
         var confirmed = await new ConfirmationDialog(
             "Deep Scan",
             "Deep Scan runs automatically the first time you launch DLSS Swapper LLE and learns path patterns for Fast Scan. "
-            + "Run it again only after your library changes and a game is missing. If you know which game is missing, use Add paths and roots instead.")
+            + "Run it again only after your library changes and a game is missing. If you know which game is missing, add that game directly instead.")
             .ShowDialog<bool>(this);
         if (!confirmed)
         {
@@ -1097,5 +1121,12 @@ public sealed partial class MainWindow : Window
     }
 
     private static string Plural(int count) => count == 1 ? string.Empty : "s";
+
+    private enum ManualImportKind
+    {
+        Single,
+        Multiple,
+        Parent,
+    }
 
 }
