@@ -12,6 +12,8 @@ public sealed class MainWindowViewModel : ObservableObject
     private bool _isGridView = true;
     private int _gridColumns = 6;
     private int _gridRows = 5;
+    private double _gridItemWidth = 118;
+    private double _gridItemHeight = 180;
     private bool _isBatchMode;
     private int _selectedCount;
 
@@ -102,6 +104,18 @@ public sealed class MainWindowViewModel : ObservableObject
     {
         get => _gridRows;
         set => SetProperty(ref _gridRows, value);
+    }
+
+    public double GridItemWidth
+    {
+        get => _gridItemWidth;
+        set => SetProperty(ref _gridItemWidth, value);
+    }
+
+    public double GridItemHeight
+    {
+        get => _gridItemHeight;
+        set => SetProperty(ref _gridItemHeight, value);
     }
 
     public bool IsBatchMode

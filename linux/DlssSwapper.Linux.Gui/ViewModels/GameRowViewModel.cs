@@ -12,6 +12,8 @@ public sealed class GameRowViewModel : ObservableObject
     private string? _artworkPath;
     private bool _isFavorite;
     private bool _isHidden;
+    private double _cardWidth = 108;
+    private double _cardHeight = 170;
 
     public GameRowViewModel(SelectedGame game)
     {
@@ -90,6 +92,24 @@ public sealed class GameRowViewModel : ObservableObject
     public string HideActionText => IsHidden ? "Show" : "Hide";
 
     public string FavoriteMarker => IsFavorite ? "★" : string.Empty;
+
+    public double CardWidth
+    {
+        get => _cardWidth;
+        private set => SetProperty(ref _cardWidth, value);
+    }
+
+    public double CardHeight
+    {
+        get => _cardHeight;
+        private set => SetProperty(ref _cardHeight, value);
+    }
+
+    public void SetCardSize(double width, double height)
+    {
+        CardWidth = width;
+        CardHeight = height;
+    }
 
     public void ApplyPreference(GamePreferenceState preference)
     {

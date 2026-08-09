@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="..\..\src\Assets\icon_256.png" Link="Assets\icon_256.png" />
     <Content Include="..\..\src\Assets\static_manifest.json" Link="Assets\static_manifest.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

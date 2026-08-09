@@ -34,6 +34,7 @@ public sealed partial class MainWindow : Window
     private readonly ComboBox _sortComboBox;
     private readonly ComboBox _gridColumnsInput;
     private readonly ComboBox _gridRowsInput;
+    private readonly ScrollViewer _gameGridViewport;
 
     private DllCatalog? _catalog;
     private PersistentLibrary? _library;
@@ -60,6 +61,8 @@ public sealed partial class MainWindow : Window
             ?? throw new InvalidOperationException("Required grid-columns control is missing.");
         _gridRowsInput = this.FindControl<ComboBox>("GridRowsInput")
             ?? throw new InvalidOperationException("Required grid-rows control is missing.");
+        _gameGridViewport = this.FindControl<ScrollViewer>("GameGridViewport")
+            ?? throw new InvalidOperationException("Required game-grid viewport is missing.");
         _gridColumnsInput.ItemsSource = Enumerable.Range(1, 24).ToArray();
         _gridRowsInput.ItemsSource = Enumerable.Range(1, 24).ToArray();
 
@@ -112,6 +115,7 @@ public sealed partial class MainWindow : Window
         }
 
         _opened = true;
+        UpdateGridGeometry();
         await RefreshLibraryAsync(runInitialDeepScan: true);
     }
 
@@ -708,6 +712,10 @@ public sealed partial class MainWindow : Window
     private void SetGridView(bool gridView)
     {
         _viewModel.IsGridView = gridView;
+        if (gridView)
+        {
+            UpdateGridGeometry();
+        }
         if (_library is not null && _library.State.GridView != gridView)
         {
             _library.State.GridView = gridView;
@@ -726,11 +734,47 @@ public sealed partial class MainWindow : Window
 
         _viewModel.GridColumns = columns;
         _viewModel.GridRows = rows;
+        UpdateGridGeometry();
         if (_library.State.GridColumns != columns || _library.State.GridRows != rows)
         {
             _library.State.GridColumns = columns;
             _library.State.GridRows = rows;
             _library.Save();
+        }
+    }
+
+    private void GameGridViewport_SizeChanged(object? sender, SizeChangedEventArgs e) =>
+        UpdateGridGeometry();
+
+    private void UpdateGridGeometry()
+    {
+        var width = _gameGridViewport.Bounds.Width - 10;
+        var height = _gameGridViewport.Bounds.Height - 4;
+        if (width <= 0 || height <= 0)
+        {
+            return;
+        }
+
+        const double cardAspect = 1.40;
+        var columnsDemand = Math.Max(1, _viewModel.GridColumns);
+        var rowsDemand = Math.Max(1, _viewModel.GridRows);
+        var rowHeight = height / rowsDemand;
+        var widthAtRowDensity = Math.Max(44, rowHeight / cardAspect);
+        var columnsAtRowDensity = Math.Max(
+            1,
+            (int)Math.Floor(width / widthAtRowDensity));
+        var effectiveColumns = Math.Max(columnsDemand, columnsAtRowDensity);
+        var itemWidth = Math.Max(44, Math.Floor(width / effectiveColumns));
+
+        var cardWidth = Math.Max(44, itemWidth - 10);
+        var cardHeight = Math.Max(
+            68,
+            Math.Floor(itemWidth * cardAspect) - 10);
+        _viewModel.GridItemWidth = cardWidth;
+        _viewModel.GridItemHeight = cardHeight;
+        foreach (var row in _allRows)
+        {
+            row.SetCardSize(cardWidth, cardHeight);
         }
     }
 
@@ -1344,6 +1388,7 @@ public sealed partial class MainWindow : Window
 
         var normalizedGame = game with { RootPath = normalizedPath };
         var row = new GameRowViewModel(normalizedGame);
+        row.SetCardSize(_viewModel.GridItemWidth, _viewModel.GridItemHeight);
         if (_library is not null)
         {
             var preference = _library.FindGamePreference(normalizedPath);

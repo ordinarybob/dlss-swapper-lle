@@ -5,9 +5,26 @@
   <Application.Styles>
     <FluentTheme />
     <Style Selector="Window">
-      <Setter Property="Background" Value="#202020" />
-      <Setter Property="Foreground" Value="#F4F4F4" />
+      <Setter Property="Background" Value="#191A1D" />
+      <Setter Property="Foreground" Value="#F7F7F8" />
       <Setter Property="FontFamily" Value="Inter, Segoe UI, Sans" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Background" Value="#292B30" />
+      <Setter Property="Foreground" Value="#F4F4F5" />
+      <Setter Property="BorderBrush" Value="#393C42" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="12,7" />
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="#34373D" />
+      <Setter Property="BorderBrush" Value="#555A63" />
+    </Style>
+    <Style Selector="TextBox, ComboBox">
+      <Setter Property="Background" Value="#24262A" />
+      <Setter Property="BorderBrush" Value="#3A3D43" />
+      <Setter Property="CornerRadius" Value="6" />
     </Style>
     <Style Selector="Button.primary">
       <Setter Property="Background" Value="#4F7DFF" />
@@ -19,14 +36,14 @@
       <Setter Property="Foreground" Value="White" />
     </Style>
     <Style Selector="Border.card">
-      <Setter Property="Background" Value="#292929" />
-      <Setter Property="BorderBrush" Value="#3A3A3A" />
+      <Setter Property="Background" Value="#222428" />
+      <Setter Property="BorderBrush" Value="#34373C" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Padding" Value="14" />
     </Style>
     <Style Selector="Border.row">
-      <Setter Property="Background" Value="#292929" />
+      <Setter Property="Background" Value="#222428" />
       <Setter Property="CornerRadius" Value="6" />
       <Setter Property="Padding" Value="10" />
       <Setter Property="Margin" Value="0,0,0,8" />
@@ -36,53 +53,71 @@
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="TextBlock.muted">
-      <Setter Property="Foreground" Value="#B7B7B7" />
+      <Setter Property="Foreground" Value="#A9ABB2" />
     </Style>
     <Style Selector="Button.command">
-      <Setter Property="Width" Value="58" />
-      <Setter Property="Height" Value="76" />
-      <Setter Property="Padding" Value="4" />
+      <Setter Property="Width" Value="56" />
+      <Setter Property="Height" Value="68" />
+      <Setter Property="Padding" Value="5,6" />
       <Setter Property="Margin" Value="0,0,4,0" />
-      <Setter Property="Background" Value="#292929" />
-      <Setter Property="BorderBrush" Value="#454545" />
+      <Setter Property="Background" Value="#222428" />
+      <Setter Property="BorderBrush" Value="#373A40" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="CornerRadius" Value="7" />
     </Style>
     <Style Selector="Button.command:pointerover">
-      <Setter Property="Background" Value="#353535" />
-      <Setter Property="BorderBrush" Value="#696969" />
+      <Setter Property="Background" Value="#30333A" />
+      <Setter Property="BorderBrush" Value="#676C76" />
     </Style>
     <Style Selector="Button.nav">
-      <Setter Property="Width" Value="48" />
-      <Setter Property="Height" Value="48" />
-      <Setter Property="Padding" Value="4" />
-      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="Width" Value="42" />
+      <Setter Property="Height" Value="42" />
+      <Setter Property="Padding" Value="9" />
+      <Setter Property="Margin" Value="0,0,0,5" />
       <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="FontSize" Value="22" />
+      <Setter Property="CornerRadius" Value="8" />
     </Style>
     <Style Selector="Button.nav:pointerover">
-      <Setter Property="Background" Value="#353535" />
+      <Setter Property="Background" Value="#2B2D33" />
     </Style>
     <Style Selector="Button.navSelected">
-      <Setter Property="Background" Value="#363636" />
-      <Setter Property="BorderBrush" Value="#8B8B8B" />
-      <Setter Property="BorderThickness" Value="3,0,0,0" />
+      <Setter Property="Background" Value="#34283F" />
+      <Setter Property="BorderBrush" Value="#B86BF4" />
+      <Setter Property="BorderThickness" Value="2,0,0,0" />
     </Style>
     <Style Selector="Border.gameCard">
-      <Setter Property="Background" Value="#292929" />
-      <Setter Property="BorderBrush" Value="#333333" />
+      <Setter Property="Background" Value="#202226" />
+      <Setter Property="BorderBrush" Value="#30333A" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="CornerRadius" Value="7" />
       <Setter Property="ClipToBounds" Value="True" />
-      <Setter Property="Margin" Value="4" />
+      <Setter Property="Margin" Value="5" />
+    </Style>
+    <Style Selector="Border.gameCard:pointerover">
+      <Setter Property="BorderBrush" Value="#B65CF0" />
+      <Setter Property="BorderThickness" Value="2" />
     </Style>
     <Style Selector="TextBox.headerSearch">
-      <Setter Property="Height" Value="46" />
-      <Setter Property="FontSize" Value="18" />
-      <Setter Property="Background" Value="#2B2B2B" />
-      <Setter Property="BorderBrush" Value="#454545" />
+      <Setter Property="Height" Value="42" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Background" Value="#24262A" />
+      <Setter Property="BorderBrush" Value="#3A3D43" />
       <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="TextBlock.commandLabel">
+      <Setter Property="FontSize" Value="10.5" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Path.commandIcon">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="Stroke" Value="#F7F7F8" />
+      <Setter Property="StrokeThickness" Value="1.7" />
+      <Setter Property="Stretch" Value="Uniform" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
   </Application.Styles>
 </Application>
