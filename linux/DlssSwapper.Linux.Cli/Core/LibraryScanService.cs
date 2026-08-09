@@ -32,6 +32,7 @@ public sealed class LibraryScanService
             games,
             state,
             deepScan: false,
+            library: null,
             progress,
             cancellationToken);
 
@@ -46,12 +47,9 @@ public sealed class LibraryScanService
             games,
             library.State,
             deepScan: true,
+            library,
             progress,
             cancellationToken).ConfigureAwait(false);
-
-        cancellationToken.ThrowIfCancellationRequested();
-        library.State.HasCompletedInitialDeepScan = true;
-        library.Save();
         return result;
     }
 
@@ -59,6 +57,7 @@ public sealed class LibraryScanService
         IReadOnlyList<SelectedGame> games,
         LinuxLibraryState state,
         bool deepScan,
+        PersistentLibrary? library,
         IProgress<LibraryScanProgress>? progress,
         CancellationToken cancellationToken)
     {
@@ -132,12 +131,22 @@ public sealed class LibraryScanService
         var learnedCount = 0;
         if (deepScan)
         {
-            var normalized = FastScanPatternIndex.NormalizeCustomPatterns(
-                state.CustomScanPatterns.Concat(learnedPatterns));
-            learnedCount = normalized
-                .Except(state.CustomScanPatterns, StringComparer.OrdinalIgnoreCase)
-                .Count();
-            state.CustomScanPatterns = normalized.ToList();
+            cancellationToken.ThrowIfCancellationRequested();
+            learnedCount = (library
+                ?? throw new InvalidOperationException("Deep Scan requires a persistent library."))
+                .UpdateState(currentState =>
+                {
+                    var normalized = FastScanPatternIndex.NormalizeCustomPatterns(
+                        currentState.CustomScanPatterns.Concat(learnedPatterns));
+                    var count = normalized
+                        .Except(
+                            currentState.CustomScanPatterns,
+                            StringComparer.OrdinalIgnoreCase)
+                        .Count();
+                    currentState.CustomScanPatterns = normalized.ToList();
+                    currentState.HasCompletedInitialDeepScan = true;
+                    return count;
+                });
         }
 
         started.Stop();

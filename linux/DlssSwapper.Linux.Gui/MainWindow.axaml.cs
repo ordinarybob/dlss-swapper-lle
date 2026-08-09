@@ -25,7 +25,10 @@ public sealed partial class MainWindow : Window
     private readonly HashSet<string> _knownPaths = new(PathComparer);
     private readonly List<GameRowViewModel> _allRows = [];
     private readonly CancellationTokenSource _lifetime = new();
-    private readonly HttpClient _artworkHttpClient = new()
+    private readonly HttpClient _artworkHttpClient = new(new HttpClientHandler
+    {
+        CheckCertificateRevocationList = true,
+    })
     {
         Timeout = TimeSpan.FromMinutes(2),
     };
@@ -40,7 +43,6 @@ public sealed partial class MainWindow : Window
     private PersistentLibrary? _library;
     private LibraryScanService? _scanService;
     private ArtworkService? _artworkService;
-    private IReadOnlyList<UpdatePlanItem> _currentUpdatePlan = [];
     private IReadOnlyList<SteamGame> _lastSteamGames = [];
     private CancellationTokenSource? _artworkCancellation;
     private Task? _artworkTask;
@@ -91,20 +93,54 @@ public sealed partial class MainWindow : Window
         {
             _viewModel.StatusText =
                 $"The bundled DLL catalog could not be loaded: {exception.Message}";
-            AddResult("Application", "Catalog", "Assets/static_manifest.json", "Error", exception.Message);
+            AddAlert("Error", exception.Message);
         }
 
         Opened += MainWindow_Opened;
-        Closing += (_, _) =>
+        Closing += MainWindow_Closing;
+        Closed += MainWindow_Closed;
+    }
+
+    private void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
+    {
+        _lifetime.Cancel();
+        _artworkCancellation?.Cancel();
+    }
+
+    private async void MainWindow_Closed(object? sender, EventArgs e)
+    {
+        try
         {
-            _lifetime.Cancel();
-            _artworkCancellation?.Cancel();
-            if (_artworkTask?.IsFaulted == true)
+            var backgroundTasks = new[] { _artworkTask, _deepScanTask }
+                .Where(task => task is not null)
+                .Cast<Task>()
+                .ToArray();
+            if (backgroundTasks.Length > 0)
             {
-                _ = _artworkTask.Exception;
+                await Task.WhenAll(backgroundTasks);
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // Closing cancels outstanding background work.
+        }
+        catch
+        {
+            // Background tasks already report operational failures in the UI.
+        }
+        finally
+        {
+            foreach (var row in _allRows)
+            {
+                row.PropertyChanged -= GameRow_PropertyChanged;
+                row.ClearArtwork();
+            }
+
+            _artworkCancellation?.Dispose();
+            _artworkService?.Dispose();
             _artworkHttpClient.Dispose();
-        };
+            _lifetime.Dispose();
+        }
     }
 
     private async void MainWindow_Opened(object? sender, EventArgs e)
@@ -118,9 +154,11 @@ public sealed partial class MainWindow : Window
         if (_library is { } library && !library.State.HasSelectedStorageProfile)
         {
             var hddMode = await new StorageProfileDialog().ShowDialog<bool>(this);
-            library.State.HddMode = hddMode;
-            library.State.HasSelectedStorageProfile = true;
-            library.Save();
+            library.UpdateState(state =>
+            {
+                state.HddMode = hddMode;
+                state.HasSelectedStorageProfile = true;
+            });
         }
 
         UpdateGridGeometry();
@@ -167,27 +205,28 @@ public sealed partial class MainWindow : Window
         {
             var notice = await new ImportNoticeDialog(body, action)
                 .ShowDialog<ImportNoticeResult>(this);
-            if (!notice.Proceed)
+            if (notice is not { Proceed: true })
             {
                 return;
             }
 
             if (notice.DontShowAgain)
             {
-                switch (kind)
+                library.UpdateState(state =>
                 {
-                    case ManualImportKind.Single:
-                        library.State.SuppressSingleFolderNotice = true;
-                        break;
-                    case ManualImportKind.Multiple:
-                        library.State.SuppressMultipleFoldersNotice = true;
-                        break;
-                    case ManualImportKind.Parent:
-                        library.State.SuppressMultiGameDirectoryNotice = true;
-                        break;
-                }
-
-                library.Save();
+                    switch (kind)
+                    {
+                        case ManualImportKind.Single:
+                            state.SuppressSingleFolderNotice = true;
+                            break;
+                        case ManualImportKind.Multiple:
+                            state.SuppressMultipleFoldersNotice = true;
+                            break;
+                        case ManualImportKind.Parent:
+                            state.SuppressMultiGameDirectoryNotice = true;
+                            break;
+                    }
+                });
             }
         }
 
@@ -399,7 +438,8 @@ public sealed partial class MainWindow : Window
             .Count();
         var confirmed = await new ConfirmationDialog(
             "Confirm exact DLL version",
-            $"Apply {family} {selectedEntry.Version} ({selectedEntry.Md5[..8]}) to {targetCount} detected DLL file{Plural(targetCount)} in {gameCount} selected game{Plural(gameCount)}?")
+            $"Apply {family} {selectedEntry.Version} ({selectedEntry.Md5[..8]}) to {targetCount} detected DLL file{Plural(targetCount)} in {gameCount} selected game{Plural(gameCount)}?",
+            ConfirmationDialog.GameFileWriteWarning)
             .ShowDialog<bool>(this);
         if (!confirmed)
         {
@@ -412,8 +452,8 @@ public sealed partial class MainWindow : Window
             var results = await Task.Run(() => DllOperations.ApplyUpdatesAsync(
                 plan,
                 cache,
-                CancellationToken.None));
-            ShowOperationResults(results);
+                _lifetime.Token));
+            ShowOperationFailures(results);
             foreach (var result in results.Where(result => result.Success))
             {
                 _library?.RecordHistory(
@@ -452,7 +492,7 @@ public sealed partial class MainWindow : Window
             var target = installedSteamGame is null
                 ? row.RootPath
                 : $"steam://rungameid/{installedSteamGame.AppId}";
-            Process.Start(new ProcessStartInfo
+            using var process = Process.Start(new ProcessStartInfo
             {
                 FileName = target,
                 UseShellExecute = true,
@@ -474,16 +514,18 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var preference = library.GetGamePreference(row.RootPath);
-        var notes = await new GameNotesDialog(row.Name, preference.Notes)
+        var notes = await new GameNotesDialog(
+            row.Name,
+            library.FindGamePreference(row.RootPath)?.Notes)
             .ShowDialog<string?>(this);
         if (notes is null)
         {
             return;
         }
 
-        preference.Notes = string.IsNullOrWhiteSpace(notes) ? null : notes;
-        library.Save();
+        library.UpdateGamePreference(
+            row.RootPath,
+            preference => preference.Notes = string.IsNullOrWhiteSpace(notes) ? null : notes);
         _viewModel.StatusText = $"Saved notes for {row.Name}.";
     }
 
@@ -511,9 +553,9 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var preference = library.GetGamePreference(row.RootPath);
-        preference.IsFavorite = !preference.IsFavorite;
-        library.Save();
+        var preference = library.UpdateGamePreference(
+            row.RootPath,
+            value => value.IsFavorite = !value.IsFavorite);
         row.ApplyPreference(preference);
         ApplyGameView();
         _viewModel.StatusText = preference.IsFavorite
@@ -538,9 +580,9 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var preference = library.GetGamePreference(row.RootPath);
-        preference.IsHidden = !preference.IsHidden;
-        library.Save();
+        var preference = library.UpdateGamePreference(
+            row.RootPath,
+            value => value.IsHidden = !value.IsHidden);
         row.ApplyPreference(preference);
         ApplyGameView();
         _viewModel.StatusText = preference.IsHidden
@@ -580,10 +622,17 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var preference = library.GetGamePreference(row.RootPath);
-        preference.CustomArtworkPath = Path.GetFullPath(path);
-        library.Save();
-        row.SetArtwork(preference.CustomArtworkPath);
+        var fullPath = Path.GetFullPath(path);
+        var artworkError = TrySetArtwork(row, fullPath);
+        if (artworkError is not null)
+        {
+            _viewModel.StatusText = $"The selected cover art could not be opened: {artworkError}";
+            return;
+        }
+
+        library.UpdateGamePreference(
+            row.RootPath,
+            preference => preference.CustomArtworkPath = fullPath);
         library.RecordHistory(row.RootPath, "Cover changed", "Artwork", detail: path);
         _viewModel.StatusText = $"Applied custom cover art to {row.Name}.";
     }
@@ -620,7 +669,8 @@ public sealed partial class MainWindow : Window
 
         var confirmed = await new ConfirmationDialog(
             "Confirm DLL update",
-            $"Update {targetCount} detected DLL file{Plural(targetCount)} in {row.Name}? An adjacent .dlsss backup is created when needed.")
+            $"Update {targetCount} detected DLL file{Plural(targetCount)} in {row.Name}? An adjacent .dlsss backup is created when needed.",
+            ConfirmationDialog.GameFileWriteWarning)
             .ShowDialog<bool>(this);
         if (!confirmed)
         {
@@ -633,8 +683,8 @@ public sealed partial class MainWindow : Window
             var results = await Task.Run(() => DllOperations.ApplyUpdatesAsync(
                 plan,
                 cache,
-                CancellationToken.None));
-            ShowOperationResults(results);
+                _lifetime.Token));
+            ShowOperationFailures(results);
             foreach (var result in results.Where(result => result.Success))
             {
                 _library?.RecordHistory(
@@ -729,8 +779,7 @@ public sealed partial class MainWindow : Window
         }
         if (_library is not null && _library.State.GridView != gridView)
         {
-            _library.State.GridView = gridView;
-            _library.Save();
+            _library.UpdateState(state => state.GridView = gridView);
         }
     }
 
@@ -748,9 +797,11 @@ public sealed partial class MainWindow : Window
         UpdateGridGeometry();
         if (_library.State.GridColumns != columns || _library.State.GridRows != rows)
         {
-            _library.State.GridColumns = columns;
-            _library.State.GridRows = rows;
-            _library.Save();
+            _library.UpdateState(state =>
+            {
+                state.GridColumns = columns;
+                state.GridRows = rows;
+            });
         }
     }
 
@@ -789,226 +840,6 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void SelectNone_Click(object? sender, RoutedEventArgs e)
-    {
-        foreach (var game in _viewModel.Games)
-        {
-            game.IsSelected = false;
-        }
-    }
-
-    private async void ScanSelected_Click(object? sender, RoutedEventArgs e)
-    {
-        if (!TryGetSelectedRows(out var rows) || !TryGetCatalog(out var catalog))
-        {
-            return;
-        }
-
-        InvalidatePreview();
-        await RunBusyAsync($"Scanning {rows.Length} selected game{Plural(rows.Length)}…", async () =>
-        {
-            var scans = await ScanRowsAsync(rows, catalog);
-            _viewModel.Results.Clear();
-            var warningCount = 0;
-            foreach (var (row, scan) in scans)
-            {
-                row.SetScanResult(scan);
-                foreach (var warning in scan.Warnings)
-                {
-                    warningCount++;
-                    AddResult(row.Name, "Scan", row.RootPath, "Warning", warning);
-                }
-            }
-
-            var dllCount = scans.Sum(item => item.Scan.Dlls.Count);
-            _viewModel.StatusText =
-                $"Scanned {rows.Length} game{Plural(rows.Length)} and found {dllCount} supported DLL file{Plural(dllCount)}"
-                + (warningCount == 0 ? "." : $" with {warningCount} warning{Plural(warningCount)}.");
-        });
-    }
-
-    private async void PreviewLatest_Click(object? sender, RoutedEventArgs e)
-    {
-        if (!TryGetSelectedRows(out var rows) || !TryGetCatalog(out var catalog))
-        {
-            return;
-        }
-
-        var unscanned = rows.Where(row => row.ScanResult is null).ToArray();
-        if (unscanned.Length > 0)
-        {
-            _viewModel.StatusText =
-                $"Scan all selected games first. {unscanned.Length} selected game{Plural(unscanned.Length)} remain unscanned.";
-            return;
-        }
-
-        await RunBusyAsync("Planning detected-family latest updates (dry run)…", () =>
-        {
-            var scans = rows.Select(row => row.ScanResult!).ToArray();
-            var candidates = scans
-                .SelectMany(scan => scan.Dlls)
-                .Select(dll => dll.Type)
-                .Distinct()
-                .ToDictionary(type => type, catalog.GetLatest);
-
-            _currentUpdatePlan = _planner.Plan(scans, candidates);
-            _viewModel.Results.Clear();
-            foreach (var item in _currentUpdatePlan)
-            {
-                if (item.Status == UpdatePlanStatus.Ready)
-                {
-                    foreach (var target in item.Targets)
-                    {
-                        AddResult(
-                            item.Game.Name,
-                            item.Family.DisplayName,
-                            target.RelativePath,
-                            "Would update",
-                            $"{target.Version} → {item.Candidate.Version}");
-                    }
-                }
-                else
-                {
-                    AddResult(
-                        item.Game.Name,
-                        item.Family.DisplayName,
-                        item.Game.RootPath,
-                        item.Status == UpdatePlanStatus.AlreadyCurrent ? "Current" : "Skipped",
-                        item.Message);
-                }
-            }
-
-            var readyTargets = _currentUpdatePlan
-                .Where(item => item.Status == UpdatePlanStatus.Ready)
-                .Sum(item => item.Targets.Count);
-            _viewModel.HasReadyPreview = readyTargets > 0;
-            _viewModel.StatusText = readyTargets == 0
-                ? "Dry run complete. No selected DLL files need updating."
-                : $"Dry run complete. {readyTargets} DLL file{Plural(readyTargets)} would be updated; no files were downloaded or written.";
-            return Task.CompletedTask;
-        });
-    }
-
-    private async void ApplyPreview_Click(object? sender, RoutedEventArgs e)
-    {
-        var planToApply = _currentUpdatePlan;
-        var readyPlan = planToApply
-            .Where(item => item.Status == UpdatePlanStatus.Ready)
-            .ToArray();
-        var targetCount = readyPlan.Sum(item => item.Targets.Count);
-        if (targetCount == 0)
-        {
-            _viewModel.StatusText = "Create a dry-run preview before applying updates.";
-            return;
-        }
-
-        var gameCount = readyPlan.Select(item => item.Game.RootPath)
-            .Distinct(PathComparer)
-            .Count();
-        var confirmed = await new ConfirmationDialog(
-            "Confirm DLL update",
-            $"Update {targetCount} DLL file{Plural(targetCount)} in {gameCount} game{Plural(gameCount)}? "
-            + "An adjacent .dlsss backup is created when one does not already exist.")
-            .ShowDialog<bool>(this);
-        if (!confirmed)
-        {
-            _viewModel.StatusText = "Update cancelled; the dry-run preview remains available.";
-            return;
-        }
-
-        InvalidatePreview();
-        await RunBusyAsync("Downloading verified DLLs and applying the preview…", async () =>
-        {
-            using var cache = new DownloadCache();
-            var results = await Task.Run(() => DllOperations.ApplyUpdatesAsync(
-                planToApply,
-                cache,
-                CancellationToken.None));
-            ShowOperationResults(results);
-
-            if (_catalog is not null)
-            {
-                var affectedRows = _viewModel.Games
-                    .Where(row => readyPlan.Any(item =>
-                        PathComparer.Equals(item.Game.RootPath, row.RootPath)))
-                    .ToArray();
-                foreach (var (row, scan) in await ScanRowsAsync(affectedRows, _catalog))
-                {
-                    row.SetScanResult(scan);
-                }
-            }
-
-            var succeeded = results.Count(result => result.Success);
-            var failed = results.Count - succeeded;
-            _viewModel.StatusText =
-                $"Update finished: {succeeded} succeeded, {failed} failed. Review every result.";
-        });
-    }
-
-    private async void RestoreBackups_Click(object? sender, RoutedEventArgs e)
-    {
-        if (!TryGetSelectedRows(out var rows))
-        {
-            return;
-        }
-
-        InvalidatePreview();
-        await RunBusyAsync("Finding restorable .dlsss backups…", async () =>
-        {
-            var plan = await Task.Run(() => rows
-                .SelectMany(row => _scanner.PlanRestore(row.Game))
-                .ToArray());
-            if (plan.Length == 0)
-            {
-                _viewModel.Results.Clear();
-                _viewModel.StatusText = "No supported .dlsss backups were found in the selected games.";
-                return;
-            }
-
-            _viewModel.Results.Clear();
-            foreach (var item in plan)
-            {
-                AddResult(
-                    item.Game.Name,
-                    item.Family.DisplayName,
-                    item.RelativeTargetPath,
-                    "Would restore",
-                    "Restore the adjacent .dlsss backup.");
-            }
-
-            _viewModel.IsBusy = false;
-            var confirmed = await new ConfirmationDialog(
-                "Confirm DLL restore",
-                $"Restore {plan.Length} DLL backup{Plural(plan.Length)}? "
-                + "Each .dlsss backup will replace its corresponding DLL and then be consumed.")
-                .ShowDialog<bool>(this);
-            _viewModel.IsBusy = true;
-            if (!confirmed)
-            {
-                _viewModel.StatusText = "Restore cancelled; no files were written.";
-                return;
-            }
-
-            _viewModel.StatusText = "Restoring selected DLL backups…";
-            var results = await Task.Run(() => DllOperations.ApplyRestores(plan));
-            ShowOperationResults(results);
-
-            if (_catalog is not null)
-            {
-                foreach (var (row, scan) in await ScanRowsAsync(rows, _catalog))
-                {
-                    row.SetScanResult(scan);
-                }
-            }
-
-            var succeeded = results.Count(result => result.Success);
-            var failed = results.Count - succeeded;
-            InvalidatePreview();
-            _viewModel.StatusText =
-                $"Restore finished: {succeeded} succeeded, {failed} failed. Review every result.";
-        });
-    }
-
     private async Task RefreshLibraryAsync(bool runInitialDeepScan)
     {
         if (!TryGetLibrary(out var library)
@@ -1019,7 +850,6 @@ public sealed partial class MainWindow : Window
 
         IReadOnlyList<SelectedGame> games = [];
         var succeeded = false;
-        InvalidatePreview();
         _viewModel.IsLoadingLibrary = true;
         await RunBusyAsync("Discovering and fast-scanning the game library…", async () =>
         {
@@ -1064,7 +894,7 @@ public sealed partial class MainWindow : Window
         _lastSteamGames = discovery.Games;
         foreach (var warning in discovery.Warnings)
         {
-            AddResult("Steam discovery", "Steam", "—", "Warning", warning);
+            AddAlert("Warning", warning);
         }
 
         var games = library.Merge(discovery);
@@ -1075,8 +905,7 @@ public sealed partial class MainWindow : Window
         {
             var detail = filesystem.Warning
                 ?? $"{filesystem.Type} mounted at {filesystem.MountPoint}";
-            AddResult("Library storage", "Filesystem", filesystem.Type,
-                filesystem.Warning is null ? "Detected" : "Warning", detail);
+            AddAlert(filesystem.Warning is null ? "Detected" : "Warning", detail);
         }
 
         return games;
@@ -1109,11 +938,11 @@ public sealed partial class MainWindow : Window
         {
             _viewModel.StatusText =
                 $"Initial Deep Scan did not complete and will retry next launch: {exception.Message}";
-            AddResult("Library", "Deep Scan", "—", "Warning", exception.Message);
+            AddAlert("Warning", exception.Message);
         }
     }
 
-    private IProgress<LibraryScanProgress> CreateScanProgress(bool isDeepScan) =>
+    private Progress<LibraryScanProgress> CreateScanProgress(bool isDeepScan) =>
         new Progress<LibraryScanProgress>(progress =>
         {
             var label = isDeepScan ? "Deep Scan" : "Fast Scan";
@@ -1223,6 +1052,7 @@ public sealed partial class MainWindow : Window
         }
 
         _artworkCancellation?.Cancel();
+        _artworkCancellation?.Dispose();
         _artworkCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             _lifetime.Token);
         _artworkTask = HydrateArtworkAsync(
@@ -1255,8 +1085,12 @@ public sealed partial class MainWindow : Window
                         .CustomArtworkPath;
                     if (customArtworkPath is not null && File.Exists(customArtworkPath))
                     {
-                        await Dispatcher.UIThread.InvokeAsync(
-                            () => row.SetArtwork(customArtworkPath));
+                        var error = await Dispatcher.UIThread.InvokeAsync(
+                            () => TrySetArtwork(row, customArtworkPath));
+                        if (error is not null)
+                        {
+                            warnings.Add((row.Name, error));
+                        }
                         return;
                     }
 
@@ -1278,27 +1112,28 @@ public sealed partial class MainWindow : Window
 
                     if (result.Path is not null && File.Exists(result.Path))
                     {
-                        await Dispatcher.UIThread.InvokeAsync(() => row.SetArtwork(result.Path));
+                        var error = await Dispatcher.UIThread.InvokeAsync(
+                            () => TrySetArtwork(row, result.Path));
+                        if (error is not null)
+                        {
+                            warnings.Add((row.Name, error));
+                        }
                     }
                 });
 
-            if (resolvedMappings.Count > 0)
+            if (!resolvedMappings.IsEmpty)
             {
-                var changed = false;
-                foreach (var manualGame in library.State.ManualGames)
+                library.UpdateState(state =>
                 {
-                    if (resolvedMappings.TryGetValue(manualGame.RootPath, out var appId)
-                        && manualGame.SteamAppId != appId)
+                    foreach (var manualGame in state.ManualGames)
                     {
-                        manualGame.SteamAppId = appId;
-                        changed = true;
+                        if (resolvedMappings.TryGetValue(manualGame.RootPath, out var appId)
+                            && manualGame.SteamAppId != appId)
+                        {
+                            manualGame.SteamAppId = appId;
+                        }
                     }
-                }
-
-                if (changed)
-                {
-                    library.Save();
-                }
+                });
             }
 
             if (!warnings.IsEmpty)
@@ -1307,12 +1142,7 @@ public sealed partial class MainWindow : Window
                 {
                     foreach (var warning in warnings)
                     {
-                        AddResult(
-                            warning.Game,
-                            "Artwork",
-                            "—",
-                            "Warning",
-                            warning.Message);
+                        AddAlert("Warning", warning.Message);
                     }
                 });
             }
@@ -1323,12 +1153,8 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => AddResult(
-                "Library",
-                "Artwork",
-                "—",
-                "Warning",
-                exception.Message));
+            await Dispatcher.UIThread.InvokeAsync(
+                () => AddAlert("Warning", exception.Message));
         }
     }
 
@@ -1345,10 +1171,14 @@ public sealed partial class MainWindow : Window
         {
             await action();
         }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+            // The window is closing.
+        }
         catch (Exception exception)
         {
             _viewModel.StatusText = $"Operation failed: {exception.Message}";
-            AddResult("Application", "Operation", "—", "Error", exception.Message);
+            AddAlert("Error", exception.Message);
         }
         finally
         {
@@ -1402,12 +1232,15 @@ public sealed partial class MainWindow : Window
             if (preference?.CustomArtworkPath is not null
                 && File.Exists(preference.CustomArtworkPath))
             {
-                row.SetArtwork(preference.CustomArtworkPath);
+                var error = TrySetArtwork(row, preference.CustomArtworkPath);
+                if (error is not null)
+                {
+                    AddAlert("Warning", error);
+                }
             }
         }
         row.PropertyChanged += GameRow_PropertyChanged;
         _allRows.Add(row);
-        InvalidatePreview();
         return true;
     }
 
@@ -1416,48 +1249,37 @@ public sealed partial class MainWindow : Window
         if (e.PropertyName == nameof(GameRowViewModel.IsSelected))
         {
             _viewModel.SelectedCount = _allRows.Count(row => row.IsSelected);
-            InvalidatePreview();
         }
     }
 
-    private void InvalidatePreview()
+    private void ShowOperationFailures(IReadOnlyList<OperationResult> results)
     {
-        _currentUpdatePlan = [];
-        _viewModel.HasReadyPreview = false;
-    }
-
-    private void ShowOperationResults(IReadOnlyList<OperationResult> results)
-    {
-        _viewModel.Results.Clear();
-        foreach (var result in results)
+        foreach (var result in results.Where(result => !result.Success))
         {
-            AddResult(
-                result.Game.Name,
-                result.Family,
-                result.Target,
-                result.Success ? "Success" : "Failed",
-                result.Message);
+            AddAlert("Failed", result.Message);
         }
     }
 
-    private void AddResult(
-        string game,
-        string family,
-        string target,
-        string outcome,
-        string message)
+    private void AddAlert(string outcome, string message)
     {
-        _viewModel.Results.Add(new ResultRowViewModel(
-            game,
-            family,
-            target,
-            outcome,
-            message));
         if (outcome.Equals("Warning", StringComparison.OrdinalIgnoreCase)
             || outcome.Equals("Error", StringComparison.OrdinalIgnoreCase)
             || outcome.Equals("Failed", StringComparison.OrdinalIgnoreCase))
         {
             _viewModel.AlertText = message;
+        }
+    }
+
+    private static string? TrySetArtwork(GameRowViewModel row, string path)
+    {
+        try
+        {
+            row.SetArtwork(path);
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return $"Could not open artwork for {row.Name}: {exception.Message}";
         }
     }
 
@@ -1589,7 +1411,7 @@ public sealed partial class MainWindow : Window
         this.FindControl<TextBox>(name)
         ?? throw new InvalidOperationException($"Required text box '{name}' is missing.");
 
-    private static IReadOnlyList<string> ParseLines(string? value) =>
+    private static string[] ParseLines(string? value) =>
         (value ?? string.Empty)
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(line => !string.IsNullOrWhiteSpace(line))

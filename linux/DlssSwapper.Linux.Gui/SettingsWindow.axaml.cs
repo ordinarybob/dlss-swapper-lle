@@ -113,14 +113,16 @@ public sealed partial class SettingsWindow : Window
             return;
         }
 
-        _library.State.HddMode = _hddMode.IsChecked == true;
-        _library.State.GridColumns = Decimal.ToInt32(_gridColumns.Value ?? 6);
-        _library.State.GridRows = Decimal.ToInt32(_gridRows.Value ?? 5);
-        _library.State.MediaWikiApiEndpoint = endpoint;
-        _library.State.MediaWikiImageHost = host;
-        _library.State.CustomScanPatterns = ParseLines(_customPatterns.Text).ToList();
-        _library.State.AdditionalSteamRoots = ParseLines(_additionalSteamRoots.Text).ToList();
-        _library.Save();
+        _library.UpdateState(state =>
+        {
+            state.HddMode = _hddMode.IsChecked == true;
+            state.GridColumns = Decimal.ToInt32(_gridColumns.Value ?? 6);
+            state.GridRows = Decimal.ToInt32(_gridRows.Value ?? 5);
+            state.MediaWikiApiEndpoint = endpoint;
+            state.MediaWikiImageHost = host;
+            state.CustomScanPatterns = ParseLines(_customPatterns.Text).ToList();
+            state.AdditionalSteamRoots = ParseLines(_additionalSteamRoots.Text).ToList();
+        });
         Close(true);
     }
 
@@ -128,7 +130,7 @@ public sealed partial class SettingsWindow : Window
         this.FindControl<T>(name)
         ?? throw new InvalidOperationException($"Required settings control '{name}' is missing.");
 
-    private static IReadOnlyList<string> ParseLines(string? value) =>
+    private static string[] ParseLines(string? value) =>
         (value ?? string.Empty)
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(line => !string.IsNullOrWhiteSpace(line))

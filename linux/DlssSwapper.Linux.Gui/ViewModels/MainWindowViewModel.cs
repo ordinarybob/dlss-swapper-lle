@@ -7,7 +7,6 @@ public sealed class MainWindowViewModel : ObservableObject
     private string _statusText = "Loading the bundled DLL catalog…";
     private bool _isBusy;
     private bool _isLoadingLibrary = true;
-    private bool _hasReadyPreview;
     private int _gameCount;
     private bool _isGridView = true;
     private int _gridColumns = 6;
@@ -19,8 +18,6 @@ public sealed class MainWindowViewModel : ObservableObject
     private string _alertText = string.Empty;
 
     public ObservableCollection<GameRowViewModel> Games { get; } = [];
-
-    public ObservableCollection<ResultRowViewModel> Results { get; } = [];
 
     public string StatusText
     {
@@ -42,21 +39,8 @@ public sealed class MainWindowViewModel : ObservableObject
             if (SetProperty(ref _isBusy, value))
             {
                 OnPropertyChanged(nameof(CanInteract));
-                OnPropertyChanged(nameof(CanApplyPreview));
                 OnPropertyChanged(nameof(CanActOnSelection));
                 OnPropertyChanged(nameof(HeaderStatusText));
-            }
-        }
-    }
-
-    public bool HasReadyPreview
-    {
-        get => _hasReadyPreview;
-        set
-        {
-            if (SetProperty(ref _hasReadyPreview, value))
-            {
-                OnPropertyChanged(nameof(CanApplyPreview));
             }
         }
     }
@@ -177,5 +161,4 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public bool CanActOnSelection => !IsBusy && SelectedCount > 0;
 
-    public bool CanApplyPreview => !IsBusy && HasReadyPreview;
 }

@@ -336,7 +336,7 @@ public static class FastScanPatternIndex
         }
     }
 
-    private static IReadOnlyList<string> RemoveSubsumedPatterns(IEnumerable<string> patterns)
+    private static string[] RemoveSubsumedPatterns(IEnumerable<string> patterns)
     {
         var normalized = patterns
             .Select(NormalizePattern)

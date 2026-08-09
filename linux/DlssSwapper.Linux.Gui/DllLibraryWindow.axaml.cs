@@ -12,10 +12,13 @@ public sealed partial class DllLibraryWindow : Window
     private readonly TextBox _searchTextBox;
     private readonly ListBox _entryListBox;
     private readonly TextBlock _statusText;
-    private readonly Button[] _actionButtons;
+    private readonly Button[] _selectionButtons;
+    private readonly Button _downloadLatestButton;
     private readonly DownloadCache _cache = new();
+    private readonly CancellationTokenSource _lifetime = new();
     private DllCatalog? _catalog;
-    private IReadOnlyList<DllLibraryEntryViewModel> _allEntries = [];
+    private DllLibraryEntryViewModel[] _allEntries = [];
+    private bool _isBusy;
 
     public DllLibraryWindow()
     {
@@ -24,34 +27,44 @@ public sealed partial class DllLibraryWindow : Window
         _searchTextBox = FindRequired<TextBox>("SearchTextBox");
         _entryListBox = FindRequired<ListBox>("EntryListBox");
         _statusText = FindRequired<TextBlock>("StatusText");
-        _actionButtons =
+        _selectionButtons =
         [
             FindRequired<Button>("DownloadButton"),
             FindRequired<Button>("RemoveButton"),
-            FindRequired<Button>("DownloadLatestButton"),
             FindRequired<Button>("UseButton"),
         ];
-        Closed += (_, _) => _cache.Dispose();
+        _downloadLatestButton = FindRequired<Button>("DownloadLatestButton");
+        UpdateActionState();
+        Closing += (_, _) => _lifetime.Cancel();
+        Closed += (_, _) =>
+        {
+            _lifetime.Dispose();
+            _cache.Dispose();
+        };
     }
 
     public DllLibraryWindow(DllCatalog catalog)
         : this()
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
-        _familyComboBox.ItemsSource = new[] { "All families" }
-            .Concat(DllTypes.All.Select(definition => definition.DisplayName))
+        _familyComboBox.ItemsSource = DllTypes.All
+            .Select(definition => definition.DisplayName)
+            .Prepend("All families")
             .ToArray();
         _familyComboBox.SelectedIndex = 0;
         _allEntries = catalog.GetEntries()
             .Select(entry => new DllLibraryEntryViewModel(entry, _cache.IsCached(entry)))
             .ToArray();
         ApplyFilter();
-        _statusText.Text = $"{_allEntries.Count:N0} verified release build{Plural(_allEntries.Count)} available.";
+        _statusText.Text = $"{_allEntries.Length:N0} verified release build{Plural(_allEntries.Length)} available.";
     }
 
     private void Filter_Changed(object? sender, SelectionChangedEventArgs e) => ApplyFilter();
 
     private void Search_Changed(object? sender, TextChangedEventArgs e) => ApplyFilter();
+
+    private void EntrySelection_Changed(object? sender, SelectionChangedEventArgs e) =>
+        UpdateActionState();
 
     private async void Download_Click(object? sender, RoutedEventArgs e)
     {
@@ -100,7 +113,7 @@ public sealed partial class DllLibraryWindow : Window
             foreach (var entry in latest)
             {
                 _statusText.Text = $"Downloading latest verified families: {completed} / {latest.Length}…";
-                await _cache.GetAsync(entry, CancellationToken.None);
+                await _cache.GetAsync(entry, _lifetime.Token);
                 var row = _allEntries.First(item => ReferenceEquals(item.Entry, entry));
                 row.IsCached = true;
                 completed++;
@@ -166,7 +179,7 @@ public sealed partial class DllLibraryWindow : Window
         _statusText.Text = $"Downloading and verifying {row.Family} {row.Version} ({row.Build})…";
         try
         {
-            await _cache.GetAsync(row.Entry, CancellationToken.None);
+            await _cache.GetAsync(row.Entry, _lifetime.Token);
             row.IsCached = true;
             _statusText.Text = $"{row.Family} {row.Version} ({row.Build}) is ready in the shared cache.";
             return true;
@@ -196,10 +209,18 @@ public sealed partial class DllLibraryWindow : Window
 
     private void SetBusy(bool busy)
     {
-        foreach (var button in _actionButtons)
+        _isBusy = busy;
+        UpdateActionState();
+    }
+
+    private void UpdateActionState()
+    {
+        foreach (var button in _selectionButtons)
         {
-            button.IsEnabled = !busy;
+            button.IsEnabled = !_isBusy && _entryListBox.SelectedItem is not null;
         }
+
+        _downloadLatestButton.IsEnabled = !_isBusy;
     }
 
     private T FindRequired<T>(string name) where T : Control =>

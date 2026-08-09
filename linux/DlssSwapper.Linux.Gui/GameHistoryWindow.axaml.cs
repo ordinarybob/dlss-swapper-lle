@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using DlssSwapper.Linux.Cli.Core;
+using System.Globalization;
 
 namespace DlssSwapper.Linux.Gui;
 
@@ -25,7 +26,8 @@ public sealed partial class GameHistoryWindow : Window
         _headingText.Text = $"History — {gameName}";
         _historyItems.ItemsSource = history.Select(item => new
             {
-                EventTime = item.EventTimeUtc.ToLocalTime().ToString("g"),
+                EventTime = item.EventTimeUtc.ToLocalTime()
+                    .ToString("g", CultureInfo.CurrentCulture),
                 item.EventType,
                 item.AssetType,
                 item.Version,

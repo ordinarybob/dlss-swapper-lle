@@ -6,6 +6,9 @@ namespace DlssSwapper.Linux.Gui;
 
 public sealed partial class ConfirmationDialog : Window
 {
+    internal const string GameFileWriteWarning =
+        "This operation writes game files. Close the game before continuing.";
+
     public ConfirmationDialog()
     {
         AvaloniaXamlLoader.Load(this);
@@ -20,9 +23,12 @@ public sealed partial class ConfirmationDialog : Window
         messageText.Text = message;
         if (warning is not null)
         {
+            var warningBorder = this.FindControl<Border>("WarningBorder")
+                ?? throw new InvalidOperationException("Confirmation warning border is missing.");
             var warningText = this.FindControl<TextBlock>("WarningText")
                 ?? throw new InvalidOperationException("Confirmation warning control is missing.");
             warningText.Text = warning;
+            warningBorder.IsVisible = true;
         }
     }
 

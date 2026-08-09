@@ -37,6 +37,7 @@ public sealed class SteamDiscovery
 
     public SteamDiscoveryResult Discover(SteamDiscoveryOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         var warnings = new List<string>();
         var steamRoots = new HashSet<string>(PathComparer);
         var rootCandidates = options.IncludeDefaultRoots
@@ -69,7 +70,7 @@ public sealed class SteamDiscovery
         return new SteamDiscoveryResult(games, warnings);
     }
 
-    private static IEnumerable<string> GetDefaultRoots(SteamDiscoveryOptions options)
+    internal static IEnumerable<string> GetDefaultRoots(SteamDiscoveryOptions options)
     {
         var home = options.HomeDirectory;
         if (string.IsNullOrWhiteSpace(home))

@@ -33,7 +33,7 @@ public interface IArtworkImageProcessor
         CancellationToken cancellationToken);
 }
 
-public sealed class ArtworkService
+public sealed class ArtworkService : IDisposable
 {
     private const long MaximumCoverBytes = 15L * 1024 * 1024;
     private static readonly TimeSpan MissingRetryInterval = TimeSpan.FromDays(7);
@@ -58,6 +58,8 @@ public sealed class ArtworkService
         _minimumMediaWikiInterval = minimumMediaWikiInterval
             ?? TimeSpan.FromMilliseconds(500);
     }
+
+    public void Dispose() => _mediaWikiGate.Dispose();
 
     public async Task<ArtworkResult> ResolveAsync(
         SelectedGame game,
@@ -100,6 +102,7 @@ public sealed class ArtworkService
 
     public static string NormalizeTitle(string title)
     {
+        ArgumentNullException.ThrowIfNull(title);
         var decomposed = title.Normalize(NormalizationForm.FormD);
         var normalized = new StringBuilder(decomposed.Length);
         foreach (var character in decomposed)
@@ -508,6 +511,7 @@ public sealed class ArtworkService
         var roots = knownSteamGames
             .Select(steamGame => steamGame.LibraryRoot)
             .Append(FindSteamLibraryRoot(game.RootPath))
+            .Concat(SteamDiscovery.GetDefaultRoots(new SteamDiscoveryOptions()))
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Distinct(PathComparers.FileSystemPath);
         foreach (var root in roots)

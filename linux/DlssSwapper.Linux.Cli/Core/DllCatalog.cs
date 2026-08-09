@@ -136,6 +136,7 @@ public sealed class DllCatalog
 
     public static string NormalizeMd5(string value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         var normalized = value.Trim().ToUpperInvariant();
         if (normalized.Length != 32 || normalized.Any(character => !Uri.IsHexDigit(character)))
         {

@@ -29,7 +29,10 @@
           <TextBlock Grid.Column="3" Text="Size" FontWeight="SemiBold" />
           <TextBlock Grid.Column="4" Text="Status" FontWeight="SemiBold" />
         </Grid>
-        <ListBox x:Name="EntryListBox" Grid.Row="1" AutomationProperties.Name="DLL releases">
+        <ListBox x:Name="EntryListBox"
+                 Grid.Row="1"
+                 AutomationProperties.Name="DLL releases"
+                 SelectionChanged="EntrySelection_Changed">
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Grid ColumnDefinitions="1.5*,1.05*,0.75*,0.7*,1*" ColumnSpacing="10" Margin="6">

@@ -151,6 +151,7 @@ public sealed class GameRowViewModel : ObservableObject
 
     public void SetScanResult(ScanResult scan)
     {
+        ArgumentNullException.ThrowIfNull(scan);
         ScanResult = scan;
         OnPropertyChanged(nameof(ScanResult));
 

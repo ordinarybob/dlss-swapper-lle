@@ -86,7 +86,7 @@ internal static class CliParser
                     options.Help = true;
                     break;
                 default:
-                    if (argument.StartsWith("-", StringComparison.Ordinal))
+                    if (argument.StartsWith('-'))
                     {
                         throw new UsageException($"Unknown option '{argument}'.");
                     }
@@ -425,7 +425,7 @@ internal static class CandidateSelector
         var explicitVersions = new Dictionary<DllType, string>();
         foreach (var specification in options.Versions)
         {
-            var separator = specification.IndexOf('=');
+            var separator = specification.IndexOf('=', StringComparison.Ordinal);
             if (separator <= 0 || separator == specification.Length - 1)
             {
                 throw new UsageException(

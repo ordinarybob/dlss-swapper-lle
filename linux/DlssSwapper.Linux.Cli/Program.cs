@@ -76,8 +76,8 @@ internal static class Program
                 "update" => await RunUpdateAsync(
                     options,
                     games,
-                    cancellation.Token,
-                    createDownloadCache).ConfigureAwait(false),
+                    createDownloadCache,
+                    cancellation.Token).ConfigureAwait(false),
                 "restore" => RunRestore(options, games),
                 _ => throw new UsageException($"Unknown command '{options.Command}'."),
             };
@@ -326,8 +326,8 @@ internal static class Program
     private static async Task<int> RunUpdateAsync(
         CliOptions options,
         IReadOnlyList<SelectedGame> games,
-        CancellationToken cancellationToken,
-        Func<DownloadCache> createDownloadCache)
+        Func<DownloadCache> createDownloadCache,
+        CancellationToken cancellationToken)
     {
         var catalog = DllCatalog.Load(ResolveManifestPath(options));
         var candidates = CandidateSelector.Resolve(options, catalog);

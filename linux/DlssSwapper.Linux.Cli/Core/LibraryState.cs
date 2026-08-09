@@ -6,14 +6,11 @@ namespace DlssSwapper.Linux.Cli.Core;
 
 public sealed record PerformanceLimits(
     int ScanConcurrency,
-    int ArtworkConcurrency,
-    int UiDelayMilliseconds,
-    int DatabaseDelayMilliseconds,
-    int UpdateConcurrency)
+    int ArtworkConcurrency)
 {
-    public static PerformanceLimits Standard { get; } = new(15, 38, 550, 550, 15);
+    public static PerformanceLimits Standard { get; } = new(15, 38);
 
-    public static PerformanceLimits Hdd { get; } = new(2, 1, 550, 550, 15);
+    public static PerformanceLimits Hdd { get; } = new(2, 1);
 }
 
 public sealed class ManualGameState
@@ -402,6 +399,7 @@ public sealed class LibraryStateStore
 public sealed class PersistentLibrary
 {
     private readonly LibraryStateStore _store;
+    private readonly object _stateLock = new();
 
     public PersistentLibrary(LibraryStateStore store)
     {
@@ -413,63 +411,111 @@ public sealed class PersistentLibrary
 
     public string StateDirectory => _store.StateDirectory;
 
+    public TResult UpdateState<TResult>(Func<LinuxLibraryState, TResult> update)
+    {
+        ArgumentNullException.ThrowIfNull(update);
+        lock (_stateLock)
+        {
+            var result = update(State);
+            _store.Save(State);
+            return result;
+        }
+    }
+
+    public void UpdateState(Action<LinuxLibraryState> update)
+    {
+        ArgumentNullException.ThrowIfNull(update);
+        UpdateState(state =>
+        {
+            update(state);
+            return true;
+        });
+    }
+
+    public GamePreferenceState UpdateGamePreference(
+        string rootPath,
+        Action<GamePreferenceState> update)
+    {
+        ArgumentNullException.ThrowIfNull(update);
+        return UpdateState(state =>
+        {
+            var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+            var preference = state.GamePreferences.FirstOrDefault(item =>
+                PathComparers.FileSystemPath.Equals(item.RootPath, normalized));
+            if (preference is null)
+            {
+                preference = new GamePreferenceState { RootPath = normalized };
+                state.GamePreferences.Add(preference);
+            }
+
+            update(preference);
+            return preference;
+        });
+    }
+
     public IReadOnlyList<SelectedGame> Merge(SteamDiscoveryResult discovery)
     {
         ArgumentNullException.ThrowIfNull(discovery);
-        var excluded = State.ExcludedSteamAppIds.ToHashSet(StringComparer.Ordinal);
-        var games = new Dictionary<string, SelectedGame>(PathComparers.FileSystemPath);
-        foreach (var steamGame in discovery.Games)
+        lock (_stateLock)
         {
-            if (!excluded.Contains(steamGame.AppId))
+            var excluded = State.ExcludedSteamAppIds.ToHashSet(StringComparer.Ordinal);
+            var games = new Dictionary<string, SelectedGame>(PathComparers.FileSystemPath);
+            foreach (var steamGame in discovery.Games)
             {
-                games[steamGame.InstallDirectory] = new SelectedGame(
-                    steamGame.Name,
-                    steamGame.InstallDirectory,
-                    steamGame.AppId);
+                if (!excluded.Contains(steamGame.AppId))
+                {
+                    games[steamGame.InstallDirectory] = new SelectedGame(
+                        steamGame.Name,
+                        steamGame.InstallDirectory,
+                        steamGame.AppId);
+                }
             }
-        }
 
-        foreach (var manualGame in State.ManualGames)
-        {
-            games.TryAdd(
-                manualGame.RootPath,
-                new SelectedGame(
-                    manualGame.Name,
+            foreach (var manualGame in State.ManualGames)
+            {
+                games.TryAdd(
                     manualGame.RootPath,
-                    manualGame.SteamAppId));
-        }
+                    new SelectedGame(
+                        manualGame.Name,
+                        manualGame.RootPath,
+                        manualGame.SteamAppId));
+            }
 
-        return games.Values
-            .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(game => game.RootPath, PathComparers.FileSystemPath)
-            .ToArray();
+            return games.Values
+                .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(game => game.RootPath, PathComparers.FileSystemPath)
+                .ToArray();
+        }
     }
 
     public int AddManualGames(IEnumerable<string> paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
-        var existing = State.ManualGames
-            .Select(game => game.RootPath)
-            .ToHashSet(PathComparers.FileSystemPath);
-        var added = 0;
-        foreach (var input in paths)
+        lock (_stateLock)
         {
-            var path = ValidateGameDirectory(input);
-            if (!existing.Add(path))
+            var existing = State.ManualGames
+                .Select(game => game.RootPath)
+                .ToHashSet(PathComparers.FileSystemPath);
+            var added = 0;
+            foreach (var input in paths)
             {
-                continue;
+                var path = ValidateGameDirectory(input);
+                if (!existing.Add(path))
+                {
+                    continue;
+                }
+
+                State.ManualGames.Add(new ManualGameState
+                {
+                    Name = Path.GetFileName(path),
+                    RootPath = path,
+                });
+                added++;
             }
 
-            State.ManualGames.Add(new ManualGameState
-            {
-                Name = Path.GetFileName(path),
-                RootPath = path,
-            });
-            added++;
+            SaveWhenChanged(added > 0);
+            return added;
         }
-
-        SaveWhenChanged(added > 0);
-        return added;
     }
 
     public int AddImmediateChildren(string parentPath)
@@ -484,62 +530,63 @@ public sealed class PersistentLibrary
 
     public bool RemoveManualGame(string rootPath)
     {
-        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
-        var removed = State.ManualGames.RemoveAll(game =>
-            PathComparers.FileSystemPath.Equals(game.RootPath, normalized)) > 0;
-        SaveWhenChanged(removed);
-        return removed;
+        lock (_stateLock)
+        {
+            var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+            var removed = State.ManualGames.RemoveAll(game =>
+                PathComparers.FileSystemPath.Equals(game.RootPath, normalized)) > 0;
+            SaveWhenChanged(removed);
+            return removed;
+        }
     }
 
     public bool ExcludeSteamGame(string appId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(appId);
-        if (State.ExcludedSteamAppIds.Contains(appId, StringComparer.Ordinal))
+        lock (_stateLock)
         {
-            return false;
-        }
+            if (State.ExcludedSteamAppIds.Contains(appId, StringComparer.Ordinal))
+            {
+                return false;
+            }
 
-        State.ExcludedSteamAppIds.Add(appId.Trim());
-        SaveWhenChanged(changed: true);
-        return true;
+            State.ExcludedSteamAppIds.Add(appId.Trim());
+            SaveWhenChanged(changed: true);
+            return true;
+        }
     }
 
     public int RestoreSteamGames()
     {
-        var restored = State.ExcludedSteamAppIds.Count;
-        State.ExcludedSteamAppIds.Clear();
-        SaveWhenChanged(restored > 0);
-        return restored;
-    }
-
-    public GamePreferenceState GetGamePreference(string rootPath)
-    {
-        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
-        var preference = FindGamePreference(normalized);
-        if (preference is not null)
+        lock (_stateLock)
         {
-            return preference;
+            var restored = State.ExcludedSteamAppIds.Count;
+            State.ExcludedSteamAppIds.Clear();
+            SaveWhenChanged(restored > 0);
+            return restored;
         }
-
-        preference = new GamePreferenceState { RootPath = normalized };
-        State.GamePreferences.Add(preference);
-        return preference;
     }
 
     public GamePreferenceState? FindGamePreference(string rootPath)
     {
-        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
-        return State.GamePreferences.FirstOrDefault(item =>
-            PathComparers.FileSystemPath.Equals(item.RootPath, normalized));
+        lock (_stateLock)
+        {
+            var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+            return State.GamePreferences.FirstOrDefault(item =>
+                PathComparers.FileSystemPath.Equals(item.RootPath, normalized));
+        }
     }
 
     public IReadOnlyList<GameHistoryState> GetGameHistory(string rootPath)
     {
-        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
-        return State.GameHistory
-            .Where(item => PathComparers.FileSystemPath.Equals(item.RootPath, normalized))
-            .OrderByDescending(item => item.EventTimeUtc)
-            .ToArray();
+        lock (_stateLock)
+        {
+            var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+            return State.GameHistory
+                .Where(item => PathComparers.FileSystemPath.Equals(item.RootPath, normalized))
+                .OrderByDescending(item => item.EventTimeUtc)
+                .ToArray();
+        }
     }
 
     public void RecordHistory(
@@ -550,38 +597,52 @@ public sealed class PersistentLibrary
         string detail = "")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
-        State.GameHistory.Add(new GameHistoryState
+        ArgumentNullException.ThrowIfNull(assetType);
+        ArgumentNullException.ThrowIfNull(version);
+        ArgumentNullException.ThrowIfNull(detail);
+        lock (_stateLock)
         {
-            RootPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath)),
-            EventTimeUtc = DateTimeOffset.UtcNow,
-            EventType = eventType.Trim(),
-            AssetType = assetType.Trim(),
-            Version = version.Trim(),
-            Detail = detail.Trim(),
-        });
-        Save();
+            State.GameHistory.Add(new GameHistoryState
+            {
+                RootPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath)),
+                EventTimeUtc = DateTimeOffset.UtcNow,
+                EventType = eventType.Trim(),
+                AssetType = assetType.Trim(),
+                Version = version.Trim(),
+                Detail = detail.Trim(),
+            });
+            Save();
+        }
     }
 
     public void RemoveGameState(string rootPath)
     {
-        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
-        var changed = State.GamePreferences.RemoveAll(item =>
-                PathComparers.FileSystemPath.Equals(item.RootPath, normalized)) > 0;
-        changed |= State.GameHistory.RemoveAll(item =>
-                PathComparers.FileSystemPath.Equals(item.RootPath, normalized)) > 0;
-        SaveWhenChanged(changed);
+        lock (_stateLock)
+        {
+            var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+            var changed = State.GamePreferences.RemoveAll(item =>
+                    PathComparers.FileSystemPath.Equals(item.RootPath, normalized)) > 0;
+            changed |= State.GameHistory.RemoveAll(item =>
+                    PathComparers.FileSystemPath.Equals(item.RootPath, normalized)) > 0;
+            SaveWhenChanged(changed);
+        }
     }
 
     public void Save()
     {
-        _store.Save(State);
-        State = _store.Load();
+        lock (_stateLock)
+        {
+            _store.Save(State);
+        }
     }
 
     public void ResetLocalData(string? cacheDirectory = null)
     {
-        new LocalDataResetService(_store, cacheDirectory).Reset();
-        State = _store.Load();
+        lock (_stateLock)
+        {
+            new LocalDataResetService(_store, cacheDirectory).Reset();
+            State = _store.Load();
+        }
     }
 
     private void SaveWhenChanged(bool changed)

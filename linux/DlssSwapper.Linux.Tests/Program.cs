@@ -21,6 +21,7 @@ internal static class Program
             ("Mutation boundary rejects tampering", TestMutationBoundaryAsync),
             ("Adjacent backup, update, and restore", TestUpdateAndRestoreAsync),
             ("Persistent library state and exclusions", RunSync(TestPersistentLibraryState)),
+            ("Concurrent state updates remain atomic", TestConcurrentStateUpdatesAsync),
             ("CLI help reflects validated Linux release", RunSync(TestValidatedCliHelp)),
             ("Windows-parity responsive grid geometry", RunSync(TestResponsiveGridLayout)),
             ("Fast scan learns deep-scan stragglers", RunSync(TestFastScanLearning)),
@@ -59,6 +60,35 @@ internal static class Program
         action();
         return Task.CompletedTask;
     };
+
+    private static async Task TestConcurrentStateUpdatesAsync()
+    {
+        using var temporary = new TemporaryDirectory();
+        var store = new LibraryStateStore(Path.Combine(temporary.Path, "state"));
+        var library = new PersistentLibrary(store);
+        var gameRoot = Directory.CreateDirectory(Path.Combine(temporary.Path, "game")).FullName;
+        var tasks = Enumerable.Range(0, 20)
+            .Select(index => Task.Run(() =>
+            {
+                library.UpdateState(state =>
+                    state.CustomScanPatterns.Add($"fixtures/path{index}/unique/leaf"));
+                library.RecordHistory(
+                    gameRoot,
+                    "Concurrent fixture",
+                    detail: index.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }))
+            .ToArray();
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+        var reloaded = store.Load();
+        AssertEqual(20, reloaded.CustomScanPatterns.Count,
+            "concurrent custom-pattern count");
+        AssertEqual(20, reloaded.GameHistory.Count,
+            "concurrent history count");
+        Assert(
+            !Directory.EnumerateFiles(store.StateDirectory, "*.tmp").Any(),
+            "concurrent state update left a temporary file");
+    }
 
     private static void TestSteamDiscovery()
     {
@@ -570,19 +600,23 @@ internal static class Program
         AssertEqual(1, library.AddManualGames([manualRoot, manualRoot]), "manual path deduplication");
         AssertEqual(2, library.AddImmediateChildren(groupRoot), "immediate child import");
 
-        library.State.HddMode = true;
-        library.State.HasCompletedInitialDeepScan = true;
-        library.State.HasSelectedStorageProfile = true;
-        library.State.AdditionalSteamRoots.Add(Path.Combine(temporary.Path, "Steam"));
-        library.State.CustomScanPatterns.Add("*/custom/runtime");
-        library.State.MediaWikiApiEndpoint = "https://example.invalid/w/api.php";
-        library.State.MediaWikiImageHost = "images.example.invalid";
-        var preference = library.GetGamePreference(manualRoot);
-        preference.IsFavorite = true;
-        preference.IsHidden = true;
-        preference.Notes = "Fixture notes";
-        preference.CustomArtworkPath = Path.Combine(temporary.Path, "cover.png");
-        library.Save();
+        library.UpdateState(state =>
+        {
+            state.HddMode = true;
+            state.HasCompletedInitialDeepScan = true;
+            state.HasSelectedStorageProfile = true;
+            state.AdditionalSteamRoots.Add(Path.Combine(temporary.Path, "Steam"));
+            state.CustomScanPatterns.Add("*/custom/runtime");
+            state.MediaWikiApiEndpoint = "https://example.invalid/w/api.php";
+            state.MediaWikiImageHost = "images.example.invalid";
+        });
+        library.UpdateGamePreference(manualRoot, preference =>
+        {
+            preference.IsFavorite = true;
+            preference.IsHidden = true;
+            preference.Notes = "Fixture notes";
+            preference.CustomArtworkPath = Path.Combine(temporary.Path, "cover.png");
+        });
         library.RecordHistory(
             manualRoot,
             "DLL detected",
@@ -611,7 +645,8 @@ internal static class Program
         Assert(reloaded.State.HasSelectedStorageProfile, "storage-profile selection was not persisted");
         AssertEqual(3, reloaded.State.ManualGames.Count, "persisted manual game count");
         AssertEqual(1, reloaded.State.CustomScanPatterns.Count, "persisted custom pattern count");
-        var reloadedPreference = reloaded.GetGamePreference(manualRoot);
+        var reloadedPreference = reloaded.FindGamePreference(manualRoot)
+            ?? throw new InvalidOperationException("Persisted preference was not found.");
         Assert(reloadedPreference.IsFavorite, "favorite was not persisted");
         Assert(reloadedPreference.IsHidden, "hidden state was not persisted");
         Assert(reloadedPreference.Notes == "Fixture notes", "notes were not persisted");
@@ -937,7 +972,7 @@ internal static class Program
         var handler = new StubHttpMessageHandler(_ =>
             throw new InvalidOperationException("Local Steam artwork reached the network."));
         using var http = new HttpClient(handler);
-        var service = new ArtworkService(
+        using var service = new ArtworkService(
             http,
             processor,
             cacheRoot,
@@ -950,6 +985,33 @@ internal static class Program
         AssertEqual(localCover, local.Path!, "local Steam artwork path");
         AssertEqual(0, handler.RequestCount, "local Steam network request count");
 
+        var originalXdgDataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+        try
+        {
+            var xdgDataHome = Directory.CreateDirectory(
+                Path.Combine(temporary.Path, "xdg-data")).FullName;
+            Environment.SetEnvironmentVariable("XDG_DATA_HOME", xdgDataHome);
+            var primarySteamCache = Directory.CreateDirectory(Path.Combine(
+                xdgDataHome,
+                "Steam",
+                "appcache",
+                "librarycache")).FullName;
+            var primaryCover = Path.Combine(primarySteamCache, "43_library_600x900.jpg");
+            File.WriteAllBytes(primaryCover, "primary-cover"u8.ToArray());
+            var primary = await service.ResolveAsync(
+                new SelectedGame("Secondary Library Fixture", steamGamePath, "43"),
+                new LinuxLibraryState(),
+                []).ConfigureAwait(false);
+            AssertEqual(ArtworkOrigin.SteamLocal, primary.Origin,
+                "primary Steam cache artwork origin");
+            AssertEqual(primaryCover, primary.Path!, "primary Steam cache artwork path");
+            AssertEqual(0, handler.RequestCount, "primary Steam cache network request count");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("XDG_DATA_HOME", originalXdgDataHome);
+        }
+
         File.Delete(localCover);
         var directBytes = "direct-jpeg"u8.ToArray();
         var directHandler = new StubHttpMessageHandler(request =>
@@ -960,7 +1022,7 @@ internal static class Program
             return ImageResponse(directBytes, "image/jpeg");
         });
         using var directHttp = new HttpClient(directHandler);
-        var directService = new ArtworkService(
+        using var directService = new ArtworkService(
             directHttp,
             processor,
             cacheRoot,
@@ -1013,7 +1075,7 @@ internal static class Program
         });
         using var fallbackHttp = new HttpClient(fallbackHandler);
         var fallbackProcessor = new RecordingArtworkProcessor();
-        var fallbackService = new ArtworkService(
+        using var fallbackService = new ArtworkService(
             fallbackHttp,
             fallbackProcessor,
             cacheRoot,

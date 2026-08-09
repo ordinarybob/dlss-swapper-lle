@@ -11,6 +11,7 @@
                TextWrapping="Wrap"
                FontSize="15" />
     <Border x:Name="WarningBorder"
+            IsVisible="False"
             Background="#33262A"
             BorderBrush="#9F3A45"
             BorderThickness="1"

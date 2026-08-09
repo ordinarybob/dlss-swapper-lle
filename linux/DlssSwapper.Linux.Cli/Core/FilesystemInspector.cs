@@ -81,7 +81,7 @@ public static class FilesystemInspector
         return new LibraryFilesystemInfo(normalized, mount.MountPoint, type, warning);
     }
 
-    private static IReadOnlyList<MountEntry> ParseMountInfo(string text)
+    private static List<MountEntry> ParseMountInfo(string text)
     {
         var mounts = new List<MountEntry>();
         foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
@@ -113,7 +113,7 @@ public static class FilesystemInspector
     private static string NormalizeLinuxPath(string path)
     {
         var normalized = path.Trim().Replace('\\', '/');
-        if (!normalized.StartsWith("/", StringComparison.Ordinal))
+        if (!normalized.StartsWith('/'))
         {
             normalized = Path.GetFullPath(normalized).Replace('\\', '/');
         }
@@ -123,7 +123,7 @@ public static class FilesystemInspector
 
     private static bool IsWithinMount(string path, string mountPoint) =>
         mountPoint == "/"
-            ? path.StartsWith("/", StringComparison.Ordinal)
+            ? path.StartsWith('/')
             : path.Equals(mountPoint, StringComparison.Ordinal)
                 || path.StartsWith(mountPoint + "/", StringComparison.Ordinal);
 

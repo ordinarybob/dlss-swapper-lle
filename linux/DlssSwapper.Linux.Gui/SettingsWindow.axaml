@@ -22,9 +22,9 @@
                        TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" Spacing="12">
               <TextBlock Text="Columns" VerticalAlignment="Center" />
-              <NumericUpDown x:Name="GridColumnsInput" Minimum="1" Maximum="24" Width="90" />
+              <NumericUpDown x:Name="GridColumnsInput" Minimum="1" Maximum="24" Width="112" />
               <TextBlock Text="Rows" VerticalAlignment="Center" />
-              <NumericUpDown x:Name="GridRowsInput" Minimum="1" Maximum="24" Width="90" />
+              <NumericUpDown x:Name="GridRowsInput" Minimum="1" Maximum="24" Width="112" />
             </StackPanel>
           </StackPanel>
         </Border>

@@ -56,6 +56,8 @@ public sealed class DllScanner
 {
     public ScanResult Scan(SelectedGame game, DllCatalog catalog)
     {
+        ArgumentNullException.ThrowIfNull(game);
+        ArgumentNullException.ThrowIfNull(catalog);
         var warnings = new List<string>();
         return ScanFiles(
             game,
@@ -70,6 +72,8 @@ public sealed class DllScanner
         DllCatalog catalog,
         CandidateFileResult candidates)
     {
+        ArgumentNullException.ThrowIfNull(game);
+        ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(candidates);
         return ScanFiles(
             game,
@@ -150,6 +154,7 @@ public sealed class DllScanner
 
     public IReadOnlyList<RestorePlanItem> PlanRestore(SelectedGame game)
     {
+        ArgumentNullException.ThrowIfNull(game);
         const string backupSuffix = ".dlsss";
         var warnings = new List<string>();
         var items = new List<RestorePlanItem>();
@@ -281,6 +286,8 @@ public sealed class UpdatePlanner
         IReadOnlyList<ScanResult> scans,
         IReadOnlyDictionary<DllType, DllCatalogEntry> candidates)
     {
+        ArgumentNullException.ThrowIfNull(scans);
+        ArgumentNullException.ThrowIfNull(candidates);
         var plan = new List<UpdatePlanItem>();
         foreach (var scan in scans)
         {
@@ -373,7 +380,10 @@ public sealed class DownloadCache : IDisposable
     public DownloadCache()
     {
         _cacheRoot = GetCacheRoot();
-        _httpClient = new HttpClient
+        _httpClient = new HttpClient(new HttpClientHandler
+        {
+            CheckCertificateRevocationList = true,
+        })
         {
             Timeout = TimeSpan.FromMinutes(5),
         };
@@ -384,6 +394,7 @@ public sealed class DownloadCache : IDisposable
         DllCatalogEntry entry,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(entry);
         var key = (entry.Type, entry.Version, entry.Md5);
         Task<string> download;
         lock (_downloads)
@@ -515,7 +526,9 @@ public sealed class DownloadCache : IDisposable
                         $"Downloaded archive exceeds its manifest size for {definition.DisplayName} {entry.Version}.");
                 }
 
-                archiveBuffer.Write(buffer, 0, read);
+                await archiveBuffer.WriteAsync(
+                    buffer.AsMemory(0, read),
+                    cancellationToken).ConfigureAwait(false);
             }
 
             if (total != entry.ZipFileSize)
@@ -549,7 +562,8 @@ public sealed class DownloadCache : IDisposable
                     $"Archive does not contain the expected {definition.FileName} payload.");
             }
 
-            await using var payload = matches[0].Open();
+            await using var payload = await matches[0].OpenAsync(cancellationToken)
+                .ConfigureAwait(false);
             using var buffer = new MemoryStream((int)matches[0].Length);
             await payload.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
             dllBytes = buffer.ToArray();
@@ -596,17 +610,22 @@ public static class DllOperations
     public static async Task<IReadOnlyList<OperationResult>> ApplyUpdatesAsync(
         IReadOnlyList<UpdatePlanItem> plan,
         DownloadCache cache,
-        CancellationToken cancellationToken) =>
-        await ApplyUpdatesAsync(
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(cache);
+        return await ApplyUpdatesAsync(
             plan,
             cache.GetAsync,
             cancellationToken).ConfigureAwait(false);
+    }
 
     public static async Task<IReadOnlyList<OperationResult>> ApplyUpdatesAsync(
         IReadOnlyList<UpdatePlanItem> plan,
         Func<DllCatalogEntry, CancellationToken, Task<string>> getPayloadAsync,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(getPayloadAsync);
         var results = new List<OperationResult>();
         foreach (var item in plan.Where(item => item.Status == UpdatePlanStatus.Ready))
         {
@@ -725,6 +744,7 @@ public static class DllOperations
     public static IReadOnlyList<OperationResult> ApplyRestores(
         IReadOnlyList<RestorePlanItem> plan)
     {
+        ArgumentNullException.ThrowIfNull(plan);
         var results = new List<OperationResult>();
         foreach (var item in plan)
         {
