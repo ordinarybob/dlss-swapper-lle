@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -278,14 +279,7 @@ public sealed partial class MainWindow : Window
             .ToHashSet(PathComparer);
         foreach (var row in rows)
         {
-            if (manualPaths.Contains(row.RootPath))
-            {
-                library.RemoveManualGame(row.RootPath);
-            }
-            else if (row.Game.SteamAppId is not null)
-            {
-                library.ExcludeSteamGame(row.Game.SteamAppId);
-            }
+            RemoveGameFromLibrary(row, library, manualPaths);
         }
 
         await RefreshLibraryAsync(runInitialDeepScan: false);
@@ -321,6 +315,242 @@ public sealed partial class MainWindow : Window
                 : "Settings saved. Standard scan and artwork limits are active.";
             await RefreshLibraryAsync(runInitialDeepScan: false);
         }
+    }
+
+    private void GameLaunch_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetMenuGame(sender, out var row))
+        {
+            return;
+        }
+
+        try
+        {
+            var installedSteamGame = _lastSteamGames.FirstOrDefault(game =>
+                PathComparer.Equals(game.InstallDirectory, row.RootPath));
+            var target = installedSteamGame is null
+                ? row.RootPath
+                : $"steam://rungameid/{installedSteamGame.AppId}";
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = target,
+                UseShellExecute = true,
+            });
+            _viewModel.StatusText = installedSteamGame is null
+                ? $"Opened {row.Name}'s installation folder."
+                : $"Sent {row.Name} to Steam.";
+        }
+        catch (Exception exception)
+        {
+            _viewModel.StatusText = $"Could not launch {row.Name}: {exception.Message}";
+        }
+    }
+
+    private async void GameNotes_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
+        {
+            return;
+        }
+
+        var preference = library.GetGamePreference(row.RootPath);
+        var notes = await new GameNotesDialog(row.Name, preference.Notes)
+            .ShowDialog<string?>(this);
+        if (notes is null)
+        {
+            return;
+        }
+
+        preference.Notes = string.IsNullOrWhiteSpace(notes) ? null : notes;
+        library.Save();
+        _viewModel.StatusText = $"Saved notes for {row.Name}.";
+    }
+
+    private async void GameHistory_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
+        {
+            return;
+        }
+
+        var historyWindow = new GameHistoryWindow(
+            row.Name,
+            library.GetGameHistory(row.RootPath))
+        {
+            Width = Math.Clamp(ClientSize.Width * 0.82, 520, 1100),
+            Height = Math.Clamp(ClientSize.Height * 0.78, 320, 760),
+        };
+        await historyWindow.ShowDialog(this);
+    }
+
+    private void GameFavorite_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
+        {
+            return;
+        }
+
+        var preference = library.GetGamePreference(row.RootPath);
+        preference.IsFavorite = !preference.IsFavorite;
+        library.Save();
+        row.ApplyPreference(preference);
+        ApplyGameView();
+        _viewModel.StatusText = preference.IsFavorite
+            ? $"Added {row.Name} to favorites."
+            : $"Removed {row.Name} from favorites.";
+    }
+
+    private async void GameReload_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetMenuGame(sender, out var row) || !TryGetCatalog(out var catalog))
+        {
+            return;
+        }
+
+        await ReloadGameAsync(row, catalog, recordHistory: true);
+    }
+
+    private void GameHide_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
+        {
+            return;
+        }
+
+        var preference = library.GetGamePreference(row.RootPath);
+        preference.IsHidden = !preference.IsHidden;
+        library.Save();
+        row.ApplyPreference(preference);
+        ApplyGameView();
+        _viewModel.StatusText = preference.IsHidden
+            ? $"Hid {row.Name}. Use the Hidden filter to show it again."
+            : $"Restored {row.Name} to the library view.";
+    }
+
+    private async void GameCustomCover_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
+        {
+            return;
+        }
+
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = $"Select cover art for {row.Name}",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Image files")
+                {
+                    Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"],
+                    MimeTypes = ["image/png", "image/jpeg", "image/webp", "image/bmp"],
+                },
+            ],
+        });
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        var path = files[0].Path.LocalPath;
+        if (!File.Exists(path))
+        {
+            _viewModel.StatusText = "The selected cover-art file is unavailable.";
+            return;
+        }
+
+        var preference = library.GetGamePreference(row.RootPath);
+        preference.CustomArtworkPath = Path.GetFullPath(path);
+        library.Save();
+        row.SetArtwork(preference.CustomArtworkPath);
+        library.RecordHistory(row.RootPath, "Cover changed", "Artwork", detail: path);
+        _viewModel.StatusText = $"Applied custom cover art to {row.Name}.";
+    }
+
+    private async void GameUpdateLatest_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetMenuGame(sender, out var row) || !TryGetCatalog(out var catalog))
+        {
+            return;
+        }
+
+        if (row.ScanResult is null)
+        {
+            await ReloadGameAsync(row, catalog, recordHistory: false);
+        }
+
+        if (row.ScanResult is null)
+        {
+            return;
+        }
+
+        var candidates = row.ScanResult.Dlls
+            .Select(dll => dll.Type)
+            .Distinct()
+            .ToDictionary(type => type, catalog.GetLatest);
+        var plan = _planner.Plan([row.ScanResult], candidates);
+        var ready = plan.Where(item => item.Status == UpdatePlanStatus.Ready).ToArray();
+        var targetCount = ready.Sum(item => item.Targets.Count);
+        if (targetCount == 0)
+        {
+            _viewModel.StatusText = $"{row.Name} already has the latest detected DLL versions.";
+            return;
+        }
+
+        var confirmed = await new ConfirmationDialog(
+            "Confirm DLL update",
+            $"Update {targetCount} detected DLL file{Plural(targetCount)} in {row.Name}? An adjacent .dlsss backup is created when needed.")
+            .ShowDialog<bool>(this);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await RunBusyAsync($"Updating detected DLLs in {row.Name}…", async () =>
+        {
+            using var cache = new DownloadCache();
+            var results = await Task.Run(() => DllOperations.ApplyUpdatesAsync(
+                plan,
+                cache,
+                CancellationToken.None));
+            ShowOperationResults(results);
+            foreach (var result in results.Where(result => result.Success))
+            {
+                _library?.RecordHistory(
+                    row.RootPath,
+                    "DLL updated",
+                    result.Family,
+                    detail: result.Target);
+            }
+
+            foreach (var (_, scan) in await ScanRowsAsync([row], catalog))
+            {
+                row.SetScanResult(scan);
+            }
+
+            var succeeded = results.Count(result => result.Success);
+            _viewModel.StatusText = $"Updated {succeeded} DLL file{Plural(succeeded)} in {row.Name}.";
+        });
+    }
+
+    private async void GameRemove_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
+        {
+            return;
+        }
+
+        var confirmed = await new ConfirmationDialog(
+            "Remove game",
+            $"Remove {row.Name} from this library?")
+            .ShowDialog<bool>(this);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        RemoveGameFromLibrary(row, library);
+        await RefreshLibraryAsync(runInitialDeepScan: false);
     }
 
     private void SearchTextBox_TextChanged(object? sender, TextChangedEventArgs e)
@@ -743,6 +973,9 @@ public sealed partial class MainWindow : Window
             .Select(game => game.RootPath)
             .ToHashSet(PathComparer)
             ?? new HashSet<string>(PathComparer);
+        rows = _filterComboBox.SelectedIndex == 8
+            ? rows.Where(row => row.IsHidden)
+            : rows.Where(row => !row.IsHidden);
         rows = _filterComboBox.SelectedIndex switch
         {
             1 => rows.Where(row => !manualPaths.Contains(row.RootPath)),
@@ -828,6 +1061,15 @@ public sealed partial class MainWindow : Window
                 },
                 async (row, token) =>
                 {
+                    var customArtworkPath = library.FindGamePreference(row.RootPath)?
+                        .CustomArtworkPath;
+                    if (customArtworkPath is not null && File.Exists(customArtworkPath))
+                    {
+                        await Dispatcher.UIThread.InvokeAsync(
+                            () => row.SetArtwork(customArtworkPath));
+                        return;
+                    }
+
                     var result = await service.ResolveAsync(
                         row.Game,
                         library.State,
@@ -959,6 +1201,19 @@ public sealed partial class MainWindow : Window
 
         var normalizedGame = game with { RootPath = normalizedPath };
         var row = new GameRowViewModel(normalizedGame);
+        if (_library is not null)
+        {
+            var preference = _library.FindGamePreference(normalizedPath);
+            if (preference is not null)
+            {
+                row.ApplyPreference(preference);
+            }
+            if (preference?.CustomArtworkPath is not null
+                && File.Exists(preference.CustomArtworkPath))
+            {
+                row.SetArtwork(preference.CustomArtworkPath);
+            }
+        }
         row.PropertyChanged += GameRow_PropertyChanged;
         _allRows.Add(row);
         InvalidatePreview();
@@ -1018,6 +1273,79 @@ public sealed partial class MainWindow : Window
 
         _viewModel.StatusText = "Select at least one game first.";
         return false;
+    }
+
+    private static bool TryGetMenuGame(object? sender, out GameRowViewModel row)
+    {
+        row = null!;
+        if (sender is MenuItem { Tag: GameRowViewModel taggedRow })
+        {
+            row = taggedRow;
+            return true;
+        }
+
+        return false;
+    }
+
+    private async Task ReloadGameAsync(
+        GameRowViewModel row,
+        DllCatalog catalog,
+        bool recordHistory)
+    {
+        await RunBusyAsync($"Reloading {row.Name}…", async () =>
+        {
+            var scans = await ScanRowsAsync([row], catalog);
+            if (scans.Count == 0)
+            {
+                _viewModel.StatusText = $"{row.Name} is no longer available for Fast Scan.";
+                return;
+            }
+
+            row.SetScanResult(scans[0].Scan);
+            if (recordHistory && _library is not null)
+            {
+                var summaries = scans[0].Scan.Dlls
+                    .GroupBy(dll => dll.Type)
+                    .Select(group => new
+                    {
+                        Family = DllTypes.Get(group.Key).DisplayName,
+                        Version = string.Join(", ", group
+                            .Select(dll => dll.Version)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)),
+                    })
+                    .ToArray();
+                foreach (var summary in summaries)
+                {
+                    _library.RecordHistory(
+                        row.RootPath,
+                        "DLL detected",
+                        summary.Family,
+                        summary.Version);
+                }
+            }
+
+            _viewModel.StatusText = $"Reloaded {row.Name}; found {scans[0].Scan.Dlls.Count} supported DLL file{Plural(scans[0].Scan.Dlls.Count)}.";
+        });
+    }
+
+    private static void RemoveGameFromLibrary(
+        GameRowViewModel row,
+        PersistentLibrary library,
+        HashSet<string>? manualPaths = null)
+    {
+        manualPaths ??= library.State.ManualGames
+            .Select(game => game.RootPath)
+            .ToHashSet(PathComparer);
+        if (manualPaths.Contains(row.RootPath))
+        {
+            library.RemoveManualGame(row.RootPath);
+        }
+        else if (row.Game.SteamAppId is not null)
+        {
+            library.ExcludeSteamGame(row.Game.SteamAppId);
+        }
+
+        library.RemoveGameState(row.RootPath);
     }
 
     private bool TryGetCatalog(out DllCatalog catalog)

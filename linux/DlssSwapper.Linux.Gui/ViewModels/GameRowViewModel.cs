@@ -10,6 +10,8 @@ public sealed class GameRowViewModel : ObservableObject
     private string _scanDetail = "Select this game, then scan it.";
     private Bitmap? _coverImage;
     private string? _artworkPath;
+    private bool _isFavorite;
+    private bool _isHidden;
 
     public GameRowViewModel(SelectedGame game)
     {
@@ -56,6 +58,44 @@ public sealed class GameRowViewModel : ObservableObject
     {
         get => _artworkPath;
         private set => SetProperty(ref _artworkPath, value);
+    }
+
+    public bool IsFavorite
+    {
+        get => _isFavorite;
+        private set
+        {
+            if (SetProperty(ref _isFavorite, value))
+            {
+                OnPropertyChanged(nameof(FavoriteActionText));
+                OnPropertyChanged(nameof(FavoriteMarker));
+            }
+        }
+    }
+
+    public bool IsHidden
+    {
+        get => _isHidden;
+        private set
+        {
+            if (SetProperty(ref _isHidden, value))
+            {
+                OnPropertyChanged(nameof(HideActionText));
+            }
+        }
+    }
+
+    public string FavoriteActionText => IsFavorite ? "Unfavorite" : "Favorite";
+
+    public string HideActionText => IsHidden ? "Show" : "Hide";
+
+    public string FavoriteMarker => IsFavorite ? "★" : string.Empty;
+
+    public void ApplyPreference(GamePreferenceState preference)
+    {
+        ArgumentNullException.ThrowIfNull(preference);
+        IsFavorite = preference.IsFavorite;
+        IsHidden = preference.IsHidden;
     }
 
     public void SetArtwork(string path)

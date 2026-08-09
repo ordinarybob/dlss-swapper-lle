@@ -570,7 +570,18 @@ internal static class Program
         library.State.CustomScanPatterns.Add("*/custom/runtime");
         library.State.MediaWikiApiEndpoint = "https://example.invalid/w/api.php";
         library.State.MediaWikiImageHost = "images.example.invalid";
+        var preference = library.GetGamePreference(manualRoot);
+        preference.IsFavorite = true;
+        preference.IsHidden = true;
+        preference.Notes = "Fixture notes";
+        preference.CustomArtworkPath = Path.Combine(temporary.Path, "cover.png");
         library.Save();
+        library.RecordHistory(
+            manualRoot,
+            "DLL detected",
+            "DLSS",
+            "3.10.7",
+            "Fixture history");
         AssertEqual(2, library.State.Performance.ScanConcurrency, "HDD scan concurrency");
         AssertEqual(1, library.State.Performance.ArtworkConcurrency, "HDD art concurrency");
         Assert(library.ExcludeSteamGame("4242"), "Steam exclusion was not added");
@@ -592,6 +603,13 @@ internal static class Program
         Assert(reloaded.State.HasCompletedInitialDeepScan, "deep-scan completion was not persisted");
         AssertEqual(3, reloaded.State.ManualGames.Count, "persisted manual game count");
         AssertEqual(1, reloaded.State.CustomScanPatterns.Count, "persisted custom pattern count");
+        var reloadedPreference = reloaded.GetGamePreference(manualRoot);
+        Assert(reloadedPreference.IsFavorite, "favorite was not persisted");
+        Assert(reloadedPreference.IsHidden, "hidden state was not persisted");
+        Assert(reloadedPreference.Notes == "Fixture notes", "notes were not persisted");
+        var history = reloaded.GetGameHistory(manualRoot);
+        AssertEqual(1, history.Count, "history event count");
+        AssertEqual("3.10.7", history[0].Version, "history version");
         AssertEqual(
             "https://example.invalid/w/api.php",
             reloaded.State.MediaWikiApiEndpoint,

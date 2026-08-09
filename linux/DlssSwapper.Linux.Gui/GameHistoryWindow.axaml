@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DlssSwapper.Linux.Gui.GameHistoryWindow"
+        Title="Game history"
+        Width="820"
+        Height="520"
+        MinWidth="520"
+        MinHeight="320"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="18" RowSpacing="12">
+    <TextBlock x:Name="HeadingText" FontSize="20" FontWeight="SemiBold" />
+    <Border Grid.Row="1" Classes="card">
+      <Grid RowDefinitions="Auto,*">
+        <Grid ColumnDefinitions="1.4*,1.05*,1.05*,0.85*,2*" ColumnSpacing="10" Margin="8">
+          <TextBlock Text="Event time" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="1" Text="Event" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="2" Text="Asset" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="3" Text="Version" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="4" Text="Details" FontWeight="SemiBold" />
+        </Grid>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+          <ItemsControl x:Name="HistoryItems">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="row">
+                  <Grid ColumnDefinitions="1.4*,1.05*,1.05*,0.85*,2*" ColumnSpacing="10">
+                    <TextBlock Text="{Binding EventTime}" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="1" Text="{Binding EventType}" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="2" Text="{Binding AssetType}" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="3" Text="{Binding Version}" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="4" Text="{Binding Detail}" TextWrapping="Wrap" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+    </Border>
+    <Button Grid.Row="2" Content="Close" HorizontalAlignment="Right" Click="Close_Click" />
+  </Grid>
+</Window>

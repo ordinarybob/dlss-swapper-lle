@@ -29,6 +29,34 @@ public sealed class ManualGameState
     public DateTimeOffset AddedAtUtc { get; set; } = DateTimeOffset.UtcNow;
 }
 
+public sealed class GamePreferenceState
+{
+    public string RootPath { get; set; } = string.Empty;
+
+    public bool IsFavorite { get; set; }
+
+    public bool IsHidden { get; set; }
+
+    public string? Notes { get; set; }
+
+    public string? CustomArtworkPath { get; set; }
+}
+
+public sealed class GameHistoryState
+{
+    public string RootPath { get; set; } = string.Empty;
+
+    public DateTimeOffset EventTimeUtc { get; set; } = DateTimeOffset.UtcNow;
+
+    public string EventType { get; set; } = string.Empty;
+
+    public string AssetType { get; set; } = string.Empty;
+
+    public string Version { get; set; } = string.Empty;
+
+    public string Detail { get; set; } = string.Empty;
+}
+
 public sealed class LinuxLibraryState
 {
     public const int CurrentSchemaVersion = 1;
@@ -44,6 +72,10 @@ public sealed class LinuxLibraryState
     public List<string> AdditionalSteamRoots { get; set; } = [];
 
     public List<string> CustomScanPatterns { get; set; } = [];
+
+    public List<GamePreferenceState> GamePreferences { get; set; } = [];
+
+    public List<GameHistoryState> GameHistory { get; set; } = [];
 
     public bool HasCompletedInitialDeepScan { get; set; }
 
@@ -172,6 +204,8 @@ public sealed class LibraryStateStore
         state.ExcludedSteamAppIds ??= [];
         state.AdditionalSteamRoots ??= [];
         state.CustomScanPatterns ??= [];
+        state.GamePreferences ??= [];
+        state.GameHistory ??= [];
 
         var manualPaths = new HashSet<string>(PathComparers.FileSystemPath);
         state.ManualGames = state.ManualGames
@@ -198,6 +232,41 @@ public sealed class LibraryStateStore
         state.AdditionalSteamRoots = NormalizePaths(state.AdditionalSteamRoots);
         state.CustomScanPatterns = FastScanPatternIndex.NormalizeCustomPatterns(
             state.CustomScanPatterns).ToList();
+        var preferencePaths = new HashSet<string>(PathComparers.FileSystemPath);
+        state.GamePreferences = state.GamePreferences
+            .Where(preference => preference is not null
+                && !string.IsNullOrWhiteSpace(preference.RootPath))
+            .Select(preference =>
+            {
+                preference.RootPath = NormalizeStatePath(preference.RootPath);
+                preference.Notes = NormalizeOptional(preference.Notes);
+                preference.CustomArtworkPath = NormalizeOptionalPath(
+                    preference.CustomArtworkPath);
+                return preference;
+            })
+            .Where(preference => preference.IsFavorite
+                || preference.IsHidden
+                || preference.Notes is not null
+                || preference.CustomArtworkPath is not null)
+            .Where(preference => preferencePaths.Add(preference.RootPath))
+            .OrderBy(preference => preference.RootPath, PathComparers.FileSystemPath)
+            .ToList();
+        state.GameHistory = state.GameHistory
+            .Where(history => history is not null
+                && !string.IsNullOrWhiteSpace(history.RootPath)
+                && !string.IsNullOrWhiteSpace(history.EventType))
+            .Select(history =>
+            {
+                history.RootPath = NormalizeStatePath(history.RootPath);
+                history.EventType = history.EventType.Trim();
+                history.AssetType = history.AssetType?.Trim() ?? string.Empty;
+                history.Version = history.Version?.Trim() ?? string.Empty;
+                history.Detail = history.Detail?.Trim() ?? string.Empty;
+                return history;
+            })
+            .OrderByDescending(history => history.EventTimeUtc)
+            .Take(5000)
+            .ToList();
         state.GridColumns = Math.Clamp(state.GridColumns, 1, 24);
         state.GridRows = Math.Clamp(state.GridRows, 1, 24);
         state.MediaWikiApiEndpoint = NormalizeMediaWikiEndpoint(state.MediaWikiApiEndpoint);
@@ -273,6 +342,14 @@ public sealed class LibraryStateStore
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string NormalizeStatePath(string value) =>
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(value.Trim()));
+
+    private static string? NormalizeOptionalPath(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? null
+            : Path.GetFullPath(value.Trim());
 
     private static List<string> NormalizePaths(IEnumerable<string> paths)
     {
@@ -429,6 +506,66 @@ public sealed class PersistentLibrary
         State.ExcludedSteamAppIds.Clear();
         SaveWhenChanged(restored > 0);
         return restored;
+    }
+
+    public GamePreferenceState GetGamePreference(string rootPath)
+    {
+        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+        var preference = FindGamePreference(normalized);
+        if (preference is not null)
+        {
+            return preference;
+        }
+
+        preference = new GamePreferenceState { RootPath = normalized };
+        State.GamePreferences.Add(preference);
+        return preference;
+    }
+
+    public GamePreferenceState? FindGamePreference(string rootPath)
+    {
+        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+        return State.GamePreferences.FirstOrDefault(item =>
+            PathComparers.FileSystemPath.Equals(item.RootPath, normalized));
+    }
+
+    public IReadOnlyList<GameHistoryState> GetGameHistory(string rootPath)
+    {
+        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+        return State.GameHistory
+            .Where(item => PathComparers.FileSystemPath.Equals(item.RootPath, normalized))
+            .OrderByDescending(item => item.EventTimeUtc)
+            .ToArray();
+    }
+
+    public void RecordHistory(
+        string rootPath,
+        string eventType,
+        string assetType = "",
+        string version = "",
+        string detail = "")
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
+        State.GameHistory.Add(new GameHistoryState
+        {
+            RootPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath)),
+            EventTimeUtc = DateTimeOffset.UtcNow,
+            EventType = eventType.Trim(),
+            AssetType = assetType.Trim(),
+            Version = version.Trim(),
+            Detail = detail.Trim(),
+        });
+        Save();
+    }
+
+    public void RemoveGameState(string rootPath)
+    {
+        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+        var changed = State.GamePreferences.RemoveAll(item =>
+                PathComparers.FileSystemPath.Equals(item.RootPath, normalized)) > 0;
+        changed |= State.GameHistory.RemoveAll(item =>
+                PathComparers.FileSystemPath.Equals(item.RootPath, normalized)) > 0;
+        SaveWhenChanged(changed);
     }
 
     public void Save()

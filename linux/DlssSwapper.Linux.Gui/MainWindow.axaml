@@ -135,6 +135,7 @@
               <ComboBoxItem Content="Ray reconstruction" />
               <ComboBoxItem Content="XeSS" />
               <ComboBoxItem Content="FSR" />
+              <ComboBoxItem Content="Hidden" />
             </ComboBox>
             <ComboBox x:Name="SortComboBox"
                       Width="125"
@@ -172,6 +173,19 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Border Classes="row">
+                    <Border.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="Launch" Tag="{Binding}" Click="GameLaunch_Click" />
+                        <MenuItem Header="Notes" Tag="{Binding}" Click="GameNotes_Click" />
+                        <MenuItem Header="History" Tag="{Binding}" Click="GameHistory_Click" />
+                        <MenuItem Header="{Binding FavoriteActionText}" Tag="{Binding}" Click="GameFavorite_Click" />
+                        <MenuItem Header="Reload" Tag="{Binding}" Click="GameReload_Click" />
+                        <MenuItem Header="{Binding HideActionText}" Tag="{Binding}" Click="GameHide_Click" />
+                        <MenuItem Header="Add custom cover" Tag="{Binding}" Click="GameCustomCover_Click" />
+                        <MenuItem Header="Update detected DLLs to latest" Tag="{Binding}" Click="GameUpdateLatest_Click" />
+                        <MenuItem Header="Remove" Tag="{Binding}" Click="GameRemove_Click" />
+                      </ContextMenu>
+                    </Border.ContextMenu>
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                       <StackPanel Grid.Column="0" Spacing="6">
                         <CheckBox IsChecked="{Binding IsSelected}"
@@ -182,7 +196,10 @@
                         </Border>
                       </StackPanel>
                       <StackPanel Grid.Column="1" Spacing="3">
-                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Text="{Binding FavoriteMarker}" Foreground="#F2C94C" />
+                          <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" />
+                        </StackPanel>
                         <TextBlock Text="{Binding Source}" Classes="muted" FontSize="12" />
                         <TextBlock Text="{Binding RootPath}" TextWrapping="Wrap"
                                    FontFamily="Monospace" FontSize="12" />
@@ -210,6 +227,19 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Border Classes="row" Margin="3" MinWidth="88">
+                    <Border.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="Launch" Tag="{Binding}" Click="GameLaunch_Click" />
+                        <MenuItem Header="Notes" Tag="{Binding}" Click="GameNotes_Click" />
+                        <MenuItem Header="History" Tag="{Binding}" Click="GameHistory_Click" />
+                        <MenuItem Header="{Binding FavoriteActionText}" Tag="{Binding}" Click="GameFavorite_Click" />
+                        <MenuItem Header="Reload" Tag="{Binding}" Click="GameReload_Click" />
+                        <MenuItem Header="{Binding HideActionText}" Tag="{Binding}" Click="GameHide_Click" />
+                        <MenuItem Header="Add custom cover" Tag="{Binding}" Click="GameCustomCover_Click" />
+                        <MenuItem Header="Update detected DLLs to latest" Tag="{Binding}" Click="GameUpdateLatest_Click" />
+                        <MenuItem Header="Remove" Tag="{Binding}" Click="GameRemove_Click" />
+                      </ContextMenu>
+                    </Border.ContextMenu>
                     <Grid RowDefinitions="Auto,*,Auto">
                       <CheckBox Grid.Row="0"
                                 IsChecked="{Binding IsSelected}"
@@ -219,8 +249,11 @@
                         <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
                       </Border>
                       <StackPanel Grid.Row="2" Margin="0,6,0,0">
-                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                   TextWrapping="Wrap" MaxLines="2" />
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                          <TextBlock Text="{Binding FavoriteMarker}" Foreground="#F2C94C" />
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                     TextWrapping="Wrap" MaxLines="2" />
+                        </StackPanel>
                         <TextBlock Text="{Binding ScanSummary}" Classes="muted"
                                    FontSize="11" TextWrapping="Wrap" MaxLines="2" />
                       </StackPanel>
