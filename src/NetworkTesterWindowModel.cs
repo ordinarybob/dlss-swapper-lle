@@ -135,7 +135,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
         // Subscribe to language changes
         LanguageManager.Instance.OnLanguageChanged += UpdateFlowDirection;
 
-        AppendTestResults("Init", $"DLSS Swapper version: v{App.CurrentApp.GetVersionString()}");
+        AppendTestResults("Init", $"DLSS Swapper LLE version: v{App.CurrentApp.GetVersionString()}");
     }
     
     private void UpdateFlowDirection()
@@ -857,12 +857,6 @@ public partial class NetworkTesterWindowModel : ObservableObject
         var package = new DataPackage();
         package.SetText(TestResults);
         Clipboard.SetContent(package);
-    }
-
-    [RelayCommand]
-    async Task CreateBugReportAsync()
-    {
-        await Windows.System.Launcher.LaunchUriAsync(new Uri("https://github.com/beeradmoore/dlss-swapper/issues/new?template=bug_report.yml"));
     }
 
     [RelayCommand]

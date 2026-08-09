@@ -10,13 +10,7 @@ public class FailToLaunchWindowModelTranslationProperties : LocalizedViewModelBa
     public string ApplicationFailToLaunchWindowText => $"{ResourceHelper.GetString("ApplicationTitle")} - {ResourceHelper.GetString("FailedToLaunchPage_WindowTitle")}";
 
     [TranslationProperty]
-    public string PleaseOpenIssuePartial1Text => ResourceHelper.GetString("FailedToLaunchPage_PleaseOpenIssuePartial1");
-
-    [TranslationProperty]
-    public string PleaseOpenIssuePartial2Text => ResourceHelper.GetString("FailedToLaunchPage_PleaseOpenIssuePartial2");
-
-    [TranslationProperty]
-    public string PleaseOpenIssuePartial3Text => ResourceHelper.GetString("FailedToLaunchPage_PleaseOpenIssuePartial3");
+    public string CopyDiagnosticsGuidanceText => ResourceHelper.GetString("FailedToLaunchPage_CopyDiagnosticsGuidance");
 
     [TranslationProperty]
     public string ClickToCopyDetailsText => ResourceHelper.GetString("DiagnosticsPage_ClickToCopyDetails");

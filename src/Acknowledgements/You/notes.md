@@ -1,1 +1,1 @@
-DLSS Swapper is only possible thanks to its [contributors](https://github.com/beeradmoore/dlss-swapper/graphs/contributors) and you (the users) who have filed [feedback](https://github.com/beeradmoore/dlss-swapper/issues) to help improve the product.
+DLSS Swapper LLE preserves the work and credit of the upstream [contributors](https://github.com/beeradmoore/dlss-swapper/graphs/contributors) and the users whose testing helped shape the original project.

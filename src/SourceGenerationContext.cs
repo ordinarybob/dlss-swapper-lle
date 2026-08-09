@@ -10,7 +10,6 @@ using Microsoft.UI.Windowing;
 namespace DLSS_Swapper;
 
 [JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(Data.GitHub.GitHubRelease))]
 [JsonSerializable(typeof(Data.EpicGamesStore.CacheItem[]))]
 [JsonSerializable(typeof(Data.EpicGamesStore.ManifestFile))]
 [JsonSerializable(typeof(Data.GOG.LimitedDetail.LimitedDetailImages))]

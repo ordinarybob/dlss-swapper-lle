@@ -884,7 +884,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     Logger.Error(err);
                     if (App.CurrentApp.IsAdminUser() is false)
                     {
-                        return (false, "Unable to reset to default. Running DLSS Swapper as administrator may fix this.", true);
+                        return (false, "Unable to reset to default. Running DLSS Swapper LLE as administrator may fix this.", true);
                     }
                     else
                     {
@@ -1025,7 +1025,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         Logger.Error(err);
                         if (App.CurrentApp.IsAdminUser() is false)
                         {
-                            return (false, "Unable to swap dll as we are unable to write to the target directory. Running DLSS Swapper as administrator may fix this.", true);
+                            return (false, "Unable to swap dll as we are unable to write to the target directory. Running DLSS Swapper LLE as administrator may fix this.", true);
 
                         }
                         else
@@ -1076,7 +1076,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 Logger.Error(err);
                 if (App.CurrentApp.IsAdminUser() is false)
                 {
-                    return (false, "Unable to swap dll as we are unable to write to the target directory. Running DLSS Swapper as administrator may fix this.", true);
+                    return (false, "Unable to swap dll as we are unable to write to the target directory. Running DLSS Swapper LLE as administrator may fix this.", true);
                 }
                 else
                 {
@@ -1373,7 +1373,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         try
         {
             // Sometimes when a game is uninstalled the backup files are not removed, so ensure they are.
-            // https://github.com/beeradmoore/dlss-swapper/issues/236
+            // Some AMD driver packages ship version fields in a nonstandard form.
 
             List<GameAsset> gameAssets;
             using (await Database.Instance.Mutex.LockAsync())

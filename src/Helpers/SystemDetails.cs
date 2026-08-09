@@ -21,7 +21,7 @@ internal class SystemDetails
             var currentAssembly = Assembly.GetExecutingAssembly();
 
 
-            stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"DLSS Swapper: {App.CurrentApp.GetVersionString()}");
+            stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"DLSS Swapper LLE: {App.CurrentApp.GetVersionString()}");
 #if PORTABLE
             stringBuilder.AppendLine("Portable: true");
 #else

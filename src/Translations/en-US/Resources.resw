@@ -121,7 +121,7 @@
     <value>Licences &amp; Acknowledgements</value>
   </data>
   <data name="ApplicationTitle" xml:space="preserve">
-    <value>DLSS Swapper</value>
+    <value>DLSS Swapper LLE</value>
   </data>
   <data name="DiagnosticsPage_ClickToCopyDetails" xml:space="preserve">
     <value>Click to copy below details</value>
@@ -933,6 +933,9 @@ If this keeps happening please file an report in our issue tracker on GitHub.</v
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Update manifest</value>
   </data>
+  <data name="MainWindow_ManifestCouldNotBeLoaded_LleMessage" xml:space="preserve">
+    <value>DLSS Swapper LLE could not load its bundled manifest or refresh it from the network.</value>
+  </data>
   <data name="MainWindow_NoteForMultiplayerGames_Message" xml:space="preserve">
     <value>While swapping DLSS versions should not be considered cheating, certain anti-cheat systems may not be happy with you if the files in your game directory are not what the game was distributed with.
 
@@ -1428,5 +1431,149 @@ Because of this we recommend using caution for multiplayer games.</value>
   </data>
   <data name="GamesPage_DeepScan_Description" xml:space="preserve">
     <value>Deep Scan runs automatically after your first launch and learns path patterns for anything missed by Fast Scan. Run it again only if your library has changed and a game is missing.</value>
+  </data>
+  <data name="SettingsPage_LleCheckpointInfo" xml:space="preserve">
+    <value>This is a single checkpoint release. It has no updater, update channel, or in-app issue-reporting route.</value>
+  </data>
+  <data name="SettingsPage_LleRepositoryLabel" xml:space="preserve">
+    <value>LLE repository: </value>
+  </data>
+  <data name="SettingsPage_UpstreamSourceLabel" xml:space="preserve">
+    <value>Upstream source: </value>
+  </data>
+  <data name="FailedToLaunchPage_CopyDiagnosticsGuidance" xml:space="preserve">
+    <value>Copy the diagnostic details below if you need to investigate the failure.</value>
+  </data>
+  <data name="SettingsPage_Performance" xml:space="preserve">
+    <value>Performance</value>
+  </data>
+  <data name="SettingsPage_PerformanceInfo" xml:space="preserve">
+    <value>These controls tune large-library throughput. Recommended defaults suit most systems. Scan and artwork worker changes apply after restarting the app; batch sizes and selected-game update concurrency apply to subsequent work.</value>
+  </data>
+  <data name="SettingsPage_ConcurrentGameScans" xml:space="preserve">
+    <value>Concurrent game scans</value>
+  </data>
+  <data name="SettingsPage_ConcurrentGameScansInfo" xml:space="preserve">
+    <value>Game folders scanned recursively at once (1–26). Recommended: 15; use 2 for a game library on a HDD.</value>
+  </data>
+  <data name="SettingsPage_ConcurrentArtworkLoading" xml:space="preserve">
+    <value>Concurrent artwork loading</value>
+  </data>
+  <data name="SettingsPage_ConcurrentArtworkLoadingInfo" xml:space="preserve">
+    <value>Game covers loaded in parallel after games appear (1–64). Recommended: 38; use 1 for a game library on a HDD.</value>
+  </data>
+  <data name="SettingsPage_UiBatch" xml:space="preserve">
+    <value>Games added per UI batch</value>
+  </data>
+  <data name="SettingsPage_UiBatchInfo" xml:space="preserve">
+    <value>Games added to the interface before yielding to input and rendering (10–1000). Recommended: 550.</value>
+  </data>
+  <data name="SettingsPage_DatabaseBatch" xml:space="preserve">
+    <value>Database records per transaction</value>
+  </data>
+  <data name="SettingsPage_DatabaseBatchInfo" xml:space="preserve">
+    <value>Discovered game records committed per SQLite transaction (10–1000). Recommended: 550.</value>
+  </data>
+  <data name="SettingsPage_ConcurrentGameUpdates" xml:space="preserve">
+    <value>Concurrent game updates</value>
+  </data>
+  <data name="SettingsPage_ConcurrentGameUpdatesInfo" xml:space="preserve">
+    <value>Games updated in parallel during a selected-games DLL update (1–26). Recommended: 15.</value>
+  </data>
+  <data name="SettingsPage_ResetPerformanceDefaults" xml:space="preserve">
+    <value>Reset recommended defaults</value>
+  </data>
+  <data name="SettingsPage_FallbackCoverArt" xml:space="preserve">
+    <value>Fallback cover art</value>
+  </data>
+  <data name="SettingsPage_FallbackCoverArtInfo" xml:space="preserve">
+    <value>Manually added games that do not resolve on Steam use this MediaWiki source. Only HTTPS portrait images from the allowed image host are accepted.</value>
+  </data>
+  <data name="SettingsPage_MediaWikiApiEndpoint" xml:space="preserve">
+    <value>MediaWiki API endpoint</value>
+  </data>
+  <data name="SettingsPage_AllowedImageHost" xml:space="preserve">
+    <value>Allowed image host</value>
+  </data>
+  <data name="SettingsPage_SaveSource" xml:space="preserve">
+    <value>Save source</value>
+  </data>
+  <data name="SettingsPage_ResetDefault" xml:space="preserve">
+    <value>Reset default</value>
+  </data>
+  <data name="SettingsPage_FastScanPaths" xml:space="preserve">
+    <value>Fast scan paths</value>
+  </data>
+  <data name="SettingsPage_FastScanPathsInfo" xml:space="preserve">
+    <value>Fast Scan checks these relative directory patterns for supported DLLs. Deep Scan automatically learns newly discovered layouts; you can also add or remove a pattern here. Use * to match exactly one directory level.</value>
+  </data>
+  <data name="SettingsPage_BuiltInPatterns" xml:space="preserve">
+    <value>Built-in patterns</value>
+  </data>
+  <data name="SettingsPage_LearnedCustomPatterns" xml:space="preserve">
+    <value>Learned and custom patterns</value>
+  </data>
+  <data name="SettingsPage_PatternExample" xml:space="preserve">
+    <value>Example: Engine\Plugins\MyUpscaler\Binaries\Win64</value>
+  </data>
+  <data name="SettingsPage_AddPattern" xml:space="preserve">
+    <value>Add pattern</value>
+  </data>
+  <data name="SettingsPage_GamesGrid" xml:space="preserve">
+    <value>Games grid</value>
+  </data>
+  <data name="SettingsPage_GamesGridInfo" xml:space="preserve">
+    <value>Grid cards resize to fill the available width at a 2:3 cover ratio, so no space is reserved at the right edge. These preferences guide how dense the grid is.</value>
+  </data>
+  <data name="SettingsPage_PreferredColumns" xml:space="preserve">
+    <value>Preferred columns</value>
+  </data>
+  <data name="SettingsPage_PreferredColumnsInfo" xml:space="preserve">
+    <value>Minimum card columns in grid view (1–16). Ctrl + mouse wheel over the grid also changes this. Recommended: 6.</value>
+  </data>
+  <data name="SettingsPage_PreferredRows" xml:space="preserve">
+    <value>Preferred visible rows</value>
+  </data>
+  <data name="SettingsPage_PreferredRowsInfo" xml:space="preserve">
+    <value>Card rows kept in view when the window is short; extra columns are added if needed (1–10). Recommended: 5.</value>
+  </data>
+  <data name="SettingsPage_PatternAlreadyIncluded" xml:space="preserve">
+    <value>That directory pattern is already included.</value>
+  </data>
+  <data name="SettingsPage_PatternCoveredByBroader" xml:space="preserve">
+    <value>A broader directory pattern already includes that path.</value>
+  </data>
+  <data name="SettingsPage_PatternRequired" xml:space="preserve">
+    <value>Enter a directory path relative to a game folder.</value>
+  </data>
+  <data name="SettingsPage_PatternMustBeRelative" xml:space="preserve">
+    <value>Use a relative directory pattern, not a drive or absolute path.</value>
+  </data>
+  <data name="SettingsPage_PatternDotComponents" xml:space="preserve">
+    <value>Directory patterns cannot contain . or .. components.</value>
+  </data>
+  <data name="SettingsPage_PatternInvalidCharacters" xml:space="preserve">
+    <value>Use literal directory names or * for one directory level.</value>
+  </data>
+  <data name="SettingsPage_ResetLocalData" xml:space="preserve">
+    <value>Reset local app data</value>
+  </data>
+  <data name="SettingsPage_ResetLocalDataInfo" xml:space="preserve">
+    <value>Erase all local DLSS Swapper data and restart at the first-run performance selector. Game installations and .dlsss backups are not changed.</value>
+  </data>
+  <data name="SettingsPage_ResetAllLocalData" xml:space="preserve">
+    <value>Reset all local app data</value>
+  </data>
+  <data name="SettingsPage_ResetLocalDataTitle" xml:space="preserve">
+    <value>Reset all local app data?</value>
+  </data>
+  <data name="SettingsPage_ResetAndRestart" xml:space="preserve">
+    <value>Reset and restart</value>
+  </data>
+  <data name="SettingsPage_ResetLocalDataDescription" xml:space="preserve">
+    <value>This permanently deletes all data stored by DLSS Swapper, including settings, discovered and manually added games, scan results, history, notes, favourites, hidden-game state, cached and custom covers, downloaded and imported DLLs, manifests, logs, temporary files, and saved proxy credentials.&#xD;&#xA;&#xD;&#xA;The app will close and restart at the first-run performance selector. Game installations and .dlsss backup files are not changed.</value>
+  </data>
+  <data name="SettingsPage_ResetLocalDataFailureTemplate" xml:space="preserve">
+    <value>DLSS Swapper could not start the reset process. No app data was deleted.&#xD;&#xA;&#xD;&#xA;{0}</value>
   </data>
 </root>

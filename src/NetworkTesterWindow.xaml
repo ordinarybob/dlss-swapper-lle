@@ -132,7 +132,6 @@
         
             <StackPanel Orientation="Horizontal" Spacing="12" Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="4" HorizontalAlignment="Center">
                 <Button Content="{x:Bind ViewModel.TranslationProperties.CopyTestResultsText, Mode=OneWay}" Command="{x:Bind ViewModel.CopyTestResultsCommand}" />
-                <Button Content="{x:Bind ViewModel.TranslationProperties.CreateBugReportText, Mode=OneWay}" Command="{x:Bind ViewModel.CreateBugReportCommand}" />
                 <Button Content="{x:Bind ViewModel.TranslationProperties.CancelCurrentTestText, Mode=OneWay}" Command="{x:Bind ViewModel.CancelCurrentTestCommand}" />
             </StackPanel>
 

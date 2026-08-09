@@ -367,22 +367,6 @@ public sealed partial class MainWindow : Window
     async void MainContentHost_Loaded(object sender, RoutedEventArgs e)
     {
         Logger.Info("Main window content loaded.");
-        // TODO: Disabled because CommunityToolkit.WinUI.Helpers.SystemInformation.Instance.IsAppUpdated throws exceptions for unpackaged apps.
-        /*
-        // If this is a new build, fetch updates to display to the user.
-        Task<Data.GitHub.GitHubRelease> releaseNotesTask = null;
-        if (CommunityToolkit.WinUI.Helpers.SystemInformation.Instance.IsAppUpdated)
-        {
-            var currentAppVersion = App.CurrentApp.GetVersion();
-            releaseNotesTask = gitHubUpdater.GetReleaseFromTag($"v{currentAppVersion.Major}.{currentAppVersion.Minor}.{currentAppVersion.Build}.{currentAppVersion.Revision}");
-        }
-        */
-
-        var gitHubUpdater = new Data.GitHub.GitHubUpdater();
-
-        // If this is a GitHub build check if there is a new version.
-        var newUpdateTask = gitHubUpdater.CheckForNewGitHubRelease(false);
-
         await DLLManager.Instance.LoadManifestsAsync();
 
 
@@ -428,19 +412,14 @@ public sealed partial class MainWindow : Window
             {
                 Title = ResourceHelper.GetString("General_Error"),
                 CloseButtonText = ResourceHelper.GetString("General_Close"),
-                PrimaryButtonText = ResourceHelper.GetString("MainWindow_ManifestCouldNotBeLoaded_GitHubIssues"),
-                SecondaryButtonText = ResourceHelper.GetString("MainWindow_ManifestCouldNotBeLoaded_UpdateManifest"),
+                PrimaryButtonText = ResourceHelper.GetString("MainWindow_ManifestCouldNotBeLoaded_UpdateManifest"),
                 DefaultButton = ContentDialogButton.Primary,
-                Content = ResourceHelper.GetString("MainWindow_ManifestCouldNotBeLoaded_Message"),
+                Content = ResourceHelper.GetString("MainWindow_ManifestCouldNotBeLoaded_LleMessage"),
             };
             var shouldClose = true;
 
             var response = await dialog.ShowAsync();
             if (response == ContentDialogResult.Primary)
-            {
-                await Launcher.LaunchUriAsync(new Uri("https://github.com/beeradmoore/dlss-swapper/issues"));
-            }
-            else if (response is ContentDialogResult.Secondary)
             {
                 dialog = new EasyContentDialog(RootGrid.XamlRoot)
                 {
@@ -501,27 +480,6 @@ public sealed partial class MainWindow : Window
 
         GoToPage(GameGridPage.PageTag);
 
-        // TODO: Disabled because CommunityToolkit.WinUI.Helpers.SystemInformation.Instance.IsAppUpdated throws exceptions for unpackaged apps.
-        /*
-        if (releaseNotesTask is not null)
-        {
-            await releaseNotesTask;
-            if (releaseNotesTask.Result is not null)
-            {
-                gitHubUpdater?.DisplayWhatsNewDialog(releaseNotesTask.Result, RootGrid);
-            }
-        }
-        */
-
-        // TODO: What happens if you have no internet
-        await newUpdateTask;
-        if (newUpdateTask.Result is not null)
-        {
-            if (gitHubUpdater.HasPromptedBefore(newUpdateTask.Result) == false)
-            {
-                await gitHubUpdater.DisplayNewUpdateDialog(newUpdateTask.Result, RootGrid.XamlRoot);
-            }
-        }
     }
 
     /// <summary>

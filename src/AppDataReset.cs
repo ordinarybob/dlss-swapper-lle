@@ -94,7 +94,7 @@ internal static class AppDataReset
             using var parentProcess = Process.GetProcessById(parentProcessId);
             if (parentProcess.WaitForExit(TimeSpan.FromSeconds(60)) == false)
             {
-                throw new TimeoutException("DLSS Swapper did not close within 60 seconds. No app data was deleted.");
+                throw new TimeoutException("DLSS Swapper LLE did not close within 60 seconds. No app data was deleted.");
             }
         }
         catch (ArgumentException)
@@ -183,7 +183,7 @@ internal static class AppDataReset
     {
         MessageBox(
             IntPtr.Zero,
-            $"DLSS Swapper could not completely reset its local app data.\n\n{errorMessage}",
+            $"DLSS Swapper LLE could not completely reset its local app data.\n\n{errorMessage}",
             "Reset local app data failed",
             0x00000010);
     }

@@ -6,6 +6,42 @@ namespace DLSS_Swapper.Pages;
 
 public class SettingsPageModelTranslationProperties : LocalizedViewModelBase
 {
+    [TranslationProperty] public string PerformanceText => ResourceHelper.GetString("SettingsPage_Performance");
+    [TranslationProperty] public string PerformanceInfo => ResourceHelper.GetString("SettingsPage_PerformanceInfo");
+    [TranslationProperty] public string ConcurrentGameScansText => ResourceHelper.GetString("SettingsPage_ConcurrentGameScans");
+    [TranslationProperty] public string ConcurrentGameScansInfo => ResourceHelper.GetString("SettingsPage_ConcurrentGameScansInfo");
+    [TranslationProperty] public string ConcurrentArtworkLoadingText => ResourceHelper.GetString("SettingsPage_ConcurrentArtworkLoading");
+    [TranslationProperty] public string ConcurrentArtworkLoadingInfo => ResourceHelper.GetString("SettingsPage_ConcurrentArtworkLoadingInfo");
+    [TranslationProperty] public string UiBatchText => ResourceHelper.GetString("SettingsPage_UiBatch");
+    [TranslationProperty] public string UiBatchInfo => ResourceHelper.GetString("SettingsPage_UiBatchInfo");
+    [TranslationProperty] public string DatabaseBatchText => ResourceHelper.GetString("SettingsPage_DatabaseBatch");
+    [TranslationProperty] public string DatabaseBatchInfo => ResourceHelper.GetString("SettingsPage_DatabaseBatchInfo");
+    [TranslationProperty] public string ConcurrentGameUpdatesText => ResourceHelper.GetString("SettingsPage_ConcurrentGameUpdates");
+    [TranslationProperty] public string ConcurrentGameUpdatesInfo => ResourceHelper.GetString("SettingsPage_ConcurrentGameUpdatesInfo");
+    [TranslationProperty] public string ResetPerformanceDefaultsText => ResourceHelper.GetString("SettingsPage_ResetPerformanceDefaults");
+    [TranslationProperty] public string FallbackCoverArtText => ResourceHelper.GetString("SettingsPage_FallbackCoverArt");
+    [TranslationProperty] public string FallbackCoverArtInfo => ResourceHelper.GetString("SettingsPage_FallbackCoverArtInfo");
+    [TranslationProperty] public string MediaWikiApiEndpointText => ResourceHelper.GetString("SettingsPage_MediaWikiApiEndpoint");
+    [TranslationProperty] public string AllowedImageHostText => ResourceHelper.GetString("SettingsPage_AllowedImageHost");
+    [TranslationProperty] public string SaveSourceText => ResourceHelper.GetString("SettingsPage_SaveSource");
+    [TranslationProperty] public string ResetDefaultText => ResourceHelper.GetString("SettingsPage_ResetDefault");
+    [TranslationProperty] public string FastScanPathsText => ResourceHelper.GetString("SettingsPage_FastScanPaths");
+    [TranslationProperty] public string FastScanPathsInfo => ResourceHelper.GetString("SettingsPage_FastScanPathsInfo");
+    [TranslationProperty] public string BuiltInPatternsText => ResourceHelper.GetString("SettingsPage_BuiltInPatterns");
+    [TranslationProperty] public string LearnedCustomPatternsText => ResourceHelper.GetString("SettingsPage_LearnedCustomPatterns");
+    [TranslationProperty] public string PatternExampleText => ResourceHelper.GetString("SettingsPage_PatternExample");
+    [TranslationProperty] public string AddPatternText => ResourceHelper.GetString("SettingsPage_AddPattern");
+    [TranslationProperty] public string RemoveText => ResourceHelper.GetString("General_Remove");
+    [TranslationProperty] public string GamesGridText => ResourceHelper.GetString("SettingsPage_GamesGrid");
+    [TranslationProperty] public string GamesGridInfo => ResourceHelper.GetString("SettingsPage_GamesGridInfo");
+    [TranslationProperty] public string PreferredColumnsText => ResourceHelper.GetString("SettingsPage_PreferredColumns");
+    [TranslationProperty] public string PreferredColumnsInfo => ResourceHelper.GetString("SettingsPage_PreferredColumnsInfo");
+    [TranslationProperty] public string PreferredRowsText => ResourceHelper.GetString("SettingsPage_PreferredRows");
+    [TranslationProperty] public string PreferredRowsInfo => ResourceHelper.GetString("SettingsPage_PreferredRowsInfo");
+    [TranslationProperty] public string ResetLocalDataText => ResourceHelper.GetString("SettingsPage_ResetLocalData");
+    [TranslationProperty] public string ResetLocalDataInfo => ResourceHelper.GetString("SettingsPage_ResetLocalDataInfo");
+    [TranslationProperty] public string ResetAllLocalDataText => ResourceHelper.GetString("SettingsPage_ResetAllLocalData");
+
     [TranslationProperty]
     public string VersionText => $"{ResourceHelper.GetString("General_Version")}:";
 
@@ -19,7 +55,13 @@ public class SettingsPageModelTranslationProperties : LocalizedViewModelBase
     public string CopyText => ResourceHelper.GetString("General_Copy");
 
     [TranslationProperty]
-    public string GiveFeedbackInfo => ResourceHelper.GetString("SettingsPage_GiveFeedbackInfo");
+    public string LleCheckpointInfo => ResourceHelper.GetString("SettingsPage_LleCheckpointInfo");
+
+    [TranslationProperty]
+    public string LleRepositoryLabel => ResourceHelper.GetString("SettingsPage_LleRepositoryLabel");
+
+    [TranslationProperty]
+    public string UpstreamSourceLabel => ResourceHelper.GetString("SettingsPage_UpstreamSourceLabel");
 
     [TranslationProperty]
     public string NetworkTesterText => ResourceHelper.GetString("SettingsPage_OpenNetworkTester");
@@ -110,12 +152,6 @@ public class SettingsPageModelTranslationProperties : LocalizedViewModelBase
 
     [TranslationProperty]
     public string ApliesOnlyToDllPickerNotLibraryText => ResourceHelper.GetString("SettingsPage_AppliesOnlyToDllPickerNotLibrary");
-
-    [TranslationProperty]
-    public string CheckForUpdatesText => ResourceHelper.GetString("SettingsPage_SettingsCheckForUpdates");
-
-    [TranslationProperty]
-    public string GiveFeedbackText => ResourceHelper.GetString("SettingsPage_GiveFeedback");
 
     [TranslationProperty]
     public string TroubleshootingText => ResourceHelper.GetString("SettingsPage_Troubleshooting");

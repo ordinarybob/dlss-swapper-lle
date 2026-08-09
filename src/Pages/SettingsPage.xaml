@@ -69,11 +69,11 @@
                 <TextBlock
                     Style="{StaticResource SubtitleTextBlockStyle}"
                     Margin="0,40,0,0"
-                    Text="Performance" />
+                    Text="{x:Bind ViewModel.TranslationProperties.PerformanceText, Mode=OneWay}" />
                 <TextBlock
                     Margin="0,10,0,0"
                     TextWrapping="WrapWholeWords"
-                    Text="These controls tune large-library throughput. Recommended defaults suit most systems. Scan and artwork worker changes apply after restarting the app; batch sizes and selected-game update concurrency apply to subsequent work." />
+                    Text="{x:Bind ViewModel.TranslationProperties.PerformanceInfo, Mode=OneWay}" />
                 <Grid Margin="0,18,0,0"
                       MaxWidth="840"
                       HorizontalAlignment="Left"
@@ -92,8 +92,8 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" VerticalAlignment="Center">
-                        <TextBlock x:Name="RecursiveScanLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game scans" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Game folders scanned recursively at once (1–26). Recommended: 15; use 2 for a game library on a HDD." />
+                        <TextBlock x:Name="RecursiveScanLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.ConcurrentGameScansText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.ConcurrentGameScansInfo, Mode=OneWay}" />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="0"
@@ -108,8 +108,8 @@
                         Value="{x:Bind ViewModel.RecursiveScanConcurrency, Mode=TwoWay}" />
 
                     <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                        <TextBlock x:Name="CoverHydrationLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent artwork loading" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Game covers loaded in parallel after games appear (1–64). Recommended: 38; use 1 for a game library on a HDD." />
+                        <TextBlock x:Name="CoverHydrationLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.ConcurrentArtworkLoadingText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.ConcurrentArtworkLoadingInfo, Mode=OneWay}" />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="1"
@@ -124,8 +124,8 @@
                         Value="{x:Bind ViewModel.CoverHydrationConcurrency, Mode=TwoWay}" />
 
                     <StackPanel Grid.Row="2" VerticalAlignment="Center">
-                        <TextBlock x:Name="UiBatchLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Games added per UI batch" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Games added to the interface before yielding to input and rendering (10–1000). Recommended: 550." />
+                        <TextBlock x:Name="UiBatchLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.UiBatchText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.UiBatchInfo, Mode=OneWay}" />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="2"
@@ -140,8 +140,8 @@
                         Value="{x:Bind ViewModel.UiCollectionBatchSize, Mode=TwoWay}" />
 
                     <StackPanel Grid.Row="3" VerticalAlignment="Center">
-                        <TextBlock x:Name="DatabaseBatchLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Database records per transaction" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Discovered game records committed per SQLite transaction (10–1000). Recommended: 550." />
+                        <TextBlock x:Name="DatabaseBatchLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.DatabaseBatchText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.DatabaseBatchInfo, Mode=OneWay}" />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="3"
@@ -156,8 +156,8 @@
                         Value="{x:Bind ViewModel.DatabaseWriteBatchSize, Mode=TwoWay}" />
 
                     <StackPanel Grid.Row="4" VerticalAlignment="Center">
-                        <TextBlock x:Name="BatchUpdateLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Concurrent game updates" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Games updated in parallel during a selected-games DLL update (1–26). Recommended: 15." />
+                        <TextBlock x:Name="BatchUpdateLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.ConcurrentGameUpdatesText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.ConcurrentGameUpdatesInfo, Mode=OneWay}" />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="4"
@@ -172,23 +172,23 @@
                         Value="{x:Bind ViewModel.BatchSwapConcurrency, Mode=TwoWay}" />
                 </Grid>
                 <Button Margin="0,18,0,0"
-                        Content="Reset recommended defaults"
+                        Content="{x:Bind ViewModel.TranslationProperties.ResetPerformanceDefaultsText, Mode=OneWay}"
                         Command="{x:Bind ViewModel.ResetPerformanceDefaultsCommand}" />
 
                 <TextBlock
                     Style="{StaticResource SubtitleTextBlockStyle}"
                     Margin="0,40,0,0"
-                    Text="Fallback cover art" />
+                    Text="{x:Bind ViewModel.TranslationProperties.FallbackCoverArtText, Mode=OneWay}" />
                 <TextBlock
                     Margin="0,10,0,0"
                     MaxWidth="840"
                     HorizontalAlignment="Left"
                     TextWrapping="WrapWholeWords"
-                    Text="Manually added games that do not resolve on Steam use this MediaWiki source. Only HTTPS portrait images from the allowed image host are accepted." />
+                    Text="{x:Bind ViewModel.TranslationProperties.FallbackCoverArtInfo, Mode=OneWay}" />
                 <TextBlock
                     Margin="0,16,0,0"
                     Style="{StaticResource BodyStrongTextBlockStyle}"
-                    Text="MediaWiki API endpoint" />
+                    Text="{x:Bind ViewModel.TranslationProperties.MediaWikiApiEndpointText, Mode=OneWay}" />
                 <TextBox
                     Margin="0,6,0,0"
                     MaxWidth="840"
@@ -197,7 +197,7 @@
                 <TextBlock
                     Margin="0,12,0,0"
                     Style="{StaticResource BodyStrongTextBlockStyle}"
-                    Text="Allowed image host" />
+                    Text="{x:Bind ViewModel.TranslationProperties.AllowedImageHostText, Mode=OneWay}" />
                 <TextBox
                     Margin="0,6,0,0"
                     MaxWidth="840"
@@ -208,10 +208,10 @@
                     Orientation="Horizontal"
                     Spacing="8">
                     <Button
-                        Content="Save source"
+                        Content="{x:Bind ViewModel.TranslationProperties.SaveSourceText, Mode=OneWay}"
                         Command="{x:Bind ViewModel.SaveFallbackCoverArtSourceCommand}" />
                     <Button
-                        Content="Reset default"
+                        Content="{x:Bind ViewModel.TranslationProperties.ResetDefaultText, Mode=OneWay}"
                         Command="{x:Bind ViewModel.ResetFallbackCoverArtSourceCommand}" />
                 </StackPanel>
                 <TextBlock
@@ -223,19 +223,19 @@
                 <TextBlock
                     Style="{StaticResource SubtitleTextBlockStyle}"
                     Margin="0,40,0,0"
-                    Text="Fast scan paths" />
+                    Text="{x:Bind ViewModel.TranslationProperties.FastScanPathsText, Mode=OneWay}" />
                 <TextBlock
                     Margin="0,10,0,0"
                     MaxWidth="840"
                     HorizontalAlignment="Left"
                     TextWrapping="WrapWholeWords"
-                    Text="The fast scan checks these relative directory patterns for supported DLLs. Deep Scan automatically learns newly discovered layouts; you can also add or remove a pattern here. Use * to match exactly one directory level." />
+                    Text="{x:Bind ViewModel.TranslationProperties.FastScanPathsInfo, Mode=OneWay}" />
                 <Expander
                     Margin="0,12,0,0"
                     MaxWidth="840"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Stretch"
-                    Header="Built-in patterns">
+                    Header="{x:Bind ViewModel.TranslationProperties.BuiltInPatternsText, Mode=OneWay}">
                     <ListView
                         MaxHeight="280"
                         HorizontalAlignment="Stretch"
@@ -257,7 +257,7 @@
                 <TextBlock
                     Margin="0,18,0,0"
                     Style="{StaticResource BodyStrongTextBlockStyle}"
-                    Text="Learned and custom patterns" />
+                    Text="{x:Bind ViewModel.TranslationProperties.LearnedCustomPatternsText, Mode=OneWay}" />
                 <Grid
                     Margin="0,8,0,0"
                     MaxWidth="840"
@@ -269,13 +269,13 @@
                     </Grid.ColumnDefinitions>
                     <TextBox
                         Grid.Column="0"
-                        PlaceholderText="Example: Engine\Plugins\MyUpscaler\Binaries\Win64"
+                        PlaceholderText="{x:Bind ViewModel.TranslationProperties.PatternExampleText, Mode=OneWay}"
                         Text="{x:Bind ViewModel.NewGameAssetDirectoryPattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <Button
                         Grid.Column="1"
                         VerticalAlignment="Stretch"
                         Command="{x:Bind ViewModel.AddGameAssetDirectoryPatternCommand}"
-                        Content="Add pattern" />
+                        Content="{x:Bind ViewModel.TranslationProperties.AddPatternText, Mode=OneWay}" />
                 </Grid>
                 <TextBlock
                     Margin="0,6,0,0"
@@ -305,7 +305,7 @@
                                     Grid.Column="1"
                                     Command="{Binding ElementName=RootPage, Path=ViewModel.DeleteGameAssetDirectoryPatternCommand}"
                                     CommandParameter="{Binding}"
-                                    Content="Remove" />
+                                    Content="{Binding ElementName=RootPage, Path=ViewModel.TranslationProperties.RemoveText}" />
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -314,11 +314,11 @@
                 <TextBlock
                     Style="{StaticResource SubtitleTextBlockStyle}"
                     Margin="0,40,0,0"
-                    Text="Games grid" />
+                    Text="{x:Bind ViewModel.TranslationProperties.GamesGridText, Mode=OneWay}" />
                 <TextBlock
                     Margin="0,10,0,0"
                     TextWrapping="WrapWholeWords"
-                    Text="Grid cards resize to fill the available width at a 2:3 cover ratio, so no space is reserved at the right edge. These preferences guide how dense the grid is." />
+                    Text="{x:Bind ViewModel.TranslationProperties.GamesGridInfo, Mode=OneWay}" />
                 <Grid Margin="0,18,0,0"
                       MaxWidth="840"
                       HorizontalAlignment="Left"
@@ -334,8 +334,8 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" VerticalAlignment="Center">
-                        <TextBlock x:Name="GridColumnsLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Preferred columns" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Minimum card columns in grid view (1–16). Ctrl + mouse wheel over the grid also changes this. Recommended: 6." />
+                        <TextBlock x:Name="GridColumnsLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.PreferredColumnsText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.PreferredColumnsInfo, Mode=OneWay}" />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="0"
@@ -350,8 +350,8 @@
                         Value="{x:Bind ViewModel.GridViewPreferredColumns, Mode=TwoWay}" />
 
                     <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                        <TextBlock x:Name="GridRowsLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Preferred visible rows" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="Card rows kept in view when the window is short; extra columns are added if needed (1–10). Recommended: 3." />
+                        <TextBlock x:Name="GridRowsLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.PreferredRowsText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.PreferredRowsInfo, Mode=OneWay}" />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
                         Grid.Row="1"
@@ -511,21 +511,12 @@
                     Style="{StaticResource SubtitleTextBlockStyle}"
                     Margin="0,40,0,0"
                     Text="{x:Bind ViewModel.TranslationProperties.AboutText, Mode=OneWay}" />
-                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                    <TextBlock Visibility="{x:Bind local:BuildInfo.IsFromTagBuild, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <Run Text="{x:Bind ViewModel.TranslationProperties.VersionText, Mode=OneWay}" FontWeight="Bold" />
-                        <Hyperlink ct_winui:HyperlinkExtensions.Command="{x:Bind ViewModel.OpenVersionCommand}" >
-                            <Run Text="{x:Bind ViewModel.AppVersion}" />
-                        </Hyperlink>
-                    </TextBlock>
+                <TextBlock Margin="0,12,0,0">
+                    <Run Text="{x:Bind ViewModel.TranslationProperties.VersionText, Mode=OneWay}" FontWeight="Bold" />
+                    <Run Text="{x:Bind ViewModel.AppVersion}" />
+                </TextBlock>
 
-                    <TextBlock Visibility="{x:Bind local:BuildInfo.IsFromTagBuild, Converter={StaticResource BoolToNegationVisibilityConverter}}">
-                        <Run Text="{x:Bind ViewModel.TranslationProperties.VersionText, Mode=OneWay}" FontWeight="Bold" />
-                        <Run Text="{x:Bind ViewModel.AppVersion}" />
-                    </TextBlock>
-                </StackPanel>
-
-                <TextBlock Visibility="{x:Bind local:BuildInfo.IsFromTagBuild, Converter={StaticResource BoolToNegationVisibilityConverter}}">
+                <TextBlock>
                     <Run Text="{x:Bind ViewModel.TranslationProperties.BuildCommitText, Mode=OneWay}" FontWeight="Bold" />
                     <Run Text="{x:Bind local:BuildInfo.GitCommitShort}" />
                     <Hyperlink ct_winui:HyperlinkExtensions.Command="{x:Bind ViewModel.CopyGitCommitCommand}" ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.CopyText, Mode=OneWay}" FontStyle="Normal" FontSize="12">
@@ -537,40 +528,24 @@
                     <Run Text="{x:Bind ViewModel.TranslationProperties.BuildDateText, Mode=OneWay}" FontWeight="Bold" />
                     <Run Text="{x:Bind local:BuildInfo.BuildDateTimeFormattedString}" />
                 </TextBlock>
-                
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,12,0,0" Spacing="16" >
-                    <Button Content="{x:Bind ViewModel.TranslationProperties.CheckForUpdatesText, Mode=OneWay}" Command="{x:Bind ViewModel.CheckForUpdatesCommand}" />
-                    <ProgressRing Width="25" Height="25" IsIndeterminate="True" IsActive="{x:Bind ViewModel.IsCheckingForUpdates, Mode=OneWay}" />
-                </StackPanel>
 
-                <RichTextBlock Margin="0,24,0,0">
+                <TextBlock Margin="0,12,0,0" MaxWidth="680" HorizontalAlignment="Left"
+                           TextWrapping="Wrap"
+                           Text="{x:Bind ViewModel.TranslationProperties.LleCheckpointInfo, Mode=OneWay}" />
+
+                <RichTextBlock Margin="0,16,0,0">
                     <Paragraph Margin="0,12,0,0">
-                        GitHub:
+                        <Run Text="{x:Bind ViewModel.TranslationProperties.LleRepositoryLabel, Mode=OneWay}" />
+                        <Hyperlink NavigateUri="https://github.com/ordinarybob/dlss-swapper-lle">ordinarybob/dlss-swapper-lle</Hyperlink>
+                    </Paragraph>
+                    <Paragraph Margin="0,0,0,0">
+                        <Run Text="{x:Bind ViewModel.TranslationProperties.UpstreamSourceLabel, Mode=OneWay}" />
                         <Hyperlink NavigateUri="https://github.com/beeradmoore/dlss-swapper">beeradmoore/dlss-swapper</Hyperlink>
-                    </Paragraph>
-                    <Paragraph Margin="0,0,0,0">
-                        Twitter:
-                        <Hyperlink NavigateUri="https://twitter.com/dlss_swapper">@dlss_swapper</Hyperlink>
-                    </Paragraph>
-                    <Paragraph Margin="0,0,0,0">
-                        Reddit:
-                        <Hyperlink NavigateUri="https://www.reddit.com/r/DLSS_Swapper/">r/DLSS_Swapper</Hyperlink>
                     </Paragraph>
                     <Paragraph Margin="0,12,0,0">
                         <Hyperlink ct_winui:HyperlinkExtensions.Command="{x:Bind ViewModel.OpenAcknowledgementsCommand}">
                             <Run Text="{x:Bind ViewModel.TranslationProperties.AcknowledgementsText, Mode=OneWay}" />
                         </Hyperlink>
-                    </Paragraph>
-                </RichTextBlock>
-
-                <TextBlock
-                    Style="{StaticResource SubtitleTextBlockStyle}"
-                    Margin="0,40,0,0"
-                    Text="{x:Bind ViewModel.TranslationProperties.GiveFeedbackText, Mode=OneWay}" />
-                <RichTextBlock Margin="0,12,0,0">
-                    <Paragraph>
-                        <Run Text="{x:Bind ViewModel.TranslationProperties.GiveFeedbackInfo, Mode=OneWay}" />
-                        <Hyperlink NavigateUri="https://github.com/beeradmoore/dlss-swapper/issues">GitHub repository</Hyperlink>
                     </Paragraph>
                 </RichTextBlock>
 
@@ -600,16 +575,16 @@
                     <TextBlock
                         Style="{StaticResource BodyStrongTextBlockStyle}"
                         Margin="0,24,0,0"
-                        Text="Reset local app data" />
+                        Text="{x:Bind ViewModel.TranslationProperties.ResetLocalDataText, Mode=OneWay}" />
                     <TextBlock
                         Margin="0,6,0,0"
                         MaxWidth="680"
                         HorizontalAlignment="Left"
                         TextWrapping="Wrap"
-                        Text="Erase all local DLSS Swapper data and restart at the first-run performance selector. Game installations and .dlsss backups are not changed." />
+                        Text="{x:Bind ViewModel.TranslationProperties.ResetLocalDataInfo, Mode=OneWay}" />
                     <Button
                         Margin="0,12,0,0"
-                        Content="Reset all local app data"
+                        Content="{x:Bind ViewModel.TranslationProperties.ResetAllLocalDataText, Mode=OneWay}"
                         Command="{x:Bind ViewModel.ResetLocalAppDataCommand}" />
                 </StackPanel>
 

@@ -52,8 +52,5 @@ public class NetworkTesterWindowModelTranslationProperties : LocalizedViewModelB
     public string ResultsText => ResourceHelper.GetString("NetworkTesterPage_Results");
 
     [TranslationProperty]
-    public string CreateBugReportText => ResourceHelper.GetString("NetworkTesterPage_CreateBugReport");
-
-    [TranslationProperty]
     public string CancelCurrentTestText => ResourceHelper.GetString("NetworkTesterPage_CancelCurrentTest");
 }

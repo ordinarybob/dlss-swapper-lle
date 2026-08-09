@@ -283,7 +283,6 @@ var ignoredStringKeyPrefixes = new List<string>()
     "GameLibrary_",
     "GamePage_",
     "GamesPage_",
-    "GitHubUpdater_",
     "TranslationToolboxPage_",
     "GameHistoryEventType_",
     "GameHistoryControl_",

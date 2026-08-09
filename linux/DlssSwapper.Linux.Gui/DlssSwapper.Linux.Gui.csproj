@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>dlss-swapper-linux-gui</AssemblyName>
+    <Version>1.2.5.1</Version>
+    <Product>DLSS Swapper LLE</Product>
+    <Description>DLSS Swapper LLE Linux GUI checkpoint</Description>
     <RootNamespace>DlssSwapper.Linux.Gui</RootNamespace>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>

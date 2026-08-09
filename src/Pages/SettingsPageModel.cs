@@ -125,9 +125,6 @@ public partial class SettingsPageModel : ObservableObject
         new ComboBoxOption("SettingsPage_Logging_Error", (int)DLSS_Swapper.LoggingLevel.Error),
     };
 
-    [ObservableProperty]
-    public partial bool IsCheckingForUpdates { get; set; } = false;
-
     public ObservableCollection<string> IgnoredPaths { get; set; }
 
     public IReadOnlyList<string> BuiltInGameAssetDirectoryPatterns { get; } =
@@ -483,37 +480,6 @@ public partial class SettingsPageModel : ObservableObject
     }
 
     [RelayCommand]
-    async Task CheckForUpdatesAsync()
-    {
-        IsCheckingForUpdates = true;
-        var githubUpdater = new Data.GitHub.GitHubUpdater();
-        var newUpdate = await githubUpdater.CheckForNewGitHubRelease(true);
-
-        if (_weakPage.TryGetTarget(out SettingsPage? settingsPage))
-        {
-            if (newUpdate is not null)
-            {
-                await githubUpdater.DisplayNewUpdateDialog(newUpdate, settingsPage.XamlRoot);
-            }
-            else
-            {
-                var dialog = new EasyContentDialog(settingsPage.XamlRoot)
-                {
-                    CloseButtonText = ResourceHelper.GetString("General_Okay"),
-                    DefaultButton = ContentDialogButton.Close,
-                    Content = ResourceHelper.GetString("SettingsPage_NoNewUpdatesAvailable"),
-                };
-                await dialog.ShowAsync();
-
-                IsCheckingForUpdates = false;
-                return;
-            }
-        }
-
-        IsCheckingForUpdates = false;
-    }
-
-    [RelayCommand]
     async Task OpenLogFileAsync()
     {
         try
@@ -582,7 +548,7 @@ public partial class SettingsPageModel : ObservableObject
                 .Contains(normalizedPattern, StringComparer.OrdinalIgnoreCase)
             || CustomGameAssetDirectoryPatterns.Contains(normalizedPattern, StringComparer.OrdinalIgnoreCase))
         {
-            GameAssetDirectoryPatternError = "That directory pattern is already included.";
+            GameAssetDirectoryPatternError = ResourceHelper.GetString("SettingsPage_PatternAlreadyIncluded");
             return;
         }
 
@@ -590,7 +556,7 @@ public partial class SettingsPageModel : ObservableObject
             CustomGameAssetDirectoryPatterns.Append(normalizedPattern));
         if (normalizedCustomPatterns.Contains(normalizedPattern, StringComparer.OrdinalIgnoreCase) == false)
         {
-            GameAssetDirectoryPatternError = "A broader directory pattern already includes that path.";
+            GameAssetDirectoryPatternError = ResourceHelper.GetString("SettingsPage_PatternCoveredByBroader");
             return;
         }
 
@@ -674,13 +640,13 @@ public partial class SettingsPageModel : ObservableObject
         error = string.Empty;
         if (normalizedPattern.Length == 0)
         {
-            error = "Enter a directory path relative to a game folder.";
+            error = ResourceHelper.GetString("SettingsPage_PatternRequired");
             return false;
         }
 
         if (Path.IsPathRooted(normalizedPattern))
         {
-            error = "Use a relative directory pattern, not a drive or absolute path.";
+            error = ResourceHelper.GetString("SettingsPage_PatternMustBeRelative");
             return false;
         }
 
@@ -691,7 +657,7 @@ public partial class SettingsPageModel : ObservableObject
         {
             if (component is "." or "..")
             {
-                error = "Directory patterns cannot contain . or .. components.";
+                error = ResourceHelper.GetString("SettingsPage_PatternDotComponents");
                 return false;
             }
 
@@ -700,7 +666,7 @@ public partial class SettingsPageModel : ObservableObject
                     || component.Contains('?')
                     || component.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0))
             {
-                error = "Use literal directory names or * for one directory level.";
+                error = ResourceHelper.GetString("SettingsPage_PatternInvalidCharacters");
                 return false;
             }
         }
@@ -806,11 +772,11 @@ public partial class SettingsPageModel : ObservableObject
 
         var dialog = new EasyContentDialog(settingsPage.XamlRoot)
         {
-            Title = "Reset all local app data?",
+            Title = ResourceHelper.GetString("SettingsPage_ResetLocalDataTitle"),
             CloseButtonText = ResourceHelper.GetString("General_Cancel"),
             DefaultButton = ContentDialogButton.Close,
-            PrimaryButtonText = "Reset and restart",
-            Content = "This permanently deletes all data stored by DLSS Swapper, including settings, discovered and manually added games, scan results, history, notes, favourites, hidden-game state, cached and custom covers, downloaded and imported DLLs, manifests, logs, temporary files, and saved proxy credentials.\n\nThe app will close and restart at the first-run performance selector. Game installations and .dlsss backup files are not changed.",
+            PrimaryButtonText = ResourceHelper.GetString("SettingsPage_ResetAndRestart"),
+            Content = ResourceHelper.GetString("SettingsPage_ResetLocalDataDescription"),
         };
 
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
@@ -829,7 +795,7 @@ public partial class SettingsPageModel : ObservableObject
             Title = ResourceHelper.GetString("General_Error"),
             CloseButtonText = ResourceHelper.GetString("General_Okay"),
             DefaultButton = ContentDialogButton.Close,
-            Content = $"DLSS Swapper could not start the reset process. No app data was deleted.\n\n{errorMessage}",
+            Content = ResourceHelper.GetFormattedResourceTemplate("SettingsPage_ResetLocalDataFailureTemplate", errorMessage ?? string.Empty),
         };
         await errorDialog.ShowAsync();
     }
@@ -860,19 +826,6 @@ public partial class SettingsPageModel : ObservableObject
             {
                 await Launcher.LaunchUriAsync(new Uri("https://github.com/beeradmoore/dlss-swapper/wiki/DLSS-Developer-Options#on-screen-indicator"));
             }
-        }
-    }
-
-    [RelayCommand]
-    async Task OpenVersionAsync()
-    {
-        if (string.IsNullOrWhiteSpace(BuildInfo.GitTag))
-        {
-            await Launcher.LaunchUriAsync(new Uri("https://github.com/beeradmoore/dlss-swapper/releases"));
-        }
-        else
-        {
-            await Launcher.LaunchUriAsync(new Uri($"https://github.com/beeradmoore/dlss-swapper/releases/tag/{BuildInfo.GitTag}"));
         }
     }
 
