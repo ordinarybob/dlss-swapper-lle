@@ -107,6 +107,13 @@ public static class FastScanPatternIndex
             .ToArray();
     }
 
+    public static bool TryNormalizePattern(string? pattern, out string normalized)
+    {
+        var value = NormalizePattern(pattern);
+        normalized = value ?? string.Empty;
+        return value is not null;
+    }
+
     public static CandidateFileResult EnumerateFastCandidates(
         string gameRoot,
         IEnumerable<string>? customPatterns = null,

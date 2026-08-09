@@ -1075,10 +1075,16 @@ internal static class Program
             includeDefaultSteamRoots: false,
             static () => throw new InvalidOperationException("State commands must not create a download cache."),
             createStore).ConfigureAwait(false);
+        var coveredPatternExit = await DlssSwapper.Linux.Cli.Program.RunAsync(
+            ["state", "add-pattern", "Engine/Binaries/Win64"],
+            includeDefaultSteamRoots: false,
+            static () => throw new InvalidOperationException("State commands must not create a download cache."),
+            createStore).ConfigureAwait(false);
 
         var state = createStore().Load();
         AssertEqual(0, addGameExit, "state add-game exit");
         AssertEqual(0, addPatternExit, "state add-pattern exit");
+        AssertEqual(0, coveredPatternExit, "built-in-covered state pattern exit");
         AssertEqual(1, state.ManualGames.Count, "persisted manual game");
         AssertEqual(1, state.CustomScanPatterns.Count, "persisted custom pattern");
 

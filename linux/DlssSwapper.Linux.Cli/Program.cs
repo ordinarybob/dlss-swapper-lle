@@ -135,7 +135,12 @@ internal static class Program
                     add: false,
                     "Steam root");
             case "add-pattern":
-                value = NormalizePattern(value!);
+                value = NormalizePattern(value!, out var addCovered);
+                if (addCovered)
+                {
+                    Console.WriteLine("Fast Scan pattern: unchanged (covered by built-in patterns)");
+                    return 0;
+                }
                 return ChangeStringState(
                     library,
                     library.State.CustomScanPatterns,
@@ -143,7 +148,12 @@ internal static class Program
                     add: true,
                     "Fast Scan pattern");
             case "remove-pattern":
-                value = NormalizePattern(value!);
+                value = NormalizePattern(value!, out var removeCovered);
+                if (removeCovered)
+                {
+                    Console.WriteLine("Fast Scan pattern: unchanged (covered by built-in patterns)");
+                    return 0;
+                }
                 return ChangeStringState(
                     library,
                     library.State.CustomScanPatterns,
@@ -259,17 +269,16 @@ internal static class Program
         return path;
     }
 
-    private static string NormalizePattern(string input)
+    private static string NormalizePattern(string input, out bool coveredByBuiltIn)
     {
-        try
+        if (!FastScanPatternIndex.TryNormalizePattern(input, out var normalized))
         {
-            return FastScanPatternIndex.NormalizeCustomPatterns([input]).Single();
+            throw new UsageException("Invalid Fast Scan pattern.");
         }
-        catch (Exception exception) when (exception is ArgumentException
-            or InvalidOperationException)
-        {
-            throw new UsageException($"Invalid Fast Scan pattern: {exception.Message}");
-        }
+
+        var reduced = FastScanPatternIndex.NormalizeCustomPatterns([normalized]);
+        coveredByBuiltIn = reduced.Count == 0;
+        return coveredByBuiltIn ? normalized : reduced[0];
     }
 
     private static void WriteDiscovery(SteamDiscoveryResult discovery)
