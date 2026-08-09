@@ -101,6 +101,7 @@ VIAddVersionKey "ProductName" "DLSS Swapper LLE"
 VIAddVersionKey "ProductVersion" "1.2.5.1"
 VIAddVersionKey "FileDescription" "DLSS Swapper LLE installer"
 VIAddVersionKey "FileVersion" "1.2.5.1"
+VIAddVersionKey "LegalCopyright" "Copyright (c) DLSS Swapper contributors"
 
 ; Pages
 !insertmacro MUI_PAGE_WELCOME
