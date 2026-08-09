@@ -134,9 +134,18 @@
                 <DataTemplate>
                   <Border Classes="row">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                      <CheckBox Grid.Column="0"
-                                IsChecked="{Binding IsSelected}"
-                                VerticalAlignment="Top" />
+                      <StackPanel Grid.Column="0" Spacing="6">
+                        <CheckBox IsChecked="{Binding IsSelected}"
+                                  HorizontalAlignment="Center" />
+                        <Border Width="72"
+                                Height="108"
+                                Background="#202020"
+                                CornerRadius="4"
+                                ClipToBounds="True">
+                          <Image Source="{Binding CoverImage}"
+                                 Stretch="UniformToFill" />
+                        </Border>
+                      </StackPanel>
                       <StackPanel Grid.Column="1" Spacing="3">
                         <TextBlock Text="{Binding Name}"
                                    FontSize="15"

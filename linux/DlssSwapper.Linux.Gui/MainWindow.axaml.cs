@@ -1,7 +1,9 @@
 using System.ComponentModel;
+using System.Collections.Concurrent;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using DlssSwapper.Linux.Cli.Core;
 using DlssSwapper.Linux.Cli.Platform;
 using DlssSwapper.Linux.Gui.ViewModels;
@@ -20,6 +22,10 @@ public sealed partial class MainWindow : Window
     private readonly UpdatePlanner _planner = new();
     private readonly HashSet<string> _knownPaths = new(PathComparer);
     private readonly CancellationTokenSource _lifetime = new();
+    private readonly HttpClient _artworkHttpClient = new()
+    {
+        Timeout = TimeSpan.FromMinutes(2),
+    };
     private readonly TextBox _steamRootsTextBox;
     private readonly TextBox _explicitPathsTextBox;
     private readonly TextBox _gameRootsTextBox;
@@ -27,7 +33,11 @@ public sealed partial class MainWindow : Window
     private DllCatalog? _catalog;
     private PersistentLibrary? _library;
     private LibraryScanService? _scanService;
+    private ArtworkService? _artworkService;
     private IReadOnlyList<UpdatePlanItem> _currentUpdatePlan = [];
+    private IReadOnlyList<SteamGame> _lastSteamGames = [];
+    private CancellationTokenSource? _artworkCancellation;
+    private Task? _artworkTask;
     private Task? _deepScanTask;
     private bool _opened;
 
@@ -49,6 +59,11 @@ public sealed partial class MainWindow : Window
             _catalog = DllCatalog.Load(manifestPath);
             _library = new PersistentLibrary(new LibraryStateStore());
             _scanService = new LibraryScanService(_catalog, _scanner);
+            _artworkHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "DLSS-Swapper-LLE-Linux/1.0");
+            _artworkService = new ArtworkService(
+                _artworkHttpClient,
+                new AvaloniaArtworkImageProcessor());
             _steamRootsTextBox.Text = string.Join(
                 Environment.NewLine,
                 _library.State.AdditionalSteamRoots);
@@ -62,7 +77,16 @@ public sealed partial class MainWindow : Window
         }
 
         Opened += MainWindow_Opened;
-        Closing += (_, _) => _lifetime.Cancel();
+        Closing += (_, _) =>
+        {
+            _lifetime.Cancel();
+            _artworkCancellation?.Cancel();
+            if (_artworkTask?.IsFaulted == true)
+            {
+                _ = _artworkTask.Exception;
+            }
+            _artworkHttpClient.Dispose();
+        };
     }
 
     private async void MainWindow_Opened(object? sender, EventArgs e)
@@ -180,6 +204,7 @@ public sealed partial class MainWindow : Window
                 CreateScanProgress(isDeepScan: true),
                 _lifetime.Token);
             ReplaceScans(result.Games);
+            StartArtworkHydration();
             _viewModel.StatusText =
                 $"Deep Scan found {_viewModel.GameCount} swappable game{Plural(_viewModel.GameCount)} and learned {result.LearnedPatternCount} new fast-scan pattern{Plural(result.LearnedPatternCount)}.";
         });
@@ -503,6 +528,7 @@ public sealed partial class MainWindow : Window
                 CreateScanProgress(isDeepScan: false),
                 _lifetime.Token);
             ReplaceScans(result.Games);
+            StartArtworkHydration();
             _viewModel.IsLoadingLibrary = false;
             _viewModel.StatusText =
                 $"Fast Scan loaded {_viewModel.GameCount} swappable game{Plural(_viewModel.GameCount)} in {result.Elapsed.TotalSeconds:F2} seconds.";
@@ -533,6 +559,7 @@ public sealed partial class MainWindow : Window
                 AdditionalRoots = library.State.AdditionalSteamRoots,
             }),
             _lifetime.Token);
+        _lastSteamGames = discovery.Games;
         foreach (var warning in discovery.Warnings)
         {
             AddResult("Steam discovery", "Steam", "—", "Warning", warning);
@@ -556,6 +583,7 @@ public sealed partial class MainWindow : Window
                 CreateScanProgress(isDeepScan: true),
                 _lifetime.Token);
             ReplaceScans(result.Games);
+            StartArtworkHydration();
             _viewModel.StatusText =
                 $"Initial Deep Scan completed in {result.Elapsed.TotalSeconds:F2} seconds; learned {result.LearnedPatternCount} new fast-scan pattern{Plural(result.LearnedPatternCount)}.";
         }
@@ -599,6 +627,114 @@ public sealed partial class MainWindow : Window
         }
 
         _viewModel.GameCount = _viewModel.Games.Count;
+    }
+
+    private void StartArtworkHydration()
+    {
+        if (_artworkService is null || _library is null || _viewModel.Games.Count == 0)
+        {
+            return;
+        }
+
+        _artworkCancellation?.Cancel();
+        _artworkCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            _lifetime.Token);
+        _artworkTask = HydrateArtworkAsync(
+            _viewModel.Games.ToArray(),
+            _artworkService,
+            _library,
+            _artworkCancellation.Token);
+    }
+
+    private async Task HydrateArtworkAsync(
+        IReadOnlyList<GameRowViewModel> rows,
+        ArtworkService service,
+        PersistentLibrary library,
+        CancellationToken cancellationToken)
+    {
+        var resolvedMappings = new ConcurrentDictionary<string, string>(PathComparer);
+        var warnings = new ConcurrentBag<(string Game, string Message)>();
+        try
+        {
+            await Parallel.ForEachAsync(
+                rows,
+                new ParallelOptions
+                {
+                    CancellationToken = cancellationToken,
+                    MaxDegreeOfParallelism = library.State.Performance.ArtworkConcurrency,
+                },
+                async (row, token) =>
+                {
+                    var result = await service.ResolveAsync(
+                        row.Game,
+                        library.State,
+                        _lastSteamGames,
+                        token).ConfigureAwait(false);
+                    if (result.ResolvedSteamAppId is not null
+                        && row.Game.SteamAppId is null)
+                    {
+                        resolvedMappings[row.RootPath] = result.ResolvedSteamAppId;
+                    }
+
+                    if (result.Warning is not null)
+                    {
+                        warnings.Add((row.Name, result.Warning));
+                    }
+
+                    if (result.Path is not null && File.Exists(result.Path))
+                    {
+                        await Dispatcher.UIThread.InvokeAsync(() => row.SetArtwork(result.Path));
+                    }
+                });
+
+            if (resolvedMappings.Count > 0)
+            {
+                var changed = false;
+                foreach (var manualGame in library.State.ManualGames)
+                {
+                    if (resolvedMappings.TryGetValue(manualGame.RootPath, out var appId)
+                        && manualGame.SteamAppId != appId)
+                    {
+                        manualGame.SteamAppId = appId;
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    library.Save();
+                }
+            }
+
+            if (!warnings.IsEmpty)
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    foreach (var warning in warnings)
+                    {
+                        AddResult(
+                            warning.Game,
+                            "Artwork",
+                            "—",
+                            "Warning",
+                            warning.Message);
+                    }
+                });
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // A refresh or shutdown replaced this hydration queue.
+        }
+        catch (Exception exception)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => AddResult(
+                "Library",
+                "Artwork",
+                "—",
+                "Warning",
+                exception.Message));
+        }
     }
 
     private async Task RunBusyAsync(string status, Func<Task> action)

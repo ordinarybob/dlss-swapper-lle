@@ -26,6 +26,7 @@ internal static class Program
             ("Matching version is a metadata-only no-op", RunSync(TestMetadataOnlyNoOp)),
             ("Initial deep scan completion is retry safe", TestRetrySafeDeepScanAsync),
             ("Library scan isolates missing game roots", TestMissingRootIsolationAsync),
+            ("Artwork cache, CDN, and strict fallback", TestArtworkResolutionAsync),
         };
 
         var failures = 0;
@@ -804,6 +805,139 @@ internal static class Program
         AssertEqual(1, live.Dlls.Count, "live root DLL count");
     }
 
+    private static async Task TestArtworkResolutionAsync()
+    {
+        using var temporary = new TemporaryDirectory();
+        var cacheRoot = Directory.CreateDirectory(Path.Combine(temporary.Path, "cache")).FullName;
+        var libraryRoot = Directory.CreateDirectory(Path.Combine(temporary.Path, "SteamLibrary")).FullName;
+        var steamGamePath = Directory.CreateDirectory(Path.Combine(
+            libraryRoot,
+            "steamapps",
+            "common",
+            "Steam Fixture")).FullName;
+        var steamCache = Directory.CreateDirectory(Path.Combine(
+            libraryRoot,
+            "appcache",
+            "librarycache")).FullName;
+        var localCover = Path.Combine(steamCache, "42_library_600x900.jpg");
+        File.WriteAllBytes(localCover, "local-cover"u8.ToArray());
+        var knownSteamGame = new SteamGame(
+            "42",
+            "Steam Fixture",
+            steamGamePath,
+            libraryRoot,
+            Path.Combine(libraryRoot, "steamapps", "appmanifest_42.acf"));
+        var processor = new RecordingArtworkProcessor();
+        var handler = new StubHttpMessageHandler(_ =>
+            throw new InvalidOperationException("Local Steam artwork reached the network."));
+        using var http = new HttpClient(handler);
+        var service = new ArtworkService(
+            http,
+            processor,
+            cacheRoot,
+            TimeSpan.Zero);
+        var local = await service.ResolveAsync(
+            new SelectedGame("Steam Fixture", steamGamePath, "42"),
+            new LinuxLibraryState(),
+            [knownSteamGame]).ConfigureAwait(false);
+        AssertEqual(ArtworkOrigin.SteamLocal, local.Origin, "local Steam artwork origin");
+        AssertEqual(localCover, local.Path!, "local Steam artwork path");
+        AssertEqual(0, handler.RequestCount, "local Steam network request count");
+
+        File.Delete(localCover);
+        var directBytes = "direct-jpeg"u8.ToArray();
+        var directHandler = new StubHttpMessageHandler(request =>
+        {
+            Assert(
+                request.RequestUri?.Host == "steamcdn-a.akamaihd.net",
+                "unexpected direct artwork request");
+            return ImageResponse(directBytes, "image/jpeg");
+        });
+        using var directHttp = new HttpClient(directHandler);
+        var directService = new ArtworkService(
+            directHttp,
+            processor,
+            cacheRoot,
+            TimeSpan.Zero);
+        var direct = await directService.ResolveAsync(
+            new SelectedGame("Steam Fixture", steamGamePath, "42"),
+            new LinuxLibraryState(),
+            [knownSteamGame]).ConfigureAwait(false);
+        AssertEqual(ArtworkOrigin.SteamCdn, direct.Origin, "Steam CDN artwork origin");
+        Assert(File.ReadAllBytes(direct.Path!).SequenceEqual(directBytes),
+            "Steam JPEG was re-encoded");
+        var reused = await directService.ResolveAsync(
+            new SelectedGame("Steam Fixture", steamGamePath, "42"),
+            new LinuxLibraryState(),
+            [knownSteamGame]).ConfigureAwait(false);
+        AssertEqual(ArtworkOrigin.SteamCache, reused.Origin, "Steam cache reuse origin");
+        AssertEqual(1, directHandler.RequestCount, "Steam cache repeated a download");
+
+        var manualRoot = Directory.CreateDirectory(Path.Combine(temporary.Path, "Alan Wake 2")).FullName;
+        var fallbackBytes = "fallback-image"u8.ToArray();
+        var fallbackHandler = new StubHttpMessageHandler(request =>
+        {
+            var uri = request.RequestUri
+                ?? throw new InvalidOperationException("Artwork request has no URI.");
+            if (uri.Host == "store.steampowered.com")
+            {
+                return JsonResponse("{\"items\":[]}");
+            }
+
+            if (uri.Host == "en.wikipedia.org"
+                && uri.Query.Contains("generator=search", StringComparison.Ordinal))
+            {
+                return JsonResponse(
+                    "{\"query\":{\"pages\":[{\"title\":\"Alan Wake 2\",\"images\":[{\"title\":\"File:Alan Wake 2 box art.jpg\"}]}]}}");
+            }
+
+            if (uri.Host == "en.wikipedia.org"
+                && uri.Query.Contains("imageinfo", StringComparison.Ordinal))
+            {
+                return JsonResponse(
+                    "{\"query\":{\"pages\":[{\"title\":\"File:Alan Wake 2 box art.jpg\",\"imageinfo\":[{\"url\":\"https://upload.wikimedia.org/alan-wake-2.jpg\",\"mime\":\"image/jpeg\",\"width\":800,\"height\":1200,\"size\":4096}]}]}}");
+            }
+
+            if (uri.Host == "upload.wikimedia.org")
+            {
+                return ImageResponse(fallbackBytes, "image/jpeg");
+            }
+
+            throw new InvalidOperationException($"Unexpected fallback request: {uri}");
+        });
+        using var fallbackHttp = new HttpClient(fallbackHandler);
+        var fallbackProcessor = new RecordingArtworkProcessor();
+        var fallbackService = new ArtworkService(
+            fallbackHttp,
+            fallbackProcessor,
+            cacheRoot,
+            TimeSpan.Zero);
+        var fallback = await fallbackService.ResolveAsync(
+            new SelectedGame("Alan Wake 2", manualRoot, null),
+            new LinuxLibraryState(),
+            []).ConfigureAwait(false);
+        AssertEqual(ArtworkOrigin.MediaWiki, fallback.Origin, "MediaWiki artwork origin");
+        Assert(File.Exists(fallback.Path), "MediaWiki artwork was not cached");
+        AssertEqual(1, fallbackProcessor.SaveCount, "fallback processor count");
+        AssertEqual(400, fallbackProcessor.MaximumWidth, "fallback maximum width");
+        AssertEqual(600, fallbackProcessor.MaximumHeight, "fallback maximum height");
+        Assert(fallbackProcessor.Source.SequenceEqual(fallbackBytes),
+            "fallback processor source bytes");
+        var fallbackRequestCount = fallbackHandler.RequestCount;
+        var fallbackReused = await fallbackService.ResolveAsync(
+            new SelectedGame("Alan Wake 2", manualRoot, null),
+            new LinuxLibraryState(),
+            []).ConfigureAwait(false);
+        AssertEqual(
+            ArtworkOrigin.MediaWikiCache,
+            fallbackReused.Origin,
+            "MediaWiki cache reuse origin");
+        AssertEqual(
+            fallbackRequestCount,
+            fallbackHandler.RequestCount,
+            "MediaWiki cache repeated a lookup");
+    }
+
     private static string WriteManifest(string directory, byte[] payload)
     {
         var hash = Convert.ToHexString(MD5.HashData(payload));
@@ -863,6 +997,19 @@ internal static class Program
     private static string EscapeVdf(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal);
 
+    private static HttpResponseMessage JsonResponse(string json) =>
+        new(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json"),
+        };
+
+    private static HttpResponseMessage ImageResponse(byte[] bytes, string mediaType)
+    {
+        var content = new ByteArrayContent(bytes);
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mediaType);
+        return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = content };
+    }
+
     private static StringComparer PathComparersForTests { get; } =
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
@@ -907,6 +1054,53 @@ internal static class Program
             {
                 Directory.Delete(Path, recursive: true);
             }
+        }
+    }
+
+    private sealed class StubHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
+
+        internal StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler)
+        {
+            _handler = handler;
+        }
+
+        internal int RequestCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            RequestCount++;
+            return Task.FromResult(_handler(request));
+        }
+    }
+
+    private sealed class RecordingArtworkProcessor : IArtworkImageProcessor
+    {
+        internal int SaveCount { get; private set; }
+
+        internal int MaximumWidth { get; private set; }
+
+        internal int MaximumHeight { get; private set; }
+
+        internal byte[] Source { get; private set; } = [];
+
+        public async Task SavePortraitAsync(
+            ReadOnlyMemory<byte> source,
+            string destinationPath,
+            int maximumWidth,
+            int maximumHeight,
+            CancellationToken cancellationToken)
+        {
+            SaveCount++;
+            MaximumWidth = maximumWidth;
+            MaximumHeight = maximumHeight;
+            Source = source.ToArray();
+            await File.WriteAllBytesAsync(destinationPath, Source, cancellationToken)
+                .ConfigureAwait(false);
         }
     }
 }

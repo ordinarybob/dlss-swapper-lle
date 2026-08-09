@@ -1,4 +1,5 @@
 using DlssSwapper.Linux.Cli.Core;
+using Avalonia.Media.Imaging;
 
 namespace DlssSwapper.Linux.Gui.ViewModels;
 
@@ -7,6 +8,8 @@ public sealed class GameRowViewModel : ObservableObject
     private bool _isSelected = true;
     private string _scanSummary = "Not scanned";
     private string _scanDetail = "Select this game, then scan it.";
+    private Bitmap? _coverImage;
+    private string? _artworkPath;
 
     public GameRowViewModel(SelectedGame game)
     {
@@ -42,6 +45,27 @@ public sealed class GameRowViewModel : ObservableObject
     }
 
     public ScanResult? ScanResult { get; private set; }
+
+    public Bitmap? CoverImage
+    {
+        get => _coverImage;
+        private set => SetProperty(ref _coverImage, value);
+    }
+
+    public string? ArtworkPath
+    {
+        get => _artworkPath;
+        private set => SetProperty(ref _artworkPath, value);
+    }
+
+    public void SetArtwork(string path)
+    {
+        var next = new Bitmap(path);
+        var previous = CoverImage;
+        ArtworkPath = path;
+        CoverImage = next;
+        previous?.Dispose();
+    }
 
     public void SetScanResult(ScanResult scan)
     {
