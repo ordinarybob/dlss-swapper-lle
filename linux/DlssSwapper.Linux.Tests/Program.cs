@@ -558,6 +558,7 @@ internal static class Program
         var library = new PersistentLibrary(store);
         AssertEqual(6, library.State.GridColumns, "default grid columns");
         AssertEqual(5, library.State.GridRows, "default grid rows");
+        Assert(library.State.GridView, "default view is not grid");
         AssertEqual(15, library.State.Performance.ScanConcurrency, "standard scan concurrency");
         AssertEqual(38, library.State.Performance.ArtworkConcurrency, "standard art concurrency");
         AssertEqual(1, library.AddManualGames([manualRoot, manualRoot]), "manual path deduplication");

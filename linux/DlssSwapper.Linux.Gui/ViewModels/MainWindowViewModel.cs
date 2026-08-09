@@ -9,6 +9,9 @@ public sealed class MainWindowViewModel : ObservableObject
     private bool _isLoadingLibrary = true;
     private bool _hasReadyPreview;
     private int _gameCount;
+    private bool _isGridView = true;
+    private int _gridColumns = 6;
+    private int _gridRows = 5;
 
     public ObservableCollection<GameRowViewModel> Games { get; } = [];
 
@@ -72,6 +75,32 @@ public sealed class MainWindowViewModel : ObservableObject
     public string GamesHeading => IsLoadingLibrary
         ? "Games · Loading"
         : $"Games ({GameCount})";
+
+    public bool IsGridView
+    {
+        get => _isGridView;
+        set
+        {
+            if (SetProperty(ref _isGridView, value))
+            {
+                OnPropertyChanged(nameof(IsListView));
+            }
+        }
+    }
+
+    public bool IsListView => !IsGridView;
+
+    public int GridColumns
+    {
+        get => _gridColumns;
+        set => SetProperty(ref _gridColumns, value);
+    }
+
+    public int GridRows
+    {
+        get => _gridRows;
+        set => SetProperty(ref _gridRows, value);
+    }
 
     public bool CanInteract => !IsBusy;
 

@@ -121,14 +121,61 @@
 
     <Grid Grid.Row="2" ColumnDefinitions="1.05*,0.95*" ColumnSpacing="14">
       <Border Grid.Column="0" Classes="card">
-        <Grid RowDefinitions="Auto,*">
+        <Grid RowDefinitions="Auto,Auto,*">
           <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="{Binding GamesHeading}" Classes="sectionTitle" />
-            <TextBlock Text="Selection changes invalidate an existing update preview."
-                       Classes="muted"
-                       FontSize="12" />
+            <TextBox x:Name="SearchTextBox"
+                     AutomationProperties.Name="Search"
+                     PlaceholderText="Search"
+                     TextChanged="SearchTextBox_TextChanged" />
           </StackPanel>
-          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+          <WrapPanel Grid.Row="1" Margin="0,0,0,10">
+            <ComboBox x:Name="FilterComboBox"
+                      Width="145"
+                      SelectedIndex="0"
+                      Margin="0,0,8,6"
+                      SelectionChanged="LibraryView_Changed">
+              <ComboBoxItem Content="All games" />
+              <ComboBoxItem Content="Steam" />
+              <ComboBoxItem Content="Manually added" />
+              <ComboBoxItem Content="DLSS" />
+              <ComboBoxItem Content="Frame generation" />
+              <ComboBoxItem Content="Ray reconstruction" />
+              <ComboBoxItem Content="XeSS" />
+              <ComboBoxItem Content="FSR" />
+            </ComboBox>
+            <ComboBox x:Name="SortComboBox"
+                      Width="125"
+                      SelectedIndex="0"
+                      Margin="0,0,8,6"
+                      SelectionChanged="LibraryView_Changed">
+              <ComboBoxItem Content="Name" />
+              <ComboBoxItem Content="Source" />
+              <ComboBoxItem Content="DLL version" />
+            </ComboBox>
+            <Button Content="List" Margin="0,0,6,6" Click="ListView_Click" />
+            <Button Content="Grid" Margin="0,0,8,6" Click="GridView_Click" />
+            <TextBlock Text="Columns" VerticalAlignment="Center" Margin="0,0,4,6" />
+            <NumericUpDown x:Name="GridColumnsInput"
+                           AutomationProperties.Name="Grid columns"
+                           Width="68"
+                           Minimum="1"
+                           Maximum="24"
+                           Margin="0,0,8,6"
+                           ValueChanged="GridDensity_Changed" />
+            <TextBlock Text="Rows" VerticalAlignment="Center" Margin="0,0,4,6" />
+            <NumericUpDown x:Name="GridRowsInput"
+                           AutomationProperties.Name="Grid rows"
+                           Width="68"
+                           Minimum="1"
+                           Maximum="24"
+                           Margin="0,0,0,6"
+                           ValueChanged="GridDensity_Changed" />
+          </WrapPanel>
+
+          <ScrollViewer Grid.Row="2"
+                        IsVisible="{Binding IsListView}"
+                        VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Games}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -137,34 +184,53 @@
                       <StackPanel Grid.Column="0" Spacing="6">
                         <CheckBox IsChecked="{Binding IsSelected}"
                                   HorizontalAlignment="Center" />
-                        <Border Width="72"
-                                Height="108"
-                                Background="#202020"
-                                CornerRadius="4"
-                                ClipToBounds="True">
-                          <Image Source="{Binding CoverImage}"
-                                 Stretch="UniformToFill" />
+                        <Border Width="72" Height="108" Background="#202020"
+                                CornerRadius="4" ClipToBounds="True">
+                          <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
                         </Border>
                       </StackPanel>
                       <StackPanel Grid.Column="1" Spacing="3">
-                        <TextBlock Text="{Binding Name}"
-                                   FontSize="15"
-                                   FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding Source}"
-                                   Classes="muted"
-                                   FontSize="12" />
-                        <TextBlock Text="{Binding RootPath}"
-                                   TextWrapping="Wrap"
-                                   FontFamily="Monospace"
-                                   FontSize="12" />
-                        <TextBlock Text="{Binding ScanSummary}"
-                                   Margin="0,4,0,0"
-                                   FontWeight="SemiBold"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding ScanDetail}"
-                                   Classes="muted"
-                                   FontSize="12"
-                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Source}" Classes="muted" FontSize="12" />
+                        <TextBlock Text="{Binding RootPath}" TextWrapping="Wrap"
+                                   FontFamily="Monospace" FontSize="12" />
+                        <TextBlock Text="{Binding ScanSummary}" Margin="0,4,0,0"
+                                   FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ScanDetail}" Classes="muted"
+                                   FontSize="12" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <ScrollViewer Grid.Row="2"
+                        IsVisible="{Binding IsGridView}"
+                        VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Games}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Columns="{Binding GridColumns}" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="row" Margin="3" MinWidth="88">
+                    <Grid RowDefinitions="Auto,*,Auto">
+                      <CheckBox Grid.Row="0"
+                                IsChecked="{Binding IsSelected}"
+                                HorizontalAlignment="Right" />
+                      <Border Grid.Row="1" Background="#202020" CornerRadius="4"
+                              ClipToBounds="True" MinHeight="120">
+                        <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
+                      </Border>
+                      <StackPanel Grid.Row="2" Margin="0,6,0,0">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                   TextWrapping="Wrap" MaxLines="2" />
+                        <TextBlock Text="{Binding ScanSummary}" Classes="muted"
+                                   FontSize="11" TextWrapping="Wrap" MaxLines="2" />
                       </StackPanel>
                     </Grid>
                   </Border>

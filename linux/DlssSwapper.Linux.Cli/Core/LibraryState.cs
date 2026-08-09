@@ -53,6 +53,8 @@ public sealed class LinuxLibraryState
 
     public int GridRows { get; set; } = 5;
 
+    public bool GridView { get; set; } = true;
+
     public string MediaWikiApiEndpoint { get; set; } = DefaultMediaWikiApiEndpoint;
 
     public string MediaWikiImageHost { get; set; } = DefaultMediaWikiImageHost;

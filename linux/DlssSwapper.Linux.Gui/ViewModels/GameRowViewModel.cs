@@ -67,6 +67,14 @@ public sealed class GameRowViewModel : ObservableObject
         previous?.Dispose();
     }
 
+    public void ClearArtwork()
+    {
+        var previous = CoverImage;
+        ArtworkPath = null;
+        CoverImage = null;
+        previous?.Dispose();
+    }
+
     public void SetScanResult(ScanResult scan)
     {
         ScanResult = scan;

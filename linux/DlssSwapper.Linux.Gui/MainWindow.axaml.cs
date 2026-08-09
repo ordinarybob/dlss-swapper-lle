@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
     private readonly DllScanner _scanner = new();
     private readonly UpdatePlanner _planner = new();
     private readonly HashSet<string> _knownPaths = new(PathComparer);
+    private readonly List<GameRowViewModel> _allRows = [];
     private readonly CancellationTokenSource _lifetime = new();
     private readonly HttpClient _artworkHttpClient = new()
     {
@@ -29,6 +30,11 @@ public sealed partial class MainWindow : Window
     private readonly TextBox _steamRootsTextBox;
     private readonly TextBox _explicitPathsTextBox;
     private readonly TextBox _gameRootsTextBox;
+    private readonly TextBox _searchTextBox;
+    private readonly ComboBox _filterComboBox;
+    private readonly ComboBox _sortComboBox;
+    private readonly NumericUpDown _gridColumnsInput;
+    private readonly NumericUpDown _gridRowsInput;
 
     private DllCatalog? _catalog;
     private PersistentLibrary? _library;
@@ -49,6 +55,15 @@ public sealed partial class MainWindow : Window
         _steamRootsTextBox = FindRequiredTextBox("SteamRootsTextBox");
         _explicitPathsTextBox = FindRequiredTextBox("ExplicitPathsTextBox");
         _gameRootsTextBox = FindRequiredTextBox("GameRootsTextBox");
+        _searchTextBox = FindRequiredTextBox("SearchTextBox");
+        _filterComboBox = this.FindControl<ComboBox>("FilterComboBox")
+            ?? throw new InvalidOperationException("Required filter control is missing.");
+        _sortComboBox = this.FindControl<ComboBox>("SortComboBox")
+            ?? throw new InvalidOperationException("Required sort control is missing.");
+        _gridColumnsInput = this.FindControl<NumericUpDown>("GridColumnsInput")
+            ?? throw new InvalidOperationException("Required grid-columns control is missing.");
+        _gridRowsInput = this.FindControl<NumericUpDown>("GridRowsInput")
+            ?? throw new InvalidOperationException("Required grid-rows control is missing.");
 
         try
         {
@@ -67,6 +82,11 @@ public sealed partial class MainWindow : Window
             _steamRootsTextBox.Text = string.Join(
                 Environment.NewLine,
                 _library.State.AdditionalSteamRoots);
+            _viewModel.IsGridView = _library.State.GridView;
+            _viewModel.GridColumns = _library.State.GridColumns;
+            _viewModel.GridRows = _library.State.GridRows;
+            _gridColumnsInput.Value = _library.State.GridColumns;
+            _gridRowsInput.Value = _library.State.GridRows;
             _viewModel.StatusText = "Loading the persistent game library…";
         }
         catch (Exception exception)
@@ -276,6 +296,57 @@ public sealed partial class MainWindow : Window
                 ? "Settings saved. HDD scan and artwork limits are active."
                 : "Settings saved. Standard scan and artwork limits are active.";
             await RefreshLibraryAsync(runInitialDeepScan: false);
+        }
+    }
+
+    private void SearchTextBox_TextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (_opened)
+        {
+            ApplyGameView();
+        }
+    }
+
+    private void LibraryView_Changed(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_opened)
+        {
+            ApplyGameView();
+        }
+    }
+
+    private void ListView_Click(object? sender, RoutedEventArgs e) => SetGridView(false);
+
+    private void GridView_Click(object? sender, RoutedEventArgs e) => SetGridView(true);
+
+    private void SetGridView(bool gridView)
+    {
+        _viewModel.IsGridView = gridView;
+        if (_library is not null && _library.State.GridView != gridView)
+        {
+            _library.State.GridView = gridView;
+            _library.Save();
+        }
+    }
+
+    private void GridDensity_Changed(object? sender, NumericUpDownValueChangedEventArgs e)
+    {
+        if (_library is null
+            || _gridColumnsInput.Value is null
+            || _gridRowsInput.Value is null)
+        {
+            return;
+        }
+
+        var columns = Decimal.ToInt32(_gridColumnsInput.Value.Value);
+        var rows = Decimal.ToInt32(_gridRowsInput.Value.Value);
+        _viewModel.GridColumns = columns;
+        _viewModel.GridRows = rows;
+        if (_library.State.GridColumns != columns || _library.State.GridRows != rows)
+        {
+            _library.State.GridColumns = columns;
+            _library.State.GridRows = rows;
+            _library.Save();
         }
     }
 
@@ -609,12 +680,14 @@ public sealed partial class MainWindow : Window
 
     private void ReplaceScans(IReadOnlyList<ScanResult> scans)
     {
-        foreach (var row in _viewModel.Games)
+        foreach (var row in _allRows)
         {
             row.PropertyChanged -= GameRow_PropertyChanged;
+            row.ClearArtwork();
         }
 
         _viewModel.Games.Clear();
+        _allRows.Clear();
         _knownPaths.Clear();
         foreach (var scan in scans.Where(scan => scan.Dlls.Count > 0))
         {
@@ -623,15 +696,81 @@ public sealed partial class MainWindow : Window
                 continue;
             }
 
-            _viewModel.Games[^1].SetScanResult(scan);
+            _allRows[^1].SetScanResult(scan);
         }
 
-        _viewModel.GameCount = _viewModel.Games.Count;
+        _viewModel.GameCount = _allRows.Count;
+        ApplyGameView();
     }
+
+    private void ApplyGameView()
+    {
+        IEnumerable<GameRowViewModel> rows = _allRows;
+        var search = _searchTextBox.Text?.Trim();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            rows = rows.Where(row => row.Name.Contains(
+                    search,
+                    StringComparison.OrdinalIgnoreCase)
+                || row.RootPath.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var manualPaths = _library?.State.ManualGames
+            .Select(game => game.RootPath)
+            .ToHashSet(PathComparer)
+            ?? new HashSet<string>(PathComparer);
+        rows = _filterComboBox.SelectedIndex switch
+        {
+            1 => rows.Where(row => !manualPaths.Contains(row.RootPath)),
+            2 => rows.Where(row => manualPaths.Contains(row.RootPath)),
+            3 => rows.Where(row => HasFamily(row, DllType.Dlss)),
+            4 => rows.Where(row => HasFamily(
+                row,
+                DllType.DlssFrameGeneration,
+                DllType.XeSsFrameGeneration)),
+            5 => rows.Where(row => HasFamily(row, DllType.DlssRayReconstruction)),
+            6 => rows.Where(row => HasFamily(
+                row,
+                DllType.XeSs,
+                DllType.XeLl,
+                DllType.XeSsFrameGeneration,
+                DllType.XeSsDx11)),
+            7 => rows.Where(row => HasFamily(
+                row,
+                DllType.Fsr31Dx12,
+                DllType.Fsr31Vulkan)),
+            _ => rows,
+        };
+
+        rows = _sortComboBox.SelectedIndex switch
+        {
+            1 => rows.OrderBy(row => row.Source, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
+            2 => rows.OrderByDescending(GetHighestVersion, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
+            _ => rows.OrderBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
+        };
+
+        _viewModel.Games.Clear();
+        foreach (var row in rows)
+        {
+            _viewModel.Games.Add(row);
+        }
+    }
+
+    private static bool HasFamily(GameRowViewModel row, params DllType[] families) =>
+        row.ScanResult?.Dlls.Any(dll => families.Contains(dll.Type)) == true;
+
+    private static string GetHighestVersion(GameRowViewModel row) =>
+        row.ScanResult?.Dlls
+            .Select(dll => dll.Version)
+            .OrderByDescending(version => version, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault()
+        ?? string.Empty;
 
     private void StartArtworkHydration()
     {
-        if (_artworkService is null || _library is null || _viewModel.Games.Count == 0)
+        if (_artworkService is null || _library is null || _allRows.Count == 0)
         {
             return;
         }
@@ -640,7 +779,7 @@ public sealed partial class MainWindow : Window
         _artworkCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             _lifetime.Token);
         _artworkTask = HydrateArtworkAsync(
-            _viewModel.Games.ToArray(),
+            _allRows.ToArray(),
             _artworkService,
             _library,
             _artworkCancellation.Token);
@@ -797,7 +936,7 @@ public sealed partial class MainWindow : Window
         var normalizedGame = game with { RootPath = normalizedPath };
         var row = new GameRowViewModel(normalizedGame);
         row.PropertyChanged += GameRow_PropertyChanged;
-        _viewModel.Games.Add(row);
+        _allRows.Add(row);
         InvalidatePreview();
         return true;
     }
