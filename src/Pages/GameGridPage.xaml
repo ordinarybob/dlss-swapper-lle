@@ -259,7 +259,7 @@
                                                 Text="Card size" />
                                             <ComboBox
                                                 x:Name="GridCardSizeNumberBox"
-                                                Width="54"
+                                                Width="62"
                                                 Height="28"
                                                 Padding="7,0,2,0"
                                                 AutomationProperties.Name="Grid card size"

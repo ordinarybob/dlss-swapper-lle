@@ -237,7 +237,7 @@
           <ComboBox x:Name="GridCardSizeInput"
                     Grid.Column="4"
                     AutomationProperties.Name="Grid card size"
-                    Width="54" Height="28" MinHeight="28"
+                    Width="62" Height="28" MinHeight="28"
                     Padding="7,0,2,0"
                     SelectionChanged="GridCardSize_Changed" />
 
