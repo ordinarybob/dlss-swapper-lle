@@ -27,6 +27,7 @@ internal static class Program
             ("Initial deep scan completion is retry safe", TestRetrySafeDeepScanAsync),
             ("Library scan isolates missing game roots", TestMissingRootIsolationAsync),
             ("Artwork cache, CDN, and strict fallback", TestArtworkResolutionAsync),
+            ("DLL catalog browsing and cache management", RunSync(TestDllLibraryCache)),
         };
 
         var failures = 0;
@@ -750,6 +751,18 @@ internal static class Program
             new Dictionary<DllType, DllCatalogEntry> { [candidate.Type] = candidate });
         AssertEqual(UpdatePlanStatus.AlreadyCurrent, AssertSingle(plan).Status, "metadata no-op");
         Assert(!detected.HasHash, "metadata no-op acquired a hash");
+
+        var exactDifferentBuild = detected with
+        {
+            Md5 = new string('A', 32),
+        };
+        var exactPlan = new UpdatePlanner().Plan(
+            [new ScanResult(game, [exactDifferentBuild], [])],
+            new Dictionary<DllType, DllCatalogEntry> { [candidate.Type] = candidate });
+        AssertEqual(
+            UpdatePlanStatus.Ready,
+            AssertSingle(exactPlan).Status,
+            "known different same-version build");
     }
 
     private static async Task TestRetrySafeDeepScanAsync()
@@ -983,6 +996,38 @@ internal static class Program
         var path = Path.Combine(directory, "manifest.json");
         File.WriteAllText(path, JsonSerializer.Serialize(root));
         return path;
+    }
+
+    private static void TestDllLibraryCache()
+    {
+        using var temporary = new TemporaryDirectory();
+        var payload = System.Text.Encoding.UTF8.GetBytes("catalog-cache-fixture");
+        var catalog = DllCatalog.Load(WriteManifest(temporary.Path, payload));
+        AssertEqual(DllTypes.All.Count, catalog.GetEntries().Count, "eligible catalog entry count");
+        var entry = catalog.GetLatest(DllType.Dlss);
+        AssertEqual(
+            entry.Md5,
+            catalog.Resolve(DllType.Dlss, $"{entry.Version}@{entry.Md5[..8]}").Md5,
+            "exact version and build selection");
+
+        var previousCacheHome = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
+        try
+        {
+            Environment.SetEnvironmentVariable(
+                "XDG_CACHE_HOME",
+                Path.Combine(temporary.Path, "cache"));
+            using var cache = new DownloadCache();
+            var cachePath = cache.GetCachedPath(entry);
+            Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+            File.WriteAllBytes(cachePath, payload);
+            Assert(cache.IsCached(entry), "downloaded catalog entry was not visible");
+            Assert(cache.Remove(entry), "cached catalog entry was not removed");
+            Assert(!cache.IsCached(entry), "removed catalog entry remained visible");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("XDG_CACHE_HOME", previousCacheHome);
+        }
     }
 
     private static DllCatalogEntry Candidate(

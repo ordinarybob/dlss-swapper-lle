@@ -307,10 +307,11 @@ public sealed class UpdatePlanner
                 }
 
                 var changedTargets = targets
-                    .Where(target => !(target.HasHash && target.Md5.Equals(
+                    .Where(target => target.HasHash
+                        ? !target.Md5.Equals(
                             candidate.Md5,
-                            StringComparison.OrdinalIgnoreCase))
-                        && !target.Version.Equals(
+                            StringComparison.OrdinalIgnoreCase)
+                        : !target.Version.Equals(
                             candidate.Version,
                             StringComparison.OrdinalIgnoreCase))
                     .ToArray();
@@ -379,16 +380,38 @@ public sealed class DownloadCache : IDisposable
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("DLSS-Swapper-LLE-Linux-MVP");
     }
 
-    public Task<string> GetAsync(DllCatalogEntry entry, CancellationToken cancellationToken)
+    public async Task<string> GetAsync(
+        DllCatalogEntry entry,
+        CancellationToken cancellationToken)
     {
         var key = (entry.Type, entry.Version, entry.Md5);
-        if (!_downloads.TryGetValue(key, out var download))
+        Task<string> download;
+        lock (_downloads)
         {
-            download = GetCoreAsync(entry, cancellationToken);
-            _downloads.Add(key, download);
+            if (!_downloads.TryGetValue(key, out download!))
+            {
+                download = GetCoreAsync(entry, cancellationToken);
+                _downloads.Add(key, download);
+            }
         }
 
-        return download;
+        try
+        {
+            return await download.ConfigureAwait(false);
+        }
+        catch
+        {
+            lock (_downloads)
+            {
+                if (_downloads.TryGetValue(key, out var current)
+                    && ReferenceEquals(current, download))
+                {
+                    _downloads.Remove(key);
+                }
+            }
+
+            throw;
+        }
     }
 
     public void Dispose()
@@ -396,16 +419,50 @@ public sealed class DownloadCache : IDisposable
         _httpClient.Dispose();
     }
 
+    public string GetCachedPath(DllCatalogEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        var definition = DllTypes.Get(entry.Type);
+        return Path.Combine(
+            _cacheRoot,
+            definition.ManifestKey,
+            $"{Sanitize(entry.Version)}-{entry.Md5}",
+            definition.FileName);
+    }
+
+    public bool IsCached(DllCatalogEntry entry) => File.Exists(GetCachedPath(entry));
+
+    public bool Remove(DllCatalogEntry entry)
+    {
+        var path = GetCachedPath(entry);
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        File.Delete(path);
+        var directory = Path.GetDirectoryName(path);
+        if (directory is not null && Directory.Exists(directory)
+            && !Directory.EnumerateFileSystemEntries(directory).Any())
+        {
+            Directory.Delete(directory);
+        }
+
+        lock (_downloads)
+        {
+            _downloads.Remove((entry.Type, entry.Version, entry.Md5));
+        }
+        return true;
+    }
+
     private async Task<string> GetCoreAsync(
         DllCatalogEntry entry,
         CancellationToken cancellationToken)
     {
         var definition = DllTypes.Get(entry.Type);
-        var cacheDirectory = Path.Combine(
-            _cacheRoot,
-            definition.ManifestKey,
-            $"{Sanitize(entry.Version)}-{entry.Md5}");
-        var cachePath = Path.Combine(cacheDirectory, definition.FileName);
+        var cachePath = GetCachedPath(entry);
+        var cacheDirectory = Path.GetDirectoryName(cachePath)
+            ?? throw new InvalidDataException("The DLL cache path has no parent directory.");
         if (File.Exists(cachePath)
             && DllScanner.ComputeMd5(cachePath).Equals(
                 entry.Md5,

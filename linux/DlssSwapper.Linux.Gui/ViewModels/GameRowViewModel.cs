@@ -5,7 +5,7 @@ namespace DlssSwapper.Linux.Gui.ViewModels;
 
 public sealed class GameRowViewModel : ObservableObject
 {
-    private bool _isSelected = true;
+    private bool _isSelected;
     private string _scanSummary = "Not scanned";
     private string _scanDetail = "Select this game, then scan it.";
     private Bitmap? _coverImage;

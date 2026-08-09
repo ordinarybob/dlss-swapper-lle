@@ -31,6 +31,20 @@
 
         <Border Classes="card">
           <StackPanel Spacing="10">
+            <TextBlock Text="Steam libraries" Classes="sectionTitle" />
+            <TextBlock Text="Steam's standard locations are discovered automatically. Add only non-standard Steam roots here, one per line."
+                       Classes="muted" TextWrapping="Wrap" />
+            <TextBox x:Name="AdditionalSteamRootsTextBox"
+                     AutomationProperties.Name="Additional Steam roots"
+                     AcceptsReturn="True"
+                     MinHeight="90"
+                     FontFamily="Monospace"
+                     PlaceholderText="/mnt/games/SteamLibrary" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
             <TextBlock Text="Fallback cover art" Classes="sectionTitle" />
             <TextBlock Text="Manually added games that do not resolve on Steam use this MediaWiki source. Only exact title matches and HTTPS portrait images from the allowed host are accepted."
                        TextWrapping="Wrap" />

@@ -91,6 +91,14 @@ public sealed class DllCatalog
         ?? throw new InvalidOperationException(
             $"The manifest has no eligible release for {DllTypes.Get(type).DisplayName}.");
 
+    public IReadOnlyList<DllCatalogEntry> GetEntries(DllType type) =>
+        GetEligibleEntries(type).ToArray();
+
+    public IReadOnlyList<DllCatalogEntry> GetEntries() =>
+        DllTypes.All
+            .SelectMany(definition => GetEligibleEntries(definition.Type))
+            .ToArray();
+
     public DllCatalogEntry Resolve(DllType type, string selector)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(selector);

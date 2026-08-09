@@ -1,131 +1,91 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DlssSwapper.Linux.Gui.MainWindow"
-        Title="DLSS Swapper LLE — Linux preview"
-        Width="1180"
-        Height="820"
-        MinWidth="900"
-        MinHeight="650"
+        Title="DLSS Swapper LLE"
+        Width="840"
+        Height="940"
+        MinWidth="720"
+        MinHeight="620"
         WindowStartupLocation="CenterScreen">
-  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="20">
-    <StackPanel Grid.Row="0" Spacing="10">
-      <StackPanel>
-        <TextBlock Text="DLSS Swapper LLE"
-                   FontSize="27"
-                   FontWeight="SemiBold" />
-        <TextBlock Text="Discover, inspect, preview, update, and restore supported game DLLs."
-                   Classes="muted" />
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16,12,16,10">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,10">
+      <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+        <Border Width="32" Height="32" CornerRadius="16" Background="#321359"
+                BorderBrush="#7E29C8" BorderThickness="1">
+          <TextBlock Text="LLE" FontSize="9" FontWeight="Bold"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock Text="DLSS Swapper" FontSize="15" VerticalAlignment="Center" />
       </StackPanel>
-      <Border Background="#5A4217"
-              BorderBrush="#E2AD3A"
-              BorderThickness="1"
-              CornerRadius="7"
-              Padding="12">
-        <TextBlock Text="Untested on Linux as of this release"
-                   FontSize="16"
-                   FontWeight="Bold"
-                   Foreground="#FFE3A0"
-                   HorizontalAlignment="Center" />
+      <Border Grid.Column="1" Background="#302610" BorderBrush="#725B22"
+              BorderThickness="1" CornerRadius="10" Padding="9,3" VerticalAlignment="Center">
+        <TextBlock Text="UNTESTED ON LINUX" FontSize="10" FontWeight="SemiBold"
+                   Foreground="#E7C66C" />
       </Border>
-    </StackPanel>
+      <Button Grid.Column="2" Content="DLL Library" IsEnabled="{Binding CanInteract}"
+              Click="DllLibrary_Click" />
+      <Button Grid.Column="3" Content="Settings" IsEnabled="{Binding CanInteract}"
+              Click="Settings_Click" />
+    </Grid>
 
-    <Border Grid.Row="1"
-            Classes="card"
-            Margin="0,14,0,14">
-      <StackPanel Spacing="10">
-        <Grid ColumnDefinitions="*" ColumnSpacing="10">
-          <StackPanel Grid.Column="0" Spacing="5">
-            <TextBlock Text="Additional Steam roots" FontWeight="SemiBold" />
-            <TextBox x:Name="SteamRootsTextBox"
-                     Height="72"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     PlaceholderText="One optional Steam root per line" />
-          </StackPanel>
-        </Grid>
-
-        <WrapPanel Orientation="Horizontal">
-          <Button Content="Discover Steam"
-                  Classes="primary"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="DiscoverSteam_Click" />
-          <Button Content="Add one game"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="AddOneGame_Click" />
-          <Button Content="Add separate games"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="AddSeparateGames_Click" />
-          <Button Content="Add parent directory"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="AddParentDirectory_Click" />
-          <Button Content="Deep Scan"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="DeepScan_Click" />
-          <Button Content="Refresh"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="Refresh_Click" />
-          <Button Content="Select all"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="SelectAll_Click" />
-          <Button Content="Select none"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="SelectNone_Click" />
-          <Button Content="Scan selected"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="ScanSelected_Click" />
-          <Button Content="Preview latest (dry run)"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="PreviewLatest_Click" />
-          <Button Content="Apply preview"
-                  Classes="danger"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanApplyPreview}"
-                  Click="ApplyPreview_Click" />
-          <Button Content="Restore backups"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="RestoreBackups_Click" />
-          <Button Content="Remove selected"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="RemoveSelected_Click" />
-          <Button Content="Restore excluded Steam games"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="RestoreExcluded_Click" />
-          <Button Content="Settings"
-                  Margin="0,0,8,8"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="Settings_Click" />
-        </WrapPanel>
+    <Grid Grid.Row="1" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto"
+          ColumnSpacing="12" Margin="0,0,0,12">
+      <StackPanel Grid.Row="0">
+        <TextBlock Text="{Binding GamesHeading}" FontSize="30" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <TextBox x:Name="SearchTextBox" Classes="headerSearch"
+                 AutomationProperties.Name="Search" PlaceholderText="Search" MaxWidth="360"
+                 HorizontalAlignment="Stretch" TextChanged="SearchTextBox_TextChanged" />
       </StackPanel>
-    </Border>
+      <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button Classes="command" AutomationProperties.Name="Add Games">
+          <Button.Content><StackPanel><TextBlock Text="＋" FontSize="25" HorizontalAlignment="Center" /><TextBlock Text="Add" FontSize="11" HorizontalAlignment="Center" /><TextBlock Text="Games" FontSize="11" HorizontalAlignment="Center" /></StackPanel></Button.Content>
+          <Button.Flyout><MenuFlyout><MenuItem Header="Add one game" Click="AddOneGame_Click" /><MenuItem Header="Add separate games" Click="AddSeparateGames_Click" /><MenuItem Header="Add parent directory" Click="AddParentDirectory_Click" /></MenuFlyout></Button.Flyout>
+        </Button>
+        <Button Classes="command" AutomationProperties.Name="Deep Scan" IsEnabled="{Binding CanInteract}" Click="DeepScan_Click"><StackPanel><TextBlock Text="⌕" FontSize="25" HorizontalAlignment="Center" /><TextBlock Text="Deep" FontSize="11" HorizontalAlignment="Center" /><TextBlock Text="Scan" FontSize="11" HorizontalAlignment="Center" /></StackPanel></Button>
+        <Button Classes="command" AutomationProperties.Name="Refresh" IsEnabled="{Binding CanInteract}" Click="Refresh_Click"><StackPanel><TextBlock Text="↻" FontSize="26" HorizontalAlignment="Center" /><TextBlock Text="Refresh" FontSize="11" /></StackPanel></Button>
+        <Button Classes="command" AutomationProperties.Name="Batch" Click="Batch_Click">
+          <Button.Content><StackPanel><TextBlock Text="☷" FontSize="23" HorizontalAlignment="Center" /><TextBlock Text="Batch" FontSize="11" /></StackPanel></Button.Content>
+        </Button>
+        <Button Classes="command" AutomationProperties.Name="Filter">
+          <Button.Content><StackPanel><TextBlock Text="▽" FontSize="23" HorizontalAlignment="Center" /><TextBlock Text="Filter" FontSize="11" /></StackPanel></Button.Content>
+          <Button.Flyout><MenuFlyout><MenuItem Header="All games" Tag="0" Click="FilterMenu_Click" /><MenuItem Header="Steam" Tag="1" Click="FilterMenu_Click" /><MenuItem Header="Manually added" Tag="2" Click="FilterMenu_Click" /><MenuItem Header="DLSS" Tag="3" Click="FilterMenu_Click" /><MenuItem Header="Frame generation" Tag="4" Click="FilterMenu_Click" /><MenuItem Header="Ray reconstruction" Tag="5" Click="FilterMenu_Click" /><MenuItem Header="XeSS" Tag="6" Click="FilterMenu_Click" /><MenuItem Header="FSR" Tag="7" Click="FilterMenu_Click" /><MenuItem Header="Hidden" Tag="8" Click="FilterMenu_Click" /></MenuFlyout></Button.Flyout>
+        </Button>
+        <Button Classes="command" AutomationProperties.Name="View">
+          <Button.Content><StackPanel><TextBlock Text="▦" FontSize="22" HorizontalAlignment="Center" /><TextBlock Text="View" FontSize="11" /></StackPanel></Button.Content>
+          <Button.Flyout><MenuFlyout><MenuItem Header="Grid" Click="GridView_Click" /><MenuItem Header="List" Click="ListView_Click" /></MenuFlyout></Button.Flyout>
+        </Button>
+        <Button Classes="command" AutomationProperties.Name="Sort">
+          <Button.Content><StackPanel><TextBlock Text="⇅" FontSize="23" HorizontalAlignment="Center" /><TextBlock Text="Sort" FontSize="11" /></StackPanel></Button.Content>
+          <Button.Flyout><MenuFlyout><MenuItem Header="Name" Tag="0" Click="SortMenu_Click" /><MenuItem Header="Source" Tag="1" Click="SortMenu_Click" /><MenuItem Header="DLL version" Tag="2" Click="SortMenu_Click" /></MenuFlyout></Button.Flyout>
+        </Button>
+      </StackPanel>
+      <Border Grid.Row="1" Grid.ColumnSpan="2" IsVisible="{Binding IsBatchMode}"
+              Background="#292929" BorderBrush="#3F3F3F" BorderThickness="1"
+              CornerRadius="6" Padding="9" Margin="0,8,0,0" HorizontalAlignment="Right">
+        <StackPanel Orientation="Horizontal" Spacing="7">
+          <TextBlock Text="{Binding SelectionHeading}" VerticalAlignment="Center" Margin="0,0,4,0" />
+          <Button Content="Select all" Click="SelectAll_Click" />
+          <Button Content="Select none" Click="SelectNone_Click" />
+          <Button Content="Scan" Click="ScanSelected_Click" />
+          <Button Content="Preview latest" Click="PreviewLatest_Click" />
+          <Button Content="Apply" IsEnabled="{Binding CanApplyPreview}" Click="ApplyPreview_Click" />
+          <Button Content="Restore" Click="RestoreBackups_Click" />
+          <Button Content="Remove" Click="RemoveSelected_Click" />
+        </StackPanel>
+      </Border>
+    </Grid>
 
-    <Grid Grid.Row="2" ColumnDefinitions="1.05*,0.95*" ColumnSpacing="14">
-      <Border Grid.Column="0" Classes="card">
-        <Grid RowDefinitions="Auto,Auto,*">
-          <StackPanel Grid.Row="0" Margin="0,0,0,10">
-            <TextBlock Text="{Binding GamesHeading}" Classes="sectionTitle" />
-            <TextBox x:Name="SearchTextBox"
-                     AutomationProperties.Name="Search"
-                     PlaceholderText="Search"
-                     TextChanged="SearchTextBox_TextChanged" />
-          </StackPanel>
-          <WrapPanel Grid.Row="1" Margin="0,0,0,10">
+    <Grid Grid.Row="2" ColumnDefinitions="*">
+      <Border Grid.Column="0" BorderBrush="#414141" BorderThickness="0,1,0,0"
+              Padding="0,10,0,0">
+        <Grid RowDefinitions="Auto,*">
+          <WrapPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="Steam" FontSize="20" FontWeight="SemiBold"
+                       VerticalAlignment="Center" Margin="0,0,10,6" />
+            <Border Width="1" Height="27" Background="#666666" Margin="0,0,10,6" />
             <ComboBox x:Name="FilterComboBox"
-                      Width="145"
+                      IsVisible="False"
                       SelectedIndex="0"
-                      Margin="0,0,8,6"
                       SelectionChanged="LibraryView_Changed">
               <ComboBoxItem Content="All games" />
               <ComboBoxItem Content="Steam" />
@@ -138,35 +98,28 @@
               <ComboBoxItem Content="Hidden" />
             </ComboBox>
             <ComboBox x:Name="SortComboBox"
-                      Width="125"
+                      IsVisible="False"
                       SelectedIndex="0"
-                      Margin="0,0,8,6"
                       SelectionChanged="LibraryView_Changed">
               <ComboBoxItem Content="Name" />
               <ComboBoxItem Content="Source" />
               <ComboBoxItem Content="DLL version" />
             </ComboBox>
-            <Button Content="List" Margin="0,0,6,6" Click="ListView_Click" />
-            <Button Content="Grid" Margin="0,0,8,6" Click="GridView_Click" />
-            <TextBlock Text="Columns" VerticalAlignment="Center" Margin="0,0,4,6" />
-            <NumericUpDown x:Name="GridColumnsInput"
-                           AutomationProperties.Name="Grid columns"
-                           Width="68"
-                           Minimum="1"
-                           Maximum="24"
-                           Margin="0,0,8,6"
-                           ValueChanged="GridDensity_Changed" />
-            <TextBlock Text="Rows" VerticalAlignment="Center" Margin="0,0,4,6" />
-            <NumericUpDown x:Name="GridRowsInput"
-                           AutomationProperties.Name="Grid rows"
-                           Width="68"
-                           Minimum="1"
-                           Maximum="24"
-                           Margin="0,0,0,6"
-                           ValueChanged="GridDensity_Changed" />
+            <TextBlock Text="Columns" FontSize="12" Foreground="#C6C6C6"
+                       VerticalAlignment="Center" Margin="0,0,5,6" />
+            <ComboBox x:Name="GridColumnsInput"
+                      AutomationProperties.Name="Grid columns"
+                      Width="76" Height="36" Margin="0,0,8,6"
+                      SelectionChanged="GridDensity_Changed" />
+            <TextBlock Text="Rows" FontSize="12" Foreground="#C6C6C6"
+                       VerticalAlignment="Center" Margin="0,0,5,6" />
+            <ComboBox x:Name="GridRowsInput"
+                      AutomationProperties.Name="Grid rows"
+                      Width="76" Height="36" Margin="0,0,0,6"
+                      SelectionChanged="GridDensity_Changed" />
           </WrapPanel>
 
-          <ScrollViewer Grid.Row="2"
+          <ScrollViewer Grid.Row="1"
                         IsVisible="{Binding IsListView}"
                         VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Games}">
@@ -189,6 +142,7 @@
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                       <StackPanel Grid.Column="0" Spacing="6">
                         <CheckBox IsChecked="{Binding IsSelected}"
+                                  IsVisible="{Binding $parent[Window].DataContext.IsBatchMode}"
                                   HorizontalAlignment="Center" />
                         <Border Width="72" Height="108" Background="#202020"
                                 CornerRadius="4" ClipToBounds="True">
@@ -196,10 +150,11 @@
                         </Border>
                       </StackPanel>
                       <StackPanel Grid.Column="1" Spacing="3">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                           <TextBlock Text="{Binding FavoriteMarker}" Foreground="#F2C94C" />
-                          <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" />
-                        </StackPanel>
+                          <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="15"
+                                     FontWeight="SemiBold" TextWrapping="Wrap" />
+                        </Grid>
                         <TextBlock Text="{Binding Source}" Classes="muted" FontSize="12" />
                         <TextBlock Text="{Binding RootPath}" TextWrapping="Wrap"
                                    FontFamily="Monospace" FontSize="12" />
@@ -215,7 +170,7 @@
             </ItemsControl>
           </ScrollViewer>
 
-          <ScrollViewer Grid.Row="2"
+          <ScrollViewer Grid.Row="1"
                         IsVisible="{Binding IsGridView}"
                         VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Games}">
@@ -226,7 +181,7 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Border Classes="row" Margin="3" MinWidth="88">
+                  <Border Classes="gameCard" MinWidth="88">
                     <Border.ContextMenu>
                       <ContextMenu>
                         <MenuItem Header="Launch" Tag="{Binding}" Click="GameLaunch_Click" />
@@ -240,23 +195,25 @@
                         <MenuItem Header="Remove" Tag="{Binding}" Click="GameRemove_Click" />
                       </ContextMenu>
                     </Border.ContextMenu>
-                    <Grid RowDefinitions="Auto,*,Auto">
-                      <CheckBox Grid.Row="0"
-                                IsChecked="{Binding IsSelected}"
-                                HorizontalAlignment="Right" />
-                      <Border Grid.Row="1" Background="#202020" CornerRadius="4"
-                              ClipToBounds="True" MinHeight="120">
+                    <Grid RowDefinitions="*,Auto" MinHeight="190">
+                      <Border Grid.Row="0" Background="#151515" MinHeight="145">
                         <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
                       </Border>
-                      <StackPanel Grid.Row="2" Margin="0,6,0,0">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
+                      <Border Grid.Row="1" Background="#E5101010" Padding="7,6">
+                      <StackPanel>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4">
                           <TextBlock Text="{Binding FavoriteMarker}" Foreground="#F2C94C" />
-                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                          <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold"
                                      TextWrapping="Wrap" MaxLines="2" />
-                        </StackPanel>
-                        <TextBlock Text="{Binding ScanSummary}" Classes="muted"
-                                   FontSize="11" TextWrapping="Wrap" MaxLines="2" />
+                        </Grid>
+                        <TextBlock Text="{Binding ScanSummary}" Foreground="#C8C8C8"
+                                   FontSize="10" TextWrapping="Wrap" MaxLines="1" />
                       </StackPanel>
+                      </Border>
+                      <CheckBox IsChecked="{Binding IsSelected}"
+                                IsVisible="{Binding $parent[Window].DataContext.IsBatchMode}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top" Margin="5" />
                     </Grid>
                   </Border>
                 </DataTemplate>
@@ -266,7 +223,7 @@
         </Grid>
       </Border>
 
-      <Border Grid.Column="1" Classes="card">
+      <Border Grid.Column="1" Classes="card" IsVisible="False">
         <Grid RowDefinitions="Auto,*">
           <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="Preview and results" Classes="sectionTitle" />
@@ -307,19 +264,36 @@
       </Border>
     </Grid>
 
-    <Grid Grid.Row="3"
-          ColumnDefinitions="*,220"
-          ColumnSpacing="12"
-          Margin="0,14,0,0">
-      <TextBlock Grid.Column="0"
-                 Text="{Binding StatusText}"
-                 TextWrapping="Wrap"
-                 VerticalAlignment="Center" />
-      <ProgressBar Grid.Column="1"
-                   Height="5"
-                   IsIndeterminate="True"
-                   IsVisible="{Binding IsBusy}"
-                   VerticalAlignment="Center" />
-    </Grid>
+    <StackPanel Grid.Row="3" Margin="0,8,0,0">
+      <Expander Header="Activity and results" MaxHeight="220">
+        <Grid RowDefinitions="Auto,*" Margin="0,6,0,0">
+          <Button Content="Restore excluded Steam games" HorizontalAlignment="Left"
+                  Margin="0,0,0,6" IsEnabled="{Binding CanInteract}"
+                  Click="RestoreExcluded_Click" />
+          <ScrollViewer Grid.Row="1" MaxHeight="150" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Results}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="row">
+                    <Grid ColumnDefinitions="1.1*,0.8*,2*,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Game}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Grid.Column="1" Text="{Binding Family}" Classes="muted" />
+                      <TextBlock Grid.Column="2" Text="{Binding Message}" TextWrapping="Wrap" />
+                      <TextBlock Grid.Column="3" Text="{Binding Outcome}" FontWeight="SemiBold" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Expander>
+      <Grid ColumnDefinitions="*,160" ColumnSpacing="10" Margin="0,6,0,0">
+        <TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="12"
+                   TextWrapping="Wrap" VerticalAlignment="Center" />
+        <ProgressBar Grid.Column="1" Height="4" IsIndeterminate="True"
+                     IsVisible="{Binding IsBusy}" VerticalAlignment="Center" />
+      </Grid>
+    </StackPanel>
   </Grid>
 </Window>

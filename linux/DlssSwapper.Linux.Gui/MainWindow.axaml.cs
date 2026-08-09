@@ -29,12 +29,11 @@ public sealed partial class MainWindow : Window
     {
         Timeout = TimeSpan.FromMinutes(2),
     };
-    private readonly TextBox _steamRootsTextBox;
     private readonly TextBox _searchTextBox;
     private readonly ComboBox _filterComboBox;
     private readonly ComboBox _sortComboBox;
-    private readonly NumericUpDown _gridColumnsInput;
-    private readonly NumericUpDown _gridRowsInput;
+    private readonly ComboBox _gridColumnsInput;
+    private readonly ComboBox _gridRowsInput;
 
     private DllCatalog? _catalog;
     private PersistentLibrary? _library;
@@ -52,16 +51,17 @@ public sealed partial class MainWindow : Window
         AvaloniaXamlLoader.Load(this);
         DataContext = _viewModel;
 
-        _steamRootsTextBox = FindRequiredTextBox("SteamRootsTextBox");
         _searchTextBox = FindRequiredTextBox("SearchTextBox");
         _filterComboBox = this.FindControl<ComboBox>("FilterComboBox")
             ?? throw new InvalidOperationException("Required filter control is missing.");
         _sortComboBox = this.FindControl<ComboBox>("SortComboBox")
             ?? throw new InvalidOperationException("Required sort control is missing.");
-        _gridColumnsInput = this.FindControl<NumericUpDown>("GridColumnsInput")
+        _gridColumnsInput = this.FindControl<ComboBox>("GridColumnsInput")
             ?? throw new InvalidOperationException("Required grid-columns control is missing.");
-        _gridRowsInput = this.FindControl<NumericUpDown>("GridRowsInput")
+        _gridRowsInput = this.FindControl<ComboBox>("GridRowsInput")
             ?? throw new InvalidOperationException("Required grid-rows control is missing.");
+        _gridColumnsInput.ItemsSource = Enumerable.Range(1, 24).ToArray();
+        _gridRowsInput.ItemsSource = Enumerable.Range(1, 24).ToArray();
 
         try
         {
@@ -77,14 +77,11 @@ public sealed partial class MainWindow : Window
             _artworkService = new ArtworkService(
                 _artworkHttpClient,
                 new AvaloniaArtworkImageProcessor());
-            _steamRootsTextBox.Text = string.Join(
-                Environment.NewLine,
-                _library.State.AdditionalSteamRoots);
             _viewModel.IsGridView = _library.State.GridView;
             _viewModel.GridColumns = _library.State.GridColumns;
             _viewModel.GridRows = _library.State.GridRows;
-            _gridColumnsInput.Value = _library.State.GridColumns;
-            _gridRowsInput.Value = _library.State.GridRows;
+            _gridColumnsInput.SelectedItem = _library.State.GridColumns;
+            _gridRowsInput.SelectedItem = _library.State.GridRows;
             _viewModel.StatusText = "Loading the persistent game library…";
         }
         catch (Exception exception)
@@ -116,18 +113,6 @@ public sealed partial class MainWindow : Window
 
         _opened = true;
         await RefreshLibraryAsync(runInitialDeepScan: true);
-    }
-
-    private async void DiscoverSteam_Click(object? sender, RoutedEventArgs e)
-    {
-        if (!TryGetLibrary(out var library))
-        {
-            return;
-        }
-
-        library.State.AdditionalSteamRoots = ParseLines(_steamRootsTextBox.Text).ToList();
-        library.Save();
-        await RefreshLibraryAsync(runInitialDeepScan: false);
     }
 
     private async void AddOneGame_Click(object? sender, RoutedEventArgs e) =>
@@ -307,14 +292,137 @@ public sealed partial class MainWindow : Window
         var saved = await new SettingsWindow(library).ShowDialog<bool>(this);
         if (saved)
         {
-            _steamRootsTextBox.Text = string.Join(
-                Environment.NewLine,
-                library.State.AdditionalSteamRoots);
             _viewModel.StatusText = library.State.HddMode
                 ? "Settings saved. HDD scan and artwork limits are active."
                 : "Settings saved. Standard scan and artwork limits are active.";
             await RefreshLibraryAsync(runInitialDeepScan: false);
         }
+    }
+
+    private async void DllLibrary_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetCatalog(out var catalog))
+        {
+            return;
+        }
+
+        var selectedEntry = await new DllLibraryWindow(catalog)
+            .ShowDialog<DllCatalogEntry?>(this);
+        if (selectedEntry is null)
+        {
+            return;
+        }
+
+        if (!TryGetSelectedRows(out var rows))
+        {
+            _viewModel.StatusText = $"{DllTypes.Get(selectedEntry.Type).DisplayName} {selectedEntry.Version} is downloaded. Select games before applying it.";
+            return;
+        }
+
+        var unscanned = rows.Where(row => row.ScanResult is null).ToArray();
+        if (unscanned.Length > 0)
+        {
+            foreach (var (row, scan) in await ScanRowsAsync(unscanned, catalog))
+            {
+                row.SetScanResult(scan);
+            }
+        }
+
+        var identityResolved = false;
+        await RunBusyAsync(
+            $"Resolving the exact {DllTypes.Get(selectedEntry.Type).DisplayName} build identity…",
+            async () =>
+            {
+                var resolved = await Task.Run(() => rows
+                    .Where(row => row.ScanResult is not null)
+                    .Select(row =>
+                    {
+                        var scan = row.ScanResult!;
+                        var dlls = scan.Dlls.Select(dll =>
+                            dll.Type == selectedEntry.Type
+                            && !dll.HasHash
+                            && dll.Version.Equals(
+                                selectedEntry.Version,
+                                StringComparison.OrdinalIgnoreCase)
+                                ? _scanner.ResolveIdentity(dll, catalog)
+                                : dll).ToArray();
+                        return (Row: row, Scan: scan with { Dlls = dlls });
+                    })
+                    .ToArray());
+                foreach (var (row, scan) in resolved)
+                {
+                    row.SetScanResult(scan);
+                }
+
+                identityResolved = true;
+            });
+        if (!identityResolved)
+        {
+            return;
+        }
+
+        var plan = _planner.Plan(
+            rows.Where(row => row.ScanResult is not null)
+                .Select(row => row.ScanResult!)
+                .ToArray(),
+            new Dictionary<DllType, DllCatalogEntry>
+            {
+                [selectedEntry.Type] = selectedEntry,
+            });
+        var ready = plan.Where(item => item.Status == UpdatePlanStatus.Ready).ToArray();
+        var targetCount = ready.Sum(item => item.Targets.Count);
+        if (targetCount == 0)
+        {
+            var currentCount = plan.Count(item => item.Status == UpdatePlanStatus.AlreadyCurrent);
+            var skippedCount = plan.Count(item => item.Status == UpdatePlanStatus.Skipped);
+            _viewModel.StatusText =
+                $"Exact-version plan is a no-op: {currentCount} current, {skippedCount} incompatible or indeterminate.";
+            return;
+        }
+
+        var family = DllTypes.Get(selectedEntry.Type).DisplayName;
+        var gameCount = ready.Select(item => item.Game.RootPath)
+            .Distinct(PathComparer)
+            .Count();
+        var confirmed = await new ConfirmationDialog(
+            "Confirm exact DLL version",
+            $"Apply {family} {selectedEntry.Version} ({selectedEntry.Md5[..8]}) to {targetCount} detected DLL file{Plural(targetCount)} in {gameCount} selected game{Plural(gameCount)}?")
+            .ShowDialog<bool>(this);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await RunBusyAsync($"Applying exact {family} {selectedEntry.Version}…", async () =>
+        {
+            using var cache = new DownloadCache();
+            var results = await Task.Run(() => DllOperations.ApplyUpdatesAsync(
+                plan,
+                cache,
+                CancellationToken.None));
+            ShowOperationResults(results);
+            foreach (var result in results.Where(result => result.Success))
+            {
+                _library?.RecordHistory(
+                    result.Game.RootPath,
+                    "DLL updated",
+                    family,
+                    selectedEntry.Version,
+                    result.Target);
+            }
+
+            var affectedRows = rows.Where(row => ready.Any(item =>
+                PathComparer.Equals(item.Game.RootPath, row.RootPath))).ToArray();
+            foreach (var (row, scan) in await ScanRowsAsync(affectedRows, catalog))
+            {
+                row.SetScanResult(scan);
+            }
+
+            var succeeded = results.Count(result => result.Success);
+            var failed = results.Count - succeeded;
+            _viewModel.StatusText =
+                $"Exact-version update finished: {succeeded} succeeded, {failed} failed.";
+        });
     }
 
     private void GameLaunch_Click(object? sender, RoutedEventArgs e)
@@ -569,6 +677,29 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void FilterMenu_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string value }
+            && int.TryParse(value, out var index))
+        {
+            _filterComboBox.SelectedIndex = index;
+        }
+    }
+
+    private void SortMenu_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string value }
+            && int.TryParse(value, out var index))
+        {
+            _sortComboBox.SelectedIndex = index;
+        }
+    }
+
+    private void Batch_Click(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.IsBatchMode = !_viewModel.IsBatchMode;
+    }
+
     private void ListView_Click(object? sender, RoutedEventArgs e) => SetGridView(false);
 
     private void GridView_Click(object? sender, RoutedEventArgs e) => SetGridView(true);
@@ -583,17 +714,15 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void GridDensity_Changed(object? sender, NumericUpDownValueChangedEventArgs e)
+    private void GridDensity_Changed(object? sender, SelectionChangedEventArgs e)
     {
         if (_library is null
-            || _gridColumnsInput.Value is null
-            || _gridRowsInput.Value is null)
+            || _gridColumnsInput.SelectedItem is not int columns
+            || _gridRowsInput.SelectedItem is not int rows)
         {
             return;
         }
 
-        var columns = Decimal.ToInt32(_gridColumnsInput.Value.Value);
-        var rows = Decimal.ToInt32(_gridRowsInput.Value.Value);
         _viewModel.GridColumns = columns;
         _viewModel.GridRows = rows;
         if (_library.State.GridColumns != columns || _library.State.GridRows != rows)
@@ -954,6 +1083,7 @@ public sealed partial class MainWindow : Window
         }
 
         _viewModel.GameCount = _allRows.Count;
+        _viewModel.SelectedCount = _allRows.Count(row => row.IsSelected);
         ApplyGameView();
     }
 
@@ -1224,6 +1354,7 @@ public sealed partial class MainWindow : Window
     {
         if (e.PropertyName == nameof(GameRowViewModel.IsSelected))
         {
+            _viewModel.SelectedCount = _allRows.Count(row => row.IsSelected);
             InvalidatePreview();
         }
     }

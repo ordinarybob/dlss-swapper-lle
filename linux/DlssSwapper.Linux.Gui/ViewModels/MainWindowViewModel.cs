@@ -12,6 +12,8 @@ public sealed class MainWindowViewModel : ObservableObject
     private bool _isGridView = true;
     private int _gridColumns = 6;
     private int _gridRows = 5;
+    private bool _isBatchMode;
+    private int _selectedCount;
 
     public ObservableCollection<GameRowViewModel> Games { get; } = [];
 
@@ -101,6 +103,26 @@ public sealed class MainWindowViewModel : ObservableObject
         get => _gridRows;
         set => SetProperty(ref _gridRows, value);
     }
+
+    public bool IsBatchMode
+    {
+        get => _isBatchMode;
+        set => SetProperty(ref _isBatchMode, value);
+    }
+
+    public int SelectedCount
+    {
+        get => _selectedCount;
+        set
+        {
+            if (SetProperty(ref _selectedCount, value))
+            {
+                OnPropertyChanged(nameof(SelectionHeading));
+            }
+        }
+    }
+
+    public string SelectionHeading => $"{SelectedCount} selected";
 
     public bool CanInteract => !IsBusy;
 

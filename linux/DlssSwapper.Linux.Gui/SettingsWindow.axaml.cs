@@ -14,6 +14,7 @@ public sealed partial class SettingsWindow : Window
     private readonly TextBox _mediaWikiEndpoint;
     private readonly TextBox _mediaWikiHost;
     private readonly TextBox _customPatterns;
+    private readonly TextBox _additionalSteamRoots;
     private readonly TextBlock _validation;
 
     public SettingsWindow()
@@ -25,6 +26,7 @@ public sealed partial class SettingsWindow : Window
         _mediaWikiEndpoint = FindRequired<TextBox>("MediaWikiEndpointTextBox");
         _mediaWikiHost = FindRequired<TextBox>("MediaWikiHostTextBox");
         _customPatterns = FindRequired<TextBox>("CustomPatternsTextBox");
+        _additionalSteamRoots = FindRequired<TextBox>("AdditionalSteamRootsTextBox");
         _validation = FindRequired<TextBlock>("ValidationTextBlock");
     }
 
@@ -44,6 +46,9 @@ public sealed partial class SettingsWindow : Window
         _customPatterns.Text = string.Join(
             Environment.NewLine,
             library.State.CustomScanPatterns.Select(DisplayPattern));
+        _additionalSteamRoots.Text = string.Join(
+            Environment.NewLine,
+            library.State.AdditionalSteamRoots);
     }
 
     private void ResetArtworkSource_Click(object? sender, RoutedEventArgs e)
@@ -80,6 +85,7 @@ public sealed partial class SettingsWindow : Window
         _library.State.MediaWikiApiEndpoint = endpoint;
         _library.State.MediaWikiImageHost = host;
         _library.State.CustomScanPatterns = ParseLines(_customPatterns.Text).ToList();
+        _library.State.AdditionalSteamRoots = ParseLines(_additionalSteamRoots.Text).ToList();
         _library.Save();
         Close(true);
     }
