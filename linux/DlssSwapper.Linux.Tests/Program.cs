@@ -21,6 +21,7 @@ internal static class Program
             ("Mutation boundary rejects tampering", TestMutationBoundaryAsync),
             ("Adjacent backup, update, and restore", TestUpdateAndRestoreAsync),
             ("Persistent library state and exclusions", RunSync(TestPersistentLibraryState)),
+            ("CLI help reflects validated Linux release", RunSync(TestValidatedCliHelp)),
             ("Windows-parity responsive grid geometry", RunSync(TestResponsiveGridLayout)),
             ("Fast scan learns deep-scan stragglers", RunSync(TestFastScanLearning)),
             ("Fast library scan records metadata without hashing", TestMetadataOnlyFastScanAsync),
@@ -702,6 +703,27 @@ internal static class Program
         Assert(
             fractional.CardWidth >= ResponsiveGridLayout.MinimumCardWidth,
             "grid card fell below the 44-DIP floor");
+    }
+
+    private static void TestValidatedCliHelp()
+    {
+        var original = Console.Out;
+        using var output = new StringWriter();
+        try
+        {
+            Console.SetOut(output);
+            CliHelp.Write();
+        }
+        finally
+        {
+            Console.SetOut(original);
+        }
+
+        var help = output.ToString();
+        Assert(help.Contains("DLSS Swapper LLE Linux CLI", StringComparison.Ordinal),
+            "CLI help omitted the product identity");
+        Assert(!help.Contains("UNTESTED ON LINUX", StringComparison.OrdinalIgnoreCase),
+            "CLI help retained the obsolete untested warning");
     }
 
     private static void TestFastScanLearning()

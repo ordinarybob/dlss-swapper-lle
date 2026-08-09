@@ -491,7 +491,6 @@ internal static class CliHelp
         Console.WriteLine(
             """
             DLSS Swapper LLE Linux CLI
-            UNTESTED ON LINUX AS OF THIS RELEASE.
 
             Commands:
               discover [--steam-root PATH ...]
