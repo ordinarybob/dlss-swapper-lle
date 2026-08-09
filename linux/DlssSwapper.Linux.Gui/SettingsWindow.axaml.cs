@@ -17,6 +17,8 @@ public sealed partial class SettingsWindow : Window
     private readonly TextBox _additionalSteamRoots;
     private readonly TextBlock _validation;
 
+    public bool WasReset { get; private set; }
+
     public SettingsWindow()
     {
         AvaloniaXamlLoader.Load(this);
@@ -49,6 +51,8 @@ public sealed partial class SettingsWindow : Window
         _additionalSteamRoots.Text = string.Join(
             Environment.NewLine,
             library.State.AdditionalSteamRoots);
+        FindRequired<TextBlock>("StateLocationTextBlock").Text =
+            $"Configuration: {library.StateDirectory}";
     }
 
     private void ResetArtworkSource_Click(object? sender, RoutedEventArgs e)
@@ -56,6 +60,36 @@ public sealed partial class SettingsWindow : Window
         _mediaWikiEndpoint.Text = LinuxLibraryState.DefaultMediaWikiApiEndpoint;
         _mediaWikiHost.Text = LinuxLibraryState.DefaultMediaWikiImageHost;
         _validation.Text = string.Empty;
+    }
+
+    private async void ResetLocalData_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_library is null)
+        {
+            _validation.Text = "The persistent library is unavailable.";
+            return;
+        }
+
+        var confirmed = await new ConfirmationDialog(
+            "Reset Linux local data",
+            "Remove this user's LLE Linux settings, learned paths, game preferences, history, downloaded DLL cache, and application artwork cache?",
+            "SteamLibrary-adjacent artwork is preserved. This cannot be undone.")
+            .ShowDialog<bool>(this);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            _library.ResetLocalData();
+            WasReset = true;
+            Close(true);
+        }
+        catch (Exception exception)
+        {
+            _validation.Text = $"Reset failed: {exception.Message}";
+        }
     }
 
     private void Cancel_Click(object? sender, RoutedEventArgs e) => Close(false);

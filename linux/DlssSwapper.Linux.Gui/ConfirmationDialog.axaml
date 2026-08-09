@@ -10,12 +10,14 @@
     <TextBlock x:Name="MessageText"
                TextWrapping="Wrap"
                FontSize="15" />
-    <Border Background="#33262A"
+    <Border x:Name="WarningBorder"
+            Background="#33262A"
             BorderBrush="#9F3A45"
             BorderThickness="1"
             CornerRadius="6"
             Padding="10">
-      <TextBlock Text="This operation writes game files. Close the game before continuing."
+      <TextBlock x:Name="WarningText"
+                 Text="This operation writes game files. Close the game before continuing."
                  TextWrapping="Wrap" />
     </Border>
     <StackPanel Orientation="Horizontal"

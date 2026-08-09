@@ -28,6 +28,9 @@ internal static class Program
             ("Library scan isolates missing game roots", TestMissingRootIsolationAsync),
             ("Artwork cache, CDN, and strict fallback", TestArtworkResolutionAsync),
             ("DLL catalog browsing and cache management", RunSync(TestDllLibraryCache)),
+            ("Filesystem mount reporting and NTFS/FUSE warnings", RunSync(TestFilesystemInspection)),
+            ("CLI persistent-state controls", TestCliPersistentStateAsync),
+            ("Local-data reset is scoped to owned directories", RunSync(TestLocalDataReset)),
         };
 
         var failures = 0;
@@ -1028,6 +1031,97 @@ internal static class Program
         {
             Environment.SetEnvironmentVariable("XDG_CACHE_HOME", previousCacheHome);
         }
+    }
+
+    private static void TestFilesystemInspection()
+    {
+        const string mountInfo =
+            "36 25 0:31 / / rw,relatime - ext4 /dev/root rw\n"
+            + "37 36 0:32 / /mnt/games rw,relatime - btrfs /dev/sdb rw\n"
+            + "38 36 0:33 / /mnt/windows rw,relatime - fuseblk /dev/sdc rw\n"
+            + "39 36 0:34 / /mnt/Steam\\040Library rw,relatime - btrfs /dev/sdd rw\n";
+        var results = FilesystemInspector.InspectPaths(
+            [
+                "/mnt/games/SteamLibrary/steamapps/common/Game",
+                "/mnt/windows/Game",
+                "/mnt/Steam Library/steamapps/common/Another Game",
+            ],
+            mountInfo);
+
+        AssertEqual("btrfs", results[0].Type, "longest mount match");
+        Assert(results[0].Warning is null, "Btrfs should not warn");
+        AssertEqual("fuseblk", results[1].Type, "FUSE type");
+        Assert(results[1].Warning is not null, "FUSE should warn");
+        AssertEqual("/mnt/Steam Library", results[2].MountPoint, "mount escape decoding");
+    }
+
+    private static async Task TestCliPersistentStateAsync()
+    {
+        using var temporary = new TemporaryDirectory();
+        var game = Directory.CreateDirectory(Path.Combine(temporary.Path, "Fixture Game"));
+        var stateDirectory = Path.Combine(
+            temporary.Path,
+            "config",
+            "dlss-swapper-lle");
+        Func<LibraryStateStore> createStore = () => new LibraryStateStore(stateDirectory);
+
+        var addGameExit = await DlssSwapper.Linux.Cli.Program.RunAsync(
+            ["state", "add-game", game.FullName],
+            includeDefaultSteamRoots: false,
+            static () => throw new InvalidOperationException("State commands must not create a download cache."),
+            createStore).ConfigureAwait(false);
+        var addPatternExit = await DlssSwapper.Linux.Cli.Program.RunAsync(
+            ["state", "add-pattern", "Engine/Plugins/*/Binaries/Win64"],
+            includeDefaultSteamRoots: false,
+            static () => throw new InvalidOperationException("State commands must not create a download cache."),
+            createStore).ConfigureAwait(false);
+
+        var state = createStore().Load();
+        AssertEqual(0, addGameExit, "state add-game exit");
+        AssertEqual(0, addPatternExit, "state add-pattern exit");
+        AssertEqual(1, state.ManualGames.Count, "persisted manual game");
+        AssertEqual(1, state.CustomScanPatterns.Count, "persisted custom pattern");
+
+        var rejected = false;
+        try
+        {
+            CliParser.Parse(["reset"]);
+        }
+        catch (UsageException)
+        {
+            rejected = true;
+        }
+
+        Assert(rejected, "reset must require --yes");
+    }
+
+    private static void TestLocalDataReset()
+    {
+        using var temporary = new TemporaryDirectory();
+        var stateDirectory = Directory.CreateDirectory(Path.Combine(
+            temporary.Path,
+            "config",
+            "dlss-swapper-lle")).FullName;
+        var cacheDirectory = Directory.CreateDirectory(Path.Combine(
+            temporary.Path,
+            "cache",
+            "dlss-swapper-lle")).FullName;
+        var preserved = Directory.CreateDirectory(Path.Combine(
+            temporary.Path,
+            "SteamLibrary",
+            "DLSS Swapper Artwork")).FullName;
+        File.WriteAllText(Path.Combine(stateDirectory, "state.json"), "{}");
+        File.WriteAllText(Path.Combine(cacheDirectory, "cached.dll"), "fixture");
+        File.WriteAllText(Path.Combine(preserved, "cover.jpg"), "fixture");
+
+        new LocalDataResetService(
+            new LibraryStateStore(stateDirectory),
+            cacheDirectory).Reset();
+
+        Assert(!Directory.Exists(stateDirectory), "state directory should be removed");
+        Assert(!Directory.Exists(cacheDirectory), "application cache should be removed");
+        Assert(File.Exists(Path.Combine(preserved, "cover.jpg")),
+            "SteamLibrary-adjacent artwork must be preserved");
     }
 
     private static DllCatalogEntry Candidate(

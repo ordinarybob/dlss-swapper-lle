@@ -409,6 +409,8 @@ public sealed class PersistentLibrary
 
     public LinuxLibraryState State { get; private set; }
 
+    public string StateDirectory => _store.StateDirectory;
+
     public IReadOnlyList<SelectedGame> Merge(SteamDiscoveryResult discovery)
     {
         ArgumentNullException.ThrowIfNull(discovery);
@@ -571,6 +573,12 @@ public sealed class PersistentLibrary
     public void Save()
     {
         _store.Save(State);
+        State = _store.Load();
+    }
+
+    public void ResetLocalData(string? cacheDirectory = null)
+    {
+        new LocalDataResetService(_store, cacheDirectory).Reset();
         State = _store.Load();
     }
 

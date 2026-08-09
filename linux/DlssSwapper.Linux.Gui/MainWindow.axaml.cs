@@ -289,13 +289,14 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var saved = await new SettingsWindow(library).ShowDialog<bool>(this);
+        var settings = new SettingsWindow(library);
+        var saved = await settings.ShowDialog<bool>(this);
         if (saved)
         {
             _viewModel.StatusText = library.State.HddMode
                 ? "Settings saved. HDD scan and artwork limits are active."
                 : "Settings saved. Standard scan and artwork limits are active.";
-            await RefreshLibraryAsync(runInitialDeepScan: false);
+            await RefreshLibraryAsync(runInitialDeepScan: settings.WasReset);
         }
     }
 
@@ -1019,7 +1020,19 @@ public sealed partial class MainWindow : Window
             AddResult("Steam discovery", "Steam", "—", "Warning", warning);
         }
 
-        return library.Merge(discovery);
+        var games = library.Merge(discovery);
+        foreach (var filesystem in FilesystemInspector.InspectPaths(
+            games.Select(game => game.RootPath))
+            .GroupBy(item => (item.MountPoint, item.Type))
+            .Select(group => group.First()))
+        {
+            var detail = filesystem.Warning
+                ?? $"{filesystem.Type} mounted at {filesystem.MountPoint}";
+            AddResult("Library storage", "Filesystem", filesystem.Type,
+                filesystem.Warning is null ? "Detected" : "Warning", detail);
+        }
+
+        return games;
     }
 
     private async Task RunInitialDeepScanAsync(

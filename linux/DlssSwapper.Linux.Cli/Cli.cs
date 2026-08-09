@@ -20,6 +20,7 @@ internal sealed class CliOptions
     internal List<string> SteamRoots { get; } = [];
     internal List<string> Families { get; } = [];
     internal List<string> Versions { get; } = [];
+    internal List<string> Operands { get; } = [];
     internal string? ManifestPath { get; set; }
     internal bool All { get; set; }
     internal bool DryRun { get; set; }
@@ -85,7 +86,13 @@ internal static class CliParser
                     options.Help = true;
                     break;
                 default:
-                    throw new UsageException($"Unknown option '{argument}'.");
+                    if (argument.StartsWith("-", StringComparison.Ordinal))
+                    {
+                        throw new UsageException($"Unknown option '{argument}'.");
+                    }
+
+                    options.Operands.Add(argument);
+                    break;
             }
         }
 
@@ -110,7 +117,8 @@ internal static class CliParser
             return;
         }
 
-        if (options.Command is not ("discover" or "scan" or "update" or "restore"))
+        if (options.Command is not ("discover" or "scan" or "update" or "restore"
+            or "state" or "filesystems" or "reset"))
         {
             throw new UsageException($"Unknown command '{options.Command}'.");
         }
@@ -118,6 +126,44 @@ internal static class CliParser
         var hasSelectors = options.AppIds.Count > 0
             || options.Paths.Count > 0
             || options.Roots.Count > 0;
+
+        if (options.Command == "state")
+        {
+            ValidateState(options);
+            return;
+        }
+
+        if (options.Command == "reset")
+        {
+            if (!options.Yes || options.Operands.Count > 0 || hasSelectors
+                || options.SteamRoots.Count > 0 || options.DryRun
+                || options.Families.Count > 0 || options.Versions.Count > 0
+                || options.ManifestPath is not null || options.All)
+            {
+                throw new UsageException("reset accepts only the required --yes confirmation.");
+            }
+
+            return;
+        }
+
+        if (options.Command == "filesystems")
+        {
+            if (options.Operands.Count > 0 || options.AppIds.Count > 0
+                || options.All || options.DryRun || options.Yes
+                || options.Families.Count > 0 || options.Versions.Count > 0
+                || options.ManifestPath is not null)
+            {
+                throw new UsageException(
+                    "filesystems accepts only --path, --root, and --steam-root options.");
+            }
+
+            return;
+        }
+
+        if (options.Operands.Count > 0)
+        {
+            throw new UsageException($"Command '{options.Command}' does not accept positional values.");
+        }
         if (options.All && hasSelectors)
         {
             throw new UsageException("--all cannot be combined with other game selectors.");
@@ -174,6 +220,40 @@ internal static class CliParser
         {
             throw new UsageException(
                 $"{options.Command} without --dry-run requires explicit --yes confirmation.");
+        }
+    }
+
+    private static void ValidateState(CliOptions options)
+    {
+        if (options.All || options.DryRun || options.Yes || options.AppIds.Count > 0
+            || options.Paths.Count > 0 || options.Roots.Count > 0
+            || options.SteamRoots.Count > 0 || options.Families.Count > 0
+            || options.Versions.Count > 0 || options.ManifestPath is not null)
+        {
+            throw new UsageException("state accepts an action and optional value, without command options.");
+        }
+
+        if (options.Operands.Count == 0)
+        {
+            options.Operands.Add("show");
+        }
+
+        var action = options.Operands[0].ToLowerInvariant();
+        var requiresValue = action is "add-game" or "remove-game"
+            or "add-steam-root" or "remove-steam-root"
+            or "add-pattern" or "remove-pattern";
+        if (action is not ("show" or "restore-steam") && !requiresValue)
+        {
+            throw new UsageException($"Unknown state action '{action}'.");
+        }
+
+        var expected = requiresValue ? 2 : 1;
+        if (options.Operands.Count != expected)
+        {
+            throw new UsageException(
+                requiresValue
+                    ? $"state {action} requires exactly one value."
+                    : $"state {action} does not accept a value.");
         }
     }
 }
@@ -415,6 +495,12 @@ internal static class CliHelp
 
             Commands:
               discover [--steam-root PATH ...]
+              filesystems [--path PATH ...] [--root PATH ...] [--steam-root PATH ...]
+              state [show]
+              state (add-game|remove-game|add-steam-root|remove-steam-root) PATH
+              state (add-pattern|remove-pattern) PATTERN
+              state restore-steam
+              reset --yes
               scan [--app-id ID ...] [--path PATH ...] [--root PATH ...] [--all]
                    [--steam-root PATH ...] [--manifest PATH]
               update (--app-id ID ... | --path PATH ... | --root PATH ... | --all)
@@ -437,6 +523,12 @@ internal static class CliHelp
               --version selects that detected family at an exact manifest version.
               Always run update --dry-run first and close selected games before writing.
               A real update or restore requires explicit --yes confirmation.
+
+            Local state:
+              state commands manage the same persistent library used by the GUI.
+              filesystems reports the backing filesystem and warns on NTFS/FUSE.
+              reset --yes removes only LLE-owned Linux config and application cache.
+              Artwork cached beside a SteamLibrary is intentionally preserved.
             """);
     }
 }
