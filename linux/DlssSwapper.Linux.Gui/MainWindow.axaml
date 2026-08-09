@@ -70,6 +70,14 @@
                   Margin="0,0,8,8"
                   IsEnabled="{Binding CanInteract}"
                   Click="AddPaths_Click" />
+          <Button Content="Deep Scan"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="DeepScan_Click" />
+          <Button Content="Refresh"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="Refresh_Click" />
           <Button Content="Select all"
                   Margin="0,0,8,8"
                   IsEnabled="{Binding CanInteract}"
@@ -95,6 +103,14 @@
                   Margin="0,0,8,8"
                   IsEnabled="{Binding CanInteract}"
                   Click="RestoreBackups_Click" />
+          <Button Content="Remove selected"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="RemoveSelected_Click" />
+          <Button Content="Restore excluded Steam games"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="RestoreExcluded_Click" />
         </WrapPanel>
       </StackPanel>
     </Border>
@@ -103,7 +119,7 @@
       <Border Grid.Column="0" Classes="card">
         <Grid RowDefinitions="Auto,*">
           <StackPanel Grid.Row="0" Margin="0,0,0,10">
-            <TextBlock Text="Games" Classes="sectionTitle" />
+            <TextBlock Text="{Binding GamesHeading}" Classes="sectionTitle" />
             <TextBlock Text="Selection changes invalidate an existing update preview."
                        Classes="muted"
                        FontSize="12" />

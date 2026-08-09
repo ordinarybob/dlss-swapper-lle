@@ -25,6 +25,7 @@ internal static class Program
             ("Fast library scan records metadata without hashing", TestMetadataOnlyFastScanAsync),
             ("Matching version is a metadata-only no-op", RunSync(TestMetadataOnlyNoOp)),
             ("Initial deep scan completion is retry safe", TestRetrySafeDeepScanAsync),
+            ("Library scan isolates missing game roots", TestMissingRootIsolationAsync),
         };
 
         var failures = 0;
@@ -757,6 +758,29 @@ internal static class Program
         var nextFast = await service.ScanFastAsync(games, reloaded.State).ConfigureAwait(false);
         AssertEqual(1, AssertSingle(nextFast.Games).Dlls.Count, "next fast scan missed learned path");
         AssertEqual(0, nextFast.LearnedPatternCount, "next fast scan relearned a pattern");
+    }
+
+    private static async Task TestMissingRootIsolationAsync()
+    {
+        using var temporary = new TemporaryDirectory();
+        var gameRoot = Directory.CreateDirectory(Path.Combine(temporary.Path, "Live Game")).FullName;
+        var payload = "live"u8.ToArray();
+        File.WriteAllBytes(Path.Combine(gameRoot, "nvngx_dlssg.dll"), payload);
+        var catalog = DllCatalog.Load(WriteManifest(temporary.Path, payload));
+        var missingRoot = Path.Combine(temporary.Path, "Missing Game");
+        var result = await new LibraryScanService(catalog).ScanFastAsync(
+            [
+                new SelectedGame("Missing Game", missingRoot, null),
+                new SelectedGame("Live Game", gameRoot, null),
+            ],
+            new LinuxLibraryState()).ConfigureAwait(false);
+
+        AssertEqual(2, result.Games.Count, "isolated scan result count");
+        var missing = result.Games.Single(scan => scan.Game.Name == "Missing Game");
+        AssertEqual(0, missing.Dlls.Count, "missing root DLL count");
+        AssertEqual(1, missing.Warnings.Count, "missing root warning count");
+        var live = result.Games.Single(scan => scan.Game.Name == "Live Game");
+        AssertEqual(1, live.Dlls.Count, "live root DLL count");
     }
 
     private static string WriteManifest(string directory, byte[] payload)

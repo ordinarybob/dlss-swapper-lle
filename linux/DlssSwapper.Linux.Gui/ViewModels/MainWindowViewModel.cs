@@ -6,7 +6,9 @@ public sealed class MainWindowViewModel : ObservableObject
 {
     private string _statusText = "Loading the bundled DLL catalog…";
     private bool _isBusy;
+    private bool _isLoadingLibrary = true;
     private bool _hasReadyPreview;
+    private int _gameCount;
 
     public ObservableCollection<GameRowViewModel> Games { get; } = [];
 
@@ -42,6 +44,34 @@ public sealed class MainWindowViewModel : ObservableObject
             }
         }
     }
+
+    public bool IsLoadingLibrary
+    {
+        get => _isLoadingLibrary;
+        set
+        {
+            if (SetProperty(ref _isLoadingLibrary, value))
+            {
+                OnPropertyChanged(nameof(GamesHeading));
+            }
+        }
+    }
+
+    public int GameCount
+    {
+        get => _gameCount;
+        set
+        {
+            if (SetProperty(ref _gameCount, value))
+            {
+                OnPropertyChanged(nameof(GamesHeading));
+            }
+        }
+    }
+
+    public string GamesHeading => IsLoadingLibrary
+        ? "Games · Loading"
+        : $"Games ({GameCount})";
 
     public bool CanInteract => !IsBusy;
 

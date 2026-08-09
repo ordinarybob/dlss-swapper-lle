@@ -78,34 +78,48 @@ public sealed class LibraryScanService
 
         await Parallel.ForEachAsync(games, options, (game, token) =>
         {
-            var fast = FastScanPatternIndex.EnumerateFastCandidates(
-                game.RootPath,
-                customPatterns,
-                token);
-            var candidates = fast;
-            if (deepScan)
+            try
             {
-                var deep = FastScanPatternIndex.EnumerateDeepCandidates(game.RootPath, token);
-                var fastPaths = fast.Files.ToHashSet(PathComparers.FileSystemPath);
-                foreach (var straggler in deep.Files.Where(path => !fastPaths.Contains(path)))
+                var fast = FastScanPatternIndex.EnumerateFastCandidates(
+                    game.RootPath,
+                    customPatterns,
+                    token);
+                var candidates = fast;
+                if (deepScan)
                 {
-                    if (FastScanPatternIndex.TryCreateAdaptivePattern(
-                        game.RootPath,
-                        straggler,
-                        out var pattern))
+                    var deep = FastScanPatternIndex.EnumerateDeepCandidates(game.RootPath, token);
+                    var fastPaths = fast.Files.ToHashSet(PathComparers.FileSystemPath);
+                    foreach (var straggler in deep.Files.Where(path => !fastPaths.Contains(path)))
                     {
-                        learnedPatterns.Add(pattern);
+                        if (FastScanPatternIndex.TryCreateAdaptivePattern(
+                            game.RootPath,
+                            straggler,
+                            out var pattern))
+                        {
+                            learnedPatterns.Add(pattern);
+                        }
                     }
+
+                    candidates = new CandidateFileResult(
+                        deep.Files,
+                        fast.Warnings.Concat(deep.Warnings)
+                            .Distinct(StringComparer.Ordinal)
+                            .ToArray());
                 }
 
-                candidates = new CandidateFileResult(
-                    deep.Files,
-                    fast.Warnings.Concat(deep.Warnings)
-                        .Distinct(StringComparer.Ordinal)
-                        .ToArray());
+                results[game.RootPath] = _scanner.ScanCandidates(game, _catalog, candidates);
+            }
+            catch (Exception exception) when (exception is IOException
+                or UnauthorizedAccessException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                results[game.RootPath] = new ScanResult(
+                    game,
+                    [],
+                    [$"Could not scan '{game.RootPath}': {exception.Message}"]);
             }
 
-            results[game.RootPath] = _scanner.ScanCandidates(game, _catalog, candidates);
             var completed = Interlocked.Increment(ref processed);
             if (completed == games.Count || completed % 100 == 0)
             {

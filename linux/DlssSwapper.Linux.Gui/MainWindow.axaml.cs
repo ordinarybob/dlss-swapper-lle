@@ -19,12 +19,17 @@ public sealed partial class MainWindow : Window
     private readonly DllScanner _scanner = new();
     private readonly UpdatePlanner _planner = new();
     private readonly HashSet<string> _knownPaths = new(PathComparer);
+    private readonly CancellationTokenSource _lifetime = new();
     private readonly TextBox _steamRootsTextBox;
     private readonly TextBox _explicitPathsTextBox;
     private readonly TextBox _gameRootsTextBox;
 
     private DllCatalog? _catalog;
+    private PersistentLibrary? _library;
+    private LibraryScanService? _scanService;
     private IReadOnlyList<UpdatePlanItem> _currentUpdatePlan = [];
+    private Task? _deepScanTask;
+    private bool _opened;
 
     public MainWindow()
     {
@@ -42,7 +47,12 @@ public sealed partial class MainWindow : Window
                 "Assets",
                 "static_manifest.json");
             _catalog = DllCatalog.Load(manifestPath);
-            _viewModel.StatusText = "Ready. Discover Steam games or add explicit paths.";
+            _library = new PersistentLibrary(new LibraryStateStore());
+            _scanService = new LibraryScanService(_catalog, _scanner);
+            _steamRootsTextBox.Text = string.Join(
+                Environment.NewLine,
+                _library.State.AdditionalSteamRoots);
+            _viewModel.StatusText = "Loading the persistent game library…";
         }
         catch (Exception exception)
         {
@@ -50,61 +60,178 @@ public sealed partial class MainWindow : Window
                 $"The bundled DLL catalog could not be loaded: {exception.Message}";
             AddResult("Application", "Catalog", "Assets/static_manifest.json", "Error", exception.Message);
         }
+
+        Opened += MainWindow_Opened;
+        Closing += (_, _) => _lifetime.Cancel();
+    }
+
+    private async void MainWindow_Opened(object? sender, EventArgs e)
+    {
+        if (_opened)
+        {
+            return;
+        }
+
+        _opened = true;
+        await RefreshLibraryAsync(runInitialDeepScan: true);
     }
 
     private async void DiscoverSteam_Click(object? sender, RoutedEventArgs e)
     {
-        var additionalRoots = ParseLines(_steamRootsTextBox.Text);
-        InvalidatePreview();
-        await RunBusyAsync("Discovering Steam libraries…", async () =>
+        if (!TryGetLibrary(out var library))
         {
-            var discovery = await Task.Run(() => _steamDiscovery.Discover(additionalRoots));
-            var added = 0;
-            foreach (var game in discovery.Games)
-            {
-                if (AddGame(new SelectedGame(game.Name, game.InstallDirectory, game.AppId)))
-                {
-                    added++;
-                }
-            }
+            return;
+        }
 
-            _viewModel.Results.Clear();
-            foreach (var warning in discovery.Warnings)
-            {
-                AddResult("Steam discovery", "Steam", "—", "Warning", warning);
-            }
-
-            _viewModel.StatusText =
-                $"Steam discovery found {discovery.Games.Count} game{Plural(discovery.Games.Count)}; added {added} new path{Plural(added)}.";
-        });
+        library.State.AdditionalSteamRoots = ParseLines(_steamRootsTextBox.Text).ToList();
+        library.Save();
+        await RefreshLibraryAsync(runInitialDeepScan: false);
     }
 
     private async void AddPaths_Click(object? sender, RoutedEventArgs e)
     {
+        if (!TryGetLibrary(out var library))
+        {
+            return;
+        }
+
         var explicitPaths = ParseLines(_explicitPathsTextBox.Text);
         var roots = ParseLines(_gameRootsTextBox.Text);
         InvalidatePreview();
         await RunBusyAsync("Adding explicit game paths…", async () =>
         {
-            var expansion = await Task.Run(() => ExpandManualPaths(explicitPaths, roots));
             var added = 0;
-            foreach (var game in expansion.Games)
+            var warnings = new List<string>();
+            await Task.Run(() =>
             {
-                if (AddGame(game))
+                foreach (var path in explicitPaths)
                 {
-                    added++;
+                    try
+                    {
+                        added += library.AddManualGames([path]);
+                    }
+                    catch (Exception exception) when (exception is IOException
+                        or UnauthorizedAccessException
+                        or ArgumentException
+                        or NotSupportedException)
+                    {
+                        warnings.Add($"Could not add game path '{path}': {exception.Message}");
+                    }
                 }
-            }
+
+                foreach (var root in roots)
+                {
+                    try
+                    {
+                        added += library.AddImmediateChildren(root);
+                    }
+                    catch (Exception exception) when (exception is IOException
+                        or UnauthorizedAccessException
+                        or ArgumentException
+                        or NotSupportedException)
+                    {
+                        warnings.Add($"Could not expand game root '{root}': {exception.Message}");
+                    }
+                }
+            });
 
             _viewModel.Results.Clear();
-            foreach (var warning in expansion.Warnings)
+            foreach (var warning in warnings)
             {
                 AddResult("Path import", "Filesystem", "—", "Warning", warning);
             }
 
             _viewModel.StatusText =
-                $"Added {added} new game path{Plural(added)}. Multi-game roots include immediate children only.";
+                $"Persisted {added} new game path{Plural(added)}. Multi-game roots include immediate children only.";
         });
+        await RefreshLibraryAsync(runInitialDeepScan: false);
+    }
+
+    private async void DeepScan_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_deepScanTask is { IsCompleted: false })
+        {
+            _viewModel.StatusText = "Deep Scan is already running in the background.";
+            return;
+        }
+
+        var confirmed = await new ConfirmationDialog(
+            "Deep Scan",
+            "Deep Scan runs automatically the first time you launch DLSS Swapper LLE and learns path patterns for Fast Scan. "
+            + "Run it again only after your library changes and a game is missing. If you know which game is missing, use Add paths and roots instead.")
+            .ShowDialog<bool>(this);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        if (!TryGetLibrary(out var library)
+            || !TryGetScanService(out var service))
+        {
+            return;
+        }
+
+        var games = await DiscoverMergedGamesAsync(library);
+        await RunBusyAsync("Deep Scan is checking every game directory…", async () =>
+        {
+            var result = await service.ScanDeepAsync(
+                games,
+                library,
+                CreateScanProgress(isDeepScan: true),
+                _lifetime.Token);
+            ReplaceScans(result.Games);
+            _viewModel.StatusText =
+                $"Deep Scan found {_viewModel.GameCount} swappable game{Plural(_viewModel.GameCount)} and learned {result.LearnedPatternCount} new fast-scan pattern{Plural(result.LearnedPatternCount)}.";
+        });
+    }
+
+    private async void Refresh_Click(object? sender, RoutedEventArgs e) =>
+        await RefreshLibraryAsync(runInitialDeepScan: false);
+
+    private async void RemoveSelected_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetSelectedRows(out var rows) || !TryGetLibrary(out var library))
+        {
+            return;
+        }
+
+        var confirmed = await new ConfirmationDialog(
+            "Remove games",
+            $"Remove {rows.Length} selected game{Plural(rows.Length)} from this library? Steam games remain excluded during normal refresh; manually added games can be imported again.")
+            .ShowDialog<bool>(this);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var manualPaths = library.State.ManualGames
+            .Select(game => game.RootPath)
+            .ToHashSet(PathComparer);
+        foreach (var row in rows)
+        {
+            if (manualPaths.Contains(row.RootPath))
+            {
+                library.RemoveManualGame(row.RootPath);
+            }
+            else if (row.Game.SteamAppId is not null)
+            {
+                library.ExcludeSteamGame(row.Game.SteamAppId);
+            }
+        }
+
+        await RefreshLibraryAsync(runInitialDeepScan: false);
+    }
+
+    private async void RestoreExcluded_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetLibrary(out var library))
+        {
+            return;
+        }
+
+        var restored = library.RestoreSteamGames();
+        _viewModel.StatusText = $"Restored {restored} excluded Steam game{Plural(restored)}.";
+        await RefreshLibraryAsync(runInitialDeepScan: false);
     }
 
     private void SelectAll_Click(object? sender, RoutedEventArgs e)
@@ -335,6 +462,125 @@ public sealed partial class MainWindow : Window
         });
     }
 
+    private async Task RefreshLibraryAsync(bool runInitialDeepScan)
+    {
+        if (!TryGetLibrary(out var library)
+            || !TryGetScanService(out var service))
+        {
+            return;
+        }
+
+        IReadOnlyList<SelectedGame> games = [];
+        var succeeded = false;
+        InvalidatePreview();
+        _viewModel.IsLoadingLibrary = true;
+        await RunBusyAsync("Discovering and fast-scanning the game library…", async () =>
+        {
+            games = await DiscoverMergedGamesAsync(library);
+            var result = await service.ScanFastAsync(
+                games,
+                library.State,
+                CreateScanProgress(isDeepScan: false),
+                _lifetime.Token);
+            ReplaceScans(result.Games);
+            _viewModel.IsLoadingLibrary = false;
+            _viewModel.StatusText =
+                $"Fast Scan loaded {_viewModel.GameCount} swappable game{Plural(_viewModel.GameCount)} in {result.Elapsed.TotalSeconds:F2} seconds.";
+            succeeded = true;
+        });
+
+        if (!succeeded)
+        {
+            _viewModel.IsLoadingLibrary = false;
+            return;
+        }
+
+        if (runInitialDeepScan
+            && !library.State.HasCompletedInitialDeepScan
+            && games.Count > 0
+            && !_lifetime.IsCancellationRequested)
+        {
+            _deepScanTask = RunInitialDeepScanAsync(games, library, service);
+        }
+    }
+
+    private async Task<IReadOnlyList<SelectedGame>> DiscoverMergedGamesAsync(
+        PersistentLibrary library)
+    {
+        var discovery = await Task.Run(
+            () => _steamDiscovery.Discover(new SteamDiscoveryOptions
+            {
+                AdditionalRoots = library.State.AdditionalSteamRoots,
+            }),
+            _lifetime.Token);
+        foreach (var warning in discovery.Warnings)
+        {
+            AddResult("Steam discovery", "Steam", "—", "Warning", warning);
+        }
+
+        return library.Merge(discovery);
+    }
+
+    private async Task RunInitialDeepScanAsync(
+        IReadOnlyList<SelectedGame> games,
+        PersistentLibrary library,
+        LibraryScanService service)
+    {
+        try
+        {
+            _viewModel.StatusText =
+                $"Fast Scan is ready with {_viewModel.GameCount} game{Plural(_viewModel.GameCount)}. Initial Deep Scan is learning any missing layouts in the background…";
+            var result = await service.ScanDeepAsync(
+                games,
+                library,
+                CreateScanProgress(isDeepScan: true),
+                _lifetime.Token);
+            ReplaceScans(result.Games);
+            _viewModel.StatusText =
+                $"Initial Deep Scan completed in {result.Elapsed.TotalSeconds:F2} seconds; learned {result.LearnedPatternCount} new fast-scan pattern{Plural(result.LearnedPatternCount)}.";
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+            // Completion remains false, so the next launch retries.
+        }
+        catch (Exception exception)
+        {
+            _viewModel.StatusText =
+                $"Initial Deep Scan did not complete and will retry next launch: {exception.Message}";
+            AddResult("Library", "Deep Scan", "—", "Warning", exception.Message);
+        }
+    }
+
+    private IProgress<LibraryScanProgress> CreateScanProgress(bool isDeepScan) =>
+        new Progress<LibraryScanProgress>(progress =>
+        {
+            var label = isDeepScan ? "Deep Scan" : "Fast Scan";
+            _viewModel.StatusText =
+                $"{label}: {progress.ProcessedGames:N0} / {progress.TotalGames:N0} game roots processed…";
+        });
+
+    private void ReplaceScans(IReadOnlyList<ScanResult> scans)
+    {
+        foreach (var row in _viewModel.Games)
+        {
+            row.PropertyChanged -= GameRow_PropertyChanged;
+        }
+
+        _viewModel.Games.Clear();
+        _knownPaths.Clear();
+        foreach (var scan in scans.Where(scan => scan.Dlls.Count > 0))
+        {
+            if (!AddGame(scan.Game))
+            {
+                continue;
+            }
+
+            _viewModel.Games[^1].SetScanResult(scan);
+        }
+
+        _viewModel.GameCount = _viewModel.Games.Count;
+    }
+
     private async Task RunBusyAsync(string status, Func<Task> action)
     {
         if (_viewModel.IsBusy)
@@ -363,9 +609,25 @@ public sealed partial class MainWindow : Window
         IReadOnlyList<GameRowViewModel> rows,
         DllCatalog catalog)
     {
-        return await Task.Run(() => rows
-            .Select(row => (row, _scanner.Scan(row.Game, catalog)))
-            .ToArray());
+        if (_library is null)
+        {
+            return await Task.Run(() => rows
+                .Select(row => (row, _scanner.Scan(row.Game, catalog)))
+                .ToArray());
+        }
+
+        var service = _scanService ?? new LibraryScanService(catalog, _scanner);
+        var result = await service.ScanFastAsync(
+            rows.Select(row => row.Game).ToArray(),
+            _library.State,
+            cancellationToken: _lifetime.Token);
+        var byPath = result.Games.ToDictionary(
+            scan => scan.Game.RootPath,
+            PathComparer);
+        return rows
+            .Where(row => byPath.ContainsKey(row.RootPath))
+            .Select(row => (row, byPath[row.RootPath]))
+            .ToArray();
     }
 
     private bool AddGame(SelectedGame game)
@@ -452,6 +714,32 @@ public sealed partial class MainWindow : Window
         return false;
     }
 
+    private bool TryGetLibrary(out PersistentLibrary library)
+    {
+        library = _library!;
+        if (_library is not null)
+        {
+            return true;
+        }
+
+        _viewModel.StatusText =
+            "The persistent Linux library state is unavailable. Review the startup error.";
+        return false;
+    }
+
+    private bool TryGetScanService(out LibraryScanService service)
+    {
+        service = _scanService!;
+        if (_scanService is not null)
+        {
+            return true;
+        }
+
+        _viewModel.StatusText =
+            "The Linux scan service is unavailable. Verify the DLL catalog and restart.";
+        return false;
+    }
+
     private TextBox FindRequiredTextBox(string name) =>
         this.FindControl<TextBox>(name)
         ?? throw new InvalidOperationException($"Required text box '{name}' is missing.");
@@ -461,64 +749,6 @@ public sealed partial class MainWindow : Window
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .ToArray();
-
-    private static ManualExpansion ExpandManualPaths(
-        IReadOnlyList<string> explicitPaths,
-        IReadOnlyList<string> roots)
-    {
-        var games = new List<SelectedGame>();
-        var warnings = new List<string>();
-        foreach (var path in explicitPaths)
-        {
-            TryAddManualGame(path, games, warnings);
-        }
-
-        foreach (var rootInput in roots)
-        {
-            try
-            {
-                var root = NormalizeExistingDirectory(rootInput);
-                foreach (var child in Directory
-                             .EnumerateDirectories(root, "*", SearchOption.TopDirectoryOnly)
-                             .OrderBy(path => path, StringComparer.Ordinal))
-                {
-                    TryAddManualGame(child, games, warnings);
-                }
-            }
-            catch (Exception exception) when (exception is IOException
-                or UnauthorizedAccessException
-                or ArgumentException
-                or NotSupportedException)
-            {
-                warnings.Add($"Could not expand game root '{rootInput}': {exception.Message}");
-            }
-        }
-
-        return new ManualExpansion(games, warnings);
-    }
-
-    private static void TryAddManualGame(
-        string input,
-        List<SelectedGame> games,
-        List<string> warnings)
-    {
-        try
-        {
-            var path = NormalizeExistingDirectory(input);
-            var name = new DirectoryInfo(path).Name;
-            games.Add(new SelectedGame(
-                string.IsNullOrWhiteSpace(name) ? path : name,
-                path,
-                null));
-        }
-        catch (Exception exception) when (exception is IOException
-            or UnauthorizedAccessException
-            or ArgumentException
-            or NotSupportedException)
-        {
-            warnings.Add($"Could not add game path '{input}': {exception.Message}");
-        }
-    }
 
     private static string NormalizeExistingDirectory(string value)
     {
@@ -573,7 +803,4 @@ public sealed partial class MainWindow : Window
 
     private static string Plural(int count) => count == 1 ? string.Empty : "s";
 
-    private sealed record ManualExpansion(
-        IReadOnlyList<SelectedGame> Games,
-        IReadOnlyList<string> Warnings);
 }
