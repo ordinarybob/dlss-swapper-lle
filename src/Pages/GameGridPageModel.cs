@@ -556,38 +556,55 @@ public partial class GameGridPageModel : ObservableObject
         CurrentCollectionView = GameManager.Instance.GetGameCollection(textBox.Text);
     }
 
+    (EasyContentDialog Dialog, CheckBox DontShowAgainCheckbox) CreateManualImportNotice(
+        string descriptionResource,
+        string primaryButtonResource)
+    {
+        var dontShowAgainCheckbox = new CheckBox()
+        {
+            Content = ResourceHelper.GetString("General_DontShowAgain"),
+            MinWidth = 0,
+        };
+
+        var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
+        {
+            PrimaryButtonText = ResourceHelper.GetString(primaryButtonResource),
+            CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+            DefaultButton = ContentDialogButton.Primary,
+            Content = new StackPanel()
+            {
+                Children =
+                {
+                    new TextBlock()
+                    {
+                        TextWrapping = TextWrapping.Wrap,
+                        Text = ResourceHelper.GetString(descriptionResource),
+                    },
+                    dontShowAgainCheckbox,
+                },
+                Orientation = Orientation.Vertical,
+                Spacing = 8,
+            },
+        };
+
+        // The stock ContentDialog minimum height and padding are intended for
+        // larger prompts. These notices only need one explanation and one opt-out.
+        dialog.Resources["ContentDialogMinWidth"] = 0d;
+        dialog.Resources["ContentDialogMaxWidth"] = 480d;
+        dialog.Resources["ContentDialogMinHeight"] = 0d;
+        dialog.Resources["ContentDialogPadding"] = new Thickness(16, 12, 16, 12);
+
+        return (dialog, dontShowAgainCheckbox);
+    }
+
     [RelayCommand]
     async Task AddManualGameButtonAsync()
     {
         if (Settings.Instance.DontShowManuallyAddingGamesNotice == false)
         {
-            var dontShowAgainCheckbox = new CheckBox()
-            {
-                Content = new TextBlock()
-                {
-                    Text = ResourceHelper.GetString("General_DontShowAgain"),
-                },
-            };
-
-            var dialog = new EasyContentDialog(gameGridPage.XamlRoot)
-            {
-                PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectGameFolder"),
-                CloseButtonText = ResourceHelper.GetString("General_Cancel"),
-                DefaultButton = ContentDialogButton.Primary,
-                Content = new StackPanel()
-                {
-                    Children = {
-                        new TextBlock()
-                        {
-                            TextWrapping = TextWrapping.Wrap,
-                            Text = ResourceHelper.GetString("GamesPage_ManuallyAdding_SingleFolderDescription"),
-                        },
-                        dontShowAgainCheckbox,
-                    },
-                    Orientation = Orientation.Vertical,
-                    Spacing = 16,
-                },
-            };
+            var (dialog, dontShowAgainCheckbox) = CreateManualImportNotice(
+                "GamesPage_ManuallyAdding_SingleFolderDescription",
+                "GamesPage_ManuallyAdding_SelectGameFolder");
 
             var result = await dialog.ShowAsync();
 
@@ -618,34 +635,9 @@ public partial class GameGridPageModel : ObservableObject
     {
         if (Settings.Instance.DontShowAddMultipleGameFoldersNotice == false)
         {
-            var dontShowAgainCheckbox = new CheckBox()
-            {
-                Content = new TextBlock()
-                {
-                    Text = ResourceHelper.GetString("General_DontShowAgain"),
-                },
-            };
-
-            var explanation = new EasyContentDialog(gameGridPage.XamlRoot)
-            {
-                PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectGameFolders"),
-                CloseButtonText = ResourceHelper.GetString("General_Cancel"),
-                DefaultButton = ContentDialogButton.Primary,
-                Content = new StackPanel()
-                {
-                    Children =
-                    {
-                        new TextBlock()
-                        {
-                            TextWrapping = TextWrapping.Wrap,
-                            Text = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultipleFoldersDescription"),
-                        },
-                        dontShowAgainCheckbox,
-                    },
-                    Orientation = Orientation.Vertical,
-                    Spacing = 16,
-                },
-            };
+            var (explanation, dontShowAgainCheckbox) = CreateManualImportNotice(
+                "GamesPage_ManuallyAdding_MultipleFoldersDescription",
+                "GamesPage_ManuallyAdding_SelectGameFolders");
             if (await explanation.ShowAsync() != ContentDialogResult.Primary)
             {
                 return;
@@ -680,34 +672,9 @@ public partial class GameGridPageModel : ObservableObject
     {
         if (Settings.Instance.DontShowAddMultiGameDirectoryNotice == false)
         {
-            var dontShowAgainCheckbox = new CheckBox()
-            {
-                Content = new TextBlock()
-                {
-                    Text = ResourceHelper.GetString("General_DontShowAgain"),
-                },
-            };
-
-            var explanation = new EasyContentDialog(gameGridPage.XamlRoot)
-            {
-                PrimaryButtonText = ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectMultiGameDirectory"),
-                CloseButtonText = ResourceHelper.GetString("General_Cancel"),
-                DefaultButton = ContentDialogButton.Primary,
-                Content = new StackPanel()
-                {
-                    Children =
-                    {
-                        new TextBlock()
-                        {
-                            TextWrapping = TextWrapping.Wrap,
-                            Text = ResourceHelper.GetString("GamesPage_ManuallyAdding_MultiGameDirectoryDescription"),
-                        },
-                        dontShowAgainCheckbox,
-                    },
-                    Orientation = Orientation.Vertical,
-                    Spacing = 16,
-                },
-            };
+            var (explanation, dontShowAgainCheckbox) = CreateManualImportNotice(
+                "GamesPage_ManuallyAdding_MultiGameDirectoryDescription",
+                "GamesPage_ManuallyAdding_SelectMultiGameDirectory");
             if (await explanation.ShowAsync() != ContentDialogResult.Primary)
             {
                 return;
