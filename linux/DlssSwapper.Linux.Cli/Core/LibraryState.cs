@@ -79,6 +79,8 @@ public sealed class LinuxLibraryState
 
     public bool HasCompletedInitialDeepScan { get; set; }
 
+    public bool HasSelectedStorageProfile { get; set; }
+
     public bool HddMode { get; set; }
 
     public int GridColumns { get; set; } = 6;

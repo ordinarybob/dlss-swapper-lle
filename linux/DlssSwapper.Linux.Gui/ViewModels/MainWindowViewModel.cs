@@ -16,6 +16,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private double _gridItemHeight = 180;
     private bool _isBatchMode;
     private int _selectedCount;
+    private string _alertText = string.Empty;
 
     public ObservableCollection<GameRowViewModel> Games { get; } = [];
 
@@ -24,7 +25,13 @@ public sealed class MainWindowViewModel : ObservableObject
     public string StatusText
     {
         get => _statusText;
-        set => SetProperty(ref _statusText, value);
+        set
+        {
+            if (SetProperty(ref _statusText, value))
+            {
+                OnPropertyChanged(nameof(HeaderStatusText));
+            }
+        }
     }
 
     public bool IsBusy
@@ -36,6 +43,8 @@ public sealed class MainWindowViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(CanInteract));
                 OnPropertyChanged(nameof(CanApplyPreview));
+                OnPropertyChanged(nameof(CanActOnSelection));
+                OnPropertyChanged(nameof(HeaderStatusText));
             }
         }
     }
@@ -60,6 +69,8 @@ public sealed class MainWindowViewModel : ObservableObject
             if (SetProperty(ref _isLoadingLibrary, value))
             {
                 OnPropertyChanged(nameof(GamesHeading));
+                OnPropertyChanged(nameof(VisibleGameCountText));
+                OnPropertyChanged(nameof(HeaderStatusText));
             }
         }
     }
@@ -72,6 +83,7 @@ public sealed class MainWindowViewModel : ObservableObject
             if (SetProperty(ref _gameCount, value))
             {
                 OnPropertyChanged(nameof(GamesHeading));
+                OnPropertyChanged(nameof(VisibleGameCountText));
             }
         }
     }
@@ -79,6 +91,28 @@ public sealed class MainWindowViewModel : ObservableObject
     public string GamesHeading => IsLoadingLibrary
         ? "Games · Loading"
         : $"Games ({GameCount})";
+
+    public string VisibleGameCountText => IsLoadingLibrary
+        ? string.Empty
+        : $"({GameCount})";
+
+    public string HeaderStatusText => IsLoadingLibrary || IsBusy
+        ? StatusText
+        : string.Empty;
+
+    public string AlertText
+    {
+        get => _alertText;
+        set
+        {
+            if (SetProperty(ref _alertText, value))
+            {
+                OnPropertyChanged(nameof(HasAlert));
+            }
+        }
+    }
+
+    public bool HasAlert => !string.IsNullOrWhiteSpace(AlertText);
 
     public bool IsGridView
     {
@@ -132,6 +166,7 @@ public sealed class MainWindowViewModel : ObservableObject
             if (SetProperty(ref _selectedCount, value))
             {
                 OnPropertyChanged(nameof(SelectionHeading));
+                OnPropertyChanged(nameof(CanActOnSelection));
             }
         }
     }
@@ -139,6 +174,8 @@ public sealed class MainWindowViewModel : ObservableObject
     public string SelectionHeading => $"{SelectedCount} selected";
 
     public bool CanInteract => !IsBusy;
+
+    public bool CanActOnSelection => !IsBusy && SelectedCount > 0;
 
     public bool CanApplyPreview => !IsBusy && HasReadyPreview;
 }

@@ -115,6 +115,14 @@ public sealed partial class MainWindow : Window
         }
 
         _opened = true;
+        if (_library is { } library && !library.State.HasSelectedStorageProfile)
+        {
+            var hddMode = await new StorageProfileDialog().ShowDialog<bool>(this);
+            library.State.HddMode = hddMode;
+            library.State.HasSelectedStorageProfile = true;
+            library.Save();
+        }
+
         UpdateGridGeometry();
         await RefreshLibraryAsync(runInitialDeepScan: true);
     }
@@ -705,6 +713,9 @@ public sealed partial class MainWindow : Window
         _viewModel.IsBatchMode = !_viewModel.IsBatchMode;
     }
 
+    private void DismissAlert_Click(object? sender, RoutedEventArgs e) =>
+        _viewModel.AlertText = string.Empty;
+
     private void ListView_Click(object? sender, RoutedEventArgs e) => SetGridView(false);
 
     private void GridView_Click(object? sender, RoutedEventArgs e) => SetGridView(true);
@@ -748,33 +759,25 @@ public sealed partial class MainWindow : Window
 
     private void UpdateGridGeometry()
     {
-        var width = _gameGridViewport.Bounds.Width - 10;
-        var height = _gameGridViewport.Bounds.Height - 4;
+        var width = _gameGridViewport.Bounds.Width - 8;
+        var height = _gameGridViewport.Bounds.Height - 2;
         if (width <= 0 || height <= 0)
         {
             return;
         }
 
-        const double cardAspect = 1.40;
-        var columnsDemand = Math.Max(1, _viewModel.GridColumns);
-        var rowsDemand = Math.Max(1, _viewModel.GridRows);
-        var rowHeight = height / rowsDemand;
-        var widthAtRowDensity = Math.Max(44, rowHeight / cardAspect);
-        var columnsAtRowDensity = Math.Max(
-            1,
-            (int)Math.Floor(width / widthAtRowDensity));
-        var effectiveColumns = Math.Max(columnsDemand, columnsAtRowDensity);
-        var itemWidth = Math.Max(44, Math.Floor(width / effectiveColumns));
-
-        var cardWidth = Math.Max(44, itemWidth - 10);
-        var cardHeight = Math.Max(
-            68,
-            Math.Floor(itemWidth * cardAspect) - 10);
-        _viewModel.GridItemWidth = cardWidth;
-        _viewModel.GridItemHeight = cardHeight;
+        var scale = TopLevel.GetTopLevel(_gameGridViewport)?.RenderScaling ?? 1d;
+        var metrics = ResponsiveGridLayout.Calculate(
+            width,
+            height,
+            _viewModel.GridColumns,
+            _viewModel.GridRows,
+            scale);
+        _viewModel.GridItemWidth = metrics.CardWidth;
+        _viewModel.GridItemHeight = metrics.CardHeight;
         foreach (var row in _allRows)
         {
-            row.SetCardSize(cardWidth, cardHeight);
+            row.SetCardSize(metrics.CardWidth, metrics.CardHeight);
         }
     }
 
@@ -1450,6 +1453,12 @@ public sealed partial class MainWindow : Window
             target,
             outcome,
             message));
+        if (outcome.Equals("Warning", StringComparison.OrdinalIgnoreCase)
+            || outcome.Equals("Error", StringComparison.OrdinalIgnoreCase)
+            || outcome.Equals("Failed", StringComparison.OrdinalIgnoreCase))
+        {
+            _viewModel.AlertText = message;
+        }
     }
 
     private bool TryGetSelectedRows(out GameRowViewModel[] rows)

@@ -2,327 +2,474 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DlssSwapper.Linux.Gui.MainWindow"
         Title="DLSS Swapper LLE"
+        Icon="/Assets/icon_256.png"
         Width="800"
         Height="1040"
         MinWidth="720"
         MinHeight="620"
         WindowStartupLocation="CenterScreen">
-  <Grid ColumnDefinitions="58,*" Background="#191A1D">
-    <Border Grid.Column="0" Background="#15161A" BorderBrush="#2B2D32"
-            BorderThickness="0,0,1,0" Padding="8,12">
-      <Grid RowDefinitions="Auto,Auto,*,Auto">
-        <Image Grid.Row="0" Source="/Assets/icon_256.png" Width="34" Height="34"
-               HorizontalAlignment="Center" Margin="0,0,0,16" />
-        <StackPanel Grid.Row="1">
-          <Button Classes="nav navSelected" ToolTip.Tip="Games" AutomationProperties.Name="Games">
-            <Path Data="M4,8 C4,5.8 5.8,4 8,4 H16 C18.2,4 20,5.8 20,8 V16 C20,18.2 18.2,20 16,20 H8 C5.8,20 4,18.2 4,16 Z M8,10 V14 M6,12 H10 M15.5,10.5 H15.6 M17.5,13.5 H17.6"
-                  Classes="commandIcon" />
+  <Grid Background="#202020">
+    <!-- The page begins 56 DIPs from the window edge, matching the Windows
+         shell's content padding and leaving the navigation card overlaid. -->
+    <Grid Margin="56,0,0,0" RowDefinitions="Auto,*">
+      <Grid Grid.Row="0"
+            Margin="0,2,8,0"
+            ColumnDefinitions="*,Auto"
+            RowDefinitions="32,36,Auto">
+        <StackPanel Grid.Row="0"
+                    Grid.Column="0"
+                    MinWidth="0"
+                    Orientation="Horizontal"
+                    Spacing="8">
+          <TextBlock Text="Games"
+                     VerticalAlignment="Center"
+                     FontSize="24"
+                     FontWeight="SemiBold" />
+          <TextBlock Text="{Binding VisibleGameCountText}"
+                     VerticalAlignment="Center"
+                     FontSize="16"
+                     FontWeight="SemiBold"
+                     Foreground="#C8C8C8" />
+          <ProgressBar Width="20"
+                       Height="3"
+                       IsIndeterminate="True"
+                       IsVisible="{Binding IsBusy}"
+                       VerticalAlignment="Center" />
+          <TextBlock Text="{Binding HeaderStatusText}"
+                     MaxWidth="210"
+                     VerticalAlignment="Center"
+                     FontSize="12"
+                     Foreground="#C8C8C8"
+                     TextTrimming="CharacterEllipsis"
+                     TextWrapping="NoWrap" />
+        </StackPanel>
+
+        <Grid Grid.Row="1"
+              Grid.Column="0"
+              Margin="0,3,8,1"
+              MinWidth="0"
+              MaxWidth="360"
+              HorizontalAlignment="Stretch">
+          <TextBox x:Name="SearchTextBox"
+                   Classes="headerSearch"
+                   AutomationProperties.Name="Search"
+                   PlaceholderText="Search"
+                   HorizontalAlignment="Stretch"
+                   TextChanged="SearchTextBox_TextChanged" />
+        </Grid>
+
+        <StackPanel Grid.Row="0"
+                    Grid.RowSpan="2"
+                    Grid.Column="1"
+                    Height="64"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Spacing="3">
+          <Button Classes="command" AutomationProperties.Name="Add Games">
+            <Button.Content>
+              <Grid RowDefinitions="22,24,10">
+                <Path Grid.Row="0" Data="M12,3 V21 M3,12 H21" Classes="commandIcon" />
+                <TextBlock Grid.Row="1" Text="Add&#x0a;Games" Classes="commandLabel" />
+                <TextBlock Grid.Row="2" Text="⌄" FontSize="9" Foreground="#C8C8C8"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Grid>
+            </Button.Content>
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="Add one game" Click="AddOneGame_Click" />
+                <MenuItem Header="Add separate games" Click="AddSeparateGames_Click" />
+                <MenuItem Header="Add parent directory" Click="AddParentDirectory_Click" />
+              </MenuFlyout>
+            </Button.Flyout>
           </Button>
-          <Button Classes="nav" ToolTip.Tip="DLL Library" AutomationProperties.Name="DLL Library"
-                  IsEnabled="{Binding CanInteract}" Click="DllLibrary_Click">
-            <Path Data="M5,4 V20 M10,3 V19 M15,5 V21 M20,4 V20" Classes="commandIcon" />
+
+          <Button Classes="command"
+                  AutomationProperties.Name="Deep Scan"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="DeepScan_Click">
+            <Grid RowDefinitions="22,24,10">
+              <Path Grid.Row="0"
+                    Data="M10.5,3 A7.5,7.5 0 1 0 10.5,18 A7.5,7.5 0 1 0 10.5,3 M16,16 L22,22"
+                    Classes="commandIcon" />
+              <TextBlock Grid.Row="1" Text="Deep&#x0a;Scan" Classes="commandLabel" />
+            </Grid>
           </Button>
-          <Button Classes="nav" ToolTip.Tip="Settings" AutomationProperties.Name="Settings"
-                  IsEnabled="{Binding CanInteract}" Click="Settings_Click">
-            <Path Data="M12,8 A4,4 0 1 0 12,16 A4,4 0 1 0 12,8 M12,2 V5 M12,19 V22 M2,12 H5 M19,12 H22 M4.9,4.9 L7,7 M17,17 L19.1,19.1 M19.1,4.9 L17,7 M7,17 L4.9,19.1"
-                  Classes="commandIcon" />
+
+          <Button Classes="command"
+                  AutomationProperties.Name="Refresh"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="Refresh_Click">
+            <Grid RowDefinitions="22,24,10">
+              <Path Grid.Row="0" Data="M20,7 V12 H15 M20,12 A8,8 0 1 0 18.2,17.1"
+                    Classes="commandIcon" />
+              <TextBlock Grid.Row="1" Text="Refresh" Classes="commandLabel" />
+              <TextBlock Grid.Row="2" Text="⌄" FontSize="9" Foreground="#C8C8C8"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="Refresh" Click="Refresh_Click" />
+                <MenuItem Header="Restore excluded Steam games" Click="RestoreExcluded_Click" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+
+          <Button Classes="command" AutomationProperties.Name="Batch" Click="Batch_Click">
+            <Grid RowDefinitions="22,24,10">
+              <Path Grid.Row="0"
+                    Data="M4,6 L6,8 L9,4 M11,6 H21 M4,12 L6,14 L9,10 M11,12 H21 M4,18 L6,20 L9,16 M11,18 H21"
+                    Classes="commandIcon" />
+              <TextBlock Grid.Row="1" Text="Batch" Classes="commandLabel" />
+              <TextBlock Grid.Row="2" Text="⌄" FontSize="9" Foreground="#C8C8C8"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+
+          <Button Classes="command" AutomationProperties.Name="Filter">
+            <Button.Content>
+              <Grid RowDefinitions="22,24,10">
+                <Path Grid.Row="0" Data="M3,4 H21 L14,12 V19 L10,21 V12 Z" Classes="commandIcon" />
+                <TextBlock Grid.Row="1" Text="Filter" Classes="commandLabel" />
+                <TextBlock Grid.Row="2" Text="⌄" FontSize="9" Foreground="#C8C8C8"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Grid>
+            </Button.Content>
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="All games" Tag="0" Click="FilterMenu_Click" />
+                <MenuItem Header="Steam" Tag="1" Click="FilterMenu_Click" />
+                <MenuItem Header="Manually added" Tag="2" Click="FilterMenu_Click" />
+                <MenuItem Header="DLSS" Tag="3" Click="FilterMenu_Click" />
+                <MenuItem Header="Frame generation" Tag="4" Click="FilterMenu_Click" />
+                <MenuItem Header="Ray reconstruction" Tag="5" Click="FilterMenu_Click" />
+                <MenuItem Header="XeSS" Tag="6" Click="FilterMenu_Click" />
+                <MenuItem Header="FSR" Tag="7" Click="FilterMenu_Click" />
+                <MenuItem Header="Hidden" Tag="8" Click="FilterMenu_Click" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+
+          <Button Classes="command" AutomationProperties.Name="View">
+            <Button.Content>
+              <Grid RowDefinitions="22,24,10">
+                <Path Grid.Row="0"
+                      Data="M3,3 H10 V10 H3 Z M14,3 H21 V10 H14 Z M3,14 H10 V21 H3 Z M14,14 H21 V21 H14 Z"
+                      Classes="commandIcon" />
+                <TextBlock Grid.Row="1" Text="View" Classes="commandLabel" />
+                <TextBlock Grid.Row="2" Text="⌄" FontSize="9" Foreground="#C8C8C8"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Grid>
+            </Button.Content>
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="Grid" Click="GridView_Click" />
+                <MenuItem Header="List" Click="ListView_Click" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+
+          <Button Classes="command" AutomationProperties.Name="Sort">
+            <Button.Content>
+              <Grid RowDefinitions="22,24,10">
+                <Path Grid.Row="0" Data="M8,4 V20 M4,8 L8,4 L12,8 M16,20 V4 M12,16 L16,20 L20,16"
+                      Classes="commandIcon" />
+                <TextBlock Grid.Row="1" Text="Sort" Classes="commandLabel" />
+                <TextBlock Grid.Row="2" Text="⌄" FontSize="9" Foreground="#C8C8C8"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Grid>
+            </Button.Content>
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="Name" Tag="0" Click="SortMenu_Click" />
+                <MenuItem Header="Source" Tag="1" Click="SortMenu_Click" />
+                <MenuItem Header="DLL version" Tag="2" Click="SortMenu_Click" />
+              </MenuFlyout>
+            </Button.Flyout>
           </Button>
         </StackPanel>
-        <TextBlock Grid.Row="3" Text="LLE" FontSize="9" FontWeight="Bold"
-                   Foreground="#C578F6" HorizontalAlignment="Center" />
+
+        <Border Grid.Row="2"
+                Grid.Column="0"
+                IsVisible="{Binding HasAlert}"
+                Background="#302610"
+                BorderBrush="#725B22"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="8,5"
+                Margin="0,4,8,4"
+                MaxWidth="360"
+                HorizontalAlignment="Stretch">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBlock Text="{Binding AlertText}"
+                       Foreground="#E7C66C"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center" />
+            <Button Grid.Column="1"
+                    Content="×"
+                    Width="26"
+                    Height="24"
+                    MinHeight="24"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    AutomationProperties.Name="Dismiss warning"
+                    Click="DismissAlert_Click" />
+          </Grid>
+        </Border>
+      </Grid>
+
+      <Grid Grid.Row="1" RowDefinitions="32,*">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+        <Grid Grid.Column="0"
+              MaxWidth="360"
+              HorizontalAlignment="Left"
+              ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto">
+          <TextBlock Grid.Column="0"
+                     Text="Steam"
+                     FontSize="17"
+                     FontWeight="SemiBold"
+                     VerticalAlignment="Center" />
+          <Border Grid.Column="1" Width="1" Height="18" Background="#666666"
+                  Margin="7,0,7,0" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="2" Text="Columns" FontSize="10" Foreground="#C8C8C8"
+                     VerticalAlignment="Center" Margin="0,0,3,0" />
+          <ComboBox x:Name="GridColumnsInput"
+                    Grid.Column="3"
+                    AutomationProperties.Name="Grid columns"
+                    Width="54" Height="28" MinHeight="28"
+                    Padding="7,0,2,0"
+                    SelectionChanged="GridDensity_Changed" />
+          <TextBlock Grid.Column="5" Text="Rows" FontSize="10" Foreground="#C8C8C8"
+                     VerticalAlignment="Center" Margin="8,0,3,0" />
+          <ComboBox x:Name="GridRowsInput"
+                    Grid.Column="6"
+                    AutomationProperties.Name="Grid rows"
+                    Width="54" Height="28" MinHeight="28"
+                    Padding="7,0,2,0"
+                    SelectionChanged="GridDensity_Changed" />
+
+          <ComboBox x:Name="FilterComboBox" Grid.Column="4" IsVisible="False"
+                    SelectedIndex="0" SelectionChanged="LibraryView_Changed">
+            <ComboBoxItem Content="All games" />
+            <ComboBoxItem Content="Steam" />
+            <ComboBoxItem Content="Manually added" />
+            <ComboBoxItem Content="DLSS" />
+            <ComboBoxItem Content="Frame generation" />
+            <ComboBoxItem Content="Ray reconstruction" />
+            <ComboBoxItem Content="XeSS" />
+            <ComboBoxItem Content="FSR" />
+            <ComboBoxItem Content="Hidden" />
+          </ComboBox>
+          <ComboBox x:Name="SortComboBox" Grid.Column="4" IsVisible="False"
+                    SelectedIndex="0" SelectionChanged="LibraryView_Changed">
+            <ComboBoxItem Content="Name" />
+            <ComboBoxItem Content="Source" />
+            <ComboBoxItem Content="DLL version" />
+          </ComboBox>
+        </Grid>
+        <Border Grid.Column="1"
+                Width="324"
+                IsVisible="{Binding IsBatchMode}"
+                Opacity="0" />
+        </Grid>
+
+        <Border Grid.Row="0" BorderBrush="#424242" BorderThickness="0,0,0,1" />
+
+        <ScrollViewer Grid.Row="1"
+                      IsVisible="{Binding IsListView}"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding Games}" Margin="0,0,8,2">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="row" Height="42">
+                  <Border.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="Launch" Tag="{Binding}" Click="GameLaunch_Click" />
+                      <MenuItem Header="Notes" Tag="{Binding}" Click="GameNotes_Click" />
+                      <MenuItem Header="History" Tag="{Binding}" Click="GameHistory_Click" />
+                      <MenuItem Header="{Binding FavoriteActionText}" Tag="{Binding}" Click="GameFavorite_Click" />
+                      <MenuItem Header="Reload" Tag="{Binding}" Click="GameReload_Click" />
+                      <MenuItem Header="{Binding HideActionText}" Tag="{Binding}" Click="GameHide_Click" />
+                      <MenuItem Header="Add custom cover" Tag="{Binding}" Click="GameCustomCover_Click" />
+                      <MenuItem Header="Update detected DLLs to latest" Tag="{Binding}" Click="GameUpdateLatest_Click" />
+                      <MenuItem Header="Remove" Tag="{Binding}" Click="GameRemove_Click" />
+                    </ContextMenu>
+                  </Border.ContextMenu>
+                  <Grid ColumnDefinitions="30,*,Auto" ColumnSpacing="6">
+                    <Border Grid.Column="0" Width="30" Height="40"
+                            Background="#252525" BorderBrush="#424242"
+                            BorderThickness="1" CornerRadius="3" ClipToBounds="True">
+                      <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
+                    </Border>
+                    <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                      <TextBlock Text="{Binding FavoriteMarker}" Foreground="#F2C94C"
+                                 VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Name}"
+                                 VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis"
+                                 TextWrapping="NoWrap" />
+                    </Grid>
+                    <TextBlock Grid.Column="2" Margin="0,0,8,0"
+                               VerticalAlignment="Center" Foreground="#C8C8C8">
+                      <Run Text="{Binding CardDllLabel}" /><Run Text=":  " />
+                      <Run Text="{Binding CardDllVersion}" />
+                    </TextBlock>
+                    <CheckBox Grid.Column="0" Grid.ColumnSpan="3"
+                              IsChecked="{Binding IsSelected}"
+                              IsVisible="{Binding $parent[Window].DataContext.IsBatchMode}"
+                              HorizontalAlignment="Right" VerticalAlignment="Center"
+                              Margin="0,0,8,0" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <ScrollViewer Grid.Row="1"
+                      x:Name="GameGridViewport"
+                      IsVisible="{Binding IsGridView}"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      SizeChanged="GameGridViewport_SizeChanged">
+          <ItemsControl ItemsSource="{Binding Games}" Margin="-1,0,7,2">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="gameCard"
+                        Width="{Binding CardWidth}"
+                        Height="{Binding CardHeight}">
+                  <Border.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="Launch" Tag="{Binding}" Click="GameLaunch_Click" />
+                      <MenuItem Header="Notes" Tag="{Binding}" Click="GameNotes_Click" />
+                      <MenuItem Header="History" Tag="{Binding}" Click="GameHistory_Click" />
+                      <MenuItem Header="{Binding FavoriteActionText}" Tag="{Binding}" Click="GameFavorite_Click" />
+                      <MenuItem Header="Reload" Tag="{Binding}" Click="GameReload_Click" />
+                      <MenuItem Header="{Binding HideActionText}" Tag="{Binding}" Click="GameHide_Click" />
+                      <MenuItem Header="Add custom cover" Tag="{Binding}" Click="GameCustomCover_Click" />
+                      <MenuItem Header="Update detected DLLs to latest" Tag="{Binding}" Click="GameUpdateLatest_Click" />
+                      <MenuItem Header="Remove" Tag="{Binding}" Click="GameRemove_Click" />
+                    </ContextMenu>
+                  </Border.ContextMenu>
+                  <Grid Background="#252525" ClipToBounds="True">
+                    <Grid>
+                      <Image Source="/Assets/icon_256.png" Width="42" Height="42"
+                             Opacity="0.12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
+                    </Grid>
+                    <Border Padding="5,3"
+                            VerticalAlignment="Bottom"
+                            Background="#C0000000">
+                      <Grid ColumnDefinitions="Auto,*"
+                            RowDefinitions="Auto,Auto"
+                            ColumnSpacing="5"
+                            RowSpacing="1">
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
+                                   Text="{Binding Name}"
+                                   MaxLines="2"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                   Text="{Binding CardDllLabel}"
+                                   FontSize="10" FontWeight="SemiBold"
+                                   Foreground="White" />
+                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                   Text="{Binding CardDllVersion}"
+                                   HorizontalAlignment="Right"
+                                   FontSize="10" Foreground="White"
+                                   TextTrimming="CharacterEllipsis" />
+                      </Grid>
+                    </Border>
+                    <TextBlock Text="{Binding FavoriteMarker}" Foreground="#F2C94C"
+                               FontSize="16" HorizontalAlignment="Left"
+                               VerticalAlignment="Top" Margin="5" />
+                    <CheckBox IsChecked="{Binding IsSelected}"
+                              IsVisible="{Binding $parent[Window].DataContext.IsBatchMode}"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Top" Margin="5" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+    </Grid>
+
+    <!-- Selection controls occupy the otherwise unused strip beneath the
+         fixed right-side commands. They overlay rather than reflow the Steam
+         heading, matching the approved Windows behavior. -->
+    <Border IsVisible="{Binding IsBatchMode}"
+            Background="#2B2B2B"
+            BorderBrush="#444444"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="2"
+            Margin="0,70,8,0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            ZIndex="30">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="4">
+        <TextBlock Grid.Column="0"
+                   Text="{Binding SelectionHeading}"
+                   Margin="3,0"
+                   VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="Select all" Height="26" MinHeight="26"
+                Padding="8,0" Click="SelectAll_Click" />
+        <Button Grid.Column="2" Content="Apply DLL" Height="26" MinHeight="26"
+                Padding="8,0" Classes="primary" IsEnabled="{Binding CanActOnSelection}"
+                Click="DllLibrary_Click" />
+        <Button Grid.Column="3" Content="Remove" Height="26" MinHeight="26"
+                Padding="8,0" IsEnabled="{Binding CanActOnSelection}"
+                Click="RemoveSelected_Click" />
       </Grid>
     </Border>
 
-    <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*,Auto" Margin="18,12,16,10">
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,0,0,10">
-      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <TextBlock Text="DLSS Swapper LLE" FontSize="15" FontWeight="SemiBold" />
-        <TextBlock Text="LLE" FontSize="11" Foreground="#B8BAC1" VerticalAlignment="Center" />
-      </StackPanel>
-      <Border Grid.Column="1" Background="#302610" BorderBrush="#725B22"
-              BorderThickness="1" CornerRadius="10" Padding="9,3" VerticalAlignment="Center">
-        <TextBlock Text="UNTESTED ON LINUX" FontSize="10" FontWeight="SemiBold"
-                   Foreground="#E7C66C" />
-      </Border>
-    </Grid>
-
-    <Grid Grid.Row="1" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto"
-          ColumnSpacing="12" Margin="0,0,0,12">
-      <StackPanel Grid.Row="0">
-        <TextBlock Text="{Binding GamesHeading}" FontSize="30" FontWeight="SemiBold"
-                   LetterSpacing="-0.4" Margin="0,0,0,6" />
-        <TextBox x:Name="SearchTextBox" Classes="headerSearch"
-                 AutomationProperties.Name="Search" PlaceholderText="Search" MaxWidth="360"
-                 HorizontalAlignment="Stretch" TextChanged="SearchTextBox_TextChanged" />
-      </StackPanel>
-      <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-        <Button Classes="command" AutomationProperties.Name="Add Games">
-          <Button.Content><StackPanel Spacing="3"><Path Data="M12,3 V21 M3,12 H21" Classes="commandIcon" /><TextBlock Text="Add&#x0a;Games" Classes="commandLabel" /></StackPanel></Button.Content>
-          <Button.Flyout><MenuFlyout><MenuItem Header="Add one game" Click="AddOneGame_Click" /><MenuItem Header="Add separate games" Click="AddSeparateGames_Click" /><MenuItem Header="Add parent directory" Click="AddParentDirectory_Click" /></MenuFlyout></Button.Flyout>
+    <Border Width="44"
+            Height="86"
+            Margin="4,4,0,0"
+            Padding="0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Background="#2B2B2B"
+            BorderBrush="#414141"
+            BorderThickness="1"
+            CornerRadius="5"
+            ZIndex="20">
+      <StackPanel Width="42" Height="84" VerticalAlignment="Center">
+        <Button Classes="nav navSelected"
+                ToolTip.Tip="Games"
+                AutomationProperties.Name="Games">
+          <Path Data="M4,8 C4,5.8 5.8,4 8,4 H16 C18.2,4 20,5.8 20,8 V16 C20,18.2 18.2,20 16,20 H8 C5.8,20 4,18.2 4,16 Z M8,10 V14 M6,12 H10 M15.5,10.5 H15.6 M17.5,13.5 H17.6"
+                Classes="commandIcon" Width="18" Height="18" />
         </Button>
-        <Button Classes="command" AutomationProperties.Name="Deep Scan" IsEnabled="{Binding CanInteract}" Click="DeepScan_Click"><StackPanel Spacing="3"><Path Data="M10.5,3 A7.5,7.5 0 1 0 10.5,18 A7.5,7.5 0 1 0 10.5,3 M16,16 L22,22" Classes="commandIcon" /><TextBlock Text="Deep&#x0a;Scan" Classes="commandLabel" /></StackPanel></Button>
-        <Button Classes="command" AutomationProperties.Name="Refresh" IsEnabled="{Binding CanInteract}" Click="Refresh_Click"><StackPanel Spacing="3"><Path Data="M20,7 V12 H15 M20,12 A8,8 0 1 0 18.2,17.1" Classes="commandIcon" /><TextBlock Text="Refresh" Classes="commandLabel" /></StackPanel></Button>
-        <Button Classes="command" AutomationProperties.Name="Batch" Click="Batch_Click">
-          <Button.Content><StackPanel Spacing="3"><Path Data="M4,6 L6,8 L9,4 M11,6 H21 M4,12 L6,14 L9,10 M11,12 H21 M4,18 L6,20 L9,16 M11,18 H21" Classes="commandIcon" /><TextBlock Text="Batch" Classes="commandLabel" /></StackPanel></Button.Content>
+        <Button Classes="nav"
+                ToolTip.Tip="DLL Library"
+                AutomationProperties.Name="DLL Library"
+                IsEnabled="{Binding CanInteract}"
+                Click="DllLibrary_Click">
+          <Path Data="M5,4 V20 M10,3 V19 M15,5 V21 M20,4 V20"
+                Classes="commandIcon" Width="18" Height="18" />
         </Button>
-        <Button Classes="command" AutomationProperties.Name="Filter">
-          <Button.Content><StackPanel Spacing="3"><Path Data="M3,4 H21 L14,12 V19 L10,21 V12 Z" Classes="commandIcon" /><TextBlock Text="Filter" Classes="commandLabel" /></StackPanel></Button.Content>
-          <Button.Flyout><MenuFlyout><MenuItem Header="All games" Tag="0" Click="FilterMenu_Click" /><MenuItem Header="Steam" Tag="1" Click="FilterMenu_Click" /><MenuItem Header="Manually added" Tag="2" Click="FilterMenu_Click" /><MenuItem Header="DLSS" Tag="3" Click="FilterMenu_Click" /><MenuItem Header="Frame generation" Tag="4" Click="FilterMenu_Click" /><MenuItem Header="Ray reconstruction" Tag="5" Click="FilterMenu_Click" /><MenuItem Header="XeSS" Tag="6" Click="FilterMenu_Click" /><MenuItem Header="FSR" Tag="7" Click="FilterMenu_Click" /><MenuItem Header="Hidden" Tag="8" Click="FilterMenu_Click" /></MenuFlyout></Button.Flyout>
-        </Button>
-        <Button Classes="command" AutomationProperties.Name="View">
-          <Button.Content><StackPanel Spacing="3"><Path Data="M3,3 H10 V10 H3 Z M14,3 H21 V10 H14 Z M3,14 H10 V21 H3 Z M14,14 H21 V21 H14 Z" Classes="commandIcon" /><TextBlock Text="View" Classes="commandLabel" /></StackPanel></Button.Content>
-          <Button.Flyout><MenuFlyout><MenuItem Header="Grid" Click="GridView_Click" /><MenuItem Header="List" Click="ListView_Click" /></MenuFlyout></Button.Flyout>
-        </Button>
-        <Button Classes="command" AutomationProperties.Name="Sort">
-          <Button.Content><StackPanel Spacing="3"><Path Data="M8,4 V20 M4,8 L8,4 L12,8 M16,20 V4 M12,16 L16,20 L20,16" Classes="commandIcon" /><TextBlock Text="Sort" Classes="commandLabel" /></StackPanel></Button.Content>
-          <Button.Flyout><MenuFlyout><MenuItem Header="Name" Tag="0" Click="SortMenu_Click" /><MenuItem Header="Source" Tag="1" Click="SortMenu_Click" /><MenuItem Header="DLL version" Tag="2" Click="SortMenu_Click" /></MenuFlyout></Button.Flyout>
+        <Button Classes="nav"
+                ToolTip.Tip="Settings"
+                AutomationProperties.Name="Settings"
+                IsEnabled="{Binding CanInteract}"
+                Click="Settings_Click">
+          <Path Data="M12,8 A4,4 0 1 0 12,16 A4,4 0 1 0 12,8 M12,2 V5 M12,19 V22 M2,12 H5 M19,12 H22 M4.9,4.9 L7,7 M17,17 L19.1,19.1 M19.1,4.9 L17,7 M7,17 L4.9,19.1"
+                Classes="commandIcon" Width="18" Height="18" />
         </Button>
       </StackPanel>
-      <Border Grid.Row="1" Grid.ColumnSpan="2" IsVisible="{Binding IsBatchMode}"
-              Background="#292929" BorderBrush="#3F3F3F" BorderThickness="1"
-              CornerRadius="6" Padding="9" Margin="0,8,0,0" HorizontalAlignment="Right">
-        <StackPanel Orientation="Horizontal" Spacing="7">
-          <TextBlock Text="{Binding SelectionHeading}" VerticalAlignment="Center" Margin="0,0,4,0" />
-          <Button Content="Select all" Click="SelectAll_Click" />
-          <Button Content="Select none" Click="SelectNone_Click" />
-          <Button Content="Scan" Click="ScanSelected_Click" />
-          <Button Content="Preview latest" Click="PreviewLatest_Click" />
-          <Button Content="Apply" IsEnabled="{Binding CanApplyPreview}" Click="ApplyPreview_Click" />
-          <Button Content="Restore" Click="RestoreBackups_Click" />
-          <Button Content="Remove" Click="RemoveSelected_Click" />
-        </StackPanel>
-      </Border>
-    </Grid>
-
-    <Grid Grid.Row="2" ColumnDefinitions="*">
-      <Border Grid.Column="0" BorderBrush="#34363C" BorderThickness="0,1,0,0"
-              Padding="0,10,0,0">
-        <Grid RowDefinitions="Auto,*">
-          <WrapPanel Grid.Row="0" Margin="0,0,0,8" Width="390" HorizontalAlignment="Left">
-            <TextBlock Text="Steam" FontSize="20" FontWeight="SemiBold"
-                       VerticalAlignment="Center" Margin="0,0,9,5" />
-            <Border Width="1" Height="27" Background="#565961" Margin="0,0,9,5" />
-            <ComboBox x:Name="FilterComboBox"
-                      IsVisible="False"
-                      SelectedIndex="0"
-                      SelectionChanged="LibraryView_Changed">
-              <ComboBoxItem Content="All games" />
-              <ComboBoxItem Content="Steam" />
-              <ComboBoxItem Content="Manually added" />
-              <ComboBoxItem Content="DLSS" />
-              <ComboBoxItem Content="Frame generation" />
-              <ComboBoxItem Content="Ray reconstruction" />
-              <ComboBoxItem Content="XeSS" />
-              <ComboBoxItem Content="FSR" />
-              <ComboBoxItem Content="Hidden" />
-            </ComboBox>
-            <ComboBox x:Name="SortComboBox"
-                      IsVisible="False"
-                      SelectedIndex="0"
-                      SelectionChanged="LibraryView_Changed">
-              <ComboBoxItem Content="Name" />
-              <ComboBoxItem Content="Source" />
-              <ComboBoxItem Content="DLL version" />
-            </ComboBox>
-            <TextBlock Text="Columns" FontSize="12" Foreground="#C6C6C6"
-                       VerticalAlignment="Center" Margin="0,0,5,5" />
-            <ComboBox x:Name="GridColumnsInput"
-                      AutomationProperties.Name="Grid columns"
-                      Width="74" Height="34" Margin="0,0,8,5"
-                      SelectionChanged="GridDensity_Changed" />
-            <TextBlock Text="Rows" FontSize="12" Foreground="#C6C6C6"
-                       VerticalAlignment="Center" Margin="0,0,5,5" />
-            <ComboBox x:Name="GridRowsInput"
-                      AutomationProperties.Name="Grid rows"
-                      Width="74" Height="34" Margin="0,0,0,5"
-                      SelectionChanged="GridDensity_Changed" />
-          </WrapPanel>
-
-          <ScrollViewer Grid.Row="1"
-                        IsVisible="{Binding IsListView}"
-                        VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Games}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border Classes="row">
-                    <Border.ContextMenu>
-                      <ContextMenu>
-                        <MenuItem Header="Launch" Tag="{Binding}" Click="GameLaunch_Click" />
-                        <MenuItem Header="Notes" Tag="{Binding}" Click="GameNotes_Click" />
-                        <MenuItem Header="History" Tag="{Binding}" Click="GameHistory_Click" />
-                        <MenuItem Header="{Binding FavoriteActionText}" Tag="{Binding}" Click="GameFavorite_Click" />
-                        <MenuItem Header="Reload" Tag="{Binding}" Click="GameReload_Click" />
-                        <MenuItem Header="{Binding HideActionText}" Tag="{Binding}" Click="GameHide_Click" />
-                        <MenuItem Header="Add custom cover" Tag="{Binding}" Click="GameCustomCover_Click" />
-                        <MenuItem Header="Update detected DLLs to latest" Tag="{Binding}" Click="GameUpdateLatest_Click" />
-                        <MenuItem Header="Remove" Tag="{Binding}" Click="GameRemove_Click" />
-                      </ContextMenu>
-                    </Border.ContextMenu>
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                      <StackPanel Grid.Column="0" Spacing="6">
-                        <CheckBox IsChecked="{Binding IsSelected}"
-                                  IsVisible="{Binding $parent[Window].DataContext.IsBatchMode}"
-                                  HorizontalAlignment="Center" />
-                        <Border Width="72" Height="108" Background="#202020"
-                                CornerRadius="4" ClipToBounds="True">
-                          <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
-                        </Border>
-                      </StackPanel>
-                      <StackPanel Grid.Column="1" Spacing="3">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                          <TextBlock Text="{Binding FavoriteMarker}" Foreground="#F2C94C" />
-                          <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="15"
-                                     FontWeight="SemiBold" TextWrapping="Wrap" />
-                        </Grid>
-                        <TextBlock Text="{Binding Source}" Classes="muted" FontSize="12" />
-                        <TextBlock Text="{Binding RootPath}" TextWrapping="Wrap"
-                                   FontFamily="Monospace" FontSize="12" />
-                        <TextBlock Text="{Binding ScanSummary}" Margin="0,4,0,0"
-                                   FontWeight="SemiBold" TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding ScanDetail}" Classes="muted"
-                                   FontSize="12" TextWrapping="Wrap" />
-                      </StackPanel>
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
-
-          <ScrollViewer Grid.Row="1" x:Name="GameGridViewport"
-                        IsVisible="{Binding IsGridView}"
-                        VerticalScrollBarVisibility="Auto"
-                        HorizontalScrollBarVisibility="Disabled"
-                        SizeChanged="GameGridViewport_SizeChanged">
-            <ItemsControl ItemsSource="{Binding Games}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <WrapPanel />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border Classes="gameCard"
-                          Width="{Binding CardWidth}"
-                          Height="{Binding CardHeight}">
-                    <Border.ContextMenu>
-                      <ContextMenu>
-                        <MenuItem Header="Launch" Tag="{Binding}" Click="GameLaunch_Click" />
-                        <MenuItem Header="Notes" Tag="{Binding}" Click="GameNotes_Click" />
-                        <MenuItem Header="History" Tag="{Binding}" Click="GameHistory_Click" />
-                        <MenuItem Header="{Binding FavoriteActionText}" Tag="{Binding}" Click="GameFavorite_Click" />
-                        <MenuItem Header="Reload" Tag="{Binding}" Click="GameReload_Click" />
-                        <MenuItem Header="{Binding HideActionText}" Tag="{Binding}" Click="GameHide_Click" />
-                        <MenuItem Header="Add custom cover" Tag="{Binding}" Click="GameCustomCover_Click" />
-                        <MenuItem Header="Update detected DLLs to latest" Tag="{Binding}" Click="GameUpdateLatest_Click" />
-                        <MenuItem Header="Remove" Tag="{Binding}" Click="GameRemove_Click" />
-                      </ContextMenu>
-                    </Border.ContextMenu>
-                    <Grid RowDefinitions="*,Auto">
-                      <Border Grid.Row="0" Background="#15161A">
-                        <Grid>
-                          <Image Source="/Assets/icon_256.png" Width="42" Height="42"
-                                 Opacity="0.16" HorizontalAlignment="Center"
-                                 VerticalAlignment="Center" />
-                          <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
-                        </Grid>
-                      </Border>
-                      <Border Grid.Row="1" Background="#F20D0E11" Padding="7,6" MinHeight="47">
-                      <StackPanel VerticalAlignment="Center">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4">
-                          <TextBlock Text="{Binding FavoriteMarker}" Foreground="#F2C94C" />
-                          <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12" FontWeight="SemiBold"
-                                     TextWrapping="Wrap" MaxLines="2" />
-                        </Grid>
-                        <TextBlock Text="{Binding ScanSummary}" Foreground="#C8C8C8"
-                                   FontSize="9.5" TextWrapping="Wrap" MaxLines="1" />
-                      </StackPanel>
-                      </Border>
-                      <CheckBox IsChecked="{Binding IsSelected}"
-                                IsVisible="{Binding $parent[Window].DataContext.IsBatchMode}"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top" Margin="5" />
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
-        </Grid>
-      </Border>
-
-      <Border Grid.Column="1" Classes="card" IsVisible="False">
-        <Grid RowDefinitions="Auto,*">
-          <StackPanel Grid.Row="0" Margin="0,0,0,10">
-            <TextBlock Text="Preview and results" Classes="sectionTitle" />
-            <TextBlock Text="A preview performs no downloads and writes no files."
-                       Classes="muted"
-                       FontSize="12" />
-          </StackPanel>
-          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Results}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border Classes="row">
-                    <StackPanel Spacing="3">
-                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding Game}"
-                                   FontWeight="SemiBold"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding Outcome}"
-                                   FontWeight="SemiBold" />
-                      </Grid>
-                      <TextBlock Text="{Binding Family}" Classes="muted" />
-                      <TextBlock Text="{Binding Target}"
-                                 TextWrapping="Wrap"
-                                 FontFamily="Monospace"
-                                 FontSize="12" />
-                      <TextBlock Text="{Binding Message}"
-                                 TextWrapping="Wrap"
-                                 Margin="0,3,0,0" />
-                    </StackPanel>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
-        </Grid>
-      </Border>
-    </Grid>
-
-    <StackPanel Grid.Row="3" Margin="0,8,0,0">
-      <Expander Header="Activity and results" MaxHeight="220">
-        <Grid RowDefinitions="Auto,*" Margin="0,6,0,0">
-          <Button Content="Restore excluded Steam games" HorizontalAlignment="Left"
-                  Margin="0,0,0,6" IsEnabled="{Binding CanInteract}"
-                  Click="RestoreExcluded_Click" />
-          <ScrollViewer Grid.Row="1" MaxHeight="150" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Results}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border Classes="row">
-                    <Grid ColumnDefinitions="1.1*,0.8*,2*,Auto" ColumnSpacing="8">
-                      <TextBlock Text="{Binding Game}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                      <TextBlock Grid.Column="1" Text="{Binding Family}" Classes="muted" />
-                      <TextBlock Grid.Column="2" Text="{Binding Message}" TextWrapping="Wrap" />
-                      <TextBlock Grid.Column="3" Text="{Binding Outcome}" FontWeight="SemiBold" />
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
-        </Grid>
-      </Expander>
-      <Grid ColumnDefinitions="*,160" ColumnSpacing="10" Margin="0,6,0,0">
-        <TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="12"
-                   TextWrapping="Wrap" VerticalAlignment="Center" />
-        <ProgressBar Grid.Column="1" Height="4" IsIndeterminate="True"
-                     IsVisible="{Binding IsBusy}" VerticalAlignment="Center" />
-      </Grid>
-    </StackPanel>
-    </Grid>
+    </Border>
   </Grid>
 </Window>

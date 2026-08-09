@@ -21,6 +21,7 @@ internal static class Program
             ("Mutation boundary rejects tampering", TestMutationBoundaryAsync),
             ("Adjacent backup, update, and restore", TestUpdateAndRestoreAsync),
             ("Persistent library state and exclusions", RunSync(TestPersistentLibraryState)),
+            ("Windows-parity responsive grid geometry", RunSync(TestResponsiveGridLayout)),
             ("Fast scan learns deep-scan stragglers", RunSync(TestFastScanLearning)),
             ("Fast library scan records metadata without hashing", TestMetadataOnlyFastScanAsync),
             ("Matching version is a metadata-only no-op", RunSync(TestMetadataOnlyNoOp)),
@@ -570,6 +571,7 @@ internal static class Program
 
         library.State.HddMode = true;
         library.State.HasCompletedInitialDeepScan = true;
+        library.State.HasSelectedStorageProfile = true;
         library.State.AdditionalSteamRoots.Add(Path.Combine(temporary.Path, "Steam"));
         library.State.CustomScanPatterns.Add("*/custom/runtime");
         library.State.MediaWikiApiEndpoint = "https://example.invalid/w/api.php";
@@ -605,6 +607,7 @@ internal static class Program
         var reloaded = new PersistentLibrary(store);
         Assert(reloaded.State.HddMode, "HDD mode was not persisted");
         Assert(reloaded.State.HasCompletedInitialDeepScan, "deep-scan completion was not persisted");
+        Assert(reloaded.State.HasSelectedStorageProfile, "storage-profile selection was not persisted");
         AssertEqual(3, reloaded.State.ManualGames.Count, "persisted manual game count");
         AssertEqual(1, reloaded.State.CustomScanPatterns.Count, "persisted custom pattern count");
         var reloadedPreference = reloaded.GetGamePreference(manualRoot);
@@ -653,6 +656,52 @@ internal static class Program
             !Directory.EnumerateFiles(stateDirectory, "*.tmp").Any(),
             "atomic state save left a temporary file");
         Assert(Directory.Exists(childTwo), "fixture child unexpectedly missing");
+    }
+
+    private static void TestResponsiveGridLayout()
+    {
+        var standard = ResponsiveGridLayout.Calculate(
+            viewportWidth: 736,
+            viewportHeight: 940,
+            preferredColumns: 6,
+            preferredRows: 5,
+            rasterizationScale: 1);
+        AssertEqual(6, standard.ColumnCount, "standard grid column count");
+        Assert(
+            Math.Abs((standard.CardHeight / standard.CardWidth) - 1.5) < 0.000001,
+            "grid card ratio is not 2:3");
+        Assert(
+            standard.CellWidth * standard.ColumnCount <= 735.000001,
+            "standard grid did not retain one physical pixel");
+
+        var rowLimited = ResponsiveGridLayout.Calculate(
+            viewportWidth: 1600,
+            viewportHeight: 600,
+            preferredColumns: 6,
+            preferredRows: 5,
+            rasterizationScale: 1);
+        Assert(
+            rowLimited.ColumnCount > 6,
+            "row-density floor did not increase effective columns");
+
+        const double fractionalWidth = 743.5;
+        const double fractionalScale = 1.5;
+        var fractional = ResponsiveGridLayout.Calculate(
+            fractionalWidth,
+            viewportHeight: 900,
+            preferredColumns: 6,
+            preferredRows: 5,
+            fractionalScale);
+        var usedPhysicalPixels = fractional.CellWidth
+            * fractional.ColumnCount
+            * fractionalScale;
+        var maximumPhysicalPixels = Math.Floor(fractionalWidth * fractionalScale) - 1;
+        Assert(
+            usedPhysicalPixels <= maximumPhysicalPixels + 0.000001,
+            "fractional grid exceeded its physical-pixel authority");
+        Assert(
+            fractional.CardWidth >= ResponsiveGridLayout.MinimumCardWidth,
+            "grid card fell below the 44-DIP floor");
     }
 
     private static void TestFastScanLearning()

@@ -14,6 +14,8 @@ public sealed class GameRowViewModel : ObservableObject
     private bool _isHidden;
     private double _cardWidth = 108;
     private double _cardHeight = 170;
+    private string _cardDllLabel = "DLSS";
+    private string _cardDllVersion = "N/A";
 
     public GameRowViewModel(SelectedGame game)
     {
@@ -93,6 +95,18 @@ public sealed class GameRowViewModel : ObservableObject
 
     public string FavoriteMarker => IsFavorite ? "★" : string.Empty;
 
+    public string CardDllLabel
+    {
+        get => _cardDllLabel;
+        private set => SetProperty(ref _cardDllLabel, value);
+    }
+
+    public string CardDllVersion
+    {
+        get => _cardDllVersion;
+        private set => SetProperty(ref _cardDllVersion, value);
+    }
+
     public double CardWidth
     {
         get => _cardWidth;
@@ -140,6 +154,13 @@ public sealed class GameRowViewModel : ObservableObject
         ScanResult = scan;
         OnPropertyChanged(nameof(ScanResult));
 
+        var primaryDll = scan.Dlls
+            .Where(dll => dll.Type == DllType.Dlss)
+            .OrderByDescending(dll => dll.Version, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+        CardDllLabel = "DLSS";
+        CardDllVersion = FormatCardVersion(primaryDll?.Version);
+
         if (scan.Dlls.Count == 0)
         {
             ScanSummary = "No supported DLLs found";
@@ -166,5 +187,23 @@ public sealed class GameRowViewModel : ObservableObject
         ScanDetail = scan.Warnings.Count == 0
             ? $"{scan.Dlls.Count} supported DLL file{(scan.Dlls.Count == 1 ? string.Empty : "s")} scanned."
             : $"{scan.Dlls.Count} supported DLL files; {scan.Warnings.Count} warning{(scan.Warnings.Count == 1 ? string.Empty : "s")}.";
+    }
+
+    private static string FormatCardVersion(string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return "N/A";
+        }
+
+        var normalized = version.Trim();
+        if (normalized.Equals("unknown", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("N/A", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith('v'))
+        {
+            return normalized;
+        }
+
+        return $"v{normalized}";
     }
 }

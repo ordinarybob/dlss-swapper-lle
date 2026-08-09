@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DlssSwapper.Linux.Gui.StorageProfileDialog"
+        Title="DLSS Swapper LLE"
+        Width="520"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,Auto">
+    <StackPanel Grid.Row="0" Spacing="12" Margin="24,20,24,16">
+      <TextBlock Text="Game library storage"
+                 FontSize="22"
+                 FontWeight="SemiBold" />
+      <TextBlock Text="Standard settings are tuned for game libraries on SSD and NVMe storage."
+                 TextWrapping="Wrap" />
+      <CheckBox x:Name="HddModeCheckBox"
+                Content="Select this option if your game library is on a HDD" />
+    </StackPanel>
+    <Border Grid.Row="1"
+            BorderThickness="0,1,0,0"
+            BorderBrush="#404040"
+            Padding="24,14">
+      <Button Content="Apply"
+              Classes="primary"
+              MinWidth="120"
+              HorizontalAlignment="Right"
+              Click="Apply_Click" />
+    </Border>
+  </Grid>
+</Window>
