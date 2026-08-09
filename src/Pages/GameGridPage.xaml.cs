@@ -91,9 +91,15 @@ public sealed partial class GameGridPage : Page
 
     void SearchHost_SizeChanged(object sender, SizeChangedEventArgs e)
     {
+        var searchWidth = Math.Min(360d, Math.Max(0d, e.NewSize.Width));
+        if (Math.Abs(SearchContentHost.Width - searchWidth) > 0.5d)
+        {
+            SearchContentHost.Width = searchWidth;
+        }
+
         // The header starts four DIPs before the Steam glyph and its controls
         // overhang by four DIPs; subtract the combined offset at the right edge.
-        GameManager.Instance.SetGridDensityHeaderWidth(e.NewSize.Width - 4);
+        GameManager.Instance.SetGridDensityHeaderWidth(Math.Max(0d, searchWidth - 4d));
     }
 
     bool hasFirstLoaded;

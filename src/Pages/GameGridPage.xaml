@@ -476,38 +476,42 @@
                 x:Name="SearchHost"
                 Grid.Row="1"
                 Grid.Column="0"
-                MaxWidth="360"
                 Margin="0,3,8,1"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Center"
                 SizeChanged="SearchHost_SizeChanged">
-                <TextBox
-                    x:Name="SearchBox"
-                    Height="30"
-                    Padding="8,0,32,0"
-                    VerticalContentAlignment="Center"
-                    AcceptsReturn="False"
-                    IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
-                    PlaceholderText="{x:Bind ViewModel.TranslationProperties.SearchText, Mode=OneWay}"
-                    TextChanged="{x:Bind ViewModel.SearchForGameEvent}" />
-                <Button
-                    x:Name="ClearButton"
-                    Width="26"
-                    Height="24"
-                    Margin="0,0,4,0"
-                    Padding="4"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="ClearSearchBox_Click"
-                    IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
-                    Visibility="{x:Bind SearchBox.Text, Mode=OneWay, Converter={StaticResource StringVisibilityConverter}}">
-                    <FontIcon
-                        FontSize="14"
-                        Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
-                        Glyph="&#xE711;" />
-                </Button>
+                <Grid
+                    x:Name="SearchContentHost"
+                    Width="360"
+                    HorizontalAlignment="Left">
+                    <TextBox
+                        x:Name="SearchBox"
+                        Height="30"
+                        Padding="8,0,32,0"
+                        VerticalContentAlignment="Center"
+                        AcceptsReturn="False"
+                        IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
+                        PlaceholderText="{x:Bind ViewModel.TranslationProperties.SearchText, Mode=OneWay}"
+                        TextChanged="{x:Bind ViewModel.SearchForGameEvent}" />
+                    <Button
+                        x:Name="ClearButton"
+                        Width="26"
+                        Height="24"
+                        Margin="0,0,4,0"
+                        Padding="4"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="ClearSearchBox_Click"
+                        IsEnabled="{x:Bind ViewModel.CanUseHeaderControls, Mode=OneWay}"
+                        Visibility="{x:Bind SearchBox.Text, Mode=OneWay, Converter={StaticResource StringVisibilityConverter}}">
+                        <FontIcon
+                            FontSize="14"
+                            Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                            Glyph="&#xE711;" />
+                    </Button>
+                </Grid>
             </Grid>
 
             <StackPanel

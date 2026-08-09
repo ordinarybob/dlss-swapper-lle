@@ -25,7 +25,7 @@ public class Settings
     public const int MinGridViewPreferredColumns = 1;
     public const int MaxGridViewPreferredColumns = 16;
 
-    public const int DefaultGridViewPreferredRows = 3;
+    public const int DefaultGridViewPreferredRows = 5;
     public const int MinGridViewPreferredRows = 1;
     public const int MaxGridViewPreferredRows = 10;
 
