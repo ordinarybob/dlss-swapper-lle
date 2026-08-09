@@ -11,7 +11,12 @@ public sealed record DetectedDll(
     string Path,
     string RelativePath,
     string Md5,
-    string Version);
+    string Version,
+    long FileLength = 0,
+    DateTime LastWriteTimeUtc = default)
+{
+    public bool HasHash => !string.IsNullOrWhiteSpace(Md5);
+}
 
 public sealed record ScanResult(
     SelectedGame Game,
@@ -51,9 +56,63 @@ public sealed class DllScanner
 {
     public ScanResult Scan(SelectedGame game, DllCatalog catalog)
     {
-        var dlls = new List<DetectedDll>();
         var warnings = new List<string>();
-        foreach (var file in EnumerateRegularFiles(game.RootPath, warnings))
+        return ScanFiles(
+            game,
+            catalog,
+            EnumerateRegularFiles(game.RootPath, warnings),
+            warnings,
+            computeHashes: true);
+    }
+
+    public ScanResult ScanCandidates(
+        SelectedGame game,
+        DllCatalog catalog,
+        CandidateFileResult candidates)
+    {
+        ArgumentNullException.ThrowIfNull(candidates);
+        return ScanFiles(
+            game,
+            catalog,
+            candidates.Files,
+            candidates.Warnings.ToList(),
+            computeHashes: false);
+    }
+
+    public DetectedDll ResolveIdentity(DetectedDll detected, DllCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(detected);
+        ArgumentNullException.ThrowIfNull(catalog);
+        if (detected.HasHash)
+        {
+            return detected;
+        }
+
+        var info = new FileInfo(detected.Path);
+        if (!info.Exists
+            || info.Length != detected.FileLength
+            || info.LastWriteTimeUtc != detected.LastWriteTimeUtc)
+        {
+            throw new IOException($"DLL identity changed after scanning: {detected.Path}");
+        }
+
+        var md5 = ComputeMd5(detected.Path);
+        return detected with
+        {
+            Md5 = md5,
+            Version = GetVersion(detected.Path, catalog, detected.Type, md5),
+        };
+    }
+
+    private static ScanResult ScanFiles(
+        SelectedGame game,
+        DllCatalog catalog,
+        IEnumerable<string> files,
+        List<string> warnings,
+        bool computeHashes)
+    {
+        var dlls = new List<DetectedDll>();
+        foreach (var file in files)
         {
             if (!DllTypes.TryFromFileName(file, out var definition))
             {
@@ -62,13 +121,18 @@ public sealed class DllScanner
 
             try
             {
-                var md5 = ComputeMd5(file);
+                var info = new FileInfo(file);
+                var md5 = computeHashes ? ComputeMd5(file) : string.Empty;
                 dlls.Add(new DetectedDll(
                     definition.Type,
                     file,
                     Path.GetRelativePath(game.RootPath, file),
                     md5,
-                    GetVersion(file, catalog, definition.Type, md5)));
+                    computeHashes
+                        ? GetVersion(file, catalog, definition.Type, md5)
+                        : GetFileVersion(file),
+                    info.Length,
+                    info.LastWriteTimeUtc));
             }
             catch (Exception exception) when (exception is IOException
                 or UnauthorizedAccessException
@@ -136,6 +200,11 @@ public sealed class DllScanner
             return knownVersion;
         }
 
+        return GetFileVersion(path);
+    }
+
+    private static string GetFileVersion(string path)
+    {
         try
         {
             return FileVersionInfo.GetVersionInfo(path).FileVersion ?? "unknown";
@@ -238,9 +307,12 @@ public sealed class UpdatePlanner
                 }
 
                 var changedTargets = targets
-                    .Where(target => !target.Md5.Equals(
-                        candidate.Md5,
-                        StringComparison.OrdinalIgnoreCase))
+                    .Where(target => !(target.HasHash && target.Md5.Equals(
+                            candidate.Md5,
+                            StringComparison.OrdinalIgnoreCase))
+                        && !target.Version.Equals(
+                            candidate.Version,
+                            StringComparison.OrdinalIgnoreCase))
                     .ToArray();
                 plan.Add(new UpdatePlanItem(
                     scan.Game,

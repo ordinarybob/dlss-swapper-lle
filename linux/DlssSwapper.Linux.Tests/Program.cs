@@ -20,6 +20,11 @@ internal static class Program
             ("CLI dry-run never reaches cache or writes", TestCliDryRunBoundaryAsync),
             ("Mutation boundary rejects tampering", TestMutationBoundaryAsync),
             ("Adjacent backup, update, and restore", TestUpdateAndRestoreAsync),
+            ("Persistent library state and exclusions", RunSync(TestPersistentLibraryState)),
+            ("Fast scan learns deep-scan stragglers", RunSync(TestFastScanLearning)),
+            ("Fast library scan records metadata without hashing", TestMetadataOnlyFastScanAsync),
+            ("Matching version is a metadata-only no-op", RunSync(TestMetadataOnlyNoOp)),
+            ("Initial deep scan completion is retry safe", TestRetrySafeDeepScanAsync),
         };
 
         var failures = 0;
@@ -535,6 +540,225 @@ internal static class Program
         }
     }
 
+    private static void TestPersistentLibraryState()
+    {
+        using var temporary = new TemporaryDirectory();
+        var stateDirectory = Path.Combine(temporary.Path, "state");
+        var manualRoot = Directory.CreateDirectory(
+            Path.Combine(temporary.Path, "Manual Game")).FullName;
+        var groupRoot = Directory.CreateDirectory(
+            Path.Combine(temporary.Path, "Grouped Games")).FullName;
+        var childOne = Directory.CreateDirectory(Path.Combine(groupRoot, "One")).FullName;
+        var childTwo = Directory.CreateDirectory(Path.Combine(groupRoot, "Two")).FullName;
+        var nested = Directory.CreateDirectory(Path.Combine(childOne, "Nested")).FullName;
+
+        var store = new LibraryStateStore(stateDirectory);
+        var library = new PersistentLibrary(store);
+        AssertEqual(6, library.State.GridColumns, "default grid columns");
+        AssertEqual(5, library.State.GridRows, "default grid rows");
+        AssertEqual(15, library.State.Performance.ScanConcurrency, "standard scan concurrency");
+        AssertEqual(38, library.State.Performance.ArtworkConcurrency, "standard art concurrency");
+        AssertEqual(1, library.AddManualGames([manualRoot, manualRoot]), "manual path deduplication");
+        AssertEqual(2, library.AddImmediateChildren(groupRoot), "immediate child import");
+
+        library.State.HddMode = true;
+        library.State.HasCompletedInitialDeepScan = true;
+        library.State.AdditionalSteamRoots.Add(Path.Combine(temporary.Path, "Steam"));
+        library.State.CustomScanPatterns.Add("*/custom/runtime");
+        library.State.MediaWikiApiEndpoint = "https://example.invalid/w/api.php";
+        library.State.MediaWikiImageHost = "images.example.invalid";
+        library.Save();
+        AssertEqual(2, library.State.Performance.ScanConcurrency, "HDD scan concurrency");
+        AssertEqual(1, library.State.Performance.ArtworkConcurrency, "HDD art concurrency");
+        Assert(library.ExcludeSteamGame("4242"), "Steam exclusion was not added");
+
+        var steamRoot = Directory.CreateDirectory(
+            Path.Combine(temporary.Path, "Steam Game")).FullName;
+        var discovery = new SteamDiscoveryResult(
+            [new SteamGame("4242", "Steam Fixture", steamRoot, temporary.Path, "fixture.acf")],
+            []);
+        var merged = library.Merge(discovery);
+        AssertEqual(3, merged.Count, "manual games after Steam exclusion");
+        Assert(merged.All(game => game.SteamAppId != "4242"), "excluded Steam game was merged");
+        Assert(
+            merged.All(game => !game.RootPath.EndsWith("Nested", StringComparison.Ordinal)),
+            "multi-game import searched nested folders");
+
+        var reloaded = new PersistentLibrary(store);
+        Assert(reloaded.State.HddMode, "HDD mode was not persisted");
+        Assert(reloaded.State.HasCompletedInitialDeepScan, "deep-scan completion was not persisted");
+        AssertEqual(3, reloaded.State.ManualGames.Count, "persisted manual game count");
+        AssertEqual(1, reloaded.State.CustomScanPatterns.Count, "persisted custom pattern count");
+        AssertEqual(
+            "https://example.invalid/w/api.php",
+            reloaded.State.MediaWikiApiEndpoint,
+            "MediaWiki endpoint");
+        AssertEqual(
+            "images.example.invalid",
+            reloaded.State.MediaWikiImageHost,
+            "MediaWiki image host");
+        AssertEqual(1, reloaded.RestoreSteamGames(), "restored Steam exclusion count");
+        AssertEqual(4, reloaded.Merge(discovery).Count, "restored Steam game merge");
+
+        var stateJson = File.ReadAllText(store.StatePath);
+        Assert(!stateJson.Contains(nested, StringComparison.Ordinal),
+            "nested folder leaked into persisted imports");
+        Assert(
+            !Directory.EnumerateFiles(stateDirectory, "*.tmp").Any(),
+            "atomic state save left a temporary file");
+        Assert(Directory.Exists(childTwo), "fixture child unexpectedly missing");
+    }
+
+    private static void TestFastScanLearning()
+    {
+        using var temporary = new TemporaryDirectory();
+        var gameRoot = Directory.CreateDirectory(
+            Path.Combine(temporary.Path, "Fixture Game")).FullName;
+        var knownDirectory = Directory.CreateDirectory(Path.Combine(
+            gameRoot,
+            "Project",
+            "Engine",
+            "Plugins",
+            "Runtime",
+            "NVIDIA",
+            "DLSS",
+            "Binaries",
+            "ThirdParty",
+            "Win64")).FullName;
+        var stragglerDirectory = Directory.CreateDirectory(Path.Combine(
+            gameRoot,
+            "Project",
+            "Custom",
+            "Layer",
+            "Runtime")).FullName;
+        var knownDll = Path.Combine(knownDirectory, "nvngx_dlss.dll");
+        var stragglerDll = Path.Combine(stragglerDirectory, "nvngx_dlssg.dll");
+        File.WriteAllBytes(knownDll, "known"u8.ToArray());
+        File.WriteAllBytes(stragglerDll, "straggler"u8.ToArray());
+
+        var fast = FastScanPatternIndex.EnumerateFastCandidates(gameRoot);
+        AssertEqual(1, fast.Files.Count, "initial fast candidate count");
+        Assert(
+            Path.GetFullPath(knownDll).Equals(
+                Path.GetFullPath(AssertSingle(fast.Files)),
+                StringComparison.OrdinalIgnoreCase),
+            "case-insensitive POSIX path pattern did not find the built-in layout");
+
+        var deep = FastScanPatternIndex.EnumerateDeepCandidates(gameRoot);
+        AssertEqual(2, deep.Files.Count, "deep candidate count");
+        Assert(
+            FastScanPatternIndex.TryCreateAdaptivePattern(
+                gameRoot,
+                stragglerDll,
+                out var learnedPattern),
+            "straggler pattern was not learned");
+        AssertEqual("*/custom/layer/runtime", learnedPattern, "learned pattern");
+
+        var normalized = FastScanPatternIndex.NormalizeCustomPatterns(
+            [learnedPattern, learnedPattern, "*/*/layer/runtime"]);
+        AssertEqual(1, normalized.Count, "custom pattern antichain count");
+        AssertEqual("*/*/layer/runtime", normalized[0], "broader retained pattern");
+
+        var learnedFast = FastScanPatternIndex.EnumerateFastCandidates(gameRoot, normalized);
+        AssertEqual(2, learnedFast.Files.Count, "learned fast candidate count");
+        Assert(
+            learnedFast.Files.Any(path => PathComparersForTests.Equals(path, stragglerDll)),
+            "learned fast scan missed the straggler");
+    }
+
+    private static async Task TestMetadataOnlyFastScanAsync()
+    {
+        using var temporary = new TemporaryDirectory();
+        var gameRoot = Directory.CreateDirectory(
+            Path.Combine(temporary.Path, "Metadata Game")).FullName;
+        var dllPath = Path.Combine(gameRoot, "nvngx_dlssg.dll");
+        var payload = "metadata-only"u8.ToArray();
+        File.WriteAllBytes(dllPath, payload);
+        var catalog = DllCatalog.Load(WriteManifest(temporary.Path, payload));
+        var state = new LinuxLibraryState();
+        var progressEvents = new List<LibraryScanProgress>();
+        var service = new LibraryScanService(catalog);
+        var result = await service.ScanFastAsync(
+            [new SelectedGame("Metadata Game", gameRoot, null)],
+            state,
+            new Progress<LibraryScanProgress>(progressEvents.Add)).ConfigureAwait(false);
+
+        var detected = AssertSingle(AssertSingle(result.Games).Dlls);
+        Assert(!detected.HasHash, "fast scan hashed a DLL body");
+        AssertEqual(string.Empty, detected.Md5, "fast scan MD5 placeholder");
+        AssertEqual(payload.LongLength, detected.FileLength, "fast scan file length");
+        AssertEqual(File.GetLastWriteTimeUtc(dllPath), detected.LastWriteTimeUtc, "fast scan write time");
+        AssertEqual(0, result.LearnedPatternCount, "fast scan learned a pattern");
+    }
+
+    private static void TestMetadataOnlyNoOp()
+    {
+        var game = new SelectedGame("Fixture", "/fixture", null);
+        var candidate = Candidate(DllType.DlssFrameGeneration, "3.10.0.0", "candidate");
+        var detected = new DetectedDll(
+            candidate.Type,
+            "/fixture/nvngx_dlssg.dll",
+            "nvngx_dlssg.dll",
+            string.Empty,
+            candidate.Version,
+            123,
+            DateTime.UnixEpoch);
+        var plan = new UpdatePlanner().Plan(
+            [new ScanResult(game, [detected], [])],
+            new Dictionary<DllType, DllCatalogEntry> { [candidate.Type] = candidate });
+        AssertEqual(UpdatePlanStatus.AlreadyCurrent, AssertSingle(plan).Status, "metadata no-op");
+        Assert(!detected.HasHash, "metadata no-op acquired a hash");
+    }
+
+    private static async Task TestRetrySafeDeepScanAsync()
+    {
+        using var temporary = new TemporaryDirectory();
+        var gameRoot = Directory.CreateDirectory(
+            Path.Combine(temporary.Path, "Deep Game")).FullName;
+        var stragglerDirectory = Directory.CreateDirectory(Path.Combine(
+            gameRoot,
+            "Project",
+            "Unusual",
+            "Vendor",
+            "Runtime")).FullName;
+        var payload = "deep"u8.ToArray();
+        File.WriteAllBytes(Path.Combine(stragglerDirectory, "nvngx_dlssg.dll"), payload);
+        var catalog = DllCatalog.Load(WriteManifest(temporary.Path, payload));
+        var store = new LibraryStateStore(Path.Combine(temporary.Path, "state"));
+        var library = new PersistentLibrary(store);
+        var service = new LibraryScanService(catalog);
+        var games = new[] { new SelectedGame("Deep Game", gameRoot, null) };
+
+        using (var canceled = new CancellationTokenSource())
+        {
+            canceled.Cancel();
+            try
+            {
+                await service.ScanDeepAsync(
+                    games,
+                    library,
+                    cancellationToken: canceled.Token).ConfigureAwait(false);
+                throw new InvalidOperationException("Canceled deep scan unexpectedly completed.");
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected. The completion flag must remain false.
+            }
+        }
+
+        Assert(!new PersistentLibrary(store).State.HasCompletedInitialDeepScan,
+            "canceled deep scan committed completion");
+        var completed = await service.ScanDeepAsync(games, library).ConfigureAwait(false);
+        AssertEqual(1, completed.LearnedPatternCount, "deep scan learned pattern count");
+        var reloaded = new PersistentLibrary(store);
+        Assert(reloaded.State.HasCompletedInitialDeepScan, "completed deep scan was not committed");
+        AssertEqual(1, reloaded.State.CustomScanPatterns.Count, "learned pattern persistence");
+
+        var nextFast = await service.ScanFastAsync(games, reloaded.State).ConfigureAwait(false);
+        AssertEqual(1, AssertSingle(nextFast.Games).Dlls.Count, "next fast scan missed learned path");
+        AssertEqual(0, nextFast.LearnedPatternCount, "next fast scan relearned a pattern");
+    }
+
     private static string WriteManifest(string directory, byte[] payload)
     {
         var hash = Convert.ToHexString(MD5.HashData(payload));
@@ -593,6 +817,9 @@ internal static class Program
 
     private static string EscapeVdf(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal);
+
+    private static StringComparer PathComparersForTests { get; } =
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     private static T AssertSingle<T>(IReadOnlyList<T> values)
     {
