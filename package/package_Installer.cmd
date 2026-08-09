@@ -2,6 +2,9 @@
 
 call "%~dp0config.cmd"
 
+REM create the output folder if it doesn't already exist.
+mkdir Output > NUL 2>&1
+
 echo.
 echo ################################
 echo Packaging installer
