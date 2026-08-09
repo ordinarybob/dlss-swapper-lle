@@ -107,10 +107,7 @@ public partial class SettingsPageModel : ObservableObject
     public partial double BatchSwapConcurrency { get; set; }
 
     [ObservableProperty]
-    public partial double GridViewPreferredColumns { get; set; }
-
-    [ObservableProperty]
-    public partial double GridViewPreferredRows { get; set; }
+    public partial double GridViewCardSize { get; set; }
 
     [ObservableProperty]
     public partial ComboBoxOption LoggingLevel { get; set; }
@@ -158,8 +155,7 @@ public partial class SettingsPageModel : ObservableObject
         _weakPage = new WeakReference<SettingsPage>(page);
         WeakReferenceMessenger.Default.Register<GridDensityChangedMessage>(this, (sender, message) =>
         {
-            GridViewPreferredColumns = Settings.Instance.GridViewPreferredColumns;
-            GridViewPreferredRows = Settings.Instance.GridViewPreferredRows;
+            GridViewCardSize = Settings.Instance.GridViewCardSize;
         });
 
         WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(this, static (recipient, _) =>
@@ -220,8 +216,7 @@ public partial class SettingsPageModel : ObservableObject
         UiCollectionBatchSize = Settings.Instance.UiCollectionBatchSize;
         DatabaseWriteBatchSize = Settings.Instance.DatabaseWriteBatchSize;
         BatchSwapConcurrency = Settings.Instance.BatchSwapConcurrency;
-        GridViewPreferredColumns = Settings.Instance.GridViewPreferredColumns;
-        GridViewPreferredRows = Settings.Instance.GridViewPreferredRows;
+        GridViewCardSize = Settings.Instance.GridViewCardSize;
 
 
         var loggingLevel = Settings.Instance.LoggingLevel;
@@ -396,13 +391,9 @@ public partial class SettingsPageModel : ObservableObject
         {
             Settings.Instance.BatchSwapConcurrency = (int)Math.Round(BatchSwapConcurrency);
         }
-        else if (e.PropertyName == nameof(GridViewPreferredColumns) && double.IsFinite(GridViewPreferredColumns))
+        else if (e.PropertyName == nameof(GridViewCardSize) && double.IsFinite(GridViewCardSize))
         {
-            Settings.Instance.GridViewPreferredColumns = (int)Math.Round(GridViewPreferredColumns);
-        }
-        else if (e.PropertyName == nameof(GridViewPreferredRows) && double.IsFinite(GridViewPreferredRows))
-        {
-            Settings.Instance.GridViewPreferredRows = (int)Math.Round(GridViewPreferredRows);
+            Settings.Instance.GridViewCardSize = (int)Math.Round(GridViewCardSize);
         }
         else if (e.PropertyName == nameof(LoggingLevel))
         {

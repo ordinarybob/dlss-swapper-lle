@@ -6,8 +6,9 @@ namespace DLSS_Swapper.Pages;
 /// Divides the grid viewport into equal physical-pixel cells and sizes cards to
 /// fill those cells at a fixed 2:3 cover aspect ratio. Equal cells keep every
 /// row balanced and avoid a persistent trailing strip at fractional Windows
-/// scale factors. The preferred column and row counts guide density; consuming
-/// the full usable width is authoritative.
+/// scale factors. A single 1-10 card-size setting chooses an approximate target
+/// size; the viewport chooses the responsive column count and remains the sole
+/// authority for the final cell width.
 /// </summary>
 internal static class ResponsiveGameGridLayout
 {
@@ -18,16 +19,19 @@ internal static class ResponsiveGameGridLayout
     // Cover cards keep a 2:3 width-to-height ratio.
     internal const double CardAspectRatio = 1.5;
 
+    // Six 122-DIP cells reproduce the validated default-window geometry at
+    // card size 5. The other size levels target ten through one columns across
+    // that same reference width, while arbitrary window sizes remain fluid.
+    internal const double ReferenceUsableWidth = 732;
+
     // Hard floor so extreme preferences or tiny windows cannot produce
     // unusable slivers of cards.
-    const double MinCardWidth = 44;
+    internal const double MinCardWidth = 44;
 
     internal static ResponsiveGameGridMetrics Calculate(
         double viewportWidth,
-        double viewportHeight,
         double horizontalPadding,
-        int preferredColumns,
-        int preferredRows,
+        int cardSize,
         double rasterizationScale)
     {
         var normalizedScale = double.IsFinite(rasterizationScale) && rasterizationScale > 0
@@ -47,21 +51,17 @@ internal static class ResponsiveGameGridLayout
         // factors, which would wrap the final card.
         var usablePixels = Math.Max(1L, (long)Math.Floor(usableDip * normalizedScale) - 1L);
 
-        var columnCount = Math.Max(1, preferredColumns);
-
-        // The preferred row count guides density: when the viewport is short,
-        // extra columns shrink cards so at least that many 2:3 rows stay
-        // visible.
-        if (double.IsFinite(viewportHeight) && viewportHeight > 0 && preferredRows > 0)
-        {
-            var cardHeightLimit = (viewportHeight / preferredRows) - VerticalContainerChrome;
-            if (cardHeightLimit > MinCardWidth * CardAspectRatio)
-            {
-                var cellWidthLimit = (cardHeightLimit / CardAspectRatio) + HorizontalContainerChrome;
-                var columnsForRows = (int)Math.Ceiling(usableDip / cellWidthLimit);
-                columnCount = Math.Max(columnCount, columnsForRows);
-            }
-        }
+        var normalizedCardSize = Math.Clamp(
+            cardSize,
+            Settings.MinGridViewCardSize,
+            Settings.MaxGridViewCardSize);
+        var referenceColumns = 11 - normalizedCardSize;
+        var targetCellWidth = ReferenceUsableWidth / referenceColumns;
+        var columnCount = Math.Max(
+            1,
+            (int)Math.Round(
+                usableDip / targetCellWidth,
+                MidpointRounding.AwayFromZero));
 
         var maxColumns = Math.Max(1, (int)Math.Floor(usableDip / (MinCardWidth + HorizontalContainerChrome)));
         columnCount = Math.Clamp(columnCount, 1, maxColumns);
@@ -71,7 +71,7 @@ internal static class ResponsiveGameGridLayout
         // distributes fractional pixels across the row, so the final column ends
         // at the viewport edge rather than leaving a cumulative right gutter.
         var cellWidth = usablePixels / (double)columnCount / normalizedScale;
-        var cardWidth = Math.Max(1d, cellWidth - HorizontalContainerChrome);
+        var cardWidth = Math.Max(MinCardWidth, cellWidth - HorizontalContainerChrome);
         var cardHeight = cardWidth * CardAspectRatio;
         return new ResponsiveGameGridMetrics(
             columnCount,

@@ -322,48 +322,25 @@
                 <Grid Margin="0,18,0,0"
                       MaxWidth="840"
                       HorizontalAlignment="Left"
-                      ColumnSpacing="16"
-                      RowSpacing="16">
+                      ColumnSpacing="16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="112" />
                     </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Grid.Row="0" VerticalAlignment="Center">
-                        <TextBlock x:Name="GridColumnsLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.PreferredColumnsText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.PreferredColumnsInfo, Mode=OneWay}" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock x:Name="GridCardSizeLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.CardSizeText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
+                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.CardSizeInfo, Mode=OneWay}" />
                     </StackPanel>
                     <usercontrols:PerformanceNumberEditor
-                        Grid.Row="0"
                         Grid.Column="1"
                         Width="112"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Center"
-                        AccessibleName="{Binding Text, ElementName=GridColumnsLabel}"
-                        Minimum="1"
-                        Maximum="16"
-                        SmallChange="1"
-                        Value="{x:Bind ViewModel.GridViewPreferredColumns, Mode=TwoWay}" />
-
-                    <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                        <TextBlock x:Name="GridRowsLabel" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.TranslationProperties.PreferredRowsText, Mode=OneWay}" TextWrapping="WrapWholeWords" />
-                        <TextBlock TextWrapping="WrapWholeWords" Text="{x:Bind ViewModel.TranslationProperties.PreferredRowsInfo, Mode=OneWay}" />
-                    </StackPanel>
-                    <usercontrols:PerformanceNumberEditor
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Width="112"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Center"
-                        AccessibleName="{Binding Text, ElementName=GridRowsLabel}"
+                        AccessibleName="{Binding Text, ElementName=GridCardSizeLabel}"
                         Minimum="1"
                         Maximum="10"
                         SmallChange="1"
-                        Value="{x:Bind ViewModel.GridViewPreferredRows, Mode=TwoWay}" />
+                        Value="{x:Bind ViewModel.GridViewCardSize, Mode=TwoWay}" />
                 </Grid>
 
                 <TextBlock

@@ -20,12 +20,16 @@
             <TextBlock Text="HDD mode uses 2 scan workers and 1 artwork worker. Standard mode uses 15 and 38."
                        Classes="muted"
                        TextWrapping="Wrap" />
+            <TextBlock Text="Cards maintain a 2:3 cover ratio and resize to fill the available width. Card size controls grid density at the default window size."
+                       Classes="muted"
+                       TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" Spacing="12">
-              <TextBlock Text="Columns" VerticalAlignment="Center" />
-              <NumericUpDown x:Name="GridColumnsInput" Minimum="1" Maximum="24" Width="112" />
-              <TextBlock Text="Rows" VerticalAlignment="Center" />
-              <NumericUpDown x:Name="GridRowsInput" Minimum="1" Maximum="24" Width="112" />
+              <TextBlock Text="Card size" VerticalAlignment="Center" />
+              <NumericUpDown x:Name="GridCardSizeInput" Minimum="1" Maximum="10" Width="112" />
             </StackPanel>
+            <TextBlock Text="Choose 1 for the smallest cards or 10 for the largest. Ctrl + mouse wheel over the grid also changes this. Recommended: 5."
+                       Classes="muted"
+                       TextWrapping="Wrap" />
           </StackPanel>
         </Border>
 

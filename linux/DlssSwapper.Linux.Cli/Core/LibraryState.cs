@@ -56,7 +56,7 @@ public sealed class GameHistoryState
 
 public sealed class LinuxLibraryState
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
     public const string DefaultMediaWikiApiEndpoint = "https://en.wikipedia.org/w/api.php";
     public const string DefaultMediaWikiImageHost = "upload.wikimedia.org";
 
@@ -80,9 +80,13 @@ public sealed class LinuxLibraryState
 
     public bool HddMode { get; set; }
 
-    public int GridColumns { get; set; } = 6;
+    public int CardSize { get; set; }
 
-    public int GridRows { get; set; } = 5;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int GridColumns { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int GridRows { get; set; }
 
     public bool GridView { get; set; } = true;
 
@@ -266,8 +270,14 @@ public sealed class LibraryStateStore
             .OrderByDescending(history => history.EventTimeUtc)
             .Take(5000)
             .ToList();
-        state.GridColumns = Math.Clamp(state.GridColumns, 1, 24);
-        state.GridRows = Math.Clamp(state.GridRows, 1, 24);
+        if (state.CardSize is < ResponsiveGridLayout.MinimumCardSize
+            or > ResponsiveGridLayout.MaximumCardSize)
+        {
+            state.CardSize = ResponsiveGridLayout.ConvertLegacyColumnsToCardSize(
+                state.GridColumns);
+        }
+        state.GridColumns = 0;
+        state.GridRows = 0;
         state.MediaWikiApiEndpoint = NormalizeMediaWikiEndpoint(state.MediaWikiApiEndpoint);
         state.MediaWikiImageHost = NormalizeImageHost(state.MediaWikiImageHost);
         return state;

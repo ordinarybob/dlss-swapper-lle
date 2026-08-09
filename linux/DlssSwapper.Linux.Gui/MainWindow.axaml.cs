@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
@@ -35,8 +36,7 @@ public sealed partial class MainWindow : Window
     private readonly TextBox _searchTextBox;
     private readonly ComboBox _filterComboBox;
     private readonly ComboBox _sortComboBox;
-    private readonly ComboBox _gridColumnsInput;
-    private readonly ComboBox _gridRowsInput;
+    private readonly ComboBox _gridCardSizeInput;
     private readonly ScrollViewer _gameGridViewport;
 
     private DllCatalog? _catalog;
@@ -59,14 +59,15 @@ public sealed partial class MainWindow : Window
             ?? throw new InvalidOperationException("Required filter control is missing.");
         _sortComboBox = this.FindControl<ComboBox>("SortComboBox")
             ?? throw new InvalidOperationException("Required sort control is missing.");
-        _gridColumnsInput = this.FindControl<ComboBox>("GridColumnsInput")
-            ?? throw new InvalidOperationException("Required grid-columns control is missing.");
-        _gridRowsInput = this.FindControl<ComboBox>("GridRowsInput")
-            ?? throw new InvalidOperationException("Required grid-rows control is missing.");
+        _gridCardSizeInput = this.FindControl<ComboBox>("GridCardSizeInput")
+            ?? throw new InvalidOperationException("Required grid-card-size control is missing.");
         _gameGridViewport = this.FindControl<ScrollViewer>("GameGridViewport")
             ?? throw new InvalidOperationException("Required game-grid viewport is missing.");
-        _gridColumnsInput.ItemsSource = Enumerable.Range(1, 24).ToArray();
-        _gridRowsInput.ItemsSource = Enumerable.Range(1, 24).ToArray();
+        _gridCardSizeInput.ItemsSource = Enumerable.Range(
+            ResponsiveGridLayout.MinimumCardSize,
+            ResponsiveGridLayout.MaximumCardSize
+                - ResponsiveGridLayout.MinimumCardSize
+                + 1).ToArray();
 
         try
         {
@@ -83,10 +84,8 @@ public sealed partial class MainWindow : Window
                 _artworkHttpClient,
                 new AvaloniaArtworkImageProcessor());
             _viewModel.IsGridView = _library.State.GridView;
-            _viewModel.GridColumns = _library.State.GridColumns;
-            _viewModel.GridRows = _library.State.GridRows;
-            _gridColumnsInput.SelectedItem = _library.State.GridColumns;
-            _gridRowsInput.SelectedItem = _library.State.GridRows;
+            _viewModel.GridCardSize = _library.State.CardSize;
+            _gridCardSizeInput.SelectedItem = _library.State.CardSize;
             _viewModel.StatusText = "Loading the persistent game library…";
         }
         catch (Exception exception)
@@ -344,6 +343,9 @@ public sealed partial class MainWindow : Window
         var saved = await settings.ShowDialog<bool>(this);
         if (saved)
         {
+            _viewModel.GridCardSize = library.State.CardSize;
+            _gridCardSizeInput.SelectedItem = library.State.CardSize;
+            UpdateGridGeometry();
             _viewModel.StatusText = library.State.HddMode
                 ? "Settings saved. HDD scan and artwork limits are active."
                 : "Settings saved. Standard scan and artwork limits are active.";
@@ -783,26 +785,37 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void GridDensity_Changed(object? sender, SelectionChangedEventArgs e)
+    private void GridCardSize_Changed(object? sender, SelectionChangedEventArgs e)
     {
         if (_library is null
-            || _gridColumnsInput.SelectedItem is not int columns
-            || _gridRowsInput.SelectedItem is not int rows)
+            || _gridCardSizeInput.SelectedItem is not int cardSize)
         {
             return;
         }
 
-        _viewModel.GridColumns = columns;
-        _viewModel.GridRows = rows;
+        _viewModel.GridCardSize = cardSize;
         UpdateGridGeometry();
-        if (_library.State.GridColumns != columns || _library.State.GridRows != rows)
+        if (_library.State.CardSize != cardSize)
         {
-            _library.UpdateState(state =>
-            {
-                state.GridColumns = columns;
-                state.GridRows = rows;
-            });
+            _library.UpdateState(state => state.CardSize = cardSize);
         }
+    }
+
+    private void GameGridViewport_PointerWheelChanged(
+        object? sender,
+        PointerWheelEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.Delta.Y == 0)
+        {
+            return;
+        }
+
+        var nextSize = Math.Clamp(
+            _viewModel.GridCardSize + (e.Delta.Y > 0 ? 1 : -1),
+            ResponsiveGridLayout.MinimumCardSize,
+            ResponsiveGridLayout.MaximumCardSize);
+        _gridCardSizeInput.SelectedItem = nextSize;
+        e.Handled = true;
     }
 
     private void GameGridViewport_SizeChanged(object? sender, SizeChangedEventArgs e) =>
@@ -811,8 +824,7 @@ public sealed partial class MainWindow : Window
     private void UpdateGridGeometry()
     {
         var width = _gameGridViewport.Bounds.Width - 8;
-        var height = _gameGridViewport.Bounds.Height - 2;
-        if (width <= 0 || height <= 0)
+        if (width <= 0)
         {
             return;
         }
@@ -820,9 +832,7 @@ public sealed partial class MainWindow : Window
         var scale = TopLevel.GetTopLevel(_gameGridViewport)?.RenderScaling ?? 1d;
         var metrics = ResponsiveGridLayout.Calculate(
             width,
-            height,
-            _viewModel.GridColumns,
-            _viewModel.GridRows,
+            _viewModel.GridCardSize,
             scale);
         _viewModel.GridItemWidth = metrics.CardWidth;
         _viewModel.GridItemHeight = metrics.CardHeight;

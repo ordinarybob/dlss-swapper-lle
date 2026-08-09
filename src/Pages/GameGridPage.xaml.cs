@@ -31,10 +31,8 @@ public sealed partial class GameGridPage : Page
     ScrollViewer? _responsiveGridScrollViewer;
     XamlRoot? _responsiveGridXamlRoot;
     double _lastResponsiveViewportWidth = double.NaN;
-    double _lastResponsiveViewportHeight = double.NaN;
     double _lastResponsiveHorizontalPadding = double.NaN;
-    int _lastResponsivePreferredColumns = -1;
-    int _lastResponsivePreferredRows = -1;
+    int _lastResponsiveCardSize = -1;
     double _lastResponsiveRasterizationScale = double.NaN;
     TaskCompletionSource? _visibleCoverOpened;
     bool _isHeaderFilterFlyoutOpen;
@@ -290,7 +288,7 @@ public sealed partial class GameGridPage : Page
             // Use the new control size immediately. The ScrollViewer reports its
             // exact viewport in a subsequent layout callback (including any
             // vertical scrollbar), which performs the final pixel-level update.
-            UpdateResponsiveGridLayout(gridView, e.NewSize.Width, e.NewSize.Height);
+            UpdateResponsiveGridLayout(gridView, e.NewSize.Width);
         }
     }
 
@@ -375,10 +373,8 @@ public sealed partial class GameGridPage : Page
         }
 
         _lastResponsiveViewportWidth = double.NaN;
-        _lastResponsiveViewportHeight = double.NaN;
         _lastResponsiveHorizontalPadding = double.NaN;
-        _lastResponsivePreferredColumns = -1;
-        _lastResponsivePreferredRows = -1;
+        _lastResponsiveCardSize = -1;
         _lastResponsiveRasterizationScale = double.NaN;
     }
 
@@ -392,8 +388,7 @@ public sealed partial class GameGridPage : Page
 
     void UpdateResponsiveGridLayout(
         GridView gridView,
-        double immediateViewportWidth = 0,
-        double immediateViewportHeight = 0)
+        double immediateViewportWidth = 0)
     {
         var scrollViewer = gridView.FindDescendant<ScrollViewer>();
         var viewportWidth = immediateViewportWidth > 0
@@ -401,42 +396,30 @@ public sealed partial class GameGridPage : Page
             : scrollViewer is not null && scrollViewer.ViewportWidth > 0
                 ? scrollViewer.ViewportWidth
                 : gridView.ActualWidth;
-        var viewportHeight = immediateViewportHeight > 0
-            ? immediateViewportHeight
-            : scrollViewer is not null && scrollViewer.ViewportHeight > 0
-                ? scrollViewer.ViewportHeight
-                : gridView.ActualHeight;
         var horizontalPadding = gridView.Padding.Left + gridView.Padding.Right;
-        var preferredColumns = Settings.Instance.GridViewPreferredColumns;
-        var preferredRows = Settings.Instance.GridViewPreferredRows;
+        var cardSize = Settings.Instance.GridViewCardSize;
         var rasterizationScale = gridView.XamlRoot?.RasterizationScale ?? 1d;
         var itemsWrapGrid = gridView.ItemsPanelRoot as ItemsWrapGrid;
 
         if (itemsWrapGrid is not null
             && double.IsNaN(itemsWrapGrid.ItemWidth) == false
             && Math.Abs(viewportWidth - _lastResponsiveViewportWidth) < 0.25
-            && Math.Abs(viewportHeight - _lastResponsiveViewportHeight) < 0.25
             && Math.Abs(horizontalPadding - _lastResponsiveHorizontalPadding) < 0.01
-            && preferredColumns == _lastResponsivePreferredColumns
-            && preferredRows == _lastResponsivePreferredRows
+            && cardSize == _lastResponsiveCardSize
             && Math.Abs(rasterizationScale - _lastResponsiveRasterizationScale) < 0.001)
         {
             return;
         }
 
         _lastResponsiveViewportWidth = viewportWidth;
-        _lastResponsiveViewportHeight = viewportHeight;
         _lastResponsiveHorizontalPadding = horizontalPadding;
-        _lastResponsivePreferredColumns = preferredColumns;
-        _lastResponsivePreferredRows = preferredRows;
+        _lastResponsiveCardSize = cardSize;
         _lastResponsiveRasterizationScale = rasterizationScale;
 
         var metrics = ResponsiveGameGridLayout.Calculate(
             viewportWidth,
-            viewportHeight,
             horizontalPadding,
-            preferredColumns,
-            preferredRows,
+            cardSize,
             rasterizationScale);
 
         // The GridView's own ItemsWrapGrid performs the grouped layout; modern
@@ -460,9 +443,9 @@ public sealed partial class GameGridPage : Page
 
             if (sender is GridView gridView)
             {
-                // Wheel up prefers fewer, larger cards; wheel down prefers more,
-                // smaller cards. The setting clamps and persists itself.
-                Settings.Instance.GridViewPreferredColumns += delta > 0 ? -1 : 1;
+                // Wheel up selects larger cards; wheel down selects smaller
+                // cards. The setting clamps and persists itself.
+                Settings.Instance.GridViewCardSize += delta > 0 ? 1 : -1;
                 UpdateResponsiveGridLayout(gridView);
             }
 

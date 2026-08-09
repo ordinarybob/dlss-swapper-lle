@@ -9,8 +9,7 @@ public sealed partial class SettingsWindow : Window
 {
     private PersistentLibrary? _library;
     private readonly CheckBox _hddMode;
-    private readonly NumericUpDown _gridColumns;
-    private readonly NumericUpDown _gridRows;
+    private readonly NumericUpDown _gridCardSize;
     private readonly TextBox _mediaWikiEndpoint;
     private readonly TextBox _mediaWikiHost;
     private readonly TextBox _customPatterns;
@@ -23,8 +22,7 @@ public sealed partial class SettingsWindow : Window
     {
         AvaloniaXamlLoader.Load(this);
         _hddMode = FindRequired<CheckBox>("HddModeCheckBox");
-        _gridColumns = FindRequired<NumericUpDown>("GridColumnsInput");
-        _gridRows = FindRequired<NumericUpDown>("GridRowsInput");
+        _gridCardSize = FindRequired<NumericUpDown>("GridCardSizeInput");
         _mediaWikiEndpoint = FindRequired<TextBox>("MediaWikiEndpointTextBox");
         _mediaWikiHost = FindRequired<TextBox>("MediaWikiHostTextBox");
         _customPatterns = FindRequired<TextBox>("CustomPatternsTextBox");
@@ -38,8 +36,7 @@ public sealed partial class SettingsWindow : Window
         _library = library ?? throw new ArgumentNullException(nameof(library));
 
         _hddMode.IsChecked = library.State.HddMode;
-        _gridColumns.Value = library.State.GridColumns;
-        _gridRows.Value = library.State.GridRows;
+        _gridCardSize.Value = library.State.CardSize;
         _mediaWikiEndpoint.Text = library.State.MediaWikiApiEndpoint;
         _mediaWikiHost.Text = library.State.MediaWikiImageHost;
         FindRequired<TextBox>("BuiltInPatternsTextBox").Text = string.Join(
@@ -116,8 +113,8 @@ public sealed partial class SettingsWindow : Window
         _library.UpdateState(state =>
         {
             state.HddMode = _hddMode.IsChecked == true;
-            state.GridColumns = Decimal.ToInt32(_gridColumns.Value ?? 6);
-            state.GridRows = Decimal.ToInt32(_gridRows.Value ?? 5);
+            state.CardSize = Decimal.ToInt32(
+                _gridCardSize.Value ?? ResponsiveGridLayout.DefaultCardSize);
             state.MediaWikiApiEndpoint = endpoint;
             state.MediaWikiImageHost = host;
             state.CustomScanPatterns = ParseLines(_customPatterns.Text).ToList();

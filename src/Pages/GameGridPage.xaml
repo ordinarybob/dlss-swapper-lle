@@ -256,30 +256,15 @@
                                                 VerticalAlignment="Center"
                                                 FontSize="10"
                                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                Text="Columns" />
+                                                Text="Card size" />
                                             <ComboBox
-                                                x:Name="GridColumnsNumberBox"
+                                                x:Name="GridCardSizeNumberBox"
                                                 Width="54"
                                                 Height="28"
                                                 Padding="7,0,2,0"
-                                                AutomationProperties.Name="Grid columns"
-                                                ItemsSource="{x:Bind GridColumnOptions}"
-                                                SelectedItem="{x:Bind GridViewPreferredColumns, Mode=TwoWay}" />
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Spacing="3">
-                                            <TextBlock
-                                                VerticalAlignment="Center"
-                                                FontSize="10"
-                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                Text="Rows" />
-                                            <ComboBox
-                                                x:Name="GridRowsNumberBox"
-                                                Width="54"
-                                                Height="28"
-                                                Padding="7,0,2,0"
-                                                AutomationProperties.Name="Grid rows"
-                                                ItemsSource="{x:Bind GridRowOptions}"
-                                                SelectedItem="{x:Bind GridViewPreferredRows, Mode=TwoWay}" />
+                                                AutomationProperties.Name="Grid card size"
+                                                ItemsSource="{x:Bind GridCardSizeOptions}"
+                                                SelectedItem="{x:Bind GridViewCardSize, Mode=TwoWay}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>

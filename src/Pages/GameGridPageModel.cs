@@ -91,10 +91,7 @@ public partial class GameGridPageModel : ObservableObject
         : $"({VisibleGameCount:N0})";
 
     [ObservableProperty]
-    public partial double GridViewPreferredColumns { get; set; } = Settings.Instance.GridViewPreferredColumns;
-
-    [ObservableProperty]
-    public partial double GridViewPreferredRows { get; set; } = Settings.Instance.GridViewPreferredRows;
+    public partial double GridViewCardSize { get; set; } = Settings.Instance.GridViewCardSize;
 
 
     // Placeholder card size used until the first layout pass measures the real
@@ -174,8 +171,7 @@ public partial class GameGridPageModel : ObservableObject
         });
         WeakReferenceMessenger.Default.Register<GridDensityChangedMessage>(this, (sender, message) =>
         {
-            GridViewPreferredColumns = Settings.Instance.GridViewPreferredColumns;
-            GridViewPreferredRows = Settings.Instance.GridViewPreferredRows;
+            GridViewCardSize = Settings.Instance.GridViewCardSize;
             gameGridPage.RefreshResponsiveGridLayout();
         });
 
@@ -214,19 +210,11 @@ public partial class GameGridPageModel : ObservableObject
         VisibleGameCount = GameManager.Instance.AllGamesView.Count;
     }
 
-    partial void OnGridViewPreferredColumnsChanged(double value)
+    partial void OnGridViewCardSizeChanged(double value)
     {
         if (double.IsFinite(value))
         {
-            Settings.Instance.GridViewPreferredColumns = (int)Math.Round(value);
-        }
-    }
-
-    partial void OnGridViewPreferredRowsChanged(double value)
-    {
-        if (double.IsFinite(value))
-        {
-            Settings.Instance.GridViewPreferredRows = (int)Math.Round(value);
+            Settings.Instance.GridViewCardSize = (int)Math.Round(value);
         }
     }
 

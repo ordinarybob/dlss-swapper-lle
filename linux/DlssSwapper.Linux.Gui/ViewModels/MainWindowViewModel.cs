@@ -9,8 +9,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private bool _isLoadingLibrary = true;
     private int _gameCount;
     private bool _isGridView = true;
-    private int _gridColumns = 6;
-    private int _gridRows = 5;
+    private int _gridCardSize = 5;
     private double _gridItemWidth = 118;
     private double _gridItemHeight = 180;
     private bool _isBatchMode;
@@ -112,16 +111,10 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public bool IsListView => !IsGridView;
 
-    public int GridColumns
+    public int GridCardSize
     {
-        get => _gridColumns;
-        set => SetProperty(ref _gridColumns, value);
-    }
-
-    public int GridRows
-    {
-        get => _gridRows;
-        set => SetProperty(ref _gridRows, value);
+        get => _gridCardSize;
+        set => SetProperty(ref _gridCardSize, value);
     }
 
     public double GridItemWidth

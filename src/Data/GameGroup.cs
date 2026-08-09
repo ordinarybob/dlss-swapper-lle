@@ -15,22 +15,14 @@ internal partial class GameGroup : ObservableObject
     public GameLibrary? GameLibrary { get; init; }
     public AdvancedCollectionView Games { get; init; }
     public bool ShowGridDensityControls => GameLibrary == Interfaces.GameLibrary.Steam;
-    public IReadOnlyList<double> GridColumnOptions { get; } = Enumerable.Range(
-        Settings.MinGridViewPreferredColumns,
-        Settings.MaxGridViewPreferredColumns - Settings.MinGridViewPreferredColumns + 1)
-        .Select(value => (double)value)
-        .ToArray();
-    public IReadOnlyList<double> GridRowOptions { get; } = Enumerable.Range(
-        Settings.MinGridViewPreferredRows,
-        Settings.MaxGridViewPreferredRows - Settings.MinGridViewPreferredRows + 1)
+    public IReadOnlyList<double> GridCardSizeOptions { get; } = Enumerable.Range(
+        Settings.MinGridViewCardSize,
+        Settings.MaxGridViewCardSize - Settings.MinGridViewCardSize + 1)
         .Select(value => (double)value)
         .ToArray();
 
     [ObservableProperty]
-    public partial double GridViewPreferredColumns { get; set; }
-
-    [ObservableProperty]
-    public partial double GridViewPreferredRows { get; set; }
+    public partial double GridViewCardSize { get; set; }
 
     [ObservableProperty]
     public partial double GridDensityHeaderWidth { get; set; } = 364;
@@ -40,29 +32,19 @@ internal partial class GameGroup : ObservableObject
         Name = name;
         GameLibrary = gameLibrary;
         Games = games;
-        GridViewPreferredColumns = Settings.Instance.GridViewPreferredColumns;
-        GridViewPreferredRows = Settings.Instance.GridViewPreferredRows;
+        GridViewCardSize = Settings.Instance.GridViewCardSize;
 
         WeakReferenceMessenger.Default.Register<GridDensityChangedMessage>(this, (_, _) =>
         {
-            GridViewPreferredColumns = Settings.Instance.GridViewPreferredColumns;
-            GridViewPreferredRows = Settings.Instance.GridViewPreferredRows;
+            GridViewCardSize = Settings.Instance.GridViewCardSize;
         });
     }
 
-    partial void OnGridViewPreferredColumnsChanged(double value)
+    partial void OnGridViewCardSizeChanged(double value)
     {
         if (double.IsFinite(value))
         {
-            Settings.Instance.GridViewPreferredColumns = (int)Math.Round(value);
-        }
-    }
-
-    partial void OnGridViewPreferredRowsChanged(double value)
-    {
-        if (double.IsFinite(value))
-        {
-            Settings.Instance.GridViewPreferredRows = (int)Math.Round(value);
+            Settings.Instance.GridViewCardSize = (int)Math.Round(value);
         }
     }
 }

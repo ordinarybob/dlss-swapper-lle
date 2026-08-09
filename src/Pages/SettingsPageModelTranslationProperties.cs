@@ -34,10 +34,8 @@ public class SettingsPageModelTranslationProperties : LocalizedViewModelBase
     [TranslationProperty] public string RemoveText => ResourceHelper.GetString("General_Remove");
     [TranslationProperty] public string GamesGridText => ResourceHelper.GetString("SettingsPage_GamesGrid");
     [TranslationProperty] public string GamesGridInfo => ResourceHelper.GetString("SettingsPage_GamesGridInfo");
-    [TranslationProperty] public string PreferredColumnsText => ResourceHelper.GetString("SettingsPage_PreferredColumns");
-    [TranslationProperty] public string PreferredColumnsInfo => ResourceHelper.GetString("SettingsPage_PreferredColumnsInfo");
-    [TranslationProperty] public string PreferredRowsText => ResourceHelper.GetString("SettingsPage_PreferredRows");
-    [TranslationProperty] public string PreferredRowsInfo => ResourceHelper.GetString("SettingsPage_PreferredRowsInfo");
+    [TranslationProperty] public string CardSizeText => ResourceHelper.GetString("SettingsPage_CardSize");
+    [TranslationProperty] public string CardSizeInfo => ResourceHelper.GetString("SettingsPage_CardSizeInfo");
     [TranslationProperty] public string ResetLocalDataText => ResourceHelper.GetString("SettingsPage_ResetLocalData");
     [TranslationProperty] public string ResetLocalDataInfo => ResourceHelper.GetString("SettingsPage_ResetLocalDataInfo");
     [TranslationProperty] public string ResetAllLocalDataText => ResourceHelper.GetString("SettingsPage_ResetAllLocalData");

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace DLSS_Swapper;
 
@@ -21,13 +22,9 @@ public class Settings
 {
     public const string DefaultFallbackCoverArtApiUrl = "https://en.wikipedia.org/w/api.php";
     public const string DefaultFallbackCoverArtImageHost = "upload.wikimedia.org";
-    public const int DefaultGridViewPreferredColumns = 6;
-    public const int MinGridViewPreferredColumns = 1;
-    public const int MaxGridViewPreferredColumns = 16;
-
-    public const int DefaultGridViewPreferredRows = 5;
-    public const int MinGridViewPreferredRows = 1;
-    public const int MaxGridViewPreferredRows = 10;
+    public const int DefaultGridViewCardSize = 5;
+    public const int MinGridViewCardSize = 1;
+    public const int MaxGridViewCardSize = 10;
 
     public const int DefaultRecursiveScanConcurrency = 15;
     public const int HardDriveRecursiveScanConcurrency = 2;
@@ -360,19 +357,21 @@ public class Settings
     }
 
 
-    int _gridViewPreferredColumns = DefaultGridViewPreferredColumns;
-    public int GridViewPreferredColumns
+    int _gridViewCardSize = DefaultGridViewCardSize;
+    bool _hasLoadedGridViewCardSize;
+    public int GridViewCardSize
     {
-        get { return _gridViewPreferredColumns; }
+        get { return _gridViewCardSize; }
         set
         {
+            _hasLoadedGridViewCardSize = true;
             var normalizedValue = Math.Clamp(
                 value,
-                MinGridViewPreferredColumns,
-                MaxGridViewPreferredColumns);
-            if (_gridViewPreferredColumns != normalizedValue)
+                MinGridViewCardSize,
+                MaxGridViewCardSize);
+            if (_gridViewCardSize != normalizedValue)
             {
-                _gridViewPreferredColumns = normalizedValue;
+                _gridViewCardSize = normalizedValue;
                 WeakReferenceMessenger.Default.Send(new GridDensityChangedMessage());
                 if (_autoSave)
                 {
@@ -382,27 +381,16 @@ public class Settings
         }
     }
 
-    int _gridViewPreferredRows = DefaultGridViewPreferredRows;
-    public int GridViewPreferredRows
-    {
-        get { return _gridViewPreferredRows; }
-        set
-        {
-            var normalizedValue = Math.Clamp(
-                value,
-                MinGridViewPreferredRows,
-                MaxGridViewPreferredRows);
-            if (_gridViewPreferredRows != normalizedValue)
-            {
-                _gridViewPreferredRows = normalizedValue;
-                WeakReferenceMessenger.Default.Send(new GridDensityChangedMessage());
-                if (_autoSave)
-                {
-                    SaveJson();
-                }
-            }
-        }
-    }
+    // Read the two checkpoint-era settings once, then omit them from newly
+    // written files. They remain named explicitly so existing settings migrate
+    // without a reset when the single card-size control replaces them.
+    [JsonPropertyName("GridViewPreferredColumns")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int LegacyGridViewPreferredColumns { get; set; }
+
+    [JsonPropertyName("GridViewPreferredRows")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int LegacyGridViewPreferredRows { get; set; }
 
     int _recursiveScanConcurrency = DefaultRecursiveScanConcurrency;
     public int RecursiveScanConcurrency
@@ -722,15 +710,32 @@ public class Settings
     static Settings FromJson()
     {
         var settings = Storage.LoadSettingsJson();
+        var shouldSave = false;
 
         // If we couldn't load settings then save the defaults.
         if (settings is null)
         {
             settings = new Settings();
-            settings.SaveJson();
+            shouldSave = true;
         }
 
-        var shouldSave = settings.CheckGameLibraries();
+        if (settings._hasLoadedGridViewCardSize == false)
+        {
+            settings._gridViewCardSize = ConvertLegacyColumnsToCardSize(
+                settings.LegacyGridViewPreferredColumns);
+            settings._hasLoadedGridViewCardSize = true;
+            shouldSave = true;
+        }
+
+        if (settings.LegacyGridViewPreferredColumns != 0
+            || settings.LegacyGridViewPreferredRows != 0)
+        {
+            settings.LegacyGridViewPreferredColumns = 0;
+            settings.LegacyGridViewPreferredRows = 0;
+            shouldSave = true;
+        }
+
+        shouldSave |= settings.CheckGameLibraries();
         var normalizedCustomPatterns = GameAssetCandidatePathIndex.NormalizeCustomDirectoryPatterns(
             settings.CustomGameAssetDirectoryPatterns);
         if (settings.CustomGameAssetDirectoryPatterns.SequenceEqual(
@@ -750,6 +755,13 @@ public class Settings
         settings._autoSave = true;
         return settings;
     }
+
+    internal static int ConvertLegacyColumnsToCardSize(int columns) => columns > 0
+        ? Math.Clamp(
+            11 - columns,
+            MinGridViewCardSize,
+            MaxGridViewCardSize)
+        : DefaultGridViewCardSize;
 
     /// <summary>
     /// Checks game libraries to see if there are any new ones to be added, or misconfigured settings.

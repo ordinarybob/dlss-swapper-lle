@@ -222,9 +222,9 @@
       <Grid Grid.Row="1" RowDefinitions="32,*">
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
         <Grid Grid.Column="0"
-              MaxWidth="360"
+              Width="360"
               HorizontalAlignment="Left"
-              ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto">
+              ColumnDefinitions="Auto,Auto,*,Auto,Auto">
           <TextBlock Grid.Column="0"
                      Text="Steam"
                      FontSize="17"
@@ -232,24 +232,16 @@
                      VerticalAlignment="Center" />
           <Border Grid.Column="1" Width="1" Height="18" Background="#666666"
                   Margin="7,0,7,0" VerticalAlignment="Center" />
-          <TextBlock Grid.Column="2" Text="Columns" FontSize="10" Foreground="#C8C8C8"
+          <TextBlock Grid.Column="3" Text="Card size" FontSize="10" Foreground="#C8C8C8"
                      VerticalAlignment="Center" Margin="0,0,3,0" />
-          <ComboBox x:Name="GridColumnsInput"
-                    Grid.Column="3"
-                    AutomationProperties.Name="Grid columns"
+          <ComboBox x:Name="GridCardSizeInput"
+                    Grid.Column="4"
+                    AutomationProperties.Name="Grid card size"
                     Width="54" Height="28" MinHeight="28"
                     Padding="7,0,2,0"
-                    SelectionChanged="GridDensity_Changed" />
-          <TextBlock Grid.Column="5" Text="Rows" FontSize="10" Foreground="#C8C8C8"
-                     VerticalAlignment="Center" Margin="8,0,3,0" />
-          <ComboBox x:Name="GridRowsInput"
-                    Grid.Column="6"
-                    AutomationProperties.Name="Grid rows"
-                    Width="54" Height="28" MinHeight="28"
-                    Padding="7,0,2,0"
-                    SelectionChanged="GridDensity_Changed" />
+                    SelectionChanged="GridCardSize_Changed" />
 
-          <ComboBox x:Name="FilterComboBox" Grid.Column="4" IsVisible="False"
+          <ComboBox x:Name="FilterComboBox" Grid.Column="2" IsVisible="False"
                     SelectedIndex="0" SelectionChanged="LibraryView_Changed">
             <ComboBoxItem Content="All games" />
             <ComboBoxItem Content="Steam" />
@@ -333,6 +325,7 @@
                       IsVisible="{Binding IsGridView}"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
+                      PointerWheelChanged="GameGridViewport_PointerWheelChanged"
                       SizeChanged="GameGridViewport_SizeChanged">
           <ItemsControl ItemsSource="{Binding Games}" Margin="-1,0,7,2">
             <ItemsControl.ItemsPanel>

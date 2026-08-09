@@ -592,8 +592,7 @@ internal static class Program
 
         var store = new LibraryStateStore(stateDirectory);
         var library = new PersistentLibrary(store);
-        AssertEqual(6, library.State.GridColumns, "default grid columns");
-        AssertEqual(5, library.State.GridRows, "default grid rows");
+        AssertEqual(5, library.State.CardSize, "default grid card size");
         Assert(library.State.GridView, "default view is not grid");
         AssertEqual(15, library.State.Performance.ScanConcurrency, "standard scan concurrency");
         AssertEqual(38, library.State.Performance.ArtworkConcurrency, "standard art concurrency");
@@ -686,21 +685,42 @@ internal static class Program
             "unsafe artwork source was accepted");
 
         var stateJson = File.ReadAllText(store.StatePath);
+        Assert(!stateJson.Contains("gridColumns", StringComparison.Ordinal),
+            "legacy grid columns remained in persisted state");
+        Assert(!stateJson.Contains("gridRows", StringComparison.Ordinal),
+            "legacy grid rows remained in persisted state");
         Assert(!stateJson.Contains(nested, StringComparison.Ordinal),
             "nested folder leaked into persisted imports");
         Assert(
             !Directory.EnumerateFiles(stateDirectory, "*.tmp").Any(),
             "atomic state save left a temporary file");
         Assert(Directory.Exists(childTwo), "fixture child unexpectedly missing");
+
+        var legacyStateDirectory = Directory.CreateDirectory(
+            Path.Combine(temporary.Path, "legacy-state")).FullName;
+        File.WriteAllText(
+            Path.Combine(legacyStateDirectory, "state.json"),
+            "{\"schemaVersion\":1,\"gridColumns\":8,\"gridRows\":4}");
+        var legacyStore = new LibraryStateStore(legacyStateDirectory);
+        var migratedState = legacyStore.Load();
+        AssertEqual(3, migratedState.CardSize, "legacy grid-density migration");
+        AssertEqual(
+            LinuxLibraryState.CurrentSchemaVersion,
+            migratedState.SchemaVersion,
+            "migrated state schema");
+        legacyStore.Save(migratedState);
+        var migratedJson = File.ReadAllText(legacyStore.StatePath);
+        Assert(!migratedJson.Contains("gridColumns", StringComparison.Ordinal),
+            "migrated state retained legacy columns");
+        Assert(!migratedJson.Contains("gridRows", StringComparison.Ordinal),
+            "migrated state retained legacy rows");
     }
 
     private static void TestResponsiveGridLayout()
     {
         var standard = ResponsiveGridLayout.Calculate(
             viewportWidth: 736,
-            viewportHeight: 940,
-            preferredColumns: 6,
-            preferredRows: 5,
+            cardSize: 5,
             rasterizationScale: 1);
         AssertEqual(6, standard.ColumnCount, "standard grid column count");
         Assert(
@@ -710,24 +730,25 @@ internal static class Program
             standard.CellWidth * standard.ColumnCount <= 735.000001,
             "standard grid did not retain one physical pixel");
 
-        var rowLimited = ResponsiveGridLayout.Calculate(
+        var wide = ResponsiveGridLayout.Calculate(
             viewportWidth: 1600,
-            viewportHeight: 600,
-            preferredColumns: 6,
-            preferredRows: 5,
+            cardSize: 5,
             rasterizationScale: 1);
         Assert(
-            rowLimited.ColumnCount > 6,
-            "row-density floor did not increase effective columns");
+            wide.ColumnCount > standard.ColumnCount,
+            "responsive grid did not add columns for a wider viewport");
+
+        var smallest = ResponsiveGridLayout.Calculate(736, cardSize: 1, rasterizationScale: 1);
+        var largest = ResponsiveGridLayout.Calculate(736, cardSize: 10, rasterizationScale: 1);
+        AssertEqual(10, smallest.ColumnCount, "smallest card-size column count");
+        AssertEqual(1, largest.ColumnCount, "largest card-size column count");
 
         const double fractionalWidth = 743.5;
         const double fractionalScale = 1.5;
         var fractional = ResponsiveGridLayout.Calculate(
             fractionalWidth,
-            viewportHeight: 900,
-            preferredColumns: 6,
-            preferredRows: 5,
-            fractionalScale);
+            cardSize: 5,
+            rasterizationScale: fractionalScale);
         var usedPhysicalPixels = fractional.CellWidth
             * fractional.ColumnCount
             * fractionalScale;
