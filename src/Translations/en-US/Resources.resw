@@ -432,7 +432,7 @@ To verify what preset is being used please enable the DLSS on-screen indicator.<
     <value>You must select your &lt;i&gt;game&lt;/i&gt; directory, not your &lt;i&gt;games&lt;/i&gt; directory.&lt;br/&gt;&lt;br/&gt;For example, if you have a game at:&lt;br/&gt;&lt;b&gt;C:\Program Files\MyGamesFolder\MyFavGame\&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;You would select the &lt;b&gt;MyFavGame&lt;/b&gt; directory and not the &lt;b&gt;MyGamesFolder&lt;/b&gt; directory.</value>
   </data>
   <data name="GamesPage_ManuallyAdding_MultipleFoldersDescription" xml:space="preserve">
-    <value>Each selected folder will be added as a separate manually added game.</value>
+    <value>Select multiple separate game installation folders.</value>
   </data>
   <data name="GamesPage_ManuallyAdding_NoteMessage" xml:space="preserve">
     <value>DLSS Swapper should find games from your installed game libraries automatically. If your game is not listed there may be a few settings preventing it. Please check:
@@ -1412,10 +1412,10 @@ Because of this we recommend using caution for multiplayer games.</value>
     <value>DLSS version: oldest first</value>
   </data>
   <data name="GamesPage_ManuallyAdding_SingleFolderDescription" xml:space="preserve">
-    <value>Select its installation folder.</value>
+    <value>Select a single games installation folder.</value>
   </data>
   <data name="GamesPage_ManuallyAdding_MultiGameDirectoryDescription" xml:space="preserve">
-    <value>Each immediate child folder will be added as a separate manually added game. The parent folder itself is not added, and nested folders are not searched.</value>
+    <value>Select the main folder where the games you want to add are installed. Each immediate child folder will be added as a separate manually added game. The parent folder itself is not added, and nested folders are not searched.</value>
   </data>
   <data name="GamesPage_DeepScan" xml:space="preserve">
     <value>Deep Scan</value>
