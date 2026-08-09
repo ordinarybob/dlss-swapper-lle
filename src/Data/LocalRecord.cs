@@ -80,28 +80,6 @@ public partial class LocalRecord : ObservableObject, IEquatable<LocalRecord>
         }
     }
 
-    /*
-    internal async Task<bool> DeleteAsync()
-    {
-        var storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
-        try
-        {
-            var dlssFile = await storageFolder.GetFileAsync(ExpectedPath);
-            await dlssFile.DeleteAsync(Windows.Storage.StorageDeleteOption.PermanentDelete);
-            
-            IsDownloaded = false;
-            IsDownloading = false;
-            DownloadProgress = 0;
-            HasDownloadError = false;
-            DownloadErrorMessage = string.Empty;
-            return true;
-        }
-        catch (Exception)
-        {
-            return false;
-        }
-    }
-    */
 
     internal void UpdateFromNewLocalRecord(LocalRecord localRecord)
     {

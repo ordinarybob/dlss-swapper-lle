@@ -318,7 +318,7 @@ internal partial class GameManager : ObservableObject
             }
 
             // Add games to the game library when each library task completes.
-            while (tasks.Any())
+            while (tasks.Count > 0)
             {
                 var completedTask = await Task.WhenAny(tasks).ConfigureAwait(false);
                 tasks.Remove(completedTask);
@@ -730,14 +730,18 @@ internal partial class GameManager : ObservableObject
             if (game is XboxGame xboxGame)
             {
                 var launchCode = $"shell:appsFolder\\{xboxGame.PlatformId}!{xboxGame.ApplicationId}";
-                Process.Start(new ProcessStartInfo("explorer.exe", launchCode) { UseShellExecute = true });
+                var startInfo = new ProcessStartInfo("explorer.exe") { UseShellExecute = true };
+                startInfo.ArgumentList.Add(launchCode);
+                using var process = Process.Start(startInfo);
             }
         }
         else if (game.GameLibrary == GameLibrary.BattleNet)
         {
             if (game is BattleNetGame battleNetGame && File.Exists(BattleNetLibrary.Instance.ClientPath))
             {
-                Process.Start(new ProcessStartInfo(BattleNetLibrary.Instance.ClientPath,  $"--exec=\"launch {battleNetGame.LauncherId}\"") { UseShellExecute = true });
+                var startInfo = new ProcessStartInfo(BattleNetLibrary.Instance.ClientPath) { UseShellExecute = true };
+                startInfo.ArgumentList.Add($"--exec=launch {battleNetGame.LauncherId}");
+                using var process = Process.Start(startInfo);
             }
         }
     }

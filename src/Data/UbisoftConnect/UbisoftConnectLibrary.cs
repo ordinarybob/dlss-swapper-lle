@@ -134,7 +134,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
             }
         }
 
-        //var yamlDeserializer = new StaticDeserializerBuilder(new Helpers.StaticContext())
         var yamlDeserializer = new DeserializerBuilder()
             .IgnoreUnmatchedProperties()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -144,22 +143,22 @@ internal class UbisoftConnectLibrary : IGameLibrary
         // Not sure what happens if you are on a shared PC.
         var configurationFileData = await File.ReadAllBytesAsync(configurationPath).ConfigureAwait(false);
 
-        // This file contains multiple game records seperated by some custom header.
+        // This file contains multiple game records separated by a custom header.
         // We split this apart base on the methods from https://github.com/lutris/lutris/blob/d908066d97e61b2f33715fe9bdff6c02cc7fbc80/lutris/util/ubisoft/parser.py
         // and then return it as a list of games which we then check to see if it is in the installed list above.
         var configurationRecords = ParseConfiguration(configurationFileData);
         foreach (var configurationRecord in configurationRecords)
         {
-            // TODO: Remove htis true.
             // Only bother trying to read the game data if the install list
             if (installedTitles.TryGetValue(configurationRecord.InstallId, out var installedTitle))
             {
-                // Copy the yaml out for the game into a memory stream to load.
-                using (var memoryStream = new MemoryStream(configurationRecord.Size))
+                // Read the YAML record directly from the source buffer without copying it.
+                using (var memoryStream = new MemoryStream(
+                    configurationFileData,
+                    configurationRecord.Offset,
+                    configurationRecord.Size,
+                    writable: false))
                 {
-                    memoryStream.Write(configurationFileData, configurationRecord.Offset, configurationRecord.Size);
-                    memoryStream.Position = 0;
-
                     using (var reader = new StreamReader(memoryStream))
                     {
                         try
@@ -362,7 +361,7 @@ internal class UbisoftConnectLibrary : IGameLibrary
         catch (Exception err)
         {
             Logger.Warning($"parse_configuration failed with exception. Possibly 'configuration' file corrupted. - {err.Message}");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
 
         return records;
@@ -507,7 +506,7 @@ internal class UbisoftConnectLibrary : IGameLibrary
         catch (Exception err)
         {
             Logger.Error(err);
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
     }
 }

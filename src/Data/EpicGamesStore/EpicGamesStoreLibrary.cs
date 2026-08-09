@@ -87,7 +87,7 @@ internal class EpicGamesStoreLibrary : IGameLibrary
                 }
             }
 
-            if (cacheItemsArray?.Any() == true)
+            if (cacheItemsArray?.Length > 0)
             {
                 foreach (var cacheItem in cacheItemsArray)
                 {
@@ -121,7 +121,7 @@ internal class EpicGamesStoreLibrary : IGameLibrary
                 var remoteHeaderUrl = string.Empty;
                 if (cacheItemsDictionary.TryGetValue(manifest.CatalogItemId, out var cacheItem))
                 {
-                    if (cacheItem.KeyImages?.Any() == true)
+                    if (cacheItem.KeyImages?.Length > 0)
                     {
                         // Try get desired image.
                         var dieselGameBoxTall = cacheItem.KeyImages.FirstOrDefault(x => x.Type == "DieselGameBoxTall");
@@ -237,7 +237,7 @@ internal class EpicGamesStoreLibrary : IGameLibrary
         catch (Exception err)
         {
             Logger.Error(err);
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
     }
 }

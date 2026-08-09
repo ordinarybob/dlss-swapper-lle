@@ -16,6 +16,8 @@ public partial class NGXModelImporterModel : ObservableObject
 
     public NGXModelImporterModel(NGXModelImporter control, List<NGXModel> models)
     {
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(models);
         _weakControl = new WeakReference<NGXModelImporter>(control);
 
         Models = new List<NGXModelRow>(models.Count);

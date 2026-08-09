@@ -186,7 +186,7 @@ internal partial class SteamLibrary : IGameLibrary
         catch (Exception err)
         {
             Logger.Error(err, $"Unable to process {libraryFoldersFile}");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
 
         // Look for newly installed games that have not reached libraryfolders.vdf yet.
@@ -553,7 +553,7 @@ internal partial class SteamLibrary : IGameLibrary
         catch (Exception err)
         {
             Logger.Error(err);
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
     }
 }

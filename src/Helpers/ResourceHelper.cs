@@ -107,7 +107,7 @@ public class ResourceHelper
         if (string.IsNullOrWhiteSpace(fallbackString))
         {
             Debug.WriteLine($"Translation not found: {resourceName}");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
 #endif
         return fallbackString;

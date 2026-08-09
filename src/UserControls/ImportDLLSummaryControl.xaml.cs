@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.UI.Xaml.Controls;
 using DLSS_Swapper.Data;
@@ -13,6 +14,7 @@ public sealed partial class ImportDLLSummaryControl : UserControl
 
     public ImportDLLSummaryControl(IReadOnlyList<DLLImportResult> dllImportResults)
     {
+        ArgumentNullException.ThrowIfNull(dllImportResults);
         this.InitializeComponent();
         ViewModel = new ImportDLLSummaryControlModel(dllImportResults);
         DataContext = ViewModel;

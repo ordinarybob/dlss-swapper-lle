@@ -260,7 +260,7 @@ internal static class GameAssetCandidatePathIndex
         }
     }
 
-    static IEnumerable<string> EnumerateDirectories(string path)
+    static FileSystemEnumerable<string> EnumerateDirectories(string path)
     {
         var directories = new FileSystemEnumerable<string>(
             path,

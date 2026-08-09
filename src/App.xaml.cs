@@ -84,7 +84,9 @@ public sealed partial class App : Application
 
     internal void RegenerateHttpClient()
     {
+        var previousHttpClient = HttpClient;
         HttpClient = GenerateNewHttpClient();
+        previousHttpClient.Dispose();
     }
 
 
@@ -100,6 +102,7 @@ public sealed partial class App : Application
             UseCookies = true,
             CookieContainer = new CookieContainer(),
             AllowAutoRedirect = true,
+            CheckCertificateRevocationList = true,
         };
 
         Settings.ProxySettings.LoadIfNeeded();
@@ -139,7 +142,8 @@ public sealed partial class App : Application
             }
         }
 
-        var newHttpClient = new HttpClient(httpClientHandler);
+        // HttpClient owns and disposes the handler.
+        var newHttpClient = new HttpClient(httpClientHandler, disposeHandler: true);
         newHttpClient.DefaultRequestHeaders.Add("User-Agent", $"dlss-swapper/{versionString}");
         newHttpClient.Timeout = TimeSpan.FromMinutes(30);
         newHttpClient.DefaultRequestVersion = new Version(2, 0);
@@ -318,13 +322,19 @@ public sealed partial class App : Application
         {
             UseShellExecute = true,
             WorkingDirectory = Environment.CurrentDirectory,
-            FileName = Assembly.GetExecutingAssembly().GetName().Name,
+            FileName = Environment.ProcessPath
+                ?? throw new InvalidOperationException("The current executable path is unavailable."),
             Verb = "runas"
         };
 
         try
         {
-            Process.Start(startInfo);
+            using var elevatedProcess = Process.Start(startInfo);
+            if (elevatedProcess is null)
+            {
+                Logger.Error("The elevated DLSS Swapper process could not be started.");
+                return;
+            }
             Logger.Info("Restarting as admin.");
         }
         catch (Win32Exception)
@@ -335,32 +345,6 @@ public sealed partial class App : Application
 
         App.CurrentApp.Exit();
     }
-
-    /*
-    // Disabled as I am unsure how to prompt to run as admin.
-    internal void RelaunchAsAdministrator()
-    {
-        //var currentExe = Process.GetCurrentProcess().MainModule.FileName;
-
-        //var executingAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-        //executingAssembly.FullName;
-        
-        // So this does prompt UAC, this was temporarily used to copy files in UpdateDll and ResetDll
-        // but it would prompt for every action. 
-        //var startInfo = new ProcessStartInfo()
-        //{
-        //    WindowStyle = ProcessWindowStyle.Hidden,
-        //    FileName = "cmd.exe",
-        //    Arguments = $"/C copy \"{dll}\" \"{targetDllPath}\"",
-        //    UseShellExecute = true,
-        //    Verb = "runas",
-        //};
-        //Process.Start(startInfo);
-
-        MainWindow.Close();
-        //Logger.Error(System.Reflection.Assembly.GetExecutingAssembly().Location);
-    }
-    */
 
     public Version GetVersion()
     {
@@ -383,27 +367,22 @@ public sealed partial class App : Application
 
     public bool RunOnUIThread(Action action)
     {
-        if (Environment.CurrentManagedThreadId == 1)
+        ArgumentNullException.ThrowIfNull(action);
+
+        var dispatcherQueue = _mainWindow?.DispatcherQueue ?? DispatcherQueue.GetForCurrentThread();
+        if (dispatcherQueue?.HasThreadAccess == true)
         {
             action();
             return true;
         }
 
-        if (_mainWindow?.DispatcherQueue is not null)
+        if (dispatcherQueue is not null)
         {
-            var didEnqueue = _mainWindow.DispatcherQueue.TryEnqueue(new DispatcherQueueHandler(action));
+            var didEnqueue = dispatcherQueue.TryEnqueue(new DispatcherQueueHandler(action));
 
             if (didEnqueue == false)
             {
-                try
-                {
-                    // I am sure there is a better way to fill out a stacktrace than throwing an exception
-                    throw new Exception("TryEnqueue failed.");
-                }
-                catch (Exception err)
-                {
-                    Logger.Error(err);
-                }
+                Logger.Error(new InvalidOperationException("DispatcherQueue.TryEnqueue failed."));
             }
 
             return didEnqueue;
@@ -415,14 +394,17 @@ public sealed partial class App : Application
 
     public Task RunOnUIThreadAsync(Func<Task> function)
     {
-        if (Environment.CurrentManagedThreadId == 1)
+        ArgumentNullException.ThrowIfNull(function);
+
+        var dispatcherQueue = _mainWindow?.DispatcherQueue ?? DispatcherQueue.GetForCurrentThread();
+        if (dispatcherQueue?.HasThreadAccess == true)
         {
             return function();
         }
 
-        if (_mainWindow?.DispatcherQueue is not null)
+        if (dispatcherQueue is not null)
         {
-            return _mainWindow.DispatcherQueue.EnqueueAsync(function);
+            return dispatcherQueue.EnqueueAsync(function);
         }
 
         return Task.CompletedTask;

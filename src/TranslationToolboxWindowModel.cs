@@ -95,6 +95,7 @@ public partial class TranslationToolboxWindowModel : ObservableObject
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
+        ArgumentNullException.ThrowIfNull(e);
         base.OnPropertyChanged(e);
 
         if (e.PropertyName == nameof(SelectedSourceLanguage))
@@ -224,19 +225,17 @@ public partial class TranslationToolboxWindowModel : ObservableObject
 
                 using (var stream = File.OpenRead(existingFile))
                 {
-                    if (stream is null)
-                    {
-                        throw new System.Exception("Could not open stream for the selected path.");
-                    }
-
-
                     if (existingFile.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                     {
                         using (var reader = new StreamReader(stream))
                         {
                             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
                             {
-                                var loadedTranslationRows = csv.GetRecords<TranslationRow>().ToList();
+                                var loadedTranslationRows = new List<TranslationRow>();
+                                await foreach (var row in csv.GetRecordsAsync<TranslationRow>())
+                                {
+                                    loadedTranslationRows.Add(row);
+                                }
                                 var loadedDictionary = new Dictionary<string, string>(loadedTranslationRows.Count);
                                 foreach (var loadedTranslationRow in loadedTranslationRows)
                                 {
@@ -356,11 +355,6 @@ public partial class TranslationToolboxWindowModel : ObservableObject
 
                 using (var fileStream = File.Create(outputPath))
                 {
-                    if (fileStream is null)
-                    {
-                        throw new InvalidOperationException("Could not create fileStream for the selected path.");
-                    }
-
                     if (outputPath.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                     {
                         using (var streamWriter = new StreamWriter(fileStream, System.Text.Encoding.UTF8))
@@ -581,13 +575,8 @@ public partial class TranslationToolboxWindowModel : ObservableObject
                     using (var zipArchive = new ZipArchive(fileStream, ZipArchiveMode.Update, true))
                     {
                         var entry = zipArchive.CreateEntry("Resources.resw", CompressionLevel.Optimal);
-                        using (var entryStream = entry.Open())
+                        await using (var entryStream = await entry.OpenAsync(default))
                         {
-                            if (entryStream is null)
-                            {
-                                throw new Exception("Could not create exported zip.");
-                            }
-
                             var template = @"<?xml version=""1.0"" encoding=""utf-8""?>
 <root>
   <!--

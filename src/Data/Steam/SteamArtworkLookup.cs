@@ -68,9 +68,9 @@ internal static class SteamArtworkLookup
                 }
 
                 await using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                searchResponse = JsonSerializer.Deserialize(
+                searchResponse = await JsonSerializer.DeserializeAsync(
                     responseStream,
-                    SourceGenerationContext.Default.SteamStoreSearchResponse);
+                    SourceGenerationContext.Default.SteamStoreSearchResponse).ConfigureAwait(false);
                 if (searchResponse?.Items.Count > 0)
                 {
                     break;

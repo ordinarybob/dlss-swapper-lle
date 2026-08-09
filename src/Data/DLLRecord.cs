@@ -256,8 +256,7 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
 
     internal void CancelDownload()
     {
-        _cancellationTokenSource?.Cancel();
-        _cancellationTokenSource = null;
+        Interlocked.Exchange(ref _cancellationTokenSource, null)?.Cancel();
     }
 
     internal async Task<(bool Success, string Message, bool Cancelled)> DownloadAsync()
@@ -272,10 +271,15 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
             return (false, "Local record is null.", false);
         }
 
-        _cancellationTokenSource?.Cancel();
-
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = new CancellationTokenSource();
+        var previousCancellation = Interlocked.Exchange(
+            ref _cancellationTokenSource,
+            cancellationTokenSource);
+        if (previousCancellation is not null)
+        {
+            await previousCancellation.CancelAsync().ConfigureAwait(false);
+        }
+        var cancellationToken = cancellationTokenSource.Token;
 
         var fileDownloader = new FileDownloader(DownloadUrl);
         var tempZipFile = Path.Combine(Storage.GetTemp(), $"{fileDownloader.Guid.ToString("D").ToUpper()}.zip");
@@ -330,7 +334,7 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
         {
             Logger.Error(err);
 
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             App.CurrentApp.RunOnUIThread(() =>
             {
                 LocalRecord.IsDownloaded = false;
@@ -343,6 +347,12 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
         }
         finally
         {
+            Interlocked.CompareExchange(
+                ref _cancellationTokenSource,
+                null,
+                cancellationTokenSource);
+            cancellationTokenSource.Dispose();
+
             App.CurrentApp.RunOnUIThread(() =>
             {
                 LocalRecord.FileDownloader = null;
@@ -354,9 +364,9 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
             {
                 File.Delete(tempZipFile);
             }
-            catch (Exception)
+            catch (Exception err)
             {
-                // NOOP
+                Logger.Warning($"Unable to remove temporary DLL download {tempZipFile}. {err.Message}");
             }
         }
     }

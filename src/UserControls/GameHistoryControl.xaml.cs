@@ -1,18 +1,24 @@
+using System;
 using DLSS_Swapper.Data;
 using Microsoft.UI.Xaml.Controls;
+using System.Threading.Tasks;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace DLSS_Swapper.UserControls;
-public sealed partial class GameHistoryControl : UserControl
+public sealed partial class GameHistoryControl : UserControl, IDisposable
 {
     public GameHistoryControlModel ViewModel { get; private set; }
 
     public GameHistoryControl(Game game)
     {
         InitializeComponent();
-        ViewModel = new GameHistoryControlModel(this, game);
+        ViewModel = new GameHistoryControlModel(game);
         DataContext = ViewModel;
     }
+
+    public Task LoadAsync() => ViewModel.LoadAsync();
+
+    public void Dispose() => ViewModel.TranslationProperties.Dispose();
 }

@@ -1,14 +1,20 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using DLSS_Swapper.Helpers;
+using DLSS_Swapper.Messages;
 
 namespace DLSS_Swapper.Interfaces;
 
 public abstract class LocalizedViewModelBase : ObservableObject, IDisposable
 {
+    bool _disposed;
+
     public LocalizedViewModelBase()
     {
-        LanguageManager.Instance.OnLanguageChanged += OnLanguageChanged;
+        WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(
+            this,
+            static (recipient, _) => ((LocalizedViewModelBase)recipient).OnLanguageChanged());
     }
 
     protected virtual void OnLanguageChanged()
@@ -21,13 +27,24 @@ public abstract class LocalizedViewModelBase : ObservableObject, IDisposable
         }
     }
 
-    ~LocalizedViewModelBase()
+    protected virtual void Dispose(bool disposing)
     {
-        Dispose();
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing)
+        {
+            WeakReferenceMessenger.Default.Unregister<LanguageChangedMessage>(this);
+        }
+
+        _disposed = true;
     }
 
     public void Dispose()
     {
-        LanguageManager.Instance.OnLanguageChanged -= OnLanguageChanged;
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 }

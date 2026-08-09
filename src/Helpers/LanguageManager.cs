@@ -4,13 +4,13 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using CommunityToolkit.Mvvm.Messaging;
 using DLSS_Swapper.Attributes;
+using DLSS_Swapper.Messages;
 
 namespace DLSS_Swapper.Helpers;
 public class LanguageManager
 {
-    public event Action? OnLanguageChanged;
-
     static LanguageManager? _instance;
     public static LanguageManager Instance => _instance ??= new LanguageManager();
 
@@ -20,7 +20,7 @@ public class LanguageManager
 
     internal void ReloadLanguage()
     {
-        OnLanguageChanged?.Invoke();
+        WeakReferenceMessenger.Default.Send<LanguageChangedMessage>();
     }
 
     public void ChangeLanguage(string key)
@@ -107,6 +107,7 @@ public class LanguageManager
 
     public static IEnumerable<string> GetClassLanguagePropertyNames(Type classType)
     {
+        ArgumentNullException.ThrowIfNull(classType);
         return classType.GetProperties().Where(p => p.GetCustomAttribute<TranslationPropertyAttribute>() != null).Select(p => p.Name).ToList();
     }
 

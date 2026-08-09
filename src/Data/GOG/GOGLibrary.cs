@@ -178,20 +178,10 @@ internal class GOGLibrary : IGameLibrary
 
             var programDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
 
-            // var limitedDetails = await db.QueryAsync<LimitedDetail>("SELECT * FROM LimitedDetails").ConfigureAwait(false);
-            // var installedBaseProducts = await db.QueryAsync<InstalledBaseProduct>("SELECT * FROM InstalledBaseProducts").ConfigureAwait(false);
             foreach (var gogGame in gogGames)
             {
                 try
                 {
-                    /*
-                    var installedBaseProduct = (await db.QueryAsync<InstalledBaseProduct>("SELECT * FRO< InstalledBaseProducts WHERE ProductId=? LIMIT 1", gogGame.Id).ConfigureAwait(false)).FirstOrDefault();
-                    if (installedBaseProduct is null)
-                    {
-                        continue;
-                    }
-                    */
-
                     var limitedDetail = (await db.QueryAsync<LimitedDetail>("SELECT * FROM LimitedDetails WHERE ProductId=? LIMIT 1", gogGame.PlatformId).ConfigureAwait(false)).FirstOrDefault();
                     if (limitedDetail is null)
                     {
@@ -203,7 +193,7 @@ internal class GOGLibrary : IGameLibrary
                     var releaseKey = $"gog_{gogGame.PlatformId}";
                     var fallbackImage = limitedDetail.ImagesData?.Logo2x ?? string.Empty;
                     var gamePieces = (await db.QueryAsync<GamePiece>("SELECT * FROM GamePieces WHERE releaseKey=? AND gamePieceTypeId=?", releaseKey, gamePieceTypeId).ConfigureAwait(false));
-                    if (gamePieces?.Any() == true)
+                    if (gamePieces?.Count > 0)
                     {
                         foreach (var gamePiece in gamePieces)
                         {
@@ -257,7 +247,10 @@ internal class GOGLibrary : IGameLibrary
                 var webcachePath = Path.Combine(gogGame.InstallPath, "webcache.zip");
                 if (File.Exists(webcachePath))
                 {
-                    using (var zip = ZipFile.Open(webcachePath, ZipArchiveMode.Read))
+                    await using (var zip = await ZipFile.OpenAsync(
+                        webcachePath,
+                        ZipArchiveMode.Read,
+                        default).ConfigureAwait(false))
                     {
                         var resourcesEntry = zip.GetEntry("resources.json");
                         if (resourcesEntry is null)
@@ -266,9 +259,12 @@ internal class GOGLibrary : IGameLibrary
                             continue;
                         }
 
-                        using (var resourcesStream = resourcesEntry.Open())
+                        await using (var resourcesStream = await resourcesEntry
+                            .OpenAsync(default).ConfigureAwait(false))
                         {
-                            var limitedDetailImages = JsonSerializer.Deserialize(resourcesStream, SourceGenerationContext.Default.ResourceImages);
+                            var limitedDetailImages = await JsonSerializer.DeserializeAsync(
+                                resourcesStream,
+                                SourceGenerationContext.Default.ResourceImages).ConfigureAwait(false);
                             if (limitedDetailImages is null)
                             {
                                 Logger.Error($"Unable to deserialize resources.json for {gogGame.PlatformId}.");
@@ -362,7 +358,7 @@ internal class GOGLibrary : IGameLibrary
         catch (Exception err)
         {
             Logger.Error(err);
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
     }
 }

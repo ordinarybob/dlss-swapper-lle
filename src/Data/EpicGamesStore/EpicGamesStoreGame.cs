@@ -32,7 +32,7 @@ internal class EpicGamesStoreGame : Game
             return;
         }
 
-        // If the remote image doens't already have query arguments lets add some to load a smaller image.
+        // If the remote image does not already have query arguments, add some to load a smaller image.
         if (RemoteHeaderImage.Contains('?') == false)
         {
             RemoteHeaderImage = RemoteHeaderImage + "?w=600&h=900&resize=1";

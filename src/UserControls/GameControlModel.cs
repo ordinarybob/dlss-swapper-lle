@@ -87,6 +87,8 @@ public partial class GameControlModel : ObservableObject
 
     public GameControlModel(Control actionHost, Game game) : base()
     {
+        ArgumentNullException.ThrowIfNull(actionHost);
+        ArgumentNullException.ThrowIfNull(game);
         actionHostWeakReference = new WeakReference<Control>(actionHost);
         if (actionHost is GameControl gameControl)
         {
@@ -232,6 +234,7 @@ public partial class GameControlModel : ObservableObject
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
+        ArgumentNullException.ThrowIfNull(e);
         base.OnPropertyChanged(e);
 
         if (e.PropertyName == nameof(SelectedDlssPreset))
@@ -297,7 +300,7 @@ public partial class GameControlModel : ObservableObject
         {
             if (Directory.Exists(Game.InstallPath))
             {
-                Process.Start("explorer.exe", Game.InstallPath);
+                FileSystemHelper.OpenFolderInExplorer(Game.InstallPath);
             }
             else
             {
@@ -381,12 +384,14 @@ public partial class GameControlModel : ObservableObject
     {
         if (TryGetActionHost(out var actionHost))
         {
+            using var historyControl = new GameHistoryControl(Game);
+            await historyControl.LoadAsync();
             var dialog = new EasyContentDialog(actionHost.XamlRoot)
             {
                 Title = $"{ResourceHelper.GetFormattedResourceTemplate("GamePage_History")} - {Game.Title}",
                 PrimaryButtonText = ResourceHelper.GetString("General_Close"),
                 DefaultButton = ContentDialogButton.Primary,
-                Content = new GameHistoryControl(Game),
+                Content = historyControl,
             };
             dialog.Resources["ContentDialogMinWidth"] = 0d;
             dialog.Resources["ContentDialogMaxWidth"] = 800d;

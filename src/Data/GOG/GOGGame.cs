@@ -72,7 +72,9 @@ internal class GOGGame : Game
                 await fileDownloader.DownloadFileToStreamAsync(memoryStream);
                 memoryStream.Position = 0;
 
-                var catalogResponse = JsonSerializer.Deserialize(memoryStream, SourceGenerationContext.Default.GOGCatalogResponse);
+                var catalogResponse = await JsonSerializer.DeserializeAsync(
+                    memoryStream,
+                    SourceGenerationContext.Default.GOGCatalogResponse).ConfigureAwait(false);
                 if (catalogResponse is null)
                 {
                     throw new Exception($"Could not deserialize GOGCatalogResponse for url, {url}");
@@ -101,7 +103,7 @@ internal class GOGGame : Game
         catch (Exception err)
         {
             Logger.Error(err);
-            //Debugger.Break();
+            //DebuggerHelper.BreakIfAttached();
         }
 
 
@@ -117,7 +119,9 @@ internal class GOGGame : Game
                 await fileDownloader.DownloadFileToStreamAsync(memoryStream);
                 memoryStream.Position = 0;
 
-                var embedFilteredResponse = JsonSerializer.Deserialize(memoryStream, SourceGenerationContext.Default.GOGEmbedFilteredResponse);
+                var embedFilteredResponse = await JsonSerializer.DeserializeAsync(
+                    memoryStream,
+                    SourceGenerationContext.Default.GOGEmbedFilteredResponse).ConfigureAwait(false);
                 if (embedFilteredResponse is null)
                 {
                     throw new Exception($"Could not deserialize GOGEmbedFilteredResponse for url, {url}");
@@ -152,7 +156,7 @@ internal class GOGGame : Game
         catch (Exception err)
         {
             Logger.Error(err);
-            //Debugger.Break();
+            //DebuggerHelper.BreakIfAttached();
         }
         */
 
@@ -170,7 +174,9 @@ internal class GOGGame : Game
 
                 memoryStream.Position = 0;
 
-                var gogProduct = JsonSerializer.Deserialize(memoryStream, SourceGenerationContext.Default.GOGProduct);
+                var gogProduct = await JsonSerializer.DeserializeAsync(
+                    memoryStream,
+                    SourceGenerationContext.Default.GOGProduct).ConfigureAwait(false);
 
                 if (gogProduct?.Images is not null)
                 {
@@ -186,7 +192,7 @@ internal class GOGGame : Game
         catch (Exception err)
         {
             Logger.Error(err);
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
 
     }

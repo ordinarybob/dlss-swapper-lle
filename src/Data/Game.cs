@@ -62,28 +62,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     [Ignore]
     public DriverSettingsProfile? DriverSettingsProfile { get; set; }
 
-    /*
-    [ObservableProperty]
-    [property: Column("base_dlss_version")]
-    string baseDLSSVersion = string.Empty;
-
-    [ObservableProperty]
-    [property: Column("current_dlss_version")]
-    string currentDLSSVersion = string.Empty;
-
-    [ObservableProperty]
-    [property: Column("current_dlss_hash")]
-    string currentDLSSHash = string.Empty;
-
-    [ObservableProperty]
-    [property: Column("base_dlss_hash")]
-    string baseDLSSHash = string.Empty;
-
-    [ObservableProperty]
-    [property: Column("has_dlss")]
-    bool hasDLSS = false;
-    */
-
     [ObservableProperty]
     [Column("has_swappable_items")]
     public partial bool HasSwappableItems { get; set; } = false;
@@ -433,7 +411,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     }
                 }
 
-                if (replacementAssets.Any())
+                if (replacementAssets.Count > 0)
                 {
                     newHasSwappableItems = true;
 
@@ -445,7 +423,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         await Database.Instance.Connection.InsertAllAsync(replacementAssets, false).ConfigureAwait(false);
                     }
 
-                    if (unknownGameAssets.Any())
+                    if (unknownGameAssets.Count > 0)
                     {
                         GameManager.Instance.AddUnknownGameAssets(GameLibrary, Title, unknownGameAssets);
                     }
@@ -454,7 +432,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
                     if (forceNeedsProcessing == true && File.Exists(ExpectedCustomCoverImage) == false)
                     {
-                        // If we are forcing game load and custom cover image doesnt exist we will force load the cover no matter what.
+                        // If we are forcing a game load and the custom cover does not exist, force-load the cover.
                     }
                     else
                     {
@@ -478,7 +456,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                                 var daysSinceLastModified = (DateTime.Now - fileInfo.LastWriteTime).TotalDays;
 
                                 // Add +/- 2 days so not all will process at the same time.
-                                daysSinceLastModified += ((new Random()).NextDouble() - 0.5) * 4.0;
+                                daysSinceLastModified += (Random.Shared.NextDouble() - 0.5) * 4.0;
 
                                 // If its less than 7 days lets not try refresh.
                                 if (daysSinceLastModified < 7)
@@ -490,7 +468,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         catch (Exception err)
                         {
                             Logger.Error(err);
-                            Debugger.Break();
+                            DebuggerHelper.BreakIfAttached();
                         }
                     }
 
@@ -522,7 +500,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
             finally
             {
@@ -535,7 +513,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         GameAssets.Clear();
                         GameAssets.AddRange(oldGameAssets);
                         UpdateCurrentDLLsFromGameAssets();
-                        HasSwappableItems = oldGameAssets.Any();
+                        HasSwappableItems = oldGameAssets.Count > 0;
                     }
                     else
                     {
@@ -1189,17 +1167,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     }
     #endregion
 
-    /*
-    #region INotifyPropertyChanged
-    public event PropertyChangedEventHandler? PropertyChanged = null;
-    void OnPropertyChanged([CallerMemberName] string propertyName = "")
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-    #endregion
-    */
-
-
     protected async Task ResizeCoverAsync(Stream imageStream)
     {
         // TODO:
@@ -1219,7 +1186,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     Mode = ResizeMode.Min, // If image is smaller it won't be resized up.
                 };
                 image.Mutate(x => x.Resize(resizeOptions));
-                image.SaveAsPng(ExpectedCoverImage);
+                await image.SaveAsPngAsync(ExpectedCoverImage).ConfigureAwait(false);
                 //image.SaveAsWebp(ExpectedCoverImage);
                 //image.SaveAsJpeg(ExpectedCoverImage);
             }
@@ -1298,7 +1265,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
         var extension = Path.GetExtension(url);
 
-        // Path.GetExtension retains query arguments, so ths will remove them if they exist.
+        // Path.GetExtension retains query arguments, so remove them if they exist.
         if (extension.Contains('?'))
         {
             extension = extension.Substring(0, extension.IndexOf("?"));
@@ -1322,7 +1289,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         catch (Exception err)
         {
             Logger.Error(err, $"For url: {url}");
-            //Debugger.Break();
+            //DebuggerHelper.BreakIfAttached();
             return false;
         }
         finally
@@ -1352,10 +1319,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             }
             if (rowsChanged == 0)
             {
-                // TODO: Fix why this happens occasionally to reandom games.
+                // TODO: Fix why this happens occasionally to random games.
                 // This appears to change to different games in different libraries.
                 Logger.Error($"Tried to save game to database but rowsChanged was 0.");
-                //Debugger.Break();
+                //DebuggerHelper.BreakIfAttached();
                 return false;
             }
             return true;
@@ -1363,7 +1330,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         catch (Exception err)
         {
             Logger.Error(err);
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return false;
         }
     }
@@ -1526,6 +1493,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
     protected bool ParentUpdateFromGame(Game game)
     {
+        ArgumentNullException.ThrowIfNull(game);
         var didChange = false;
 
         if (Title != game.Title)
@@ -1707,7 +1675,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         using (await Database.Instance.Mutex.LockAsync())
         {
             var gameAssets = await Database.Instance.Connection.Table<GameAsset>().Where(ga => ga.Id == ID).ToListAsync().ConfigureAwait(false);
-            if (gameAssets?.Any() == true)
+            if (gameAssets?.Count > 0)
             {
                 GameAssets.AddRange(gameAssets);
             }
@@ -1717,7 +1685,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
         // TODO: Add auto reload by storing last full reload time on game
 
-        if (GameAssets.Any())
+        if (GameAssets.Count > 0)
         {
             foreach (var gameAsset in GameAssets)
             {
@@ -1749,7 +1717,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         unknownGameAssets.Add(gameAsset);
                     }
                 }
-                if (unknownGameAssets.Any())
+                if (unknownGameAssets.Count > 0)
                 {
                     GameManager.Instance.AddUnknownGameAssets(GameLibrary, Title, unknownGameAssets);
                 }

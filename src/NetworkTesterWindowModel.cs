@@ -6,7 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using DLSS_Swapper.Helpers;
+using DLSS_Swapper.Messages;
 using DLSS_Swapper.UserControls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -14,7 +16,7 @@ using Windows.ApplicationModel.DataTransfer;
 
 namespace DLSS_Swapper;
 
-public partial class NetworkTesterWindowModel : ObservableObject
+public sealed partial class NetworkTesterWindowModel : ObservableObject, IDisposable
 {
     readonly WeakReference<NetworkTesterWindow> _weakWindow;
     readonly string _dlssSwapperDomainTestLink = "dlss-swapper-downloads.beeradmoore.com";
@@ -123,7 +125,13 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [ObservableProperty]
     public partial string Test11Result { get; set; } = string.Empty;
 
+    // Each running test disposes its own source in CompleteTest. This field is only
+    // the synchronized reference used to cancel the currently active test.
+#pragma warning disable CA2213
     CancellationTokenSource? _cancellationTokenSource;
+#pragma warning restore CA2213
+    readonly object _testCancellationLock = new();
+    bool _disposed;
 
     public NetworkTesterWindowModel(NetworkTesterWindow window) : base()
     {
@@ -132,8 +140,9 @@ public partial class NetworkTesterWindowModel : ObservableObject
         // Initialize FlowDirection based on current language
         UpdateFlowDirection();
         
-        // Subscribe to language changes
-        LanguageManager.Instance.OnLanguageChanged += UpdateFlowDirection;
+        WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(
+            this,
+            static (recipient, _) => ((NetworkTesterWindowModel)recipient).UpdateFlowDirection());
 
         AppendTestResults("Init", $"DLSS Swapper LLE version: v{App.CurrentApp.GetVersionString()}");
     }
@@ -159,9 +168,8 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [RelayCommand]
     async Task RunTest1Async()
     {
-        CancelCurrentTest();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = StartTest();
+        var cancellationToken = cancellationTokenSource.Token;
 
         var testName = "Test 1";
         RunningTest1 = true;
@@ -206,6 +214,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
         }
         finally
         {
+            CompleteTest(cancellationTokenSource);
             var duration = (DateTime.Now - testStart).TotalSeconds;
             AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
             RunningTest1 = false;
@@ -215,9 +224,8 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [RelayCommand]
     async Task RunTest2Async()
     {
-        CancelCurrentTest();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = StartTest();
+        var cancellationToken = cancellationTokenSource.Token;
 
         var testName = "Test 2";
         RunningTest2 = true;
@@ -262,6 +270,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
         }
         finally
         {
+            CompleteTest(cancellationTokenSource);
             var duration = (DateTime.Now - testStart).TotalSeconds;
             AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
             RunningTest2 = false;
@@ -271,9 +280,8 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [RelayCommand]
     async Task RunTest3Async()
     {
-        CancelCurrentTest();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = StartTest();
+        var cancellationToken = cancellationTokenSource.Token;
 
         var testName = "Test 3";
         RunningTest3 = true;
@@ -318,6 +326,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
         }
         finally
         {
+            CompleteTest(cancellationTokenSource);
             var duration = (DateTime.Now - testStart).TotalSeconds;
             AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
             RunningTest3 = false;
@@ -415,9 +424,8 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [RelayCommand]
     async Task RunTest5Async()
     {
-        CancelCurrentTest();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = StartTest();
+        var cancellationToken = cancellationTokenSource.Token;
 
         var testName = "Test 5";
         RunningTest5 = true;
@@ -462,6 +470,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
         }
         finally
         {
+            CompleteTest(cancellationTokenSource);
             var duration = (DateTime.Now - testStart).TotalSeconds;
             AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
             RunningTest5 = false;
@@ -471,9 +480,8 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [RelayCommand]
     async Task RunTest6Async()
     {
-        CancelCurrentTest();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = StartTest();
+        var cancellationToken = cancellationTokenSource.Token;
 
         var testName = "Test 6";
         RunningTest6 = true;
@@ -518,6 +526,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
         }
         finally
         {
+            CompleteTest(cancellationTokenSource);
             var duration = (DateTime.Now - testStart).TotalSeconds;
             AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
             RunningTest6 = false;
@@ -527,9 +536,8 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [RelayCommand]
     async Task RunTest7Async()
     {
-        CancelCurrentTest();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = StartTest();
+        var cancellationToken = cancellationTokenSource.Token;
 
         var testName = "Test 7";
         RunningTest7 = true;
@@ -574,6 +582,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
         }
         finally
         {
+            CompleteTest(cancellationTokenSource);
             var duration = (DateTime.Now - testStart).TotalSeconds;
             AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
             RunningTest7 = false;
@@ -583,9 +592,8 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [RelayCommand]
     async Task RunTest8Async()
     {
-        CancelCurrentTest();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = StartTest();
+        var cancellationToken = cancellationTokenSource.Token;
 
         var testName = "Test 8";
         RunningTest8 = true;
@@ -630,6 +638,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
         }
         finally
         {
+            CompleteTest(cancellationTokenSource);
             var duration = (DateTime.Now - testStart).TotalSeconds;
             AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
             RunningTest8 = false;
@@ -677,9 +686,8 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [RelayCommand]
     async Task RunTest10Async()
     {
-        CancelCurrentTest();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = StartTest();
+        var cancellationToken = cancellationTokenSource.Token;
 
         var testName = "Test 10";
         RunningTest10 = true;
@@ -772,6 +780,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
             }
             finally
             {
+                CompleteTest(cancellationTokenSource);
                 var duration = (DateTime.Now - testStart).TotalSeconds;
                 AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
 
@@ -795,14 +804,18 @@ public partial class NetworkTesterWindowModel : ObservableObject
                 RunningTest10 = false;
             }
         }
+        else
+        {
+            CompleteTest(cancellationTokenSource);
+            RunningTest10 = false;
+        }
     }
 
     [RelayCommand]
     async Task RunTest11Async()
     {
-        CancelCurrentTest();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
+        var cancellationTokenSource = StartTest();
+        var cancellationToken = cancellationTokenSource.Token;
 
         var testName = "Test 11";
         RunningTest11 = true;
@@ -845,6 +858,7 @@ public partial class NetworkTesterWindowModel : ObservableObject
         }
         finally
         {
+            CompleteTest(cancellationTokenSource);
             var duration = (DateTime.Now - testStart).TotalSeconds;
             AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
             RunningTest11 = false;
@@ -862,9 +876,52 @@ public partial class NetworkTesterWindowModel : ObservableObject
     [RelayCommand]
     void CancelCurrentTest()
     {
-        if (_cancellationTokenSource?.IsCancellationRequested == false)
+        lock (_testCancellationLock)
         {
-            _cancellationTokenSource.Cancel();
+            if (_cancellationTokenSource?.IsCancellationRequested == false)
+            {
+                _cancellationTokenSource.Cancel();
+            }
         }
+    }
+
+    CancellationTokenSource StartTest()
+    {
+        var cancellationTokenSource = new CancellationTokenSource();
+        lock (_testCancellationLock)
+        {
+            if (_cancellationTokenSource?.IsCancellationRequested == false)
+            {
+                _cancellationTokenSource.Cancel();
+            }
+            _cancellationTokenSource = cancellationTokenSource;
+        }
+        return cancellationTokenSource;
+    }
+
+    void CompleteTest(CancellationTokenSource cancellationTokenSource)
+    {
+        lock (_testCancellationLock)
+        {
+            if (ReferenceEquals(_cancellationTokenSource, cancellationTokenSource))
+            {
+                _cancellationTokenSource = null;
+            }
+            cancellationTokenSource.Dispose();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        WeakReferenceMessenger.Default.Unregister<LanguageChangedMessage>(this);
+        CancelCurrentTest();
+        TranslationProperties.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

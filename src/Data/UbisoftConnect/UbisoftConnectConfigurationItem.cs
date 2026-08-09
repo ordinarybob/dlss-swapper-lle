@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DLSS_Swapper.Data.UbisoftConnect;
 
@@ -36,9 +36,9 @@ internal class UbisoftConnectConfigurationItem
         public List<ExecutablesNode> GetUniqueExecutables()
         {
             var uniqueExecutables = new List<ExecutablesNode>();
-            var uniqueRegisters = new List<string>();
+            var uniqueRegisters = new HashSet<string>(StringComparer.Ordinal);
 
-            if (Online?.Executables?.Any() == true)
+            if (Online?.Executables?.Count > 0)
             {
                 foreach (var executable in Online.Executables)
                 {
@@ -48,15 +48,14 @@ internal class UbisoftConnectConfigurationItem
                         continue;
                     }
 
-                    if (uniqueRegisters.Contains(executable.WorkingDirectory.Register) == false)
+                    if (uniqueRegisters.Add(executable.WorkingDirectory.Register))
                     {
-                        uniqueRegisters.Add(executable.WorkingDirectory.Register);
                         uniqueExecutables.Add(executable);
                     }
                 }
             }
 
-            if (Offline?.Executables?.Any() == true)
+            if (Offline?.Executables?.Count > 0)
             {
                 foreach (var executable in Offline.Executables)
                 {
@@ -66,9 +65,8 @@ internal class UbisoftConnectConfigurationItem
                         continue;
                     }
 
-                    if (uniqueRegisters.Contains(executable.WorkingDirectory.Register) == false)
+                    if (uniqueRegisters.Add(executable.WorkingDirectory.Register))
                     {
-                        uniqueRegisters.Add(executable.WorkingDirectory.Register);
                         uniqueExecutables.Add(executable);
                     }
                 }

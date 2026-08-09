@@ -49,6 +49,11 @@ public partial class DLLPickerControlModel : ObservableObject
 
     public DLLPickerControlModel(GameControl gameControl, EasyContentDialog parentDialog, DLLPickerControl dllPickerControl, Game game, GameAssetType gameAssetType) : base()
     {
+        ArgumentNullException.ThrowIfNull(gameControl);
+        ArgumentNullException.ThrowIfNull(parentDialog);
+        ArgumentNullException.ThrowIfNull(dllPickerControl);
+        ArgumentNullException.ThrowIfNull(game);
+
         _gameControlWeakReference = new WeakReference<GameControl>(gameControl);
         _parentDialogWeakReference = new WeakReference<EasyContentDialog>(parentDialog);
         _dllPickerControlWeakReference = new WeakReference<DLLPickerControl>(dllPickerControl);
@@ -153,6 +158,11 @@ public partial class DLLPickerControlModel : ObservableObject
             DLLRecords.RemoveAll(x => x.IsDevFile == true);
         }
 
+        if (Settings.Instance.AllowUntrusted == false)
+        {
+            DLLRecords.RemoveAll(x => x.IsSignatureValid == false);
+        }
+
         // Prevent DLSS 1.0 showing up with DLSS 2/3 and vice versa
         if (GameAssetType == GameAssetType.DLSS)
         {
@@ -177,6 +187,7 @@ public partial class DLLPickerControlModel : ObservableObject
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
+        ArgumentNullException.ThrowIfNull(e);
         base.OnPropertyChanged(e);
 
         if (e.PropertyName == nameof(SelectedDLLRecord))
@@ -219,8 +230,10 @@ public partial class DLLPickerControlModel : ObservableObject
         }
         else if (SelectedDLLRecord.LocalRecord.IsDownloaded == false)
         {
+            var selectedRecord = SelectedDLLRecord;
             ShowTempInfoBar(string.Empty, ResourceHelper.GetString("GamePage_DllPicker_StartingDownload"));
-            SelectedDLLRecord.DownloadAsync().SafeFireAndForget();
+            selectedRecord.DownloadAsync().SafeFireAndForget(err =>
+                Logger.Error(err, $"Could not download {selectedRecord.DisplayName}."));
             return;
         }
 
@@ -307,14 +320,14 @@ public partial class DLLPickerControlModel : ObservableObject
         {
             if (File.Exists(CurrentGameAsset.Path))
             {
-                Process.Start("explorer.exe", $"/select,{CurrentGameAsset.Path}");
+                FileSystemHelper.OpenFolderInExplorerSelectFile(CurrentGameAsset.Path);
             }
             else
             {
                 var dllPath = Path.GetDirectoryName(CurrentGameAsset.Path) ?? string.Empty;
                 if (Directory.Exists(dllPath))
                 {
-                    Process.Start("explorer.exe", dllPath);
+                    FileSystemHelper.OpenFolderInExplorer(dllPath);
                 }
                 else
                 {

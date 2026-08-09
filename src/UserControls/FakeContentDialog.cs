@@ -282,11 +282,6 @@ public class FakeContentDialog : Control
     {
         if (((App)App.Current).MainWindow.Content is Grid rootGrid)
         {
-            /*
-            var mainNavigationView = rootGrid.FindChild<NavigationView>(x => x.Name == "MainNavigationView");
-            var appTitleBar = rootGrid.FindChild<Grid>(x => x.Name == "AppTitleBar");
-            */
-
             Grid.SetColumnSpan(this, rootGrid.ColumnDefinitions.Count);
             Grid.SetRowSpan(this, rootGrid.RowDefinitions.Count);
 
@@ -306,15 +301,8 @@ public class FakeContentDialog : Control
 
     void HideImplementation(ContentDialogResult contentDialogResult)
     {
-        if (VisualStateManager.GoToState(this, "DialogHidden", true) == false)
-        {
-
-        }
-
-        if (taskCompletionSource.TrySetResult(contentDialogResult) == false)
-        {
-
-        }
+        _ = VisualStateManager.GoToState(this, "DialogHidden", true);
+        _ = taskCompletionSource.TrySetResult(contentDialogResult);
     }
 
     bool hasSetTemplate;
@@ -327,13 +315,6 @@ public class FakeContentDialog : Control
             return;
         }
         hasSetTemplate = true;
-
-        /*
-        var container = GetTemplateChild("Container") as Border;
-        var groups = VisualStateManager.GetVisualStateGroups(container);
-        var dialogShowingStates = groups.FirstOrDefault(x => x.Name == "DialogShowingStates");
-        var dialogShowing = dialogShowingStates.States.FirstOrDefault(x => x.Name == "DialogShowing");
-        */
 
         var primaryButton = GetTemplateChild("PrimaryButton") as Button;
         var secondaryButton = GetTemplateChild("SecondaryButton") as Button;
@@ -368,124 +349,51 @@ public class FakeContentDialog : Control
 
         if (Title is string title && TitleTemplate is null)
         {
-            // For some reason this doens't just work. Removing the ContentControl.Template xaml works but I
+            // For some reason this doesn't just work. Removing the ContentControl.Template XAML works but I
             // can't replicate it here. Nor can I set a blank ControlTemplate to override it.
-
-            /*
-            var titleControl = GetTemplateChild("Title") as ContentControl;
-            //titleControl.Template = null
-            //titleControl.Template = new ControlTemplate();
-            */
-
-            // This is apparently the only way to load a DataTemplate
-            /*
-            string xaml = @"<DataTemplate xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
-                    <Grid>
-                        <TextBlock Text=""test123"" />
-                    </Grid>
-                </DataTemplate>";
-            var dataTemplate = (DataTemplate)XamlReader.Load(xaml);            
-            TitleTemplate = dataTemplate;
-            */
-
-
-            // But this works, just don't try get the Title after displaying the FakeContentDialog I guess 
+            // Replacing the title with a TextBlock avoids the template conflict.
             var titleTextBlock = new TextBlock() { Text = title };
             Title = titleTextBlock;
         }
 
-        /*
-        // Visual states to set.
-        */
-
-        /*
-        DialogShowingStates
-            - DialogHidden
-            - DialogShowing
-            - DialogShowingWithoutSmokeLayer
-        */
-
-        /*
-        DialogSizingStates
-            - DefaultDialogSizing
-            - FullDialogSizing
-        */
-        if (VisualStateManager.GoToState(this, "DefaultDialogSizing", true) == false)
-        {
-
-        }
-
-        /*
-        ButtonsVisibilityStates
-            - AllVisible
-            - NoneVisible
-            - PrimaryVisible
-            - SecondaryVisible
-            - CloseVisible
-            - PrimaryAndSecondaryVisible
-            - PrimaryAndCloseVisible
-            - SecondaryAndCloseVisible
-        */
+        _ = VisualStateManager.GoToState(this, "DefaultDialogSizing", true);
         var hasPrimary = string.IsNullOrEmpty(PrimaryButtonText) == false;
         var hasSecondary = string.IsNullOrEmpty(SecondaryButtonText) == false;
         var hasClose = string.IsNullOrEmpty(CloseButtonText) == false;
 
         if (hasPrimary == true && hasSecondary == true && hasClose == true)
         {
-            if (VisualStateManager.GoToState(this, "AllVisible", true) == false)
-            {
-            }
+            _ = VisualStateManager.GoToState(this, "AllVisible", true);
         }
         else if (hasPrimary == false && hasSecondary == false && hasClose == false)
         {
-            if (VisualStateManager.GoToState(this, "NoneVisible", true) == false)
-            {
-            }
+            _ = VisualStateManager.GoToState(this, "NoneVisible", true);
         }
         else if (hasPrimary == true && hasSecondary == false && hasClose == false)
         {
-            if (VisualStateManager.GoToState(this, "PrimaryVisible", true) == false)
-            {
-            }
+            _ = VisualStateManager.GoToState(this, "PrimaryVisible", true);
         }
         else if (hasPrimary == false && hasSecondary == true && hasClose == false)
         {
-            if (VisualStateManager.GoToState(this, "SecondaryVisible", true) == false)
-            {
-            }
+            _ = VisualStateManager.GoToState(this, "SecondaryVisible", true);
         }
         else if (hasPrimary == false && hasSecondary == false && hasClose == true)
         {
-            if (VisualStateManager.GoToState(this, "CloseVisible", true) == false)
-            {
-            }
+            _ = VisualStateManager.GoToState(this, "CloseVisible", true);
         }
         else if (hasPrimary == true && hasSecondary == true && hasClose == false)
         {
-            if (VisualStateManager.GoToState(this, "PrimaryAndSecondaryVisible", true) == false)
-            {
-            }
+            _ = VisualStateManager.GoToState(this, "PrimaryAndSecondaryVisible", true);
         }
         else if (hasPrimary == true && hasSecondary == false && hasClose == true)
         {
-            if (VisualStateManager.GoToState(this, "PrimaryAndCloseVisible", true) == false)
-            {
-            }
+            _ = VisualStateManager.GoToState(this, "PrimaryAndCloseVisible", true);
         }
         else if (hasPrimary == false && hasSecondary == true && hasClose == true)
         {
-            if (VisualStateManager.GoToState(this, "SecondaryAndCloseVisible", true) == false)
-            {
-            }
+            _ = VisualStateManager.GoToState(this, "SecondaryAndCloseVisible", true);
         }
 
-        /*
-        DefaultButtonStates
-            - NoDefaultButton
-            - PrimaryAsDefaultButton
-            - SecondaryAsDefaultButton
-            - CloseAsDefaultButton
-        */
         var defaultButtonVisualState = DefaultButton switch
         {
             ContentDialogButton.Primary => "PrimaryAsDefaultButton",
@@ -493,26 +401,10 @@ public class FakeContentDialog : Control
             ContentDialogButton.Close => "CloseAsDefaultButton",
             _ => "NoDefaultButton",
         };
-        if (VisualStateManager.GoToState(this, defaultButtonVisualState, true) == false)
-        {
-
-        }
-
-
-        /*
-        DialogBorderStates
-            - NoBorder
-            - AccentColorBorder
-        */
-        if (VisualStateManager.GoToState(this, "NoBorder", true) == false)
-        {
-
-        }
+        _ = VisualStateManager.GoToState(this, defaultButtonVisualState, true);
+        _ = VisualStateManager.GoToState(this, "NoBorder", true);
 
         // Finally show the dialog.
-        if (VisualStateManager.GoToState(this, "DialogShowing", true) == false)
-        {
-
-        }
+        _ = VisualStateManager.GoToState(this, "DialogShowing", true);
     }
 }

@@ -30,19 +30,6 @@ public sealed partial class GameControl : FakeContentDialog
     {
         this.InitializeComponent();
 
-        // This only works if the grid background has focus.
-        /*
-        KeyUp += (object sender, KeyRoutedEventArgs e) => {
-            if (e.Key == Windows.System.VirtualKey.Escape)
-            {
-                if (DataContext is GameControlModel gameControlModel && gameControlModel.CloseCommand.CanExecute(null))
-                {
-                    gameControlModel.CloseCommand.Execute(null);
-                }
-            }
-        };
-        */
-
         Resources["ContentDialogMinWidth"] = 0;
         Resources["ContentDialogMaxWidth"] = WideDialogWidth;
         Resources["ContentDialogPadding"] = new Thickness(16, 12, 16, 12);
@@ -222,6 +209,6 @@ public sealed partial class GameControl : FakeContentDialog
 
     private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        Debugger.Break();
+        DebuggerHelper.BreakIfAttached();
     }
 }

@@ -84,7 +84,7 @@ internal static class GameAssetPathIndex
         return _assetFiles;
     }
 
-    static IReadOnlyList<DiscoveredGameAsset> EnumerateTree(string installPath)
+    static DiscoveredGameAsset[] EnumerateTree(string installPath)
     {
         var options = CreateEnumerationOptions(recurseSubdirectories: true);
         var files = new FileSystemEnumerable<DiscoveredGameAsset>(
@@ -379,7 +379,7 @@ internal static class GameAssetPathIndex
             if (exhaustiveScan == false)
             {
                 var candidateRoots = roots
-                    .Where(static root => root.CandidateAssets.Count > 0)
+                    .Where(static root => root.CandidateAssets.Length > 0)
                     .ToArray();
                 var candidatePublicationResults = await Task.WhenAll(
                     candidateRoots.Select(static root => root.WhenCandidatePublicationCompleteAsync()))
@@ -405,7 +405,7 @@ internal static class GameAssetPathIndex
                     "without exhaustive fallback.");
 
                 var fastScanMisses = roots
-                    .Where(static root => root.CandidateAssets.Count == 0)
+                    .Where(static root => root.CandidateAssets.Length == 0)
                     .ToArray();
                 foreach (var root in fastScanMisses)
                 {
@@ -552,6 +552,7 @@ internal static class GameAssetPathIndex
             }
             CandidateLibraryReady.TrySetCanceled();
             ContinueExhaustiveScan.TrySetCanceled();
+            _cancellation.Dispose();
         }
     }
 
@@ -615,7 +616,7 @@ internal static class GameAssetPathIndex
         readonly ScanRequest[] _requests;
 
         internal string InstallPath { get; }
-        internal IReadOnlyList<DiscoveredGameAsset> CandidateAssets { get; private set; } = [];
+        internal DiscoveredGameAsset[] CandidateAssets { get; private set; } = [];
 
         internal RootScan(string installPath, ScanRequest[] requests)
         {

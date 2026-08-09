@@ -65,8 +65,7 @@ internal class XboxLibrary : IGameLibrary
             var gamingRootFile = Path.Combine(drive.RootDirectory.FullName, ".GamingRoot");
             if (File.Exists(gamingRootFile))
             {
-                var fileBytes = File.ReadAllBytes(gamingRootFile);
-                var mystring = Encoding.Unicode.GetString(fileBytes);
+                var fileBytes = await File.ReadAllBytesAsync(gamingRootFile).ConfigureAwait(false);
                 // Validate file header.
                 //RGBX
                 if (fileBytes.Length > 5 && fileBytes[0] == 'R' && fileBytes[1] == 'G' && fileBytes[2] == 'B' && fileBytes[3] == 'X')
@@ -312,7 +311,7 @@ internal class XboxLibrary : IGameLibrary
         catch (Exception err)
         {
             Logger.Error(err);
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
     }
 }

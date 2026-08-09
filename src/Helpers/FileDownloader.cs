@@ -52,6 +52,8 @@ public partial class FileDownloader : ObservableObject
 
     public async Task<bool> DownloadFileToStreamAsync(Stream outputStream, CancellationToken cancellationToken = default(CancellationToken), Action<HttpStatusCode>? statusCodeCallback = null, Action<long, long, double>? progressCallback = null)
     {
+        ArgumentNullException.ThrowIfNull(outputStream);
+
         var totalBytesRead = 0L;
         var lastReportedPercent = 0.0;
         var lastReportedBytes = 0L;
@@ -200,7 +202,7 @@ public partial class FileDownloader : ObservableObject
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);
-            uiUpdateTimer?.Stop();
+            uiUpdateTimer?.Dispose();
         }
     }
 }

@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using DLSS_Swapper.Helpers;
+using DLSS_Swapper.Messages;
 using Microsoft.UI.Xaml;
 
 namespace DLSS_Swapper;
@@ -25,8 +27,9 @@ public partial class MainWindowModel : ObservableObject
         // Initialize FlowDirection based on current language
         UpdateFlowDirection();
         
-        // Subscribe to language changes
-        LanguageManager.Instance.OnLanguageChanged += UpdateFlowDirection;
+        WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(
+            this,
+            static (recipient, _) => ((MainWindowModel)recipient).UpdateFlowDirection());
     }
 
     private void UpdateFlowDirection()

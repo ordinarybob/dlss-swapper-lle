@@ -18,6 +18,7 @@ public sealed partial class NetworkTesterWindow : Window
 
     private void OnCurrentWindowClosed(object sender, WindowEventArgs args)
     {
-        ViewModel.TranslationProperties.Dispose();
+        Closed -= OnCurrentWindowClosed;
+        ViewModel.Dispose();
     }
 }

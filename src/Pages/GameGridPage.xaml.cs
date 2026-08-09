@@ -27,20 +27,6 @@ public sealed partial class GameGridPage : Page
 {
     public static string PageTag { get; } = "PageTag_Games";
 
-    /*
-    public List<IGameLibrary> GameLibraries { get; } = new List<IGameLibrary>();
-
-    Dictionary<GameLibrary, ObservableCollection<Game>> allGames = new Dictionary<GameLibrary, ObservableCollection<Game>>();
-
-
-    public List<GameGroup> GroupedGameGroups { get; } = new List<GameGroup>();
-    public List<GameGroup> UngroupedGameGroups { get; } = new List<GameGroup>();
-
-    ObservableCollection<Game> FavouriteGames = new ObservableCollection<Game>();
-    ObservableCollection<Game> AllGames = new ObservableCollection<Game>();
-    */
-
-    bool _loadingGamesAndDlls;
     GridView? _responsiveGridView;
     ScrollViewer? _responsiveGridScrollViewer;
     XamlRoot? _responsiveGridXamlRoot;
@@ -119,39 +105,6 @@ public sealed partial class GameGridPage : Page
             });
         }
 
-        //await LoadGamesAndDlls();
-        //await LoadGamesFromCacheAsync();
-        //UpdateGameLibraries();
-        //await LoadGames();
-    }
-
-
-    async Task LoadGamesAndDlls()
-    {
-        // TODO: REMOVE
-        await Task.Delay(1);
-
-        if (_loadingGamesAndDlls)
-            return;
-
-        _loadingGamesAndDlls = true;
-
-        // TODO: Fade?
-        //LoadingStackPanel.Visibility = Visibility.Visible;
-
-        /*
-        var tasks = new List<Task>();
-        tasks.Add(LoadGamesAsync());
-
-
-        await Task.WhenAll(tasks);
-
-        */
-        App.CurrentApp.RunOnUIThread(() =>
-        {
-            //LoadingStackPanel.Visibility = Visibility.Collapsed;
-            _loadingGamesAndDlls = false;
-        });
     }
 
     internal void ScrollToGame(Game game)

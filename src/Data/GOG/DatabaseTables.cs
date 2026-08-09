@@ -5,33 +5,6 @@ using SQLite;
 
 namespace DLSS_Swapper.Data.GOG;
 
-internal class InstalledBaseProduct
-{
-    [Column("productId")]
-    public int ProductId { get; set; }
-
-    [Column("generation")]
-    public int Generation { get; set; }
-
-    [Column("languageId")]
-    public int LanguageId { get; set; }
-
-    [Column("installationPath")]
-    public string InstallationPath { get; set; } = string.Empty;
-
-    [Column("installationId")]
-    public long InstallationId { get; set; }
-
-    [Column("buildId")]
-    public long BuildId { get; set; }
-
-    [Column("branch")]
-    public string Branch { get; set; } = string.Empty;
-
-    [Column("installationDate")]
-    public string InstallationDate { get; set; } = string.Empty;
-}
-
 internal class LimitedDetail
 {
     [Column("id")]
@@ -69,7 +42,7 @@ internal class LimitedDetail
         {
             if (_imagesData is null && string.IsNullOrEmpty(Images) == false)
             {
-                // Make sure failed deserialize doens't crash the app.
+                // Ensure a failed deserialization does not crash the app.
                 try
                 {
                     _imagesData = JsonSerializer.Deserialize(Images, SourceGenerationContext.Default.LimitedDetailImages);

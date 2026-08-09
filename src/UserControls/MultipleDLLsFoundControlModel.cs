@@ -18,6 +18,7 @@ public partial class MultipleDLLsFoundControlModel : ObservableObject
 
     public MultipleDLLsFoundControlModel(Game game, GameAssetType gameAssetType) : base()
     {
+        ArgumentNullException.ThrowIfNull(game);
         DLLsList = game.GameAssets.Where(x => x.AssetType == gameAssetType).ToList();
     }
 
@@ -28,14 +29,14 @@ public partial class MultipleDLLsFoundControlModel : ObservableObject
         {
             if (File.Exists(gameAsset.Path))
             {
-                Process.Start("explorer.exe", $"/select,{gameAsset.Path}");
+                FileSystemHelper.OpenFolderInExplorerSelectFile(gameAsset.Path);
             }
             else
             {
                 var dllPath = Path.GetDirectoryName(gameAsset.Path) ?? string.Empty;
                 if (Directory.Exists(dllPath))
                 {
-                    Process.Start("explorer.exe", dllPath);
+                    FileSystemHelper.OpenFolderInExplorer(dllPath);
                 }
                 else
                 {

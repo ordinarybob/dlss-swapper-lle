@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,20 +7,23 @@ namespace DLSS_Swapper.UserControls;
 
 public class GameHistoryControlModel
 {
-    readonly WeakReference<GameHistoryControl> _weakControl;
+    readonly Game _game;
 
     public GameHistoryControlModelTranslationProperties TranslationProperties { get; } = new GameHistoryControlModelTranslationProperties();
 
     public List<GameHistory> HistoryRows { get; } = new List<GameHistory>();
 
-    public GameHistoryControlModel(GameHistoryControl control, Game game)
+    public GameHistoryControlModel(Game game)
     {
-        _weakControl = new WeakReference<GameHistoryControl>(control);
+        _game = game;
+    }
 
-        Task.Run(async () =>
-        {
-            var historyRows = await Database.Instance.Connection.Table<GameHistory>().Where(x => x.GameId == game.ID).ToListAsync();
-            HistoryRows.AddRange(historyRows.OrderByDescending(x => x.EventTime));
-        });
+    public async Task LoadAsync()
+    {
+        var historyRows = await Database.Instance.Connection
+            .Table<GameHistory>()
+            .Where(x => x.GameId == _game.ID)
+            .ToListAsync();
+        HistoryRows.AddRange(historyRows.OrderByDescending(x => x.EventTime));
     }
 }

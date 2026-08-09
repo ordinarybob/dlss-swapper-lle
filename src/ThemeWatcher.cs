@@ -10,7 +10,7 @@ namespace DLSS_Swapper;
 
 // Class inspired by https://stackoverflow.com/a/69604613/1253832
 
-public class ThemeWatcher
+public sealed class ThemeWatcher : IDisposable
 {
     private const string RegistryThemeKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
     private const string RegistryThemeValueName = "AppsUseLightTheme";
@@ -21,6 +21,7 @@ public class ThemeWatcher
     ManagementEventWatcher? _contrastWatcher;
     AccessibilitySettings _accessibilitySettings;
     ApplicationTheme _defaultApplicationTheme;
+    bool _disposed;
 
     public enum WindowsTheme
     {
@@ -53,7 +54,7 @@ public class ThemeWatcher
         Stop();
 
 
-        var currentUser = WindowsIdentity.GetCurrent();
+        using var currentUser = WindowsIdentity.GetCurrent();
 
         var themeQuery = string.Format(
             CultureInfo.InvariantCulture,
@@ -80,6 +81,8 @@ public class ThemeWatcher
         catch (Exception err)
         {
             Logger.Error(err);
+            _themeWatcher?.Dispose();
+            _themeWatcher = null;
         }
 
         try
@@ -92,6 +95,8 @@ public class ThemeWatcher
         catch (Exception err)
         {
             Logger.Error(err);
+            _contrastWatcher?.Dispose();
+            _contrastWatcher = null;
         }
 
         Logger.Info($"{GetWindowsTheme()}, {HighContrast}");
@@ -102,8 +107,9 @@ public class ThemeWatcher
     {
         if (_themeWatcher is not null)
         {
-            _themeWatcher.EventArrived -= ContrastWatcher_EventArrived;
+            _themeWatcher.EventArrived -= ThemeWatcher_EventArrived;
             _themeWatcher.Stop();
+            _themeWatcher.Dispose();
             _themeWatcher = null;
             IsWatchingTheme = false;
         }
@@ -112,6 +118,7 @@ public class ThemeWatcher
         {
             _contrastWatcher.EventArrived -= ContrastWatcher_EventArrived;
             _contrastWatcher.Stop();
+            _contrastWatcher.Dispose();
             _contrastWatcher = null;
             IsWatchingContrast = false;
         }
@@ -175,5 +182,17 @@ public class ThemeWatcher
             Logger.Error(err);
             return theme;
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        Stop();
+        GC.SuppressFinalize(this);
     }
 }

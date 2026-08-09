@@ -10,14 +10,17 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using DLSS_Swapper.Data;
 using DLSS_Swapper.Data.NVIDIA;
 using DLSS_Swapper.Extensions;
 using DLSS_Swapper.Helpers;
+using DLSS_Swapper.Messages;
 using DLSS_Swapper.UserControls;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
@@ -48,7 +51,7 @@ public partial class LibraryPageModel : ObservableObject
         if (upscalerSelectorBar is not null)
         {
             // NOTE: DLL type
-            // TODO: Change order based on prefered upscaler.
+            // TODO: Change order based on preferred upscaler.
             upscalerSelectorBar.Items.Add(new SelectorBarItem() { Text = DLLManager.Instance.GetAssetTypeName(GameAssetType.DLSS), Tag = GameAssetType.DLSS });
             upscalerSelectorBar.Items.Add(new SelectorBarItem() { Text = DLLManager.Instance.GetAssetTypeName(GameAssetType.DLSS_G), Tag = GameAssetType.DLSS_G });
             upscalerSelectorBar.Items.Add(new SelectorBarItem() { Text = DLLManager.Instance.GetAssetTypeName(GameAssetType.DLSS_D), Tag = GameAssetType.DLSS_D });
@@ -62,7 +65,9 @@ public partial class LibraryPageModel : ObservableObject
             SelectedSelectorBarItem = upscalerSelectorBar.Items[0];
         }
 
-        LanguageManager.Instance.OnLanguageChanged += OnLanguageChanged;
+        WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(
+            this,
+            static (recipient, _) => ((LibraryPageModel)recipient).OnLanguageChanged());
     }
 
     void OnLanguageChanged()
@@ -84,6 +89,7 @@ public partial class LibraryPageModel : ObservableObject
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
+        ArgumentNullException.ThrowIfNull(e);
         base.OnPropertyChanged(e);
 
         if (e.PropertyName == nameof(SelectedSelectorBarItem))
@@ -295,15 +301,12 @@ public partial class LibraryPageModel : ObservableObject
         }
         catch (Exception err)
         {
-            // If we failed to export lets delete teh temp zip file that was create.
+            // If export failed, remove the incomplete destination zip.
             if (string.IsNullOrEmpty(finalExportZip) == false && File.Exists(finalExportZip))
             {
                 try
                 {
-                    if (File.Exists(finalExportZip))
-                    {
-                        File.Delete(finalExportZip);
-                    }
+                    File.Delete(finalExportZip);
                 }
                 catch (Exception err2)
                 {
@@ -506,7 +509,7 @@ public partial class LibraryPageModel : ObservableObject
             {
                 // This should never happen.
                 Logger.Error("dllRecord.LocalRecord is null");
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
                 importResults.Add(DLLImportResult.FromFail(importedPath, "dllRecord.LocalRecord is null"));
                 return false;
             }
@@ -791,7 +794,6 @@ public partial class LibraryPageModel : ObservableObject
         if (importResults.Any(x => x.Success == true))
         {
             await DLLManager.Instance.SaveImportedManifestJsonAsync();
-            App.CurrentApp.MainWindow.FilterDLLRecords();
         }
 
         loadingDialog.Hide();
@@ -1059,7 +1061,13 @@ public partial class LibraryPageModel : ObservableObject
                 memoryStream.Position = 0;
 
                 var serializer = new XmlSerializer(typeof(ListBucketResult));
-                var listBucketResult = serializer.Deserialize(memoryStream) as ListBucketResult;
+                var readerSettings = new XmlReaderSettings
+                {
+                    DtdProcessing = DtdProcessing.Prohibit,
+                    XmlResolver = null,
+                };
+                using var xmlReader = XmlReader.Create(memoryStream, readerSettings);
+                var listBucketResult = serializer.Deserialize(xmlReader) as ListBucketResult;
 
                 if (listBucketResult is null)
                 {
@@ -1303,10 +1311,11 @@ public partial class LibraryPageModel : ObservableObject
                     currentFileProgressBar.Value = 0;
                 });
 
+                string? tempFilePath = null;
                 try
                 {
                     var tempFileName = $"{Guid.NewGuid().ToString("D")}.tmp";
-                    var tempFilePath = Path.Combine(Storage.GetTemp(), tempFileName);
+                    tempFilePath = Path.Combine(Storage.GetTemp(), tempFileName);
 
                     var didDownload = false;
                     using (var fileStream = File.Create(tempFilePath))
@@ -1351,6 +1360,18 @@ public partial class LibraryPageModel : ObservableObject
                 }
                 finally
                 {
+                    if (tempFilePath is not null)
+                    {
+                        try
+                        {
+                            File.Delete(tempFilePath);
+                        }
+                        catch (Exception err)
+                        {
+                            Logger.Warning($"Unable to remove temporary NGX download {tempFilePath}. {err.Message}");
+                        }
+                    }
+
                     App.CurrentApp.RunOnUIThread(() =>
                     {
                         totalFilesProgressBar.Value += 1;
@@ -1413,7 +1434,6 @@ public partial class LibraryPageModel : ObservableObject
                     // TODO: What to do here?
                     DLLManager.Instance.DeleteImportedDllRecord(record);
                     await DLLManager.Instance.SaveImportedManifestJsonAsync();
-                    App.CurrentApp.MainWindow.FilterDLLRecords();
                 }
                 else
                 {
@@ -1504,7 +1524,7 @@ public partial class LibraryPageModel : ObservableObject
             }
 
            
-            // This will likley not be seen, but keeping it here in case export is very slow (eg. copy over very slow network).
+            // This will likely not be seen, but keep it in case export is very slow (for example, over a network).
             _ = exportingDialog.ShowAsync();
 
             // Give UI time to update and show import screen.

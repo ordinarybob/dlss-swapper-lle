@@ -7,18 +7,19 @@ namespace DLSS_Swapper.Helpers.FSR31;
 
 internal class FSR31Helper
 {
-    // Define the LoadLibrary and GetProcAddress functions
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr LoadLibrary(string lpFileName);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
     private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
 
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool FreeLibrary(IntPtr hModule);
 
-    // Define a delegate for the ffxQuery function
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate FfxApiReturnCodes ffxQueryDelegate(IntPtr context, ref QueryDescGetVersions header);
 
@@ -32,63 +33,50 @@ internal class FSR31Helper
         var hModule = LoadLibrary(dllPath);
         if (hModule == IntPtr.Zero)
         {
-            throw new Exception("Failed to load DLL");
+            throw new InvalidOperationException("Failed to load DLL.");
         }
 
+        var versionQuery = new QueryDescGetVersions();
         try
         {
             var pAddressOfFunctionToCall = GetProcAddress(hModule, "ffxQuery");
             if (pAddressOfFunctionToCall == IntPtr.Zero)
             {
-                throw new Exception("Failed to get function address");
+                throw new InvalidOperationException("Failed to get function address.");
             }
 
-            var ffxQuery = Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(ffxQueryDelegate)) as ffxQueryDelegate;
-            if (ffxQuery is null)
-            {
-                throw new Exception("Failed to get function delegate");
-            }
+            var ffxQuery = Marshal.GetDelegateForFunctionPointer<ffxQueryDelegate>(pAddressOfFunctionToCall);
 
-            var versionQuery = new QueryDescGetVersions();
-
-            //versionQuery.createDescType = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
             versionQuery.createDescType = FxxConsts.FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
-
-            // versionQuery.device = GetDX12Device(); // only for DirectX 12 applications
             versionQuery.device = IntPtr.Zero;
 
-            // uint64_t versionCount = 0;
-            UInt64 versionCount = 0;
+            ulong versionCount = 0;
             versionQuery.outputCount = Marshal.AllocHGlobal(sizeof(UInt64));
-            Marshal.WriteInt64(versionQuery.outputCount, (UInt32)versionCount);
+            Marshal.WriteInt64(versionQuery.outputCount, 0);
 
             Logger.Info("AMDFidelityFXAPI - Reading version count");
-            // get number of versions for allocation
-            // ffxQuery(IntPtr.Zero, &versionQuery.header);
             var returnCode = ffxQuery(IntPtr.Zero, ref versionQuery);
             Logger.Info($"AMDFidelityFXAPI - returnCode: {returnCode}");
 
             if (returnCode != FfxApiReturnCodes.FFX_API_RETURN_OK)
             {
-                throw new Exception($"Failed to get version count. Return code: {returnCode}");
+                throw new InvalidOperationException($"Failed to get version count. Return code: {returnCode}");
             }
 
-            versionCount = (UInt64)Marshal.ReadInt64(versionQuery.outputCount);
+            versionCount = (ulong)Marshal.ReadInt64(versionQuery.outputCount);
             Logger.Info($"AMDFidelityFXAPI - versionCount: {versionCount}");
 
             if (versionCount > 0)
             {
+                if (versionCount > int.MaxValue)
+                {
+                    throw new InvalidOperationException($"The DLL reported an invalid version count: {versionCount}.");
+                }
+
                 var versionCountInt = (int)versionCount;
 
-                //std::vector <const char*> versionNames;
-                //std::vector<uint64_t> versionIds;
-                //m_FsrVersionIds.resize(versionCount);
-                //versionNames.resize(versionCount);
                 var versionNames = new List<string?>(versionCountInt);
-                var versionIds = new List<UInt64>(versionCountInt);
-
-                var versionNamesPtrs = new IntPtr[versionCountInt];
-                var versionIdsPtrs = new IntPtr[versionCountInt];
+                var versionIds = new List<ulong>(versionCountInt);
 
                 try
                 {
@@ -98,38 +86,27 @@ internal class FSR31Helper
                         versionIds.Add(0);
                     }
 
-                    //versionQuery.versionIds = versionIds.data();
-                    //versionQuery.versionNames = versionNames.data();
-
-                    versionQuery.versionIds = Marshal.AllocHGlobal(sizeof(UInt64) * versionCountInt);
-                    versionQuery.versionNames = Marshal.AllocHGlobal(IntPtr.Size * versionCountInt);
+                    versionQuery.versionIds = Marshal.AllocHGlobal(checked(sizeof(UInt64) * versionCountInt));
+                    versionQuery.versionNames = Marshal.AllocHGlobal(checked(IntPtr.Size * versionCountInt));
 
                     for (var i = 0; i < versionCountInt; i++)
                     {
-                        //versionIdsPtrs[i] = Marshal.AllocHGlobal(sizeof(UInt64));
-                        //Marshal.WriteInt64(versionIdsPtrs[i], (long)versionIds[i]);
-                        //Marshal.WriteIntPtr(versionQuery.versionIds, i * IntPtr.Size, versionIdsPtrs[i]);
-
                         Marshal.WriteInt64(versionQuery.versionIds, i * sizeof(UInt64), 0L);
 
-                        versionNamesPtrs[i] = Marshal.StringToHGlobalAnsi(versionNames[i]);
-                        Marshal.WriteIntPtr(versionQuery.versionNames, i * IntPtr.Size, versionNamesPtrs[i]);
+                        Marshal.WriteIntPtr(versionQuery.versionNames, i * IntPtr.Size, IntPtr.Zero);
                     }
 
-                    // fill version ids and names arrays.
-                    //ffxQuery(nullptr, &versionQuery.header);
                     returnCode = ffxQuery(IntPtr.Zero, ref versionQuery);
                     Logger.Info($"AMDFidelityFXAPI - returnCode: {returnCode}");
 
                     if (returnCode != FfxApiReturnCodes.FFX_API_RETURN_OK)
                     {
-                        throw new Exception($"Failed to get version count. Return code: {returnCode}");
+                        throw new InvalidOperationException($"Failed to get version count. Return code: {returnCode}");
                     }
 
                     for (var i = 0; i < versionCountInt; i++)
                     {
-                        //Marshal.ReadIntPtr(versionQuery.versionIds, i)
-                        versionIds[i] = (UInt64)Marshal.ReadInt64(versionQuery.versionIds, i * sizeof(UInt64));
+                        versionIds[i] = (ulong)Marshal.ReadInt64(versionQuery.versionIds, i * sizeof(UInt64));
                         versionNames[i] = Marshal.PtrToStringAnsi(Marshal.ReadIntPtr(versionQuery.versionNames, i * IntPtr.Size));
                     }
 
@@ -137,7 +114,6 @@ internal class FSR31Helper
 
                     for (var i = 0; i < versionCountInt; i++)
                     {
-                        //FFX_SDK_MAKE_VERSION( major, minor, patch ) ( ( major << 22 ) | ( minor << 12 ) | patch )
                         var major = (versionIds[i] >> 22) & 0x3FF;
                         var minor = (versionIds[i] >> 12) & 0x3FF;
                         var patch = versionIds[i] & 0xFFF;
@@ -149,14 +125,6 @@ internal class FSR31Helper
                 }
                 finally
                 {
-                    foreach (var ptr in versionIdsPtrs)
-                    {
-                        //  Marshal.FreeHGlobal(ptr);
-                    }
-                    foreach (var ptr in versionNamesPtrs)
-                    {
-                        Marshal.FreeHGlobal(ptr);
-                    }
                     Marshal.FreeHGlobal(versionQuery.versionIds);
                     Marshal.FreeHGlobal(versionQuery.versionNames);
                 }
@@ -168,7 +136,11 @@ internal class FSR31Helper
         }
         finally
         {
-            FreeLibrary(hModule);
+            if (versionQuery.outputCount != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(versionQuery.outputCount);
+            }
+            _ = FreeLibrary(hModule);
         }
 
         return new List<string?>();

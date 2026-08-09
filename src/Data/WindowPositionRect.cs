@@ -83,6 +83,7 @@ public class WindowPositionRect
 
     public void UpdateFromAppWindow(AppWindow appWindow)
     {
+        ArgumentNullException.ThrowIfNull(appWindow);
         Width = appWindow.Size.Width;
         Height = appWindow.Size.Height;
         X = appWindow.Position.X;

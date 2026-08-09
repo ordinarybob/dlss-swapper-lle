@@ -176,18 +176,20 @@ internal static class AppDataReset
             UseShellExecute = true,
             WorkingDirectory = AppContext.BaseDirectory,
         };
-        Process.Start(startInfo);
+        using var process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("The application could not be restarted after reset.");
     }
 
     static void ShowResetError(string errorMessage)
     {
-        MessageBox(
+        _ = MessageBox(
             IntPtr.Zero,
             $"DLSS Swapper LLE could not completely reset its local app data.\n\n{errorMessage}",
             "Reset local app data failed",
             0x00000010);
     }
 
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
 }

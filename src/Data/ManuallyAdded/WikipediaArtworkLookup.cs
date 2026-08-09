@@ -140,9 +140,9 @@ internal static class WikipediaArtworkLookup
         }
 
         await using var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        return JsonSerializer.Deserialize(
+        return await JsonSerializer.DeserializeAsync(
             responseStream,
-            SourceGenerationContext.Default.WikipediaResponse);
+            SourceGenerationContext.Default.WikipediaResponse).ConfigureAwait(false);
     }
 
     static WikipediaPage? FindExactPage(WikipediaResponse response, string title)

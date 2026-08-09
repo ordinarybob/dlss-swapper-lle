@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DLSS_Swapper.Data;
@@ -24,6 +25,8 @@ public partial class BatchDllRowModel : ObservableObject
         string typeName,
         List<BatchDllOption> dllOptions)
     {
+        ArgumentNullException.ThrowIfNull(typeName);
+        ArgumentNullException.ThrowIfNull(dllOptions);
         Type = type;
         TypeName = typeName;
         DllOptions = dllOptions;

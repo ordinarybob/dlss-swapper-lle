@@ -99,6 +99,7 @@ public partial class AcknowledgementsPageModel : ObservableObject
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
+        ArgumentNullException.ThrowIfNull(e);
         base.OnPropertyChanged(e);
 
         if (e.PropertyName == nameof(SelectedItem))

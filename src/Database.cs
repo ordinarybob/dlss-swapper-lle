@@ -49,7 +49,7 @@ internal class Database
             catch (Exception ex)
             {
                 Logger.Error(ex);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
         }
 
@@ -67,7 +67,7 @@ internal class Database
             catch (Exception ex)
             {
                 Logger.Error(ex);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
         }
 
@@ -208,7 +208,7 @@ internal class Database
                 Logger.Error($"You will need to delete {Storage.GetDBPath()} to remove these errors.");
                 // If you got here you should go fix this, you likely will have to delete the .db file to prevent it re-appearing.
                 // Check your debug output for specific information.
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 #endif
 
@@ -220,7 +220,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
             try
@@ -230,7 +230,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
 
@@ -241,7 +241,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
 
@@ -252,7 +252,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
 
@@ -263,7 +263,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
 
@@ -274,7 +274,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
 
@@ -285,7 +285,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
             try
@@ -295,7 +295,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
             try
@@ -305,7 +305,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
             try
@@ -315,7 +315,7 @@ internal class Database
             catch (Exception err)
             {
                 Logger.Error(err);
-                Debugger.Break();
+                DebuggerHelper.BreakIfAttached();
             }
 
             syncConnection.Close();

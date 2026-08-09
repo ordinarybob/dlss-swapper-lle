@@ -6,7 +6,7 @@ using Windows.UI;
 
 namespace DLSS_Swapper;
 
-public class WindowManager
+public sealed class WindowManager : IDisposable
 {
     readonly List<Window> _windows = new List<Window>();
 
@@ -15,6 +15,7 @@ public class WindowManager
     public static ElementTheme CurrentTheme { get; private set; } = ElementTheme.Default;
 
     ThemeWatcher _themeWatcher;
+    bool _disposed;
 
     public WindowManager()
     {
@@ -26,6 +27,7 @@ public class WindowManager
 
     public void ShowWindow(Window window)
     {
+        ArgumentNullException.ThrowIfNull(window);
         foreach (var oldWindow in _windows)
         {
             if (oldWindow.GetType() == window.GetType())
@@ -38,7 +40,7 @@ public class WindowManager
         window.Closed += Window_Closed;
         window.Activate();
         _windows.Add(window);
-        // TOOD: This will update colours on all windows which is not ideal.
+        // This updates colors on all tracked windows.
         UpdateColors(Settings.Instance.AppTheme);
     }
 
@@ -60,6 +62,7 @@ public class WindowManager
             {
                 windowToClose.Close();
             }
+            Dispose();
         }
     }
 
@@ -239,5 +242,18 @@ public class WindowManager
                 UpdateColorsDark();
             }
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        _themeWatcher.ThemeChanged -= ThemeWatcher_ThemeChanged;
+        _themeWatcher.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

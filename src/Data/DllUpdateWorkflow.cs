@@ -44,6 +44,11 @@ internal static class DllUpdateWorkflow
             records.RemoveAll(record => record.IsDevFile);
         }
 
+        if (Settings.Instance.AllowUntrusted == false)
+        {
+            records.RemoveAll(record => record.IsSignatureValid == false);
+        }
+
         records.RemoveAll(record => record.LocalRecord is null);
         return records;
     }

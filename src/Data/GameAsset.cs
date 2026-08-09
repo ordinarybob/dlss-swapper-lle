@@ -107,27 +107,6 @@ public class GameAsset : IEquatable<GameAsset>
             {
                 _displayName = $"v{DisplayVersion} (v{Version})";
                 return _displayName;
-                /*
-
-                var version = Version.AsSpan();
-
-                // Remove all the .0's, such that 2.5.0.0 becomes 2.5
-                while (version.EndsWith(".0"))
-                {
-                    version = version.Slice(0, version.Length - 2);
-                }
-
-                var dllVersion = version.ToString();
-
-                // If the value is a single value, eg 1, make it 1.0
-                if (dllVersion.Contains(".") == false)
-                {
-                    dllVersion = $"{dllVersion}.0";
-                }
-
-                _displayName = $"v{DisplayVersion} (v{dllVersion})";
-                return _displayName;
-                */
             }
 
             _displayName = $"v{DisplayVersion}";

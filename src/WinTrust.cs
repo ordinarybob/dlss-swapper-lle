@@ -82,7 +82,8 @@ internal static class WinTrust
         CRYPT_E_FILE_ERROR = 0x80092003,
     }
 
-    [DllImport("wintrust.dll", ExactSpelling = true, SetLastError = false, CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("wintrust.dll", ExactSpelling = true, SetLastError = true, CharSet = CharSet.Unicode)]
     internal static extern WinVerifyTrustResult WinVerifyTrust(
         [In] IntPtr hwnd,
         [In][MarshalAs(UnmanagedType.LPStruct)] Guid pgActionID,
@@ -93,7 +94,7 @@ internal static class WinTrust
 
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct WinTrustFileInfo
+    internal struct WinTrustFileInfo : IDisposable
     {
         public UInt32 cbStruct { get; private set; }                // = sizeof(WINTRUST_FILE_INFO)
         public IntPtr pcwszFilePath { get; private set; }           // required, file name to be verified
@@ -103,7 +104,7 @@ internal static class WinTrust
         public WinTrustFileInfo(string filePath)
         {
             cbStruct = (UInt32)Marshal.SizeOf<WinTrustFileInfo>();
-            pcwszFilePath = Marshal.StringToCoTaskMemAuto(filePath);
+            pcwszFilePath = Marshal.StringToCoTaskMemUni(filePath);
             hFile = IntPtr.Zero;
             pgKnownSubject = IntPtr.Zero;
         }
@@ -179,7 +180,7 @@ internal static class WinTrust
 
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct WinTrustData
+    internal struct WinTrustData : IDisposable
     {
         public UInt32 cbStruct { get; set; }                                        // = sizeof(WINTRUST_DATA)
         public IntPtr pPolicyCallbackData { get; set; }                             // optional: used to pass data between the app and policy
@@ -240,14 +241,16 @@ internal static class WinTrust
         WinVerifyTrustResult lStatus;
         uint dwLastError;
 
-        WinTrustFileInfo FileData;
-        WinTrustData WinTrustData;
+        var fileData = default(WinTrustFileInfo);
+        var winTrustData = default(WinTrustData);
+        var policyGuid = new Guid(WINTRUST_ACTION_GENERIC_VERIFY_V2);
+        var trustStateOpened = false;
 
         var validSignature = false;
         try
         {
             // Initialize the WINTRUST_FILE_INFO structure.
-            FileData = new WinTrustFileInfo(fileName);
+            fileData = new WinTrustFileInfo(fileName);
 
             /*
             WVTPolicyGUID specifies the policy to apply on the file
@@ -268,14 +271,12 @@ internal static class WinTrust
             EKU.
             */
 
-            var WVTPolicyGUID = new Guid(WINTRUST_ACTION_GENERIC_VERIFY_V2);
-
             // Initialize the WinVerifyTrust input data structure.
 
 
             // Default all fields to 0.
             ///memset(&WinTrustData, 0, sizeof(WinTrustData));
-            WinTrustData = new WinTrustData(FileData)
+            winTrustData = new WinTrustData(fileData)
             {
                 cbStruct = (UInt32)Marshal.SizeOf<WinTrustData>(),
 
@@ -316,7 +317,8 @@ internal static class WinTrust
 
             // WinVerifyTrust verifies signatures as specified by the GUID 
             // and Wintrust_Data.
-            lStatus = WinVerifyTrust(IntPtr.Zero, WVTPolicyGUID, WinTrustData);
+            lStatus = WinVerifyTrust(IntPtr.Zero, policyGuid, winTrustData);
+            trustStateOpened = true;
 
 
             switch (lStatus)
@@ -395,10 +397,6 @@ internal static class WinTrust
                     break;
             }
 
-            // Any hWVTStateData must be released by a call with close.
-            WinTrustData.dwStateAction = WinTrustDataStateAction.Close;
-
-            lStatus = WinVerifyTrust(IntPtr.Zero, WVTPolicyGUID, WinTrustData);
         }
         catch (Exception err)
         {
@@ -406,61 +404,17 @@ internal static class WinTrust
         }
         finally
         {
-            //FileData.Dispose();
-            //WinTrustData.Dispose();
-
-            /*
-            if (FileData is not null)
+            if (trustStateOpened)
             {
-                FileData.Dispose();
-                //winTrustFileInfo = null;
+                // Any hWVTStateData must be released by a call with close.
+                winTrustData.dwStateAction = WinTrustDataStateAction.Close;
+                _ = WinVerifyTrust(IntPtr.Zero, policyGuid, winTrustData);
             }
 
-            if (WinTrustData is not null)
-            {
-                WinTrustData.Dispose();
-                //WinTrustData = null;
-            }
-            */
+            winTrustData.Dispose();
+            fileData.Dispose();
         }
 
         return validSignature;
     }
-
-
-    /*
-    internal static bool VerifyEmbeddedSignature_Original(string fileName)
-    {
-        WinTrustFileInfo winTrustFileInfo = null;
-        WinTrustData winTrustData = null;
-
-        try
-        {
-            winTrustFileInfo = new WinTrust.WinTrustFileInfo(fileName);
-            winTrustData = new WinTrustData(winTrustFileInfo);
-            var guidAction = new Guid(WinTrust.WINTRUST_ACTION_GENERIC_VERIFY_V2);
-            var result = WinTrust.WinVerifyTrust(WinTrust.INVALID_HANDLE_VALUE, guidAction, winTrustData);
-            return result == WinVerifyTrustResult.Success;
-        }
-        catch (Exception err)
-        {
-            Logger.Error(err);
-            return false;
-        }
-        finally
-        {
-            if (winTrustFileInfo is not null)
-            {
-                winTrustFileInfo.Dispose();
-                winTrustFileInfo = null;
-            }
-
-            if (winTrustData is not null)
-            {
-                winTrustData.Dispose();
-                winTrustData = null;
-            }
-        }
-    }
-    */
 }

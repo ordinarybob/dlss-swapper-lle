@@ -32,17 +32,21 @@ internal class SystemDetails
             stringBuilder.AppendLine("System");
             try
             {
-                string query = "SELECT * FROM Win32_OperatingSystem";
-                var searcher = new System.Management.ManagementObjectSearcher(query);
+                const string query = "SELECT * FROM Win32_OperatingSystem";
+                using var searcher = new System.Management.ManagementObjectSearcher(query);
+                using var operatingSystems = searcher.Get();
 
-                foreach (var os in searcher.Get())
+                foreach (var os in operatingSystems)
                 {
-                    stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"OS: {os["Caption"]}");
+                    using (os)
+                    {
+                        stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"OS: {os["Caption"]}");
+                    }
                 }
             }
-            catch (Exception)
+            catch (Exception err)
             {
-                // NOOP
+                Logger.Warning($"Unable to query Windows operating-system details. {err.Message}");
             }
             stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"OSVersion: {Environment.OSVersion.VersionString}");
             stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"Is64BitOperatingSystem: {Environment.Is64BitOperatingSystem}");

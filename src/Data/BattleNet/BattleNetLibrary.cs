@@ -67,7 +67,7 @@ internal partial class BattleNetLibrary : IGameLibrary
         { "w2r", new BattleNetLauncherGame("w2r", "w2r", "W2R", "Warcraft II Remastered") },
         { "hs_beta", new BattleNetLauncherGame("hs_beta", "hsb", "WTCG", "Hearthstone") },
         
-        // Launcher isnt working, but that is ok as WoW is hidden.
+        // The launcher is not working, but that is acceptable because WoW is hidden.
         { "wow_classic", new BattleNetLauncherGame("wow_classic", "wow_classic", "Wow_wow_classic", "World of Warcraft Classic") }, // to verify
 
         // Does not appear in aggregate.json so they have no cover photos.
@@ -76,17 +76,7 @@ internal partial class BattleNetLibrary : IGameLibrary
         { "nina", new BattleNetLauncherGame("nina", "nina", "NINA", "Call of Duty: Modern Warfare II") },
 
 
-        // Phone games have no need to show up in app.
-        //{ "anbs", new BattleNetLauncherGame("anbs", "anbs", "ANBS", "Diablo Immortal") },
-        //{ "gryphon", new BattleNetLauncherGame("gryphon", "gryphon", "GRY", "Warcraft Rumble") },
-        
-        /*
-        { "d2", "Diablo® II" },
-        { "d2LOD", "Diablo® II: Lord of Destruction®" },
-        { "w3ROC", "Warcraft® III: Reign of Chaos" },
-        { "w3tft", "Warcraft® III: The Frozen Throne®" },
-        { "sca", "StarCraft® Anthology" },
-        */
+        // Mobile-only titles such as Diablo Immortal and Warcraft Rumble are intentionally excluded.
     };
 
     // Ignore the Battle.net agent installation and all World of Warcraft installations.
@@ -104,29 +94,6 @@ internal partial class BattleNetLibrary : IGameLibrary
 
     public bool IsInstalled()
     {
-        // Registry checks if Battle.net client is installed, however the games can remain installed even if the client is uninstalled.
-        /*
-        using (var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
-        {
-            using (var bnet = hklm.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Battle.net"))
-            {
-                if (bnet is null)
-                {
-                    return false;
-                }
-
-                var installPath = bnet.GetValue("InstallLocation")?.ToString();
-                if (string.IsNullOrWhiteSpace(installPath))
-                {
-                    return false;
-                }
-
-                var clientPath = Path.Combine(installPath, "Battle.net.exe");
-                return File.Exists(clientPath) && File.Exists(_productDbPath);
-            }
-        }
-        */
-
         var agentPath = Directory.GetParent(_productDbPath)?.FullName;
         return Directory.Exists(agentPath) && File.Exists(_productDbPath);
     }
@@ -185,7 +152,9 @@ internal partial class BattleNetLibrary : IGameLibrary
                 {
                     using (var fileStream = File.OpenRead(aggregateJsonPath))
                     {
-                        var aggregate = JsonSerializer.Deserialize(fileStream, SourceGenerationContext.Default.Aggregate);
+                        var aggregate = await JsonSerializer.DeserializeAsync(
+                            fileStream,
+                            SourceGenerationContext.Default.Aggregate).ConfigureAwait(false);
                         if (aggregate is not null)
                         {
                             foreach (var aggregateItem in aggregate.Installed)
@@ -388,7 +357,7 @@ internal partial class BattleNetLibrary : IGameLibrary
         catch (Exception err)
         {
             Logger.Error(err);
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
     }
 }

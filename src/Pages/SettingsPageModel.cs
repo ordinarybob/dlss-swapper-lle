@@ -162,24 +162,25 @@ public partial class SettingsPageModel : ObservableObject
             GridViewPreferredRows = Settings.Instance.GridViewPreferredRows;
         });
 
-        LanguageManager.Instance.OnLanguageChanged += () =>
+        WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(this, static (recipient, _) =>
         {
-            DLSSOnScreenIndicatorOptions.RaiseCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            LoggingLevelOptions.RaiseCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            var model = (SettingsPageModel)recipient;
+            model.DLSSOnScreenIndicatorOptions.RaiseCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            model.LoggingLevelOptions.RaiseCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 
-            foreach (var dlssPresetOption in DlssPresetOptions)
+            foreach (var dlssPresetOption in model.DlssPresetOptions)
             {
                 dlssPresetOption.UpdateNameFromTranslation();
             }
-            foreach (var dlssPresetOption in DlssDPresetOptions)
+            foreach (var dlssPresetOption in model.DlssDPresetOptions)
             {
                 dlssPresetOption.UpdateNameFromTranslation();
             }
-            foreach (var dlssPresetOption in DlssGPresetOptions)
+            foreach (var dlssPresetOption in model.DlssGPresetOptions)
             {
                 dlssPresetOption.UpdateNameFromTranslation();
             }
-        };
+        });
 
         var knownLanguages = LanguageManager.Instance.GetKnownLanguages();
         foreach (var knownLanguage in knownLanguages)
@@ -300,6 +301,7 @@ public partial class SettingsPageModel : ObservableObject
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
+        ArgumentNullException.ThrowIfNull(e);
         base.OnPropertyChanged(e);
 
         if (_hasSetDefaults == false)
@@ -365,12 +367,10 @@ public partial class SettingsPageModel : ObservableObject
         else if (e.PropertyName == nameof(AllowUntrusted))
         {
             Settings.Instance.AllowUntrusted = AllowUntrusted;
-            App.CurrentApp.MainWindow.FilterDLLRecords();
         }
         else if (e.PropertyName == nameof(AllowDebugDlls))
         {
             Settings.Instance.AllowDebugDlls = AllowDebugDlls;
-            App.CurrentApp.MainWindow.FilterDLLRecords();
         }
         else if (e.PropertyName == nameof(OnlyShowDownloadedDlls))
         {

@@ -166,6 +166,7 @@ public partial class GameGridPageModel : ObservableObject
 
     public GameGridPageModel(GameGridPage gameGridPage)
     {
+        ArgumentNullException.ThrowIfNull(gameGridPage);
         WeakReferenceMessenger.Default.Register<GameLibrariesStateChangedMessage>(this, async (sender, message) =>
         {
             GameManager.Instance.RemoveAllGames();

@@ -152,20 +152,15 @@ internal class FileSystemHelper
                 }.AsReadOnly();
             }
 
-            var extensions = new COMDLG_FILTERSPEC[filters.Count];
-
-            for (var i = 0; i < filters.Count; ++i)
+            var extensions = CreateFilterSpecs(filters, out var unmanagedFilterStrings);
+            try
             {
-                unsafe
-                {
-                    COMDLG_FILTERSPEC extension;
-                    extension.pszSpec = (char*)Marshal.StringToHGlobalUni(filters[i].Spec);
-                    extension.pszName = (char*)Marshal.StringToHGlobalUni(filters[i].Name);
-                    extensions[i] = extension;
-                }
+                fileOpenDialog.SetFileTypes(extensions);
             }
-
-            fileOpenDialog.SetFileTypes(extensions);
+            finally
+            {
+                FreeFilterStrings(unmanagedFilterStrings);
+            }
 
 
             // If no default is provided (or doesn't exist) use My Computer.
@@ -280,20 +275,15 @@ internal class FileSystemHelper
                 }.AsReadOnly();
             }
 
-            var extensions = new COMDLG_FILTERSPEC[filters.Count];
-
-            for (var i = 0; i < filters.Count; ++i)
+            var extensions = CreateFilterSpecs(filters, out var unmanagedFilterStrings);
+            try
             {
-                unsafe
-                {
-                    COMDLG_FILTERSPEC extension;
-                    extension.pszSpec = (char*)Marshal.StringToHGlobalUni(filters[i].Spec);
-                    extension.pszName = (char*)Marshal.StringToHGlobalUni(filters[i].Name);
-                    extensions[i] = extension;
-                }
+                fileSaveDialog.SetFileTypes(extensions);
             }
-
-            fileSaveDialog.SetFileTypes(extensions);
+            finally
+            {
+                FreeFilterStrings(unmanagedFilterStrings);
+            }
 
 
             // If no default is provided (or doesn't exist) use My Computer.
@@ -352,11 +342,64 @@ internal class FileSystemHelper
 
     internal static void OpenFolderInExplorer(string path)
     {
-        Process.Start("explorer.exe", path);
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var startInfo = new ProcessStartInfo("explorer.exe")
+        {
+            UseShellExecute = true,
+        };
+        startInfo.ArgumentList.Add(path);
+        using var process = Process.Start(startInfo);
+    }
+
+    static unsafe COMDLG_FILTERSPEC[] CreateFilterSpecs(
+        IReadOnlyList<FileFilter> filters,
+        out IntPtr[] unmanagedStrings)
+    {
+        var extensions = new COMDLG_FILTERSPEC[filters.Count];
+        unmanagedStrings = new IntPtr[filters.Count * 2];
+        try
+        {
+            for (var i = 0; i < filters.Count; ++i)
+            {
+                var specPointer = Marshal.StringToHGlobalUni(filters[i].Spec);
+                unmanagedStrings[i * 2] = specPointer;
+                var namePointer = Marshal.StringToHGlobalUni(filters[i].Name);
+                unmanagedStrings[(i * 2) + 1] = namePointer;
+                extensions[i] = new COMDLG_FILTERSPEC
+                {
+                    pszSpec = (char*)specPointer,
+                    pszName = (char*)namePointer,
+                };
+            }
+
+            return extensions;
+        }
+        catch
+        {
+            FreeFilterStrings(unmanagedStrings);
+            throw;
+        }
+    }
+
+    static void FreeFilterStrings(IEnumerable<IntPtr> unmanagedStrings)
+    {
+        foreach (var pointer in unmanagedStrings)
+        {
+            if (pointer != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(pointer);
+            }
+        }
     }
 
     internal static void OpenFolderInExplorerSelectFile(string path)
     {
-        Process.Start("explorer.exe", $"/select,{path}");
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var startInfo = new ProcessStartInfo("explorer.exe")
+        {
+            UseShellExecute = true,
+        };
+        startInfo.ArgumentList.Add($"/select,{path}");
+        using var process = Process.Start(startInfo);
     }
 }

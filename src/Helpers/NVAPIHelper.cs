@@ -9,9 +9,11 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using DLSS_Swapper.Data;
 using DLSS_Swapper.Data.DLSS;
 using DLSS_Swapper.Data.NVIDIA;
+using DLSS_Swapper.Messages;
 using DLSS_Swapper.UserControls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -54,28 +56,9 @@ public class NVIDIAApiException : Exception
 internal partial class NVAPIHelper : ObservableObject
 {
     // Via https://github.com/NVIDIA/nvapi/blob/main/NvApiDriverSettings.h
-    //const uint NGX_DLAA_OVERRIDE_ID = 0x10E41DF4;
-    //const uint NGX_DLSSG_MULTI_FRAME_COUNT_ID = 0x104D6667;
-    //const uint NGX_DLSS_FG_OVERRIDE_ID = 0x10E41E03;
-    //const uint NGX_DLSS_FG_OVERRIDE_RESERVED_KEY1_ID = 0x10C7D57E;
-    //const uint NGX_DLSS_FG_OVERRIDE_RESERVED_KEY2_ID = 0x10C7D519;
-    //const uint NGX_DLSS_OVERRIDE_OPTIMAL_SETTINGS_ID = 0x10AFB76C;
-    //const uint NGX_DLSS_RR_MODE_ID = 0x10BD9423;
-    //const uint NGX_DLSS_RR_OVERRIDE_ID = 0x10E41E02;
     const uint NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION_ID = 0x10E41DF7;
-    //const uint NGX_DLSS_RR_OVERRIDE_RESERVED_KEY1_ID = 0x10C7D86C;
-    //const uint NGX_DLSS_RR_OVERRIDE_RESERVED_KEY2_ID = 0x10C7D597;
-    //const uint NGX_DLSS_RR_OVERRIDE_SCALING_RATIO_ID = 0x10C7D4A2;
-    //const uint NGX_DLSS_SR_MODE_ID = 0x10AFB768;
-    //const uint NGX_DLSS_SR_OVERRIDE_ID = 0x10E41E01;
     const uint NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION_ID = 0x10E41DF3;
-    //const uint NGX_DLSS_SR_OVERRIDE_RESERVED_KEY1_ID = 0x10C7D684;
-    //const uint NGX_DLSS_SR_OVERRIDE_RESERVED_KEY2_ID = 0x10C7D82C;
-    //const uint NGX_DLSS_SR_OVERRIDE_SCALING_RATIO_ID = 0x10E41DF5;
-    //const uint NGX_DLSS_FG_OVERRIDE_ID = 0x10E41E03,
     const uint NGX_DLSS_FG_OVERRIDE_RENDER_PRESET_SELECTION_ID = 0x10E41DF1;
-    //const uint NGX_DLSS_FG_OVERRIDE_RESERVED_KEY1_ID = 0x10C7D57E;
-    //const uint NGX_DLSS_FG_OVERRIDE_RESERVED_KEY2_ID = 0x10C7D519;
 
     [ObservableProperty]
     public partial bool IsSupported { get; set; }
@@ -96,9 +79,11 @@ internal partial class NVAPIHelper : ObservableObject
 
     Status? _lastErrorStatus;
 
-    [DllImport("kernel32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr LoadLibrary(string dllToLoad);
 
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("kernel32.dll")]
     private static extern bool FreeLibrary(IntPtr hModule);
 
@@ -262,7 +247,7 @@ internal partial class NVAPIHelper : ObservableObject
 
                 // TODO: This takes ~400ms on my dev machine (in debug mode)
                 // Time this in release mode and see if it can be done better (eg, of main thread so it isn't blocking)
-                // It may also pay to do initilize this earlier, as currently this will all run when
+                // It may also pay to initialize this earlier, as currently this will all run when
                 // you click your first game.
                 _cachedProfiles = _driverSettingSession.Profiles.AsParallel().ToDictionary(profile => profile.Name);
                 IsSupported = true;
@@ -273,7 +258,9 @@ internal partial class NVAPIHelper : ObservableObject
             Logger.Error(err, "If you don't have an NVIDIA card this is expected and can be ignored.");
         }
 
-        LanguageManager.Instance.OnLanguageChanged += LanguageManager_OnLanguageChanged;
+        WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(
+            this,
+            static (recipient, _) => ((NVAPIHelper)recipient).LanguageManager_OnLanguageChanged());
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -363,20 +350,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(false, 0);
             }
 
-            /*
-            var overrideSetting = _driverSettingSession.CurrentGlobalProfile.GetSetting(NGX_DLSS_SR_OVERRIDE_ID);
-            if (overrideSetting is null)
-            {
-                Logger.Info("Current global override setting is null, no DLSS preset exists.");
-                return new NVAPIResult<uint>(true, 0);
-            }
-
-            if (overrideSetting.CurrentValue is uint overrideSettingValue && overrideSettingValue == 0)
-            {
-                return new NVAPIResult<uint>(true, 0);
-            }
-            */
-
             var profileSetting = _driverSettingSession.CurrentGlobalProfile.GetSetting(NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION_ID);
             if (profileSetting is null)
             {
@@ -400,13 +373,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not get setting for GetGlobalDLSSPreset. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Could not get setting for GetGlobalDLSSPreset.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0);
         }
     }
@@ -426,24 +399,10 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(false, 0);
             }
 
-            /*
-            var overrideSetting = _driverSettingSession.CurrentGlobalProfile.GetSetting(NGX_DLSS_RR_OVERRIDE_ID);
-            if (overrideSetting is null)
-            {
-                Logger.Info("Current global override setting is null, no DLSS D preset exists.");
-                return new NVAPIResult<uint>(true, 0);
-            }
-
-            if (overrideSetting.CurrentValue is uint overrideSettingValue && overrideSettingValue == 0)
-            {
-                return new NVAPIResult<uint>(true, 0);
-            }
-            */
-
             var profileSetting = _driverSettingSession.CurrentGlobalProfile.GetSetting(NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION_ID);
             if (profileSetting is null)
             {
-                Logger.Info("Current global profile setting is null, no get DLSS D preset exists.");
+                Logger.Info("Current global profile setting is null; no DLSS D preset exists.");
                 return new NVAPIResult<uint>(true, 0);
             }
 
@@ -463,13 +422,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not get setting for GetGlobalDLSSDPreset. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Could not get setting for GetGlobalDLSSDPreset.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0);
         }
     }
@@ -489,24 +448,10 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(false, 0);
             }
 
-            /*
-            var overrideSetting = _driverSettingSession.CurrentGlobalProfile.GetSetting(NGX_DLSS_FG_OVERRIDE_ID);
-            if (overrideSetting is null)
-            {
-                Logger.Info("Current global override setting is null, no DLSS G preset exists.");
-                return new NVAPIResult<uint>(true, 0);
-            }
-
-            if (overrideSetting.CurrentValue is uint overrideSettingValue && overrideSettingValue == 0)
-            {
-                return new NVAPIResult<uint>(true, 0);
-            }
-            */
-
             var profileSetting = _driverSettingSession.CurrentGlobalProfile.GetSetting(NGX_DLSS_FG_OVERRIDE_RENDER_PRESET_SELECTION_ID);
             if (profileSetting is null)
             {
-                Logger.Info("Current global profile setting is null, no get DLSS G preset exists.");
+                Logger.Info("Current global profile setting is null; no DLSS G preset exists.");
                 return new NVAPIResult<uint>(true, 0);
             }
 
@@ -526,13 +471,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not get setting for GetGlobalDLSSGPreset. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Could not get setting for GetGlobalDLSSGPreset.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0);
         }
     }
@@ -553,7 +498,6 @@ internal partial class NVAPIHelper : ObservableObject
             }
 
             _driverSettingSession.CurrentGlobalProfile.SetSetting(NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION_ID, preset);
-            //_driverSettingSession.CurrentGlobalProfile.SetSetting(NGX_DLSS_SR_OVERRIDE_ID, preset == 0 ? 0u : 1u);
             _driverSettingSession.Save();
 
             return new NVAPIResult<bool>(true, true);
@@ -566,13 +510,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not set setting for SetGlobalDLSSPreset with preset {preset}. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Could not set setting for SetGlobalDLSSPreset with preset {preset}.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false);
         }
     }
@@ -593,7 +537,6 @@ internal partial class NVAPIHelper : ObservableObject
             }
 
             _driverSettingSession.CurrentGlobalProfile.SetSetting(NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION_ID, preset);
-            //_driverSettingSession.CurrentGlobalProfile.SetSetting(NGX_DLSS_RR_OVERRIDE_ID, preset == 0 ? 0u : 1u);
             _driverSettingSession.Save();
 
             return new NVAPIResult<bool>(true, true);
@@ -606,13 +549,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not set setting for SetGlobalDLSSDPreset with preset {preset}. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Could not set setting for SetGlobalDLSSDPreset with preset {preset}.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false);
         }
     }
@@ -633,7 +576,6 @@ internal partial class NVAPIHelper : ObservableObject
             }
 
             _driverSettingSession.CurrentGlobalProfile.SetSetting(NGX_DLSS_FG_OVERRIDE_RENDER_PRESET_SELECTION_ID, preset);
-            //_driverSettingSession.CurrentGlobalProfile.SetSetting(NGX_DLSS_FG_OVERRIDE_ID, preset == 0 ? 0u : 1u);
             _driverSettingSession.Save();
 
             return new NVAPIResult<bool>(true, true);
@@ -646,13 +588,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not set setting for SetGlobalDLSSGPreset with preset {preset}. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Could not set setting for SetGlobalDLSSGPreset with preset {preset}.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false);
         }
     }
@@ -673,14 +615,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(false, 0);
             }
 
-            /*
-            var overrideSetting = closestProfile.Settings.FirstOrDefault(x => x.SettingId == NGX_DLSS_SR_OVERRIDE_ID);
-            if (overrideSetting is not null && overrideSetting.CurrentValue is uint overrideValue && overrideValue == 0)
-            {
-                return new NVAPIResult<uint>(true, 0);
-            }
-            */
-
             var profileSetting = closestProfile.Settings.FirstOrDefault(x => x.SettingId == NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION_ID);
             if (profileSetting is not null && profileSetting.CurrentValue is uint currentValue)
             {
@@ -698,13 +632,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not get setting for GetGameDLSSPreset for game {game.Title}. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Could not get setting for GetGameDLSSPreset for game {game.Title}.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0);
         }
     }
@@ -725,14 +659,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(false, 0);
             }
 
-            /*
-            var overrideSetting = closestProfile.Settings.FirstOrDefault(x => x.SettingId == NGX_DLSS_RR_OVERRIDE_ID);
-            if (overrideSetting is not null && overrideSetting.CurrentValue is uint overrideValue && overrideValue == 0)
-            {
-                return new NVAPIResult<uint>(true, 0);
-            }
-            */
-
             var profileSetting = closestProfile.Settings.FirstOrDefault(x => x.SettingId == NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION_ID);
             if (profileSetting is not null && profileSetting.CurrentValue is uint currentValue)
             {
@@ -750,13 +676,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not get setting for GetGameDLSSDPreset for game {game.Title}. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Could not get setting for GetGameDLSSDPreset for game {game.Title}.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0);
         }
     }
@@ -777,14 +703,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(false, 0);
             }
 
-            /*
-            var overrideSetting = closestProfile.Settings.FirstOrDefault(x => x.SettingId == NGX_DLSS_FG_OVERRIDE_ID);
-            if (overrideSetting is not null && overrideSetting.CurrentValue is uint overrideValue && overrideValue == 0)
-            {
-                return new NVAPIResult<uint>(true, 0);
-            }
-            */
-
             var profileSetting = closestProfile.Settings.FirstOrDefault(x => x.SettingId == NGX_DLSS_FG_OVERRIDE_RENDER_PRESET_SELECTION_ID);
             if (profileSetting is not null && profileSetting.CurrentValue is uint currentValue)
             {
@@ -802,13 +720,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not get setting for GetGameDLSSGPreset for game {game.Title}. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Could not get setting for GetGameDLSSGPreset for game {game.Title}.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<uint>(false, 0);
         }
     }
@@ -830,7 +748,6 @@ internal partial class NVAPIHelper : ObservableObject
             }
 
             gameProfile.SetSetting(NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION_ID, preset);
-            //gameProfile.SetSetting(NGX_DLSS_SR_OVERRIDE_ID, preset == 0 ? 0u : 1u);
             _driverSettingSession.Save();
 
             game.DlssPreset = preset;
@@ -845,13 +762,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not set setting for SetGameDLSSPreset for game {game.Title} with preset {preset}. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Could not set setting for SetGameDLSSPreset for game {game.Title} with preset {preset}.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false);
         }
     }
@@ -873,7 +790,6 @@ internal partial class NVAPIHelper : ObservableObject
             }
 
             gameProfile.SetSetting(NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION_ID, preset);
-            //gameProfile.SetSetting(NGX_DLSS_RR_OVERRIDE_ID, preset == 0 ? 0u : 1u);
             _driverSettingSession.Save();
 
             game.DlssDPreset = preset;
@@ -888,13 +804,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not set setting for SetGameDLSSDPreset for game {game.Title} with preset {preset}. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Could not set setting for SetGameDLSSDPreset for game {game.Title} with preset {preset}.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false);
         }
     }
@@ -916,7 +832,6 @@ internal partial class NVAPIHelper : ObservableObject
             }
 
             gameProfile.SetSetting(NGX_DLSS_FG_OVERRIDE_RENDER_PRESET_SELECTION_ID, preset);
-            //gameProfile.SetSetting(NGX_DLSS_FG_OVERRIDE_ID, preset == 0 ? 0u : 1u);
             _driverSettingSession.Save();
 
             game.DlssGPreset = preset;
@@ -931,13 +846,13 @@ internal partial class NVAPIHelper : ObservableObject
                 PermissionIssue = true;
             }
             Logger.Error(ex, $"Could not set setting for SetGameDLSSGPreset for game {game.Title} with preset {preset}. ({ex.Status})");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false, ex.Status);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Could not set setting for SetGameDLSSGPreset for game {game.Title} with preset {preset}.");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return new NVAPIResult<bool>(false, false);
         }
     }
@@ -1087,12 +1002,8 @@ internal partial class NVAPIHelper : ObservableObject
                 {
                     Array.Clear(buffer);
                     var bytesRead = stream.Read(buffer, 0, buffer.Length);
-                    using (var md5 = MD5.Create())
-                    {
-                        var computedHash = md5.ComputeHash(buffer, 0, bytesRead);
-                        //Log.Information($"{i} - {Convert.ToHexStringLower(computedHash)}");
-                        partHashes.Add(computedHash);
-                    }
+                    var computedHash = MD5.HashData(buffer.AsSpan(0, bytesRead));
+                    partHashes.Add(computedHash);
                 }
 
                 // Concatenate all raw MD5 hashes onto one long byte array
@@ -1106,15 +1017,12 @@ internal partial class NVAPIHelper : ObservableObject
                 }
 
                 // MD5 the final large byte array
-                using (var md5 = MD5.Create())
+                var finalHash = MD5.HashData(allHashes);
+                var hashStringWithQuotes = $"\"{Convert.ToHexStringLower(finalHash)}-{partHashes.Count}\"";
+                var valid = string.Equals(hashStringWithQuotes, hash);
+                if (valid)
                 {
-                    var finalHash = md5.ComputeHash(allHashes);
-                    var hashStringWithQuotes = $"\"{Convert.ToHexStringLower(finalHash)}-{partHashes.Count}\"";
-                    var valid = string.Equals(hashStringWithQuotes, hash);
-                    if (valid)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
         }
@@ -1122,13 +1030,9 @@ internal partial class NVAPIHelper : ObservableObject
         {
             stream.Position = 0;
 
-            using (var md5 = MD5.Create())
-            {
-                var computedHash = md5.ComputeHash(stream);
-                var hashStringWithQuotes = $"\"{Convert.ToHexStringLower(computedHash).ToLowerInvariant()}\"";
-                var valid = string.Equals(hashStringWithQuotes, hash);
-                return valid;
-            }
+            var computedHash = MD5.HashData(stream);
+            var hashStringWithQuotes = $"\"{Convert.ToHexStringLower(computedHash)}\"";
+            return string.Equals(hashStringWithQuotes, hash);
         }
 
         return false;

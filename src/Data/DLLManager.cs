@@ -181,13 +181,13 @@ internal class DLLManager
                     using (var stream = File.Create(manifestPath))
                     {
                         memoryStream.Position = 0;
-                        memoryStream.CopyTo(stream);
+                        await memoryStream.CopyToAsync(stream).ConfigureAwait(false);
                     }
                 }
                 catch (Exception err)
                 {
                     Logger.Error(err);
-                    Debugger.Break();
+                    DebuggerHelper.BreakIfAttached();
                 }
 
                 await ProcessManifestsAsync().ConfigureAwait(false);
@@ -198,7 +198,7 @@ internal class DLLManager
         catch (Exception err)
         {
             Logger.Error(err);
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return false;
         }
     }
@@ -469,7 +469,7 @@ internal class DLLManager
                 Logger.Error(err, $"Could not delete {legacyExpectedPath}");
             }
 
-            // If the old zip father is empty we can delete it.
+            // If the old zip folder is empty we can delete it.
             if (Directory.GetFiles(zipPath).Length == 0 && Directory.GetDirectories(zipPath).Length == 0)
             {
                 try
@@ -542,7 +542,7 @@ internal class DLLManager
                         {
                             // This should never happen.
                             Logger.Error($"oldZipPath ({oldZipPath}) does not exist.");
-                            Debugger.Break();
+                            DebuggerHelper.BreakIfAttached();
                             continue;
                         }
 
@@ -570,7 +570,7 @@ internal class DLLManager
                     catch (Exception err)
                     {
                         Logger.Error(err);
-                        Debugger.Break();
+                        DebuggerHelper.BreakIfAttached();
                     }
                 }
             }
@@ -678,7 +678,7 @@ internal class DLLManager
         }
 
         // Now that we have loaded DLL records we want to add the importedRecords back into that list.
-        if (importedManifestRecords?.Any() == true)
+        if (importedManifestRecords?.Count > 0)
         {
             foreach (var importedRecord in importedManifestRecords)
             {
@@ -1383,7 +1383,7 @@ internal class DLLManager
         if (recordList is null)
         {
             // For some reason we couldn't get the recordList, is this a new DLL type?
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
             return;
         }
 

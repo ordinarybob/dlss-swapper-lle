@@ -10,21 +10,13 @@ internal static class FileStreamExtensions
     {
         fileStream.Position = 0;
 
-        using (var md5 = MD5.Create())
-        {
-            var hash = md5.ComputeHash(fileStream);
-            return BitConverter.ToString(hash).Replace("-", "").ToUpperInvariant();
-        }
+        return Convert.ToHexString(MD5.HashData(fileStream));
     }
 
     internal static string GetSha256Hash(this Stream fileStream)
     {
         fileStream.Position = 0;
 
-        using (var sha256 = SHA256.Create())
-        {
-            var hash = sha256.ComputeHash(fileStream);
-            return BitConverter.ToString(hash).Replace("-", "").ToUpperInvariant();
-        }
+        return Convert.ToHexString(SHA256.HashData(fileStream));
     }
 }

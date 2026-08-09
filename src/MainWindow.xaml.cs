@@ -1,7 +1,9 @@
 using DLSS_Swapper.Data;
 using DLSS_Swapper.Helpers;
+using DLSS_Swapper.Messages;
 using DLSS_Swapper.Pages;
 using DLSS_Swapper.UserControls;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -35,12 +37,15 @@ public sealed partial class MainWindow : Window
 
     readonly WindowPositionRect _trackedWindow = new WindowPositionRect();
 
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("shell32.dll", CharSet = CharSet.Auto)]
     static extern IntPtr ExtractAssociatedIcon(IntPtr hInst, string iconPath, ref IntPtr index);
 
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("user32.dll", SetLastError = true)]
     static extern int DestroyIcon(IntPtr hIcon);
 
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("user32.dll")]
     static extern uint GetDpiForWindow(IntPtr hWnd);
 
@@ -138,7 +143,7 @@ public sealed partial class MainWindow : Window
             // Release the icon.
             if (_windowIcon != IntPtr.Zero)
             {
-                DestroyIcon(_windowIcon);
+                _ = DestroyIcon(_windowIcon);
                 _windowIcon = IntPtr.Zero;
             }
         };
@@ -161,11 +166,9 @@ public sealed partial class MainWindow : Window
 
         UpdateSettingsTabLabel();
 
-        // Update settings text when language changes.
-        LanguageManager.Instance.OnLanguageChanged += () =>
-        {
-            UpdateSettingsTabLabel();
-        };
+        WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(
+            this,
+            static (recipient, _) => ((MainWindow)recipient).UpdateSettingsTabLabel());
     }
 
     RectInt32 GetDefaultWindowRect()
@@ -470,8 +473,6 @@ public sealed partial class MainWindow : Window
             await dialog.ShowAsync();
         }
 
-        //FilterDLLRecords();
-
         // Yeet this into the void and let it load in the background.
         _ = DLLManager.Instance.UpdateManifestAsync();
 
@@ -482,30 +483,4 @@ public sealed partial class MainWindow : Window
 
     }
 
-    /// <summary>
-    ///
-    /// </summary>
-    // Previously: FilterDLSSRecords
-    internal void FilterDLLRecords()
-    {
-        // TODO: Reimplement
-        /*
-        var newDlssRecordsList = new List<DLLRecord>();
-        if (Settings.Instance.AllowUntrusted)
-        {
-            newDlssRecordsList.AddRange(App.CurrentApp.Manifest.DLSS);
-            newDlssRecordsList.AddRange(App.CurrentApp.ImportedManifest.DLSS);
-        }
-        else
-        {
-            newDlssRecordsList.AddRange(App.CurrentApp.Manifest.DLSS.Where(x => x.IsSignatureValid == true));
-            newDlssRecordsList.AddRange(App.CurrentApp.ImportedManifest.DLSS.Where(x => x.IsSignatureValid == true));
-        }
-
-        newDlssRecordsList.Sort();
-        CurrentDLSSRecords.Clear();
-        CurrentDLSSRecords.AddRange(newDlssRecordsList);
-        */
-
-    }
 }

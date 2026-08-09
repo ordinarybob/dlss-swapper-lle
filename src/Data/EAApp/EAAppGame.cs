@@ -65,8 +65,8 @@ internal class EAAppGame : Game
             return;
         }
                
-        var extension = Path.GetExtension(DisplayIconPath) ?? string.Empty;
-        if (extension?.Equals(".exe", StringComparison.InvariantCultureIgnoreCase) == true)
+        var extension = Path.GetExtension(DisplayIconPath);
+        if (extension.Equals(".exe", StringComparison.InvariantCultureIgnoreCase))
         {
             using (var memoryStream = new MemoryStream())
             {
@@ -108,7 +108,7 @@ internal class EAAppGame : Game
                         }
                         else
                         {
-                            Console.WriteLine("Icon not found.");
+                            Logger.Warning($"Icon not found for {DisplayIconPath} in game {Title}.");
                         }
                     }
 
@@ -126,11 +126,11 @@ internal class EAAppGame : Game
                 }
             }
         }
-        else if (extension?.Equals(".bmp", StringComparison.InvariantCultureIgnoreCase) == true ||
-                extension?.Equals(".png", StringComparison.InvariantCultureIgnoreCase) == true ||
-                extension?.Equals(".jpg", StringComparison.InvariantCultureIgnoreCase) == true ||
-                extension?.Equals(".jpeg", StringComparison.InvariantCultureIgnoreCase) == true ||
-                extension?.Equals(".webp", StringComparison.InvariantCultureIgnoreCase) == true)
+        else if (extension.Equals(".bmp", StringComparison.InvariantCultureIgnoreCase) ||
+                extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase) ||
+                extension.Equals(".jpg", StringComparison.InvariantCultureIgnoreCase) ||
+                extension.Equals(".jpeg", StringComparison.InvariantCultureIgnoreCase) ||
+                extension.Equals(".webp", StringComparison.InvariantCultureIgnoreCase))
         {
             using (var fileStream = File.OpenRead(DisplayIconPath))
             {

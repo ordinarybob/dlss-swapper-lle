@@ -26,7 +26,7 @@ internal static class FileVersionInfoExtensions
         catch (Exception err)
         {
             Logger.Error(err, $"{fileVersionInfo.FileName}");
-            Debugger.Break();
+            DebuggerHelper.BreakIfAttached();
         }
 
         return string.Empty;

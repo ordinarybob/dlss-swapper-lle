@@ -23,6 +23,8 @@ public partial class BatchDllPickerControlModel : ObservableObject
         EasyContentDialog parentDialog,
         IReadOnlyList<Game> games)
     {
+        ArgumentNullException.ThrowIfNull(parentDialog);
+        ArgumentNullException.ThrowIfNull(games);
         _parentDialogWeakReference = new WeakReference<EasyContentDialog>(parentDialog);
         parentDialog.IsPrimaryButtonEnabled = false;
 
