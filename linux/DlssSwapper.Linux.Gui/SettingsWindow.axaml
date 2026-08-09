@@ -1,0 +1,86 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DlssSwapper.Linux.Gui.SettingsWindow"
+        Title="DLSS Swapper LLE — Settings"
+        Width="820"
+        Height="760"
+        MinWidth="620"
+        MinHeight="520"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="*,Auto" Margin="20">
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="18">
+        <TextBlock Text="Settings" FontSize="27" FontWeight="SemiBold" />
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Performance and grid" Classes="sectionTitle" />
+            <CheckBox x:Name="HddModeCheckBox"
+                      Content="My game library is on a HDD" />
+            <TextBlock Text="HDD mode uses 2 scan workers and 1 artwork worker. Standard mode uses 15 and 38."
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <TextBlock Text="Columns" VerticalAlignment="Center" />
+              <NumericUpDown x:Name="GridColumnsInput" Minimum="1" Maximum="24" Width="90" />
+              <TextBlock Text="Rows" VerticalAlignment="Center" />
+              <NumericUpDown x:Name="GridRowsInput" Minimum="1" Maximum="24" Width="90" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Fallback cover art" Classes="sectionTitle" />
+            <TextBlock Text="Manually added games that do not resolve on Steam use this MediaWiki source. Only exact title matches and HTTPS portrait images from the allowed host are accepted."
+                       TextWrapping="Wrap" />
+            <TextBlock Text="MediaWiki API endpoint" FontWeight="SemiBold" />
+            <TextBox x:Name="MediaWikiEndpointTextBox" />
+            <TextBlock Text="Allowed image host" FontWeight="SemiBold" />
+            <TextBox x:Name="MediaWikiHostTextBox" />
+            <Button Content="Reset Wikipedia source"
+                    HorizontalAlignment="Left"
+                    Click="ResetArtworkSource_Click" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Fast scan paths" Classes="sectionTitle" />
+            <TextBlock Text="Deep Scan adds reusable layouts to learned and custom patterns automatically. Use * for exactly one directory level."
+                       TextWrapping="Wrap" />
+            <Expander Header="Built-in patterns">
+              <TextBox x:Name="BuiltInPatternsTextBox"
+                       IsReadOnly="True"
+                       AcceptsReturn="True"
+                       FontFamily="Monospace"
+                       MinHeight="180"
+                       MaxHeight="280"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto" />
+            </Expander>
+            <TextBlock Text="Learned and custom patterns" FontWeight="SemiBold" />
+            <TextBox x:Name="CustomPatternsTextBox"
+                     AcceptsReturn="True"
+                     FontFamily="Monospace"
+                     MinHeight="140"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     PlaceholderText="One relative pattern per line" />
+          </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="ValidationTextBlock"
+                   Foreground="#FFB4AB"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="1"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="10"
+                Margin="0,16,0,0">
+      <Button Content="Cancel" Click="Cancel_Click" MinWidth="110" />
+      <Button Content="Save" Classes="primary" Click="Save_Click" MinWidth="110" />
+    </StackPanel>
+  </Grid>
+</Window>

@@ -229,6 +229,40 @@ public sealed class LibraryStateStore
         return Path.Combine(applicationData, "DLSS Swapper LLE", "Linux");
     }
 
+    public static bool TryValidateArtworkSource(
+        string? apiValue,
+        string? hostValue,
+        out string apiEndpoint,
+        out string imageHost,
+        out string error)
+    {
+        apiEndpoint = string.Empty;
+        imageHost = string.Empty;
+        error = string.Empty;
+        if (!Uri.TryCreate(apiValue?.Trim(), UriKind.Absolute, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttps
+            || string.IsNullOrWhiteSpace(uri.Host)
+            || !string.IsNullOrEmpty(uri.UserInfo)
+            || !string.IsNullOrEmpty(uri.Query)
+            || !string.IsNullOrEmpty(uri.Fragment))
+        {
+            error = "Enter an absolute HTTPS MediaWiki API URL without credentials, a query, or a fragment.";
+            return false;
+        }
+
+        var host = hostValue?.Trim().TrimEnd('.');
+        if (string.IsNullOrWhiteSpace(host)
+            || Uri.CheckHostName(host) != UriHostNameType.Dns)
+        {
+            error = "Enter one DNS host name for cover images, without a scheme or path.";
+            return false;
+        }
+
+        apiEndpoint = uri.AbsoluteUri;
+        imageHost = host.ToLowerInvariant();
+        return true;
+    }
+
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
@@ -255,24 +289,25 @@ public sealed class LibraryStateStore
 
     private static string NormalizeMediaWikiEndpoint(string? value)
     {
-        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)
-            || uri.Scheme != Uri.UriSchemeHttps
-            || !string.IsNullOrEmpty(uri.UserInfo)
-            || !string.IsNullOrEmpty(uri.Query)
-            || !string.IsNullOrEmpty(uri.Fragment))
-        {
-            return LinuxLibraryState.DefaultMediaWikiApiEndpoint;
-        }
-
-        return uri.AbsoluteUri;
+        return TryValidateArtworkSource(
+            value,
+            LinuxLibraryState.DefaultMediaWikiImageHost,
+            out var endpoint,
+            out _,
+            out _)
+            ? endpoint
+            : LinuxLibraryState.DefaultMediaWikiApiEndpoint;
     }
 
     private static string NormalizeImageHost(string? value)
     {
-        var host = value?.Trim().TrimEnd('.');
-        return Uri.CheckHostName(host) is UriHostNameType.Dns or UriHostNameType.IPv4
-            or UriHostNameType.IPv6
-            ? host!.ToLowerInvariant()
+        return TryValidateArtworkSource(
+            LinuxLibraryState.DefaultMediaWikiApiEndpoint,
+            value,
+            out _,
+            out var host,
+            out _)
+            ? host
             : LinuxLibraryState.DefaultMediaWikiImageHost;
     }
 }

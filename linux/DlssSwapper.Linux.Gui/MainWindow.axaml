@@ -111,6 +111,10 @@
                   Margin="0,0,8,8"
                   IsEnabled="{Binding CanInteract}"
                   Click="RestoreExcluded_Click" />
+          <Button Content="Settings"
+                  Margin="0,0,8,8"
+                  IsEnabled="{Binding CanInteract}"
+                  Click="Settings_Click" />
         </WrapPanel>
       </StackPanel>
     </Border>

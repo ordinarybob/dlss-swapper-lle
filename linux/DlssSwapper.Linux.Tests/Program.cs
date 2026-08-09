@@ -600,6 +600,27 @@ internal static class Program
             "MediaWiki image host");
         AssertEqual(1, reloaded.RestoreSteamGames(), "restored Steam exclusion count");
         AssertEqual(4, reloaded.Merge(discovery).Count, "restored Steam game merge");
+        Assert(
+            LibraryStateStore.TryValidateArtworkSource(
+                "https://wiki.example.invalid/w/api.php",
+                "uploads.example.invalid",
+                out var validatedEndpoint,
+                out var validatedHost,
+                out _),
+            "valid artwork source was rejected");
+        AssertEqual(
+            "https://wiki.example.invalid/w/api.php",
+            validatedEndpoint,
+            "validated artwork endpoint");
+        AssertEqual("uploads.example.invalid", validatedHost, "validated artwork host");
+        Assert(
+            !LibraryStateStore.TryValidateArtworkSource(
+                "http://wiki.example.invalid/w/api.php?unsafe=1",
+                "https://uploads.example.invalid/path",
+                out _,
+                out _,
+                out _),
+            "unsafe artwork source was accepted");
 
         var stateJson = File.ReadAllText(store.StatePath);
         Assert(!stateJson.Contains(nested, StringComparison.Ordinal),

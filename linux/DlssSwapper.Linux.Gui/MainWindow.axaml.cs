@@ -234,6 +234,26 @@ public sealed partial class MainWindow : Window
         await RefreshLibraryAsync(runInitialDeepScan: false);
     }
 
+    private async void Settings_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetLibrary(out var library))
+        {
+            return;
+        }
+
+        var saved = await new SettingsWindow(library).ShowDialog<bool>(this);
+        if (saved)
+        {
+            _steamRootsTextBox.Text = string.Join(
+                Environment.NewLine,
+                library.State.AdditionalSteamRoots);
+            _viewModel.StatusText = library.State.HddMode
+                ? "Settings saved. HDD scan and artwork limits are active."
+                : "Settings saved. Standard scan and artwork limits are active.";
+            await RefreshLibraryAsync(runInitialDeepScan: false);
+        }
+    }
+
     private void SelectAll_Click(object? sender, RoutedEventArgs e)
     {
         foreach (var game in _viewModel.Games)
