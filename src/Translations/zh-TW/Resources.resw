@@ -162,15 +162,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>DLSS Swapper 啟動失敗</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>請在 DLSS Swapper 的 GitHub 儲存庫建立一個</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>新的問題回報</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value>並在「附加上下文」部分提供以下資訊。</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>啟動失敗</value>
   </data>
@@ -564,15 +555,6 @@
   <data name="General_Yes" xml:space="preserve">
     <value>開啟</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>您目前有 {0} 已安裝。</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper 已更新。</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>有更新可供安裝</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>已下載。</value>
   </data>
@@ -685,14 +667,6 @@
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper 需要關閉。</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>GitHub 問題回報</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>我們無法從您的電腦或伺服器載入 manifest.json。
-
-如果這個問題持續發生，請在 GitHub 的問題回報系統提交回報。</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>更新清單</value>
   </data>
@@ -716,9 +690,6 @@
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>複製測試輸出</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>建立問題回報。</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>自訂代理測試</value>
@@ -840,12 +811,6 @@
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>故障排除指南</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>回饋</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>您可以在 DLSS Swapper 上提出功能建議或回報問題。</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>忽略目錄</value>
   </data>
@@ -860,9 +825,6 @@
   </data>
   <data name="SettingsPage_Logging" xml:space="preserve">
     <value>日誌紀錄</value>
-  </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>目前安裝的版本已為最新版本。</value>
   </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>銘謝</value>
@@ -881,9 +843,6 @@
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>允許不受信任的檔案</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>檢查更新</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>僅顯示已下載的 DLL 檔案</value>

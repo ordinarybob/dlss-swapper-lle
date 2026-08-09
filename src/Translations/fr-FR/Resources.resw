@@ -177,15 +177,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>DLSS Swapper n'a pas pu démarrer</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Veuillez ouvrir un </value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>nouveau ticket</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value> sur le dépôt GitHub de DLSS Swapper et fournir les informations suivantes dans la section contexte supplémentaire.</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>Échec du lancement</value>
   </data>
@@ -653,16 +644,6 @@ Si vous avez vérifié ces points et que votre jeu n'apparaît toujours pas, il 
   <data name="General_Yes" xml:space="preserve">
     <value>Oui</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>Vous avez actuellement {0} installé.</value>
-    <comment>{0} est la version actuellement installée.</comment>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper vient d'être mis à jour</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Mise à jour disponible</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Déjà téléchargé.</value>
   </data>
@@ -779,14 +760,6 @@ N'importez des DLL que depuis des sources de confiance.</value>
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper doit se fermer</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>Problèmes GitHub</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>Nous n'avons pas pu charger manifest.json depuis votre ordinateur ou depuis Internet.
-
-Si cela persiste, veuillez déposer un rapport dans notre suivi de problèmes sur GitHub.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Mettre à jour le manifeste</value>
   </data>
@@ -814,9 +787,6 @@ Pour cette raison, nous vous recommandons d'être prudent avec les jeux multijou
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Copier les résultats du test</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Créer un rapport de bug</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Test d'agent utilisateur personnalisé</value>
@@ -939,12 +909,6 @@ Pour cette raison, nous vous recommandons d'être prudent avec les jeux multijou
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>Guide général de dépannage</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Donner un avis</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>Vous pouvez suggérer une fonctionnalité ou signaler un problème sur DLSS Swapper</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Chemins ignorés</value>
   </data>
@@ -980,9 +944,6 @@ Pour cette raison, nous vous recommandons d'être prudent avec les jeux multijou
   <data name="SettingsPage_Logging_Warning" xml:space="preserve">
     <value>Avertissement</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>Aucune nouvelle mise à jour disponible.</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Remerciements</value>
   </data>
@@ -1001,9 +962,6 @@ Pour cette raison, nous vous recommandons d'être prudent avec les jeux multijou
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Autoriser les non approuvés</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Vérifier les mises à jour</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Afficher uniquement les DLL téléchargées</value>

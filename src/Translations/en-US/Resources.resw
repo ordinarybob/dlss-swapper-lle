@@ -177,15 +177,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>DLSS Swapper has failed to launch</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Please open a </value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>new issue</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value> on the DLSS Swapper GitHub repository and provide the following information in the additional context section.</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>Failed to Launch</value>
   </data>
@@ -727,43 +718,6 @@ If you have checked these and your game is still not showing up there may be a b
   <data name="General_Yes" xml:space="preserve">
     <value>Yes</value>
   </data>
-  <data name="GitHubUpdater_CouldNotRunInstaller" xml:space="preserve">
-    <value>Could not run the installer at this time. Please try again later, or manually install the update.</value>
-  </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>You currently have {0} installed.</value>
-    <comment>{0} is the currently installed version.</comment>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper just updated</value>
-  </data>
-  <data name="GitHubUpdater_DownloadComplete_Title" xml:space="preserve">
-    <value>Download Complete</value>
-  </data>
-  <data name="GitHubUpdater_DownloadingUpdate_Title" xml:space="preserve">
-    <value>Downloading Update</value>
-  </data>
-  <data name="GitHubUpdater_DownloadProgress" xml:space="preserve">
-    <value>Progress</value>
-  </data>
-  <data name="GitHubUpdater_Install" xml:space="preserve">
-    <value>Install</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Update Available</value>
-  </data>
-  <data name="GitHubUpdater_UpdateDownloadFailed" xml:space="preserve">
-    <value>Could not download update.</value>
-  </data>
-  <data name="GitHubUpdater_UpdateReadyToInstall" xml:space="preserve">
-    <value>Update is now ready to install.</value>
-  </data>
-  <data name="GitHubUpdater_Updating_Title" xml:space="preserve">
-    <value>Updating</value>
-  </data>
-  <data name="GitHubUpdater_ViewUpdate" xml:space="preserve">
-    <value>View Update</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Already downloaded.</value>
   </data>
@@ -922,14 +876,6 @@ Only import dlls from sources you trust.</value>
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper must close</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>GitHub Issues</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>We were unable to load manifest.json from your computer or from the internet.
-
-If this keeps happening please file an report in our issue tracker on GitHub.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Update manifest</value>
   </data>
@@ -969,9 +915,6 @@ Because of this we recommend using caution for multiplayer games.</value>
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Copy test results</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Create bug report</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Custom user agent test</value>
@@ -1121,12 +1064,6 @@ Because of this we recommend using caution for multiplayer games.</value>
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>General troubleshooting guide</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Give Feedback</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>You can suggest a feature or report a problem or on the DLSS Swapper</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Ignored Paths</value>
   </data>
@@ -1165,9 +1102,6 @@ Because of this we recommend using caution for multiplayer games.</value>
   <data name="SettingsPage_Networking" xml:space="preserve">
     <value>Networking</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>No new updates are available.</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Acknowledgements</value>
   </data>
@@ -1189,9 +1123,6 @@ Because of this we recommend using caution for multiplayer games.</value>
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Allow Untrusted</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Check for updates</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Only Show Downloaded DLLs</value>

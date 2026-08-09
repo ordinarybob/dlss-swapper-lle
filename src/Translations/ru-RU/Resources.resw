@@ -174,15 +174,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>DLSS Swapper не удалось запустить</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Пожалуйста, откройте</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>новый выпуск</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value> в репозитории DLSS Swapper GitHub и предоставьте следующую информацию в разделе дополнительной связи..</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>Не удалось запустить</value>
   </data>
@@ -639,43 +630,6 @@
   <data name="General_Yes" xml:space="preserve">
     <value>Да</value>
   </data>
-  <data name="GitHubUpdater_CouldNotRunInstaller" xml:space="preserve">
-    <value>Не удалось запустить установщик в данный момент. Пожалуйста, попробуйте снова позже или установите обновление вручную.
-</value>
-  </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>В настоящее время у вас установлено {0}.</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper был обновлен</value>
-  </data>
-  <data name="GitHubUpdater_DownloadComplete_Title" xml:space="preserve">
-    <value>Загрузка завершена</value>
-  </data>
-  <data name="GitHubUpdater_DownloadingUpdate_Title" xml:space="preserve">
-    <value>Загрузка обновления</value>
-  </data>
-  <data name="GitHubUpdater_DownloadProgress" xml:space="preserve">
-    <value>Прогресс</value>
-  </data>
-  <data name="GitHubUpdater_Install" xml:space="preserve">
-    <value>Установка</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Доступно обновление</value>
-  </data>
-  <data name="GitHubUpdater_UpdateDownloadFailed" xml:space="preserve">
-    <value>Не удалось загрузить обновление.</value>
-  </data>
-  <data name="GitHubUpdater_UpdateReadyToInstall" xml:space="preserve">
-    <value>Обновление готово к установке.</value>
-  </data>
-  <data name="GitHubUpdater_Updating_Title" xml:space="preserve">
-    <value>Обновление</value>
-  </data>
-  <data name="GitHubUpdater_ViewUpdate" xml:space="preserve">
-    <value>Просмотреть обновление</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Уже загружено.</value>
   </data>
@@ -827,14 +781,6 @@
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper должен закрыться</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>Проблемы GitHub</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>Мы не смогли загрузить файл manifest.json с вашего компьютера или из интернета.
-
-Если эта проблема повторяется, пожалуйста, отправьте отчет в нашу систему отслеживания проблем на GitHub.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Обновление метаданных</value>
   </data>
@@ -860,9 +806,6 @@
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Скопировать результаты теста</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Создать отчет об ошибке</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Тест пользовательского агента</value>
@@ -1011,12 +954,6 @@
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>Общее руководство по устранению неполадок</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Оставить отзыв</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>Вы можете предложить функцию или сообщить о проблеме по DLSS Swapper</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Игнорируемые пути</value>
   </data>
@@ -1053,9 +990,6 @@
   <data name="SettingsPage_Networking" xml:space="preserve">
     <value>Сеть</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>Новых обновлений нет.</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Благодарности</value>
   </data>
@@ -1076,9 +1010,6 @@
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Разрешить непроверенные</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Проверить наличие обновлений</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Показывать только загруженные DLL</value>

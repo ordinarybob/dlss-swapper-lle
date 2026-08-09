@@ -162,15 +162,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>فشل تشغيل DLSS Swapper</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>يُرجى فتح </value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>بلاغ جديد</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value>في مستودع GitHub الخاص بـ DLSS Swapper وتقديم المعلومات التالية في قسم "جهات الاتصال الإضافية"</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>فشل التشغيل</value>
   </data>
@@ -557,15 +548,6 @@
   <data name="General_Yes" xml:space="preserve">
     <value>نعم</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>لديك حاليًا {0} مُثبّتًا</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>تم تحديث DLSS Swapper للتو</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>هناك تحديث متوفر</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>تم التنزيل مسبقًا</value>
   </data>
@@ -671,12 +653,6 @@
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>يجب إغلاق DLSS Swapper</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>بلاغات GitHub</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>لم نتمكن من تحميل manifest.json من جهازك أو من الإنترنت. إذا استمرت هذه المشكلة، يُرجى تقديم بلاغ في أداة تتبع المشاكل (issue tracker) على GitHub.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>تحديث manifest</value>
   </data>
@@ -701,9 +677,6 @@
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>نسخ نتائج الاختبار</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>إنشاء بلاغ خطأ</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>اختبار user agent مخصص</value>
@@ -821,12 +794,6 @@
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>دليل استكشاف المشاكل الشائعة</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>إرسال ملاحظات</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>يمكنك اقتراح ميزة أو الإبلاغ عن مشكلة على DLSS Swapper</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>المسارات المُتجاهلة</value>
   </data>
@@ -841,9 +808,6 @@
   </data>
   <data name="SettingsPage_Logging" xml:space="preserve">
     <value>التسجيل</value>
-  </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>لا توجد تحديثات جديدة متوفرة</value>
   </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>الشكر والتقدير</value>
@@ -862,9 +826,6 @@
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>السماح بغير الموثوق به</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>التحقق من التحديثات</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>عرض ملفات DLL المُحمّلة فقط</value>

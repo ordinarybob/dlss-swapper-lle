@@ -174,15 +174,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>Не вдалося запустити DLSS Swapper</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Будь ласка, відкрийте</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>нову проблему</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value> у репозиторії DLSS Swapper на GitHub та надайте наступну інформацію в розділі додаткового контексту.</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>Не вдалося запустити</value>
   </data>
@@ -630,15 +621,6 @@
   <data name="General_Yes" xml:space="preserve">
     <value>Так</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>У вас зараз встановлено {0}.</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper щойно оновився</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Доступне оновлення</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Вже завантажено.</value>
   </data>
@@ -751,14 +733,6 @@
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper буде закрито</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>Проблеми GitHub</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>Нам не вдалося завантажити manifest.json з вашого комп’ютера або з Інтернету.
-
-Якщо це повторюється, будь ласка, повідомте про це в нашому трекері проблем на GitHub.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Оновити маніфест</value>
   </data>
@@ -784,9 +758,6 @@
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Копіювати результати тесту</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Створити звіт про помилку</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Тест користувацького агента</value>
@@ -908,12 +879,6 @@
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>Загальний посібник з усунення несправностей</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Залишити відгук</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>Ви можете запропонувати функцію або повідомити про проблему DLSS Swapper</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Ігноровані шляхи</value>
   </data>
@@ -947,9 +912,6 @@
   <data name="SettingsPage_Logging_Warning" xml:space="preserve">
     <value>Попередження</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>Нових оновлень немає.</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Подяки</value>
   </data>
@@ -967,9 +929,6 @@
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Дозволити ненадійні</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Перевірити наявність оновлень</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Показувати лише завантажені DLL</value>

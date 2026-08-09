@@ -177,15 +177,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>DLSS Swapper ei käynnistynyt</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Avaa </value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>uusi ilmoitus</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value> DLSS Swapperin GitHub-varastossa ja anna seuraavat tiedot lisäkontekstissa.</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>Käynnistäminen epäonnistui</value>
   </data>
@@ -653,16 +644,6 @@ Jos olet tarkistanut nämä ja peliäsi ei silti näy, saattaa se olla ohjelmist
   <data name="General_Yes" xml:space="preserve">
     <value>Kyllä</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>Sinulla on tällä hetkellä {0} asennettuna.</value>
-    <comment>{0} is the currently installed version.</comment>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper päivitettiin juuri</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Päivitys saatavilla</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Jo ladattu.</value>
   </data>
@@ -779,14 +760,6 @@ Tuo DLL-tiedostoja vain luotetuista lähteistä.</value>
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper täytyy sulkea</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>GitHub-ilmoitukset</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>Emme voineet ladata manifest.json-tiedostoa tietokoneeltasi tai internetistä.
-
-Jos tämä jatkuu, ilmoita ongelmasta GitHub-seurantajärjestelmässämme.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Päivitä manifesti</value>
   </data>
@@ -814,9 +787,6 @@ Tästä syystä suosittelemme varovaisuutta moninpeleille.</value>
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Kopioi testitulokset</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Luo virheraportti</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Mukautettu käyttäjäagentin testi</value>
@@ -939,12 +909,6 @@ Tästä syystä suosittelemme varovaisuutta moninpeleille.</value>
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>Yleinen vianetsintäopas</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Anna palautetta</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>Voit ehdottaa ominaisuutta tai ilmoittaa ongelmasta DLSS Swapperin</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Ohitetut polut</value>
   </data>
@@ -980,9 +944,6 @@ Tästä syystä suosittelemme varovaisuutta moninpeleille.</value>
   <data name="SettingsPage_Logging_Warning" xml:space="preserve">
     <value>Varoitukset</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>Uusia päivityksiä ei ole saatavilla.</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Tunnustukset</value>
   </data>
@@ -1001,9 +962,6 @@ Tästä syystä suosittelemme varovaisuutta moninpeleille.</value>
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Salli epäluotetut</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Tarkista päivitykset</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Näytä vain ladatut DLL-tiedostot</value>

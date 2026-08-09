@@ -174,15 +174,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>راه‌اندازی DLSS Swapper با خطا مواجه شد</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Please open a </value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>موضوع جدید</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value>در مخزن گیت‌هاب DLSS Swapper باز کنید و اطلاعات زیر را در بخش زمینه اضافی ارائه دهید.</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>عدم موفقیت در راه‌اندازی</value>
   </data>
@@ -640,42 +631,6 @@
   <data name="General_Yes" xml:space="preserve">
     <value>بله</value>
   </data>
-  <data name="GitHubUpdater_CouldNotRunInstaller" xml:space="preserve">
-    <value>در حال حاضر اجرای اینستالر امکان‌پذیر نیست. لطفاً بعداً دوباره تلاش کنید، یا آپدیت را به صورت دستی نصب کنید.</value>
-  </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>شما در حال حاضر {0} نصب شده دارید.</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>برنامه د ال اس اس سواپر به‌روزرسانی شد</value>
-  </data>
-  <data name="GitHubUpdater_DownloadComplete_Title" xml:space="preserve">
-    <value>دانلود به پایان رسید</value>
-  </data>
-  <data name="GitHubUpdater_DownloadingUpdate_Title" xml:space="preserve">
-    <value>در حال دانلود آپدیت</value>
-  </data>
-  <data name="GitHubUpdater_DownloadProgress" xml:space="preserve">
-    <value>میزان پیشرفت</value>
-  </data>
-  <data name="GitHubUpdater_Install" xml:space="preserve">
-    <value>نصب</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>به‌روزرسانی در دسترس است</value>
-  </data>
-  <data name="GitHubUpdater_UpdateDownloadFailed" xml:space="preserve">
-    <value>امکان دانلود آپدیت وجود ندارد.</value>
-  </data>
-  <data name="GitHubUpdater_UpdateReadyToInstall" xml:space="preserve">
-    <value>آپدیت اکنون آماده نصب است.</value>
-  </data>
-  <data name="GitHubUpdater_Updating_Title" xml:space="preserve">
-    <value>در حال آپدیت شدن</value>
-  </data>
-  <data name="GitHubUpdater_ViewUpdate" xml:space="preserve">
-    <value>مشاهده آپدیت</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>قبلا دانلود شده.</value>
   </data>
@@ -827,14 +782,6 @@
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>برنامه DLSS Swapper باید بسته شود</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>مشکلات گیت‌هاب</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>ما نتوانستیم فایل manifest.json را از کامپیوتر شما یا از اینترنت بارگذاری کنیم.
-
-اگر این مشکل همچنان ادامه داشت، لطفاً آن را در بخش گزارش مشکلات (Issue Tracker) ما در گیت‌هاب ثبت کنید.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>به‌روزرسانی manifest</value>
   </data>
@@ -860,9 +807,6 @@
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>کپی نتایج تست</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>یجاد گزارش باگ</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>تست سفارشی یوزر ایجنت</value>
@@ -1011,12 +955,6 @@
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>راهنمای عیب‌یابی عمومی</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>ارسال بازخورد</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>شما می‌توانید یک ویژگی را پیشنهاد دهید یا یک مشکل را در DLSS Swapper گزارش دهید</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>مسیرهای نادیده گرفته شده</value>
   </data>
@@ -1053,9 +991,6 @@
   <data name="SettingsPage_Networking" xml:space="preserve">
     <value>اتصالات شبکه</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>هیچ به‌روزرسانی جدیدی در دسترس نیست.</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>تقدیر و تشکر</value>
   </data>
@@ -1076,9 +1011,6 @@
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>اجازه دادن به منابع غیرقابل اعتماد</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>بررسی برای به‌روزرسانی‌ها</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>فقط نمایش فایل‌های DLL دانلود شده</value>

@@ -171,15 +171,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>No s'ha pogut iniciar DLSS Swapper</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Si us plau, obriu un </value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>nou error</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value> al repositori de GitHub de DLSS Swapper i proporciona la següent informació a la secció de context addicional.</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>No s'ha pogut iniciar</value>
   </data>
@@ -603,15 +594,6 @@ Si heu marcat aquestes opcions i el vostre joc encara no apareix, pot haver-hi u
   <data name="General_Yes" xml:space="preserve">
     <value>Sí</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>Actualment teniu {0} instal·lat.</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper s'acaba d'actualitzar</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Actualització disponible</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Ja s'ha descarregat.</value>
   </data>
@@ -724,14 +706,6 @@ Només importa fitxers DLL de fonts de confiança.</value>
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>El DLSS Swapper s'ha de tancar</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>Incidències de GitHub</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>No hem pogut carregar manifest.json des del vostre ordinador ni des d'Internet.
-
-Si això continua passant, envieu un informe al nostre rastrejador d'incidències a GitHub.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Actualitzar el manifest</value>
   </data>
@@ -757,9 +731,6 @@ Per això, recomanem anar amb compte amb les partides multijugador.</value>
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Copia els resultats de la prova</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Crea un informe d'errors</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Prova d'agent d'usuari personalitzada</value>
@@ -881,12 +852,6 @@ Per això, recomanem anar amb compte amb les partides multijugador.</value>
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>Guia general de resolució de problemes</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Donar comentaris</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>Podeu suggerir una funció o informar d'un problema al DLSS Swapper</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Rutes ignorades</value>
   </data>
@@ -901,9 +866,6 @@ Per això, recomanem anar amb compte amb les partides multijugador.</value>
   </data>
   <data name="SettingsPage_Logging" xml:space="preserve">
     <value>Registre</value>
-  </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>No hi ha noves actualitzacions disponibles.</value>
   </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Agraïments</value>
@@ -922,9 +884,6 @@ Per això, recomanem anar amb compte amb les partides multijugador.</value>
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Permet fonts no fiables</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Comprova si hi ha actualitzacions</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Mostra només les DLL descarregades</value>

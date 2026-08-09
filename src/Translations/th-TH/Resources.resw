@@ -174,15 +174,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>โปรแกรม DLSS Swapper เริ่มต้นทำงานล้มเหลว</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>กรุณาเปิด</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>ปัญหาใหม่</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value>บน GitHub ของ DLSS Swapper และระบุข้อมูลต่อไปนี้ในส่วนบริบทเพิ่มเติม</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>การเปิดโปรแกรมล้มเหลว</value>
   </data>
@@ -639,42 +630,6 @@
   <data name="General_Yes" xml:space="preserve">
     <value>ใช่</value>
   </data>
-  <data name="GitHubUpdater_CouldNotRunInstaller" xml:space="preserve">
-    <value>ไม่สามารถเรียกใช้โปรแกรมติดตั้งได้ในขณะนี้ โปรดลองอีกครั้งในภายหลัง หรือติดตั้งการอัปเดตด้วยตนเอง</value>
-  </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>คุณได้ติดตั้ง {0} ไว้อยู่แล้ว</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper เพิ่งได้รับการอัปเดต</value>
-  </data>
-  <data name="GitHubUpdater_DownloadComplete_Title" xml:space="preserve">
-    <value>ดาวน์โหลดเสร็จสมบูรณ์</value>
-  </data>
-  <data name="GitHubUpdater_DownloadingUpdate_Title" xml:space="preserve">
-    <value>กำลังดาวน์โหลดอัปเดต</value>
-  </data>
-  <data name="GitHubUpdater_DownloadProgress" xml:space="preserve">
-    <value>ความคืบหน้า</value>
-  </data>
-  <data name="GitHubUpdater_Install" xml:space="preserve">
-    <value>ติดตั้ง</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>มีอัปเดตใหม่</value>
-  </data>
-  <data name="GitHubUpdater_UpdateDownloadFailed" xml:space="preserve">
-    <value>ไม่สามารถดาวน์โหลดการอัปเดตได้</value>
-  </data>
-  <data name="GitHubUpdater_UpdateReadyToInstall" xml:space="preserve">
-    <value>การอัปเดตพร้อมติดตั้งแล้ว</value>
-  </data>
-  <data name="GitHubUpdater_Updating_Title" xml:space="preserve">
-    <value>กำลังอัปเดต</value>
-  </data>
-  <data name="GitHubUpdater_ViewUpdate" xml:space="preserve">
-    <value>ดูการอัปเดต</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>ดาวน์โหลดเรียบร้อยแล้ว</value>
   </data>
@@ -826,14 +781,6 @@
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper จำเป็นต้องปิดตัวลง</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>แจ้งปัญหาบน GitHub</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>เราไม่สามารถโหลดไฟล์ manifest.json จากคอมพิวเตอร์ของคุณหรือจากอินเทอร์เน็ตได้
-
-หากปัญหานี้ยังคงเกิดขึ้น โปรดส่งรายงานในตัวติดตามปัญหาของเราบน GitHub</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>อัปเดตรายการ Manifest</value>
   </data>
@@ -860,9 +807,6 @@
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>คัดลอกผลการทดสอบ</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>สร้างรายงานแจ้งบั๊ก</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>ทดสอบ User Agent แบบกำหนดเอง</value>
@@ -1011,12 +955,6 @@
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>คู่มือการแก้ปัญหาทั่วไป</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>แจ้งปัญหา</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>คุณสามารถเสนอแนะฟีเจอร์หรือแจ้งปัญหาเกี่ยวกับ DLSS Swapper ได้</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>เส้นทางที่เพิกเฉย</value>
   </data>
@@ -1053,9 +991,6 @@
   <data name="SettingsPage_Networking" xml:space="preserve">
     <value>เครือข่าย</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>ไม่มีการอัปเดตใหม่</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>กิตติกรรมประกาศ</value>
   </data>
@@ -1076,9 +1011,6 @@
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>อนุญาตไฟล์ที่ไม่น่าเชื่อถือ</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>ตรวจสอบการอัปเดต</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>แสดงเฉพาะ DLLs ที่ดาวน์โหลดแล้ว</value>

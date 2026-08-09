@@ -84,15 +84,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>Falha ao iniciar o DLSS Swapper</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Por favor, abra uma</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>nova issue</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value>no repositório do GitHub do DLSS Swapper e forneça as informações abaixo na seção de contexto adicional.</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>Falha ao iniciar</value>
   </data>
@@ -471,15 +462,6 @@ Se você verificou tudo isso e seu jogo ainda não aparece, pode ser um bug. Agr
   <data name="General_Yes" xml:space="preserve">
     <value>Sim</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>Você tem atualmente o {0} instalado.</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper foi atualizado</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Atualização disponível</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Já baixado.</value>
   </data>
@@ -589,14 +571,6 @@ Importe apenas DLLs de fontes confiáveis.</value>
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper precisa ser encerrado</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>Problemas no GitHub</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>Não foi possível carregar o arquivo manifest.json do seu computador ou da internet.
-
-Se isso continuar acontecendo, por favor, informe o problema no nosso rastreador de issues no GitHub.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Atualizar manifesto</value>
   </data>
@@ -622,9 +596,6 @@ Recomendamos cautela ao usar isso em jogos multiplayer.</value>
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Copiar resultados do teste</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Criar relatório de erro</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Teste com agente de usuário personalizado</value>
@@ -740,12 +711,6 @@ Recomendamos cautela ao usar isso em jogos multiplayer.</value>
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>Guia de solução de problemas</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Enviar feedback</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>Você pode sugerir um recurso ou relatar um problema no DLSS Swapper</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Caminhos ignorados</value>
   </data>
@@ -760,9 +725,6 @@ Recomendamos cautela ao usar isso em jogos multiplayer.</value>
   </data>
   <data name="SettingsPage_Logging" xml:space="preserve">
     <value>Registro (log)</value>
-  </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>Nenhuma nova atualização disponível.</value>
   </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Agradecimentos</value>
@@ -781,9 +743,6 @@ Recomendamos cautela ao usar isso em jogos multiplayer.</value>
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Permitir não confiáveis</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Verificar atualizações</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Mostrar apenas DLLs baixadas</value>

@@ -174,15 +174,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>DLSS Swapper không thể khởi chạy</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Vui lòng mở một </value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>vấn đề mới</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value> trên kho GitHub của DLSS Swapper và cung cấp thông tin sau trong phần ngữ cảnh bổ sung.</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>Không thể khởi chạy</value>
   </data>
@@ -627,15 +618,6 @@ Nếu bạn đã kiểm tra những điều này và trò chơi của bạn vẫ
   <data name="General_Yes" xml:space="preserve">
     <value>Có</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>Bạn hiện đang có {0} được cài đặt.</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper vừa được cập nhật</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Có Cập Nhật</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Đã tải xuống.</value>
   </data>
@@ -748,14 +730,6 @@ Chỉ nhập dll từ nguồn bạn tin cậy.</value>
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper phải đóng</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>Vấn Đề GitHub</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>Chúng tôi không thể tải manifest.json từ máy tính của bạn hoặc từ internet.
-
-Nếu điều này tiếp tục xảy ra, vui lòng báo cáo trong trình theo dõi vấn đề của chúng tôi trên GitHub.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Cập nhật manifest</value>
   </data>
@@ -781,9 +755,6 @@ Vì lý do này, chúng tôi khuyên nghịch cẩn thận với trò chơi nhi�
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Sao chép kết quả kiểm tra</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Tạo báo cáo lỗi</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Kiểm tra user agent tùy chỉnh</value>
@@ -905,12 +876,6 @@ Vì lý do này, chúng tôi khuyên nghịch cẩn thận với trò chơi nhi�
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>Hướng dẫn khắc phục sự cố chung</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Đưa Phản Hồi</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>Bạn có thể gợi ý tính năng hoặc báo cáo vấn đề trên DLSS Swapper</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Đường Dẫn Bỏ Qua</value>
   </data>
@@ -944,9 +909,6 @@ Vì lý do này, chúng tôi khuyên nghịch cẩn thận với trò chơi nhi�
   <data name="SettingsPage_Logging_Warning" xml:space="preserve">
     <value>Cảnh báo</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>Không có cập nhật mới nào có sẵn.</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Lời Cảm Ơn</value>
   </data>
@@ -964,9 +926,6 @@ Vì lý do này, chúng tôi khuyên nghịch cẩn thận với trò chơi nhi�
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Cho Phép Không Tin Cậy</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Kiểm tra cập nhật</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Chỉ Hiển Thị DLL Đã Tải Xuống</value>

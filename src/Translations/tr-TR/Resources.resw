@@ -162,15 +162,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>DLSS Swapper başlatılamadı</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Lütfen DLSS Swapper GitHub deposunda </value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>yeni bir sorun oluşturun</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value>ve ek bağlam bölümünde aşağıdaki bilgileri sağlayın.</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>Başlatma başarısız</value>
   </data>
@@ -559,15 +550,6 @@ Hangi ön ayarın gerçekten kullanıldığını doğrulamak için, DLSS ekran �
   <data name="General_Yes" xml:space="preserve">
     <value>Evet</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>Şu anda {0} sürümü yüklü.</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper az önce güncellendi</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Güncelleme Mevcut</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Zaten indirildi.</value>
   </data>
@@ -680,14 +662,6 @@ Yalnızca güvendiğiniz kaynaklardan DLL'leri içe aktarın.</value>
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper Kapanmalı</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>GitHub Sorunları</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>manifest.json dosyasını bilgisayarınızdan veya internetten yükleyemedik.
-
-Bu durum devam ederse lütfen GitHub'daki sorun izleyicimizde bir rapor oluşturun.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Manifestoyu güncelle</value>
   </data>
@@ -713,9 +687,6 @@ Bu nedenle çok oyunculu oyunlarda dikkatli olmanızı öneririz.</value>
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Test sonuçlarını kopyala</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Hata raporu oluştur</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Özel kullanıcı aracısı testi</value>
@@ -837,12 +808,6 @@ Bu nedenle çok oyunculu oyunlarda dikkatli olmanızı öneririz.</value>
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>Genel sorun giderme kılavuzu</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Geri Bildirimde Bulun</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>DLSS Swapper'da bir özellik önerebilir veya bir sorun bildirebilirsiniz</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Yoksayılan Yollar</value>
   </data>
@@ -857,9 +822,6 @@ Bu nedenle çok oyunculu oyunlarda dikkatli olmanızı öneririz.</value>
   </data>
   <data name="SettingsPage_Logging" xml:space="preserve">
     <value>Günlük Kaydı</value>
-  </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>Yeni güncelleme mevcut değil.</value>
   </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Teşekkürler</value>
@@ -878,9 +840,6 @@ Bu nedenle çok oyunculu oyunlarda dikkatli olmanızı öneririz.</value>
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Güvenilmeyenlere İzin Ver</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Güncellemeleri kontrol et</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Yalnızca İndirilen DLL'leri Göster</value>

@@ -174,15 +174,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>DLSS Swapperが起動に失敗しました</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Aを開いて下さい</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>新たな問題</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value>DLSS Swapper GitHubリポジトリにアクセスし、追加のコンテキスト セクションに以下の情報を提供して下さい</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>起動に失敗しました</value>
   </data>
@@ -634,15 +625,6 @@ C:\Program Files\MyGamesFolder\MyFavGame\&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
   <data name="General_Yes" xml:space="preserve">
     <value>Yes</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>現在、 {0} がインストールされています</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapperが更新されました</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>更新が利用可能です</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>既にダウンロード済みです</value>
   </data>
@@ -755,14 +737,6 @@ DLLは信頼できるソースからのみインポートして下さい</value>
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapperを終了する必要があります</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>GitHubの報告</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>お使いのコンピュータ又はインターネットから manifest.jsonを読み込む事が出来ませんでした。
-
-この問題が解決しない場合は、GitHubの問題追跡システムに報告して下さい</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>マニフェストを更新する</value>
   </data>
@@ -788,9 +762,6 @@ DLLは信頼できるソースからのみインポートして下さい</value>
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>テスト結果のコピー</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>バグ報告を作成する</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>カスタムユーザーエージェントテスト</value>
@@ -912,12 +883,6 @@ DLLは信頼できるソースからのみインポートして下さい</value>
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>一般的なトラブルシューティングガイド</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>フィードバックを送信する</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>機能の提案や問題の報告は、DLSS Swapperで行う事が出来ます</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>無視されたパス</value>
   </data>
@@ -951,9 +916,6 @@ DLLは信頼できるソースからのみインポートして下さい</value>
   <data name="SettingsPage_Logging_Warning" xml:space="preserve">
     <value>警告</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>新しい更新は現在ありません</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>謝辞</value>
   </data>
@@ -971,9 +933,6 @@ DLLは信頼できるソースからのみインポートして下さい</value>
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>信頼できない物を許可する</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>更新を確認する</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>ダウンロード済みのDLLのみを表示する</value>

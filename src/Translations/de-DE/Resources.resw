@@ -174,15 +174,6 @@
   <data name="FailedToLaunchPage_DlssSwapperFailedToLaunch" xml:space="preserve">
     <value>DLSS Swapper konnte nicht gestartet werden.</value>
   </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial1" xml:space="preserve">
-    <value>Bitte öffne ein</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial2" xml:space="preserve">
-    <value>neues Issue</value>
-  </data>
-  <data name="FailedToLaunchPage_PleaseOpenIssuePartial3" xml:space="preserve">
-    <value>im DLSS Swapper GitHub Repository und kopiere die nachfolgenden Informationen in die Sektion "Additional Context".</value>
-  </data>
   <data name="FailedToLaunchPage_WindowTitle" xml:space="preserve">
     <value>Konnte nicht gestartet werden</value>
   </data>
@@ -630,15 +621,6 @@ Wenn Du alles überprüft hast und dein Spiel taucht immer noch nicht auf, liegt
   <data name="General_Yes" xml:space="preserve">
     <value>Ja</value>
   </data>
-  <data name="GitHubUpdater_CurrentVersionIsActualTemplate" xml:space="preserve">
-    <value>Aktuell ist die Version {0} installiert.</value>
-  </data>
-  <data name="GitHubUpdater_DlssSwapperUpdated" xml:space="preserve">
-    <value>DLSS Swapper wurde gerade aktualisiert</value>
-  </data>
-  <data name="GitHubUpdater_UpdateAvailable" xml:space="preserve">
-    <value>Update Verfügbar</value>
-  </data>
   <data name="LibraryPage_AlreadyDownloaded" xml:space="preserve">
     <value>Bereits heruntergeladen.</value>
   </data>
@@ -751,14 +733,6 @@ Importiere DLL-Dateien nur aus einer vertrauenswürdigen Quelle!</value>
   <data name="MainWindow_DlssSwapperMustClose" xml:space="preserve">
     <value>DLSS Swapper muss geschlossen werden</value>
   </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_GitHubIssues" xml:space="preserve">
-    <value>GitHub Issues</value>
-  </data>
-  <data name="MainWindow_ManifestCouldNotBeLoaded_Message" xml:space="preserve">
-    <value>Wir konnten die manifest.json weder von deinem Computer noch aus dem Internet laden.
-
-Sollte dieses Problem weiterbestehen bitte melde dieses Problem in unserem GitHub Issue Tracker.</value>
-  </data>
   <data name="MainWindow_ManifestCouldNotBeLoaded_UpdateManifest" xml:space="preserve">
     <value>Manifest aktualisieren</value>
   </data>
@@ -784,9 +758,6 @@ Aus diesem Umstand empfehlen wir besondere Vorsicht im Umgang mit Multiplayer Sp
   </data>
   <data name="NetworkTesterPage_CopyTestResults" xml:space="preserve">
     <value>Testergebnisse kopieren</value>
-  </data>
-  <data name="NetworkTesterPage_CreateBugReport" xml:space="preserve">
-    <value>Fehlermeldung erstellen</value>
   </data>
   <data name="NetworkTesterPage_CustomUserAgentTest" xml:space="preserve">
     <value>Benutzerdefinierter User-Agent Test</value>
@@ -908,12 +879,6 @@ Aus diesem Umstand empfehlen wir besondere Vorsicht im Umgang mit Multiplayer Sp
   <data name="SettingsPage_GeneralTroubleshootingGuide" xml:space="preserve">
     <value>Allgemeine Fehlerbehebung</value>
   </data>
-  <data name="SettingsPage_GiveFeedback" xml:space="preserve">
-    <value>Feedback geben</value>
-  </data>
-  <data name="SettingsPage_GiveFeedbackInfo" xml:space="preserve">
-    <value>Du kannst eine Funktion vorschlagen oder ein Problem melden.</value>
-  </data>
   <data name="SettingsPage_IgnoredPaths" xml:space="preserve">
     <value>Ignorierte Pfade</value>
   </data>
@@ -947,9 +912,6 @@ Aus diesem Umstand empfehlen wir besondere Vorsicht im Umgang mit Multiplayer Sp
   <data name="SettingsPage_Logging_Warning" xml:space="preserve">
     <value>Warnung</value>
   </data>
-  <data name="SettingsPage_NoNewUpdatesAvailable" xml:space="preserve">
-    <value>Keine neuen Updates verfügbar.</value>
-  </data>
   <data name="SettingsPage_OpenAcknowledgements" xml:space="preserve">
     <value>Danksagungen</value>
   </data>
@@ -967,9 +929,6 @@ Aus diesem Umstand empfehlen wir besondere Vorsicht im Umgang mit Multiplayer Sp
   </data>
   <data name="SettingsPage_SettingsAllowUntrusted" xml:space="preserve">
     <value>Erlaube nicht-vertrauten DLLs</value>
-  </data>
-  <data name="SettingsPage_SettingsCheckForUpdates" xml:space="preserve">
-    <value>Prüfe auf Updates</value>
   </data>
   <data name="SettingsPage_ShowOnlyDownloadedDlls" xml:space="preserve">
     <value>Zeige nur heruntergeladene DLLs</value>
