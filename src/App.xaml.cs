@@ -102,7 +102,6 @@ public sealed partial class App : Application
             UseCookies = true,
             CookieContainer = new CookieContainer(),
             AllowAutoRedirect = true,
-            CheckCertificateRevocationList = true,
         };
 
         Settings.ProxySettings.LoadIfNeeded();

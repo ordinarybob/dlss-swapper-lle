@@ -380,10 +380,7 @@ public sealed class DownloadCache : IDisposable
     public DownloadCache()
     {
         _cacheRoot = GetCacheRoot();
-        _httpClient = new HttpClient(new HttpClientHandler
-        {
-            CheckCertificateRevocationList = true,
-        })
+        _httpClient = new HttpClient
         {
             Timeout = TimeSpan.FromMinutes(5),
         };

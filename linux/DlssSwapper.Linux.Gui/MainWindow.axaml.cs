@@ -26,10 +26,7 @@ public sealed partial class MainWindow : Window
     private readonly HashSet<string> _knownPaths = new(PathComparer);
     private readonly List<GameRowViewModel> _allRows = [];
     private readonly CancellationTokenSource _lifetime = new();
-    private readonly HttpClient _artworkHttpClient = new(new HttpClientHandler
-    {
-        CheckCertificateRevocationList = true,
-    })
+    private readonly HttpClient _artworkHttpClient = new()
     {
         Timeout = TimeSpan.FromMinutes(2),
     };
