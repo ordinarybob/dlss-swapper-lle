@@ -1661,17 +1661,19 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
     }
 
-    public async Task RemoveGameAssetsFromCacheAsync()
-    {
-        using (await Database.Instance.Mutex.LockAsync())
-        {
-            await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
-        }
-    }
-
     public async Task LoadGameAssetsFromCacheAsync()
     {
         GameAssets.Clear();
+
+        // A negative cache entry has no asset rows to hydrate. Recheck it only
+        // when its normal cache lifetime expires.
+        if (HasSwappableItems == false)
+        {
+            NeedsProcessing = LastScanTimeUtc is null
+                || LastScanTimeUtc < DateTime.UtcNow.Subtract(NegativeScanCacheLifetime);
+            return;
+        }
+
         using (await Database.Instance.Mutex.LockAsync())
         {
             var gameAssets = await Database.Instance.Connection.Table<GameAsset>().Where(ga => ga.Id == ID).ToListAsync().ConfigureAwait(false);
@@ -1683,53 +1685,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
         UpdateCurrentDLLsFromGameAssets();
 
-        // TODO: Add auto reload by storing last full reload time on game
-
-        if (GameAssets.Count > 0)
-        {
-            foreach (var gameAsset in GameAssets)
-            {
-                // Check that each of the game assets exist, after we will check if they are what we expect them to be
-                if (File.Exists(gameAsset.Path) == false)
-                {
-                    NeedsProcessing = true;
-                    break;
-                }
-            }
-
-            if (NeedsProcessing == false)
-            {
-                var unknownGameAssets = new List<GameAsset>();
-                foreach (var gameAsset in GameAssets)
-                {
-                    var cachedVersion = gameAsset.Version;
-                    gameAsset.LoadVersion(gameAsset);
-
-                    if (gameAsset.Version != cachedVersion)
-                    {
-                        NeedsProcessing = true;
-                        break;
-                    }
-
-                    if (gameAsset.HasCurrentHash()
-                        && DLLManager.Instance.IsInKnownGameAsset(gameAsset, this) == false)
-                    {
-                        unknownGameAssets.Add(gameAsset);
-                    }
-                }
-                if (unknownGameAssets.Count > 0)
-                {
-                    GameManager.Instance.AddUnknownGameAssets(GameLibrary, Title, unknownGameAssets);
-                }
-            }
-        }
-        else
-        {
-            // A successful empty scan is still useful cache data. Periodically re-scan
-            // in case the game changed outside a launcher update or explicit refresh.
-            NeedsProcessing = LastScanTimeUtc is null
-                || LastScanTimeUtc < DateTime.UtcNow.Subtract(NegativeScanCacheLifetime);
-        }
+        // Cached records are enough to render the library immediately. Validate
+        // their paths and metadata in the background fast scan instead of making
+        // cold filesystem reads part of application startup.
+        NeedsProcessing = true;
     }
 
     public bool IsInIgnoredPath()

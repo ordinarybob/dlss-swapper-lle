@@ -529,26 +529,7 @@ internal partial class SteamLibrary : IGameLibrary
             {
                 games = await Database.Instance.Connection.Table<SteamGame>().ToArrayAsync().ConfigureAwait(false);
             }
-            foreach (var game in games)
-            {
-                if (game.IsInIgnoredPath())
-                {
-                    continue;
-                }
-
-                if (Directory.Exists(game.InstallPath) == false)
-                {
-                    Logger.Warning($"{Name} library could not load game {game.Title} ({game.PlatformId}) from cache because install path does not exist: {game.InstallPath}");
-                    // We remove the list of known game assets, but not the game itself.
-                    // Removing the game will remove its history, notes, and other data.
-                    // We don't want to do this in case it is just a temporary issue.
-                    await game.RemoveGameAssetsFromCacheAsync().ConfigureAwait(false);
-                    continue;
-                }
-
-                await game.LoadGameAssetsFromCacheAsync().ConfigureAwait(false);
-                GameManager.Instance.AddGame(game);
-            }
+            await GameManager.Instance.AddCachedGamesAsync(games).ConfigureAwait(false);
         }
         catch (Exception err)
         {

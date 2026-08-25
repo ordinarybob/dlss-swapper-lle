@@ -264,6 +264,7 @@ internal partial class GameManager : ObservableObject
 
     public async Task LoadGamesFromCacheAsync()
     {
+        var loadStopwatch = Stopwatch.StartNew();
         await _loadGate.WaitAsync().ConfigureAwait(false);
         BeginUiBatch();
         try
@@ -284,6 +285,24 @@ internal partial class GameManager : ObservableObject
         {
             await EndUiBatchAsync().ConfigureAwait(false);
             _loadGate.Release();
+            Logger.Info(
+                $"Loaded {GetSynchronisedGamesListCopy().Count:N0} cached game(s) " +
+                $"in {loadStopwatch.Elapsed.TotalSeconds:N2} seconds without filesystem validation.");
+        }
+    }
+
+    internal async Task AddCachedGamesAsync<TGame>(IEnumerable<TGame> games)
+        where TGame : Game
+    {
+        foreach (var game in games)
+        {
+            if (game.IsInIgnoredPath())
+            {
+                continue;
+            }
+
+            await game.LoadGameAssetsFromCacheAsync().ConfigureAwait(false);
+            AddGame(game);
         }
     }
 
@@ -448,7 +467,7 @@ internal partial class GameManager : ObservableObject
                 // in the visible DLSS library; fresh games are queued after their
                 // scan proves eligibility. This avoids downloading thousands of
                 // covers that the default filter will never display.
-                if (game.PrimeCachedCoverImage() == false && game.HasSwappableItems)
+                if (game.HasSwappableItems && game.PrimeCachedCoverImage() == false)
                 {
                     GameCoverHydrationQueue.Instance.Enqueue(game);
                 }
