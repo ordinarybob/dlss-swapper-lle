@@ -272,8 +272,9 @@ public partial class GameGridPageModel : ObservableObject
             return;
         }
 
-        var selections = picker.ViewModel.PlannedDllActions;
-        if (selections.Count == 0)
+        var dllSelections = picker.ViewModel.PlannedDllActions;
+        var presetSelections = picker.ViewModel.PlannedPresetActions;
+        if (dllSelections.Count == 0 && presetSelections.Count == 0)
         {
             return;
         }
@@ -281,7 +282,8 @@ public partial class GameGridPageModel : ObservableObject
         IsBatchUpdateRunning = true;
         try
         {
-            var results = await DllUpdateWorkflow.ApplyAsync(games, selections);
+            var results = await DllUpdateWorkflow.ApplyAsync(games, dllSelections);
+            results.AddRange(await BatchPresetUpdateWorkflow.ApplyAsync(games, presetSelections));
             var summaryDialog = new EasyContentDialog(gameGridPage.XamlRoot)
             {
                 Title = ResourceHelper.GetString("GamesPage_Batch_Summary_Title"),

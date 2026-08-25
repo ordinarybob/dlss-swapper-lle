@@ -5,9 +5,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ct_converters="using:CommunityToolkit.WinUI.Converters"
     xmlns:usercontrols="using:DLSS_Swapper.UserControls"
     mc:Ignorable="d"
     MinWidth="420">
+
+    <UserControl.Resources>
+        <ct_converters:BoolToVisibilityConverter
+            x:Key="BoolToVisibilityConverter"
+            TrueValue="Visible"
+            FalseValue="Collapsed" />
+    </UserControl.Resources>
 
     <StackPanel Spacing="12">
         <StackPanel Spacing="6">
@@ -24,44 +32,93 @@
         </StackPanel>
 
         <ScrollViewer
-            MaxHeight="420"
+            MaxHeight="480"
             HorizontalScrollBarVisibility="Disabled"
             HorizontalScrollMode="Disabled"
             VerticalScrollBarVisibility="Auto"
             VerticalScrollMode="Auto">
-            <ItemsControl
-                HorizontalAlignment="Stretch"
-                ItemsSource="{x:Bind ViewModel.Rows, Mode=OneWay}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="usercontrols:BatchDllRowModel">
-                        <Grid
-                            Padding="0,3"
-                            ColumnSpacing="12"
-                            HorizontalAlignment="Stretch">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="12">
+                <ItemsControl
+                    HorizontalAlignment="Stretch"
+                    ItemsSource="{x:Bind ViewModel.Rows, Mode=OneWay}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="usercontrols:BatchDllRowModel">
+                            <Grid
+                                Padding="0,3"
+                                ColumnSpacing="12"
+                                HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
 
-                            <TextBlock
-                                Grid.Column="0"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="{x:Bind TypeName}"
-                                TextWrapping="Wrap" />
+                                <TextBlock
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    FontWeight="SemiBold"
+                                    Text="{x:Bind TypeName}"
+                                    TextWrapping="Wrap" />
 
-                            <ComboBox
-                                Grid.Column="1"
-                                MinWidth="240"
-                                HorizontalAlignment="Stretch"
-                                AutomationProperties.Name="{x:Bind TypeName}"
-                                DisplayMemberPath="DisplayName"
-                                ItemsSource="{x:Bind DllOptions}"
-                                SelectedItem="{x:Bind SelectedDllOption, Mode=TwoWay}" />
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                                <ComboBox
+                                    Grid.Column="1"
+                                    MinWidth="240"
+                                    HorizontalAlignment="Stretch"
+                                    AutomationProperties.Name="{x:Bind TypeName}"
+                                    DisplayMemberPath="DisplayName"
+                                    ItemsSource="{x:Bind DllOptions}"
+                                    SelectedItem="{x:Bind SelectedDllOption, Mode=TwoWay}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel
+                    Spacing="4"
+                    Visibility="{x:Bind ViewModel.HasPresetRows, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneTime}">
+                    <TextBlock
+                        FontWeight="SemiBold"
+                        Text="{x:Bind ViewModel.TranslationProperties.NvidiaPresetsText, Mode=OneWay}" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{x:Bind ViewModel.TranslationProperties.NvidiaPresetsDescriptionText, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+
+                <ItemsControl
+                    HorizontalAlignment="Stretch"
+                    ItemsSource="{x:Bind ViewModel.PresetRows, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.HasPresetRows, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneTime}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="usercontrols:BatchPresetRowModel">
+                            <Grid
+                                Padding="0,3"
+                                ColumnSpacing="12"
+                                HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    FontWeight="SemiBold"
+                                    Text="{x:Bind PresetName}"
+                                    TextWrapping="Wrap" />
+
+                                <ComboBox
+                                    Grid.Column="1"
+                                    MinWidth="240"
+                                    HorizontalAlignment="Stretch"
+                                    AutomationProperties.Name="{x:Bind PresetName}"
+                                    DisplayMemberPath="DisplayName"
+                                    ItemsSource="{x:Bind PresetOptions}"
+                                    SelectedItem="{x:Bind SelectedPresetOption, Mode=TwoWay}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </ScrollViewer>
     </StackPanel>
 </UserControl>

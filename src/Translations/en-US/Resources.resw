@@ -1246,8 +1246,17 @@ Because of this we recommend using caution for multiplayer games.</value>
   <data name="GamesPage_Batch_Error_Generic" xml:space="preserve">
     <value>The update failed.</value>
   </data>
+  <data name="GamesPage_Batch_Error_NvidiaPreset" xml:space="preserve">
+    <value>The NVIDIA driver profile could not be updated.</value>
+  </data>
   <data name="GamesPage_Batch_NoChange" xml:space="preserve">
     <value>Don't change</value>
+  </data>
+  <data name="GamesPage_Batch_NvidiaPresets" xml:space="preserve">
+    <value>NVIDIA DLSS presets</value>
+  </data>
+  <data name="GamesPage_Batch_NvidiaPresetsDescription" xml:space="preserve">
+    <value>Apply a preset to selected games with the matching DLL. Games without a matching NVIDIA profile are skipped.</value>
   </data>
   <data name="GamesPage_Batch_Skipped_Incompatible" xml:space="preserve">
     <value>The selected DLL uses an incompatible DLSS generation.</value>
@@ -1257,6 +1266,9 @@ Because of this we recommend using caution for multiplayer games.</value>
   </data>
   <data name="GamesPage_Batch_Skipped_NoAsset" xml:space="preserve">
     <value>The DLL family is no longer detected.</value>
+  </data>
+  <data name="GamesPage_Batch_Skipped_NoNvidiaProfile" xml:space="preserve">
+    <value>No matching NVIDIA profile was found.</value>
   </data>
   <data name="GamesPage_Batch_Summary_AlreadyCurrent" xml:space="preserve">
     <value>Already current:</value>
@@ -1275,6 +1287,9 @@ Because of this we recommend using caution for multiplayer games.</value>
   </data>
   <data name="GamesPage_Batch_Summary_NeedsAdminTemplate" xml:space="preserve">
     <value>Games needing administrator access: {0}. Run DLSS Swapper as administrator and try again.</value>
+  </data>
+  <data name="GamesPage_Batch_Summary_PresetsApplied" xml:space="preserve">
+    <value>Presets applied:</value>
   </data>
   <data name="GamesPage_Batch_Summary_Results" xml:space="preserve">
     <value>Results</value>
@@ -1295,19 +1310,19 @@ Because of this we recommend using caution for multiplayer games.</value>
     <value>Swapped:</value>
   </data>
   <data name="GamesPage_Batch_Summary_Title" xml:space="preserve">
-    <value>DLL update summary</value>
+    <value>Batch update summary</value>
   </data>
   <data name="GamesPage_Batch_Title" xml:space="preserve">
-    <value>Apply DLLs to selected games</value>
+    <value>Batch update selected games</value>
   </data>
   <data name="GamesPage_Batch_UpdateDetectedDllsDescription" xml:space="preserve">
-    <value>Selects the latest eligible version for every detected DLL family. NVIDIA preset selections are unchanged.</value>
+    <value>Selects the latest eligible version for every detected DLL family.</value>
   </data>
   <data name="GamesPage_Batch_UpdateDetectedDllsToLatest" xml:space="preserve">
     <value>Update detected DLLs to latest</value>
   </data>
   <data name="GamesPage_SelectionMode_ApplyDll" xml:space="preserve">
-    <value>Apply DLL</value>
+    <value>Apply updates</value>
   </data>
   <data name="GamesPage_SelectionMode_CountTemplate" xml:space="preserve">
     <value>{0} selected</value>

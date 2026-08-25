@@ -10,6 +10,9 @@ public class BatchSwapSummaryControlModelTranslationProperties : LocalizedViewMo
     public string SwappedText => ResourceHelper.GetString("GamesPage_Batch_Summary_Swapped");
 
     [TranslationProperty]
+    public string PresetsAppliedText => ResourceHelper.GetString("GamesPage_Batch_Summary_PresetsApplied");
+
+    [TranslationProperty]
     public string AlreadyCurrentText => ResourceHelper.GetString("GamesPage_Batch_Summary_AlreadyCurrent");
 
     [TranslationProperty]

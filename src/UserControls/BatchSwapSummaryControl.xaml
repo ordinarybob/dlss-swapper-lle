@@ -39,6 +39,13 @@
         <TextBlock IsTextSelectionEnabled="True" TextWrapping="Wrap">
             <Run
                 FontWeight="Bold"
+                Text="{x:Bind ViewModel.TranslationProperties.PresetsAppliedText, Mode=OneWay}" />
+            <Run Text=" " />
+            <Run Text="{x:Bind ViewModel.PresetsAppliedCount, Mode=OneTime}" />
+        </TextBlock>
+        <TextBlock IsTextSelectionEnabled="True" TextWrapping="Wrap">
+            <Run
+                FontWeight="Bold"
                 Text="{x:Bind ViewModel.TranslationProperties.AlreadyCurrentText, Mode=OneWay}" />
             <Run Text=" " />
             <Run Text="{x:Bind ViewModel.AlreadyCurrentCount, Mode=OneTime}" />

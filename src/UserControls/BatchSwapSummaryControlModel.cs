@@ -11,6 +11,7 @@ namespace DLSS_Swapper.UserControls;
 class BatchSwapSummaryControlModel
 {
     public int SwappedCount { get; }
+    public int PresetsAppliedCount { get; }
     public int AlreadyCurrentCount { get; }
     public int SkippedCount { get; }
     public int ErrorCount { get; }
@@ -25,6 +26,7 @@ class BatchSwapSummaryControlModel
         ArgumentNullException.ThrowIfNull(results);
 
         SwappedCount = results.Count(result => result.Status == BatchSwapStatus.Swapped);
+        PresetsAppliedCount = results.Count(result => result.Status == BatchSwapStatus.PresetApplied);
         AlreadyCurrentCount = results.Count(result => result.Status == BatchSwapStatus.AlreadyCurrent);
         SkippedCount = results.Count(result => result.Status == BatchSwapStatus.Skipped);
         ErrorCount = results.Count(result => result.Status == BatchSwapStatus.Error);
@@ -46,6 +48,7 @@ class BatchSwapSummaryControlModel
             results
                 .Where(result =>
                     result.Status == BatchSwapStatus.Swapped
+                    || result.Status == BatchSwapStatus.PresetApplied
                     || result.Status == BatchSwapStatus.Skipped
                     || result.Status == BatchSwapStatus.Error)
                 .Select(result => result.DisplayText));
@@ -61,6 +64,10 @@ class BatchSwapSummaryControlModel
             .Append(TranslationProperties.SwappedText)
             .Append(' ')
             .AppendLine(SwappedCount.ToString(CultureInfo.CurrentCulture));
+        report
+            .Append(TranslationProperties.PresetsAppliedText)
+            .Append(' ')
+            .AppendLine(PresetsAppliedCount.ToString(CultureInfo.CurrentCulture));
         report
             .Append(TranslationProperties.AlreadyCurrentText)
             .Append(' ')

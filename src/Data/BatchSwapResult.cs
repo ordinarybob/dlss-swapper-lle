@@ -5,6 +5,7 @@ namespace DLSS_Swapper.Data;
 public enum BatchSwapStatus
 {
     Swapped,
+    PresetApplied,
     AlreadyCurrent,
     Skipped,
     Error,

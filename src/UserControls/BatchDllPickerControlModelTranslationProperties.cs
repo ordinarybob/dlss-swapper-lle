@@ -17,4 +17,24 @@ public class BatchDllPickerControlModelTranslationProperties : LocalizedViewMode
     [TranslationProperty]
     public string UpdateDetectedDllsDescriptionText =>
         ResourceHelper.GetString("GamesPage_Batch_UpdateDetectedDllsDescription");
+
+    [TranslationProperty]
+    public string NvidiaPresetsText =>
+        ResourceHelper.GetString("GamesPage_Batch_NvidiaPresets");
+
+    [TranslationProperty]
+    public string NvidiaPresetsDescriptionText =>
+        ResourceHelper.GetString("GamesPage_Batch_NvidiaPresetsDescription");
+
+    [TranslationProperty]
+    public string DlssPresetText =>
+        ResourceHelper.GetString("General_Name_DLSS_Preset");
+
+    [TranslationProperty]
+    public string DlssDPresetText =>
+        ResourceHelper.GetString("General_Name_DLSSD_Preset");
+
+    [TranslationProperty]
+    public string DlssGPresetText =>
+        ResourceHelper.GetString("General_Name_DLSSG_Preset");
 }
