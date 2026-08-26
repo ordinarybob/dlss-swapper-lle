@@ -491,6 +491,26 @@ public partial class GameControlModel : ObservableObject
     }
 
     [RelayCommand]
+    async Task ManageStreamlineComponentsAsync()
+    {
+        if (TryGetActionHost(out var actionHost) == false)
+        {
+            return;
+        }
+
+        var dialog = new EasyContentDialog(actionHost.XamlRoot)
+        {
+            Title = $"Streamline components (experimental) - {Game.Title}",
+            CloseButtonText = ResourceHelper.GetString("General_Close"),
+            DefaultButton = ContentDialogButton.Close,
+            Content = new StreamlineComponentsControl(Game),
+        };
+        dialog.Resources["ContentDialogMinWidth"] = 0d;
+        dialog.Resources["ContentDialogMaxWidth"] = 760d;
+        await dialog.ShowAsync();
+    }
+
+    [RelayCommand]
     void Close()
     {
         if (TryGetGameControl(out var gameControl))

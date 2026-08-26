@@ -158,7 +158,7 @@
                     </Button>
                 </StackPanel>
 
-                <StackPanel HorizontalAlignment="Right">
+                <StackPanel HorizontalAlignment="Right" Spacing="4">
                     <Button
                         Style="{StaticResource CompactFooterTextButtonStyle}"
                         MaxWidth="320"
@@ -172,6 +172,11 @@
                                 TextWrapping="Wrap" />
                         </Button.Content>
                     </Button>
+                    <Button
+                        Style="{StaticResource CompactFooterTextButtonStyle}"
+                        MaxWidth="320"
+                        Content="Streamline components (experimental)"
+                        Command="{Binding ManageStreamlineComponentsCommand}" />
                 </StackPanel>
 
                 <StackPanel

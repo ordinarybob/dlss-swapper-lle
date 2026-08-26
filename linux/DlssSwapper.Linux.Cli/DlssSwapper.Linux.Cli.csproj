@@ -14,6 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\src\Data\Streamline\StreamlineComponentSet.cs" Link="Core\StreamlineComponentSet.cs" />
     <Content Include="..\..\src\Assets\static_manifest.json" Link="Assets\static_manifest.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

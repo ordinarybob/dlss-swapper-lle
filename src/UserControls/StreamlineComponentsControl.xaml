@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DLSS_Swapper.UserControls.StreamlineComponentsControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid MinWidth="520" MaxWidth="720" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Grid.Row="0"
+            Text="Updates only Streamline components already present in this game. No components are added, and the first original copy is retained for restore."
+            TextWrapping="Wrap" />
+
+        <StackPanel Grid.Row="1" Spacing="4">
+            <TextBlock x:Name="DetectedText" Text="Checking this game…" FontWeight="SemiBold" />
+            <TextBlock x:Name="PackageText" Text="Latest package not checked." TextWrapping="Wrap" />
+        </StackPanel>
+
+        <ListView
+            x:Name="ComponentList"
+            Grid.Row="2"
+            MaxHeight="180"
+            SelectionMode="None"
+            IsItemClickEnabled="False" />
+
+        <StackPanel Grid.Row="3" Spacing="6">
+            <ProgressBar x:Name="DownloadProgress" Visibility="Collapsed" />
+            <TextBlock x:Name="StatusText" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Grid Grid.Row="4" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button
+                x:Name="PrepareButton"
+                Grid.Column="0"
+                HorizontalAlignment="Stretch"
+                Content="Get latest package"
+                Click="PrepareButton_Click" />
+            <Button
+                x:Name="UpdateButton"
+                Grid.Column="1"
+                HorizontalAlignment="Stretch"
+                Content="Update existing"
+                IsEnabled="False"
+                Click="UpdateButton_Click" />
+            <Button
+                x:Name="RestoreButton"
+                Grid.Column="2"
+                HorizontalAlignment="Stretch"
+                Content="Restore originals"
+                IsEnabled="False"
+                Click="RestoreButton_Click" />
+        </Grid>
+    </Grid>
+</UserControl>

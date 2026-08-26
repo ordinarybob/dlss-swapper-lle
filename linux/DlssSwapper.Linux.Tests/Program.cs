@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.IO.Compression;
+using DLSS_Swapper.Data.Streamline;
 using DlssSwapper.Linux.Cli;
 using DlssSwapper.Linux.Cli.Core;
 using DlssSwapper.Linux.Cli.Platform;
@@ -34,6 +36,8 @@ internal static class Program
             ("Filesystem mount reporting and NTFS/FUSE warnings", RunSync(TestFilesystemInspection)),
             ("CLI persistent-state controls", TestCliPersistentStateAsync),
             ("Local-data reset is scoped to owned directories", RunSync(TestLocalDataReset)),
+            ("Streamline package selects production binaries only", RunSync(TestStreamlineProductionExtraction)),
+            ("Streamline set update, rollback, and original restore", RunSync(TestStreamlineTransactionalUpdate)),
         };
 
         var failures = 0;
@@ -60,6 +64,101 @@ internal static class Program
         action();
         return Task.CompletedTask;
     };
+
+    private static void TestStreamlineProductionExtraction()
+    {
+        using var temporary = new TemporaryDirectory();
+        var archivePath = Path.Combine(temporary.Path, "streamline.zip");
+        using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+        {
+            foreach (var fileName in StreamlineComponentSet.FileNames)
+            {
+                WriteZipEntry(archive, $"bin/x64/{fileName}", $"production:{fileName}");
+                WriteZipEntry(archive, $"bin/x64/development/{fileName}", $"development:{fileName}");
+            }
+        }
+
+        var destination = Path.Combine(temporary.Path, "staged");
+        var extracted = StreamlineComponentSet.ExtractProductionFiles(archivePath, destination);
+        AssertEqual(StreamlineComponentSet.FileNames.Count, extracted.Count, "extracted component count");
+        foreach (var path in extracted)
+        {
+            Assert(
+                File.ReadAllText(path).StartsWith("production:", StringComparison.Ordinal),
+                $"development binary replaced production binary: {Path.GetFileName(path)}");
+        }
+    }
+
+    private static void TestStreamlineTransactionalUpdate()
+    {
+        using var temporary = new TemporaryDirectory();
+        var gameRoot = Directory.CreateDirectory(Path.Combine(temporary.Path, "game")).FullName;
+        var sourceOne = Directory.CreateDirectory(Path.Combine(temporary.Path, "sdk-one")).FullName;
+        var sourceTwo = Directory.CreateDirectory(Path.Combine(temporary.Path, "sdk-two")).FullName;
+        var names = StreamlineComponentSet.FileNames.Take(3).ToArray();
+        var targets = new List<string>();
+        foreach (var fileName in names)
+        {
+            var target = Path.Combine(gameRoot, fileName);
+            File.WriteAllText(target, $"original:{fileName}");
+            File.WriteAllText(Path.Combine(sourceOne, fileName), $"release-one:{fileName}");
+            File.WriteAllText(Path.Combine(sourceTwo, fileName), $"release-two:{fileName}");
+            targets.Add(target);
+        }
+
+        var first = StreamlineComponentSet.UpdateExisting(sourceOne, targets);
+        Assert(first.Success, first.Message);
+        foreach (var target in targets)
+        {
+            Assert(File.ReadAllText(target).StartsWith("release-one:", StringComparison.Ordinal),
+                "first release was not installed");
+            Assert(File.ReadAllText(target + StreamlineComponentSet.BackupSuffix)
+                    .StartsWith("original:", StringComparison.Ordinal),
+                "original backup was not created");
+        }
+
+        var second = StreamlineComponentSet.UpdateExisting(sourceTwo, targets);
+        Assert(second.Success, second.Message);
+        foreach (var target in targets)
+        {
+            Assert(File.ReadAllText(target).StartsWith("release-two:", StringComparison.Ordinal),
+                "second release was not installed");
+            Assert(File.ReadAllText(target + StreamlineComponentSet.BackupSuffix)
+                    .StartsWith("original:", StringComparison.Ordinal),
+                "repeated update overwrote the original backup");
+        }
+
+        var failed = StreamlineComponentSet.UpdateExisting(
+            sourceOne,
+            targets,
+            (index, _) =>
+            {
+                if (index == 1)
+                {
+                    throw new IOException("Injected replacement failure.");
+                }
+            });
+        Assert(!failed.Success, "injected update unexpectedly succeeded");
+        Assert(targets.All(target => File.ReadAllText(target).StartsWith("release-two:", StringComparison.Ordinal)),
+            "failed set update was not rolled back");
+
+        var restored = StreamlineComponentSet.RestoreOriginals(targets);
+        Assert(restored.Success, restored.Message);
+        foreach (var target in targets)
+        {
+            Assert(File.ReadAllText(target).StartsWith("original:", StringComparison.Ordinal),
+                "original component was not restored");
+            Assert(File.Exists(target + StreamlineComponentSet.BackupSuffix),
+                "restore consumed the immutable original backup");
+        }
+    }
+
+    private static void WriteZipEntry(ZipArchive archive, string name, string contents)
+    {
+        var entry = archive.CreateEntry(name);
+        using var writer = new StreamWriter(entry.Open());
+        writer.Write(contents);
+    }
 
     private static async Task TestConcurrentStateUpdatesAsync()
     {
