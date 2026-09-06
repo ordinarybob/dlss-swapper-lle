@@ -6,8 +6,8 @@ namespace DlssSwapper.Linux.Gui;
 
 public sealed partial class ConfirmationDialog : Window
 {
-    internal const string GameFileWriteWarning =
-        "This operation writes game files. Close the game before continuing.";
+    internal static string GameFileWriteWarning => LanguageAppearance.Get("Linux_GameWriteWarning",
+        "This operation writes game files. Close the game before continuing.");
 
     public ConfirmationDialog()
     {

@@ -1,0 +1,173 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DlssSwapper.Linux.Gui.SettingsPage"
+        >
+  <Grid RowDefinitions="*,Auto" Margin="20">
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="18">
+        <TextBlock Text="{DynamicResource SettingsPage_Title}" FontSize="27" FontWeight="SemiBold" />
+        <TextBlock Text="{DynamicResource SettingsPage_Language}" />
+        <ComboBox x:Name="LanguageComboBox" HorizontalAlignment="Stretch" />
+        <TextBlock Text="{DynamicResource Linux_ApplicationLogLevel}" />
+        <ComboBox x:Name="ApplicationLogLevelComboBox" HorizontalAlignment="Stretch" />
+        <TextBlock Text="{DynamicResource Linux_NvidiaControlsUnavailable}" TextWrapping="Wrap" Classes="muted" />
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource Linux_Xaml_68}" Classes="sectionTitle" />
+            <StackPanel x:Name="ThemeSelectionPanel" Orientation="Horizontal" Spacing="16" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource Linux_Xaml_69}" Classes="sectionTitle" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_70}" TextWrapping="Wrap" />
+            <StackPanel x:Name="LibrarySelectionPanel" Spacing="8" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource Linux_Xaml_71}" Classes="sectionTitle" />
+            <CheckBox x:Name="AllowDebugCheckBox" Content="{DynamicResource Linux_Xaml_72}" />
+            <CheckBox x:Name="AllowUntrustedCheckBox" Content="{DynamicResource Linux_Xaml_73}" />
+            <CheckBox x:Name="OnlyDownloadedCheckBox" Content="{DynamicResource Linux_Xaml_74}" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_75}" TextWrapping="Wrap" Classes="muted" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_76}"
+                       TextWrapping="Wrap" Classes="muted" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{DynamicResource Linux_Xaml_77}" Classes="sectionTitle" />
+            <CheckBox x:Name="HddModeCheckBox"
+                      Content="{DynamicResource Linux_Xaml_78}" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_79}"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+            <NumericUpDown x:Name="ScanConcurrencyInput" Minimum="1" Maximum="26" Increment="1" Width="112" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource SettingsPage_ConcurrentGameScans}" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_80}" />
+            <NumericUpDown x:Name="ArtworkConcurrencyInput" Minimum="1" Maximum="64" Increment="1" Width="112" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource SettingsPage_ConcurrentArtworkLoading}" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_81}" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_82}" TextWrapping="Wrap" />
+            <NumericUpDown x:Name="UiBatchInput" Minimum="10" Maximum="1000" Increment="10" Width="112" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource Linux_Xaml_83}" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_84}" />
+            <NumericUpDown x:Name="BatchConcurrencyInput" Minimum="1" Maximum="26" Increment="1" Width="112" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource SettingsPage_ConcurrentGameUpdates}" />
+            <Button Content="{DynamicResource Linux_Xaml_85}" Click="ResetPerformanceDefaults_Click" HorizontalAlignment="Left" />
+            <TextBlock Text="{DynamicResource SettingsPage_GamesGridInfo}"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <TextBlock Text="{DynamicResource SettingsPage_CardSize}" VerticalAlignment="Center" />
+              <NumericUpDown x:Name="GridCardSizeInput" Minimum="1" Maximum="10" Width="112" />
+            </StackPanel>
+            <TextBlock Text="{DynamicResource SettingsPage_CardSizeInfo}"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{DynamicResource Linux_Xaml_86}" Classes="sectionTitle" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_87}"
+                       Classes="muted" TextWrapping="Wrap" />
+            <TextBlock x:Name="StateLocationTextBlock"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+            <Button Content="{DynamicResource Linux_Xaml_88}"
+                    Classes="danger"
+                    HorizontalAlignment="Left"
+                    Click="ResetLocalData_Click" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_89}"
+                       Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{DynamicResource Linux_Xaml_90}" Classes="sectionTitle" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_91}"
+                       Classes="muted" TextWrapping="Wrap" />
+            <TextBox x:Name="AdditionalSteamRootsTextBox"
+                     AutomationProperties.Name="{DynamicResource Linux_Xaml_92}"
+                     AcceptsReturn="True"
+                                  FontFamily="Monospace"
+                     PlaceholderText="{DynamicResource Linux_Xaml_93}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{DynamicResource SettingsPage_FallbackCoverArt}" Classes="sectionTitle" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_94}"
+                       TextWrapping="Wrap" />
+            <TextBlock Text="{DynamicResource SettingsPage_MediaWikiApiEndpoint}" FontWeight="SemiBold" />
+            <TextBox x:Name="MediaWikiEndpointTextBox" />
+            <TextBlock Text="{DynamicResource SettingsPage_AllowedImageHost}" FontWeight="SemiBold" />
+            <TextBox x:Name="MediaWikiHostTextBox" />
+            <Button Content="{DynamicResource Linux_Xaml_95}"
+                    HorizontalAlignment="Left"
+                    Click="ResetArtworkSource_Click" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{DynamicResource SettingsPage_FastScanPaths}" Classes="sectionTitle" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_96}"
+                       TextWrapping="Wrap" />
+            <Expander Header="{DynamicResource SettingsPage_BuiltInPatterns}">
+              <TextBox x:Name="BuiltInPatternsTextBox"
+                       IsReadOnly="True"
+                       AcceptsReturn="True"
+                       FontFamily="Monospace"
+                                      MaxHeight="280"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto" />
+            </Expander>
+            <TextBlock Text="{DynamicResource SettingsPage_IgnoredPaths}" FontWeight="SemiBold" />
+            <TextBlock Text="{DynamicResource Linux_IgnoredFoldersHelp}" TextWrapping="Wrap" />
+            <TextBox x:Name="IgnoredPathsTextBox" AcceptsReturn="True" MinHeight="80" />
+            <Button Content="{DynamicResource Linux_IgnoredFolderBrowse}" Click="AddIgnoredPath_Click" />
+            <TextBlock Text="{DynamicResource SettingsPage_LearnedCustomPatterns}" FontWeight="SemiBold" />
+            <TextBox x:Name="CustomPatternsTextBox"
+                     AcceptsReturn="True"
+                     FontFamily="Monospace"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     PlaceholderText="{DynamicResource Linux_Xaml_97}" />
+          </StackPanel>
+        </Border>
+
+        <Expander Header="{DynamicResource Linux_Xaml_98}" HorizontalAlignment="Stretch">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{DynamicResource Linux_Xaml_99}" TextWrapping="Wrap" />
+            <TextBox x:Name="ProviderPrefixesTextBox" AcceptsReturn="True" MinHeight="80" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_100}" TextWrapping="Wrap" />
+            <TextBox x:Name="LegendaryDirectoriesTextBox" AcceptsReturn="True" MinHeight="80" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_101}" TextWrapping="Wrap" />
+            <TextBox x:Name="HeroicDirectoriesTextBox" AcceptsReturn="True" MinHeight="80" />
+            <TextBlock Text="{DynamicResource Linux_Xaml_102}" TextWrapping="Wrap" />
+            <TextBox x:Name="HeroicExecutableTextBox" PlaceholderText="{DynamicResource Linux_Xaml_103}" />
+          </StackPanel>
+        </Expander>
+        <TextBlock x:Name="ValidationTextBlock"
+                   Foreground="{DynamicResource LleErrorTextBrush}"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </ScrollViewer>
+
+    <WrapPanel Grid.Row="1"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="0,16,0,0">
+      <Button Content="{DynamicResource DiagnosticsPage_WindowTitle}" Click="Diagnostics_Click" />
+      <Button Content="{DynamicResource Linux_Acknowledgements}" Click="Acknowledgements_Click" />
+      <Button Content="{DynamicResource Linux_OpenApplicationLog}" Click="OpenApplicationLog_Click" />
+      <Button Content="{DynamicResource Linux_CopyBuildIdentity}" Click="CopyBuildIdentity_Click" />
+      <Button Content="{DynamicResource Linux_NetworkTestsWindow_131}" Click="NetworkTests_Click" />
+      <Button Content="{DynamicResource SettingsPage_OpenTranslationToolbox}" Click="TranslationToolbox_Click" />
+      <Button Content="{DynamicResource Linux_Xaml_104}" Click="Proxy_Click" />
+      <Button Content="{DynamicResource General_Cancel}" Click="Cancel_Click" MinWidth="110" />
+      <Button Content="{DynamicResource General_Save}" Classes="primary" Click="Save_Click" MinWidth="110" />
+    </WrapPanel>
+  </Grid>
+</UserControl>

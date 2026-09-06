@@ -1,4 +1,5 @@
 using System;
+using DLSS_Swapper.Data.Streamline;
 using SQLite;
 
 namespace DLSS_Swapper.Data;
@@ -39,7 +40,8 @@ public class GameHistory
                 return string.Empty;
             }
 
-            return DLLManager.Instance.GetAssetTypeName(AssetType.Value);
+            return StreamlineAssetMetadata.GetDisplayName(AssetType.Value)
+                ?? DLLManager.Instance.GetAssetTypeName(AssetType.Value);
         }
     }
 

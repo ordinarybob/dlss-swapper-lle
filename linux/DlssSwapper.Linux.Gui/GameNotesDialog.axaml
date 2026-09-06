@@ -1,23 +1,24 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DlssSwapper.Linux.Gui.GameNotesDialog"
-        Title="Game notes"
+        Title="{DynamicResource Linux_Xaml_28}"
         Width="600"
         Height="390"
         MinWidth="420"
         MinHeight="300"
         WindowStartupLocation="CenterOwner">
-  <Grid RowDefinitions="Auto,*,Auto" Margin="18" RowSpacing="12">
+  <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="18" RowSpacing="12">
     <TextBlock x:Name="GameNameText" FontSize="20" FontWeight="SemiBold" />
     <TextBox x:Name="NotesTextBox"
              Grid.Row="1"
              AcceptsReturn="True"
              TextWrapping="Wrap"
              VerticalContentAlignment="Top"
-             PlaceholderText="Add notes for this game." />
-    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-      <Button Content="Save" Classes="primary" Click="Save_Click" />
-      <Button Content="Cancel" Click="Cancel_Click" />
+             PlaceholderText="{DynamicResource Linux_Xaml_29}" />
+    <TextBlock x:Name="SaveError" Grid.Row="2" TextWrapping="Wrap" />
+    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="{DynamicResource General_Save}" Classes="primary" Click="Save_Click" />
+      <Button Content="{DynamicResource General_Cancel}" Click="Cancel_Click" />
     </StackPanel>
   </Grid>
 </Window>

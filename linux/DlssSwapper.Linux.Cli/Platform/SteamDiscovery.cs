@@ -9,7 +9,10 @@ public sealed record SteamGame(
 
 public sealed record SteamDiscoveryResult(
     IReadOnlyList<SteamGame> Games,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings)
+{
+    public IReadOnlyList<DiscoverySourceOutcome> Sources { get; init; } = [];
+}
 
 public sealed record SteamDiscoveryOptions
 {
@@ -39,27 +42,28 @@ public sealed class SteamDiscovery
     {
         ArgumentNullException.ThrowIfNull(options);
         var warnings = new List<string>();
+        var sources = new List<DiscoverySourceOutcome>();
         var steamRoots = new HashSet<string>(PathComparer);
         var rootCandidates = options.IncludeDefaultRoots
             ? GetDefaultRoots(options).Concat(options.AdditionalRoots)
             : options.AdditionalRoots;
         foreach (var candidate in rootCandidates)
         {
-            TryAddSteamRoot(candidate, steamRoots, warnings);
+            TryAddSteamRoot(candidate, steamRoots, warnings, sources);
         }
 
         var libraries = new HashSet<string>(PathComparer);
         foreach (var steamRoot in steamRoots)
         {
-            TryAddLibrary(steamRoot, libraries, warnings);
-            AddConfiguredLibraries(steamRoot, libraries, warnings);
+            TryAddLibrary(steamRoot, libraries, warnings, sources);
+            AddConfiguredLibraries(steamRoot, libraries, warnings, sources);
         }
 
         var games = new List<SteamGame>();
         var gamePaths = new HashSet<string>(PathComparer);
         foreach (var library in libraries)
         {
-            AddGames(library, games, gamePaths, warnings);
+            sources.Add(AddGames(library, games, gamePaths, warnings));
         }
 
         games.Sort((left, right) =>
@@ -67,7 +71,7 @@ public sealed class SteamDiscovery
             var byName = StringComparer.OrdinalIgnoreCase.Compare(left.Name, right.Name);
             return byName != 0 ? byName : StringComparer.Ordinal.Compare(left.AppId, right.AppId);
         });
-        return new SteamDiscoveryResult(games, warnings);
+        return new SteamDiscoveryResult(games, warnings) { Sources = sources };
     }
 
     internal static IEnumerable<string> GetDefaultRoots(SteamDiscoveryOptions options)
@@ -120,7 +124,7 @@ public sealed class SteamDiscovery
     private static void TryAddSteamRoot(
         string candidate,
         HashSet<string> roots,
-        List<string> warnings)
+        List<string> warnings, List<DiscoverySourceOutcome> sources)
     {
         if (string.IsNullOrWhiteSpace(candidate))
         {
@@ -134,9 +138,10 @@ public sealed class SteamDiscovery
             {
                 roots.Add(CanonicalizeDirectory(normalized));
             }
-            else if (Directory.Exists(candidate))
+            else
             {
-                warnings.Add($"Steam root has no steamapps directory: {candidate}");
+                if (Directory.Exists(candidate)) warnings.Add($"Steam root has no steamapps directory: {candidate}");
+                sources.Add(new("SteamLibrary", normalized, DiscoverySourceState.Unavailable, "steamapps is missing or inaccessible."));
             }
         }
         catch (Exception exception) when (exception is IOException
@@ -145,6 +150,7 @@ public sealed class SteamDiscovery
             or NotSupportedException)
         {
             warnings.Add($"Could not inspect Steam root '{candidate}': {exception.Message}");
+            sources.Add(new("SteamLibrary", candidate, DiscoverySourceState.Unavailable, exception.Message));
         }
     }
 
@@ -194,7 +200,7 @@ public sealed class SteamDiscovery
     private static void TryAddLibrary(
         string libraryRoot,
         HashSet<string> libraries,
-        List<string> warnings)
+        List<string> warnings, List<DiscoverySourceOutcome> sources)
     {
         try
         {
@@ -203,19 +209,21 @@ public sealed class SteamDiscovery
             {
                 libraries.Add(canonical);
             }
+            else sources.Add(new("SteamLibrary", canonical, DiscoverySourceState.Unavailable, "steamapps is missing or inaccessible."));
         }
         catch (Exception exception) when (exception is IOException
             or UnauthorizedAccessException
             or ArgumentException)
         {
             warnings.Add($"Could not inspect Steam library '{libraryRoot}': {exception.Message}");
+            sources.Add(new("SteamLibrary", libraryRoot, DiscoverySourceState.Unavailable, exception.Message));
         }
     }
 
     private static void AddConfiguredLibraries(
         string steamRoot,
         HashSet<string> libraries,
-        List<string> warnings)
+        List<string> warnings, List<DiscoverySourceOutcome> sources)
     {
         var vdfPath = Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
         if (!File.Exists(vdfPath))
@@ -238,7 +246,7 @@ public sealed class SteamDiscovery
                 var path = entry.Children?.GetString("path") ?? entry.Value;
                 if (!string.IsNullOrWhiteSpace(path))
                 {
-                    TryAddLibrary(path, libraries, warnings);
+                    TryAddLibrary(path, libraries, warnings, sources);
                 }
             }
         }
@@ -251,7 +259,7 @@ public sealed class SteamDiscovery
         }
     }
 
-    private static void AddGames(
+    private static DiscoverySourceOutcome AddGames(
         string libraryRoot,
         List<SteamGame> games,
         HashSet<string> gamePaths,
@@ -269,9 +277,10 @@ public sealed class SteamDiscovery
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             warnings.Add($"Could not enumerate Steam manifests in '{steamApps}': {exception.Message}");
-            return;
+            return new("SteamLibrary", libraryRoot, DiscoverySourceState.Unavailable, exception.Message);
         }
 
+        var complete = true;
         foreach (var manifest in manifests)
         {
             try
@@ -287,6 +296,7 @@ public sealed class SteamDiscovery
                     || string.IsNullOrWhiteSpace(installDirName))
                 {
                     warnings.Add($"Steam manifest is missing appid, name, or installdir: {manifest}");
+                    complete = false;
                     continue;
                 }
 
@@ -296,6 +306,7 @@ public sealed class SteamDiscovery
                     || !appId.Equals(manifestAppId, StringComparison.Ordinal))
                 {
                     warnings.Add($"Steam manifest app ID does not match its filename: {manifest}");
+                    complete = false;
                     continue;
                 }
 
@@ -314,11 +325,14 @@ public sealed class SteamDiscovery
                         out var installDirectory))
                 {
                     warnings.Add($"Steam install directory escapes its library: {manifest}");
+                    complete = false;
                     continue;
                 }
 
                 if (!Directory.Exists(installDirectory))
                 {
+                    complete = false;
+                    warnings.Add($"Steam game directory is unavailable: {installDirectory}");
                     continue;
                 }
 
@@ -339,8 +353,10 @@ public sealed class SteamDiscovery
                 or ArgumentException)
             {
                 warnings.Add($"Could not read Steam manifest '{manifest}': {exception.Message}");
+                complete = false;
             }
         }
+        return new("SteamLibrary", libraryRoot, complete ? DiscoverySourceState.Complete : DiscoverySourceState.Partial);
     }
 
     private static ValveKeyValueObject ReadKeyValues(string path)

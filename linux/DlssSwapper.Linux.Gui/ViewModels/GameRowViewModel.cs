@@ -6,8 +6,9 @@ namespace DlssSwapper.Linux.Gui.ViewModels;
 public sealed class GameRowViewModel : ObservableObject
 {
     private bool _isSelected;
-    private string _scanSummary = "Not scanned";
-    private string _scanDetail = "Select this game, then scan it.";
+    private string _scanSummary = LanguageAppearance.Get("Linux_NotScanned", "Not scanned");
+    private string _scanDetail = LanguageAppearance.Get("Linux_ScanHint", "Select this game, then scan it.");
+    private bool _hasCustomCover;
     private Bitmap? _coverImage;
     private string? _artworkPath;
     private bool _isFavorite;
@@ -22,15 +23,26 @@ public sealed class GameRowViewModel : ObservableObject
         Game = game;
     }
 
-    public SelectedGame Game { get; }
+    public SelectedGame Game { get; private set; }
+
+    public void SetTitle(string title)
+    {
+        Game = Game with { Name = title };
+        if (ScanResult is not null) ScanResult = ScanResult with { Game = Game };
+        OnPropertyChanged(nameof(Game));
+        OnPropertyChanged(nameof(Name));
+        OnPropertyChanged(nameof(ScanResult));
+    }
 
     public string Name => Game.Name;
+    public string CustomCoverActionText => _hasCustomCover
+        ? LanguageAppearance.Get("Linux_RemoveCover", "Remove custom cover") : LanguageAppearance.Get("Linux_AddCover", "Add custom cover");
 
     public string RootPath => Game.RootPath;
 
-    public string Source => Game.SteamAppId is null
-        ? "Explicit path"
-        : $"Steam app {Game.SteamAppId}";
+    public string Source => Game.ProviderIdentity is { } identity ? $"{identity.Provider} · {identity.Id}" : Game.SteamAppId is null
+        ? LanguageAppearance.Get("Linux_ExplicitPath", "Explicit path")
+        : LanguageAppearance.Format("Linux_SteamApp", "Steam app {0}", Game.SteamAppId);
 
     public bool IsSelected
     {
@@ -89,9 +101,17 @@ public sealed class GameRowViewModel : ObservableObject
         }
     }
 
-    public string FavoriteActionText => IsFavorite ? "Unfavorite" : "Favorite";
+    public string FavoriteActionText => IsFavorite ? LanguageAppearance.Get("GamePage_Unfavorite", "Unfavorite") : LanguageAppearance.Get("GamePage_Favorite", "Favorite");
 
-    public string HideActionText => IsHidden ? "Show" : "Hide";
+    public string HideActionText => IsHidden ? LanguageAppearance.Get("GamePage_Show", "Show") : LanguageAppearance.Get("GamePage_Hide", "Hide");
+
+    public void RefreshLanguage()
+    {
+        OnPropertyChanged(nameof(FavoriteActionText));
+        OnPropertyChanged(nameof(HideActionText));
+        OnPropertyChanged(nameof(CustomCoverActionText));
+        OnPropertyChanged(nameof(Source));
+    }
 
     public string FavoriteMarker => IsFavorite ? "★" : string.Empty;
 
@@ -130,11 +150,15 @@ public sealed class GameRowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(preference);
         IsFavorite = preference.IsFavorite;
         IsHidden = preference.IsHidden;
+        _hasCustomCover = preference.CustomArtworkPath is not null;
+        OnPropertyChanged(nameof(CustomCoverActionText));
     }
 
-    public void SetArtwork(string path)
+    public void SetArtwork(string path, Action? beforeApply = null)
     {
         var next = new Bitmap(path);
+        try { beforeApply?.Invoke(); }
+        catch { next.Dispose(); throw; }
         var previous = CoverImage;
         ArtworkPath = path;
         CoverImage = next;
@@ -157,14 +181,21 @@ public sealed class GameRowViewModel : ObservableObject
 
         var primaryDll = scan.Dlls
             .Where(dll => dll.Type == DllType.Dlss)
-            .OrderByDescending(dll => dll.Version, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(dll => dll.Version, DlssSwapper.Shared.VersionTextComparer.Instance)
             .FirstOrDefault();
         CardDllLabel = "DLSS";
         CardDllVersion = FormatCardVersion(primaryDll?.Version);
+        var problem = scan.CachedAtUtc is null ? ScanPresentation.Problem(scan, Directory.Exists(scan.Game.RootPath), LanguageAppearance.Current) : null;
 
         if (scan.Dlls.Count == 0)
         {
-            ScanSummary = "No supported DLLs found";
+            ScanSummary = problem ?? LanguageAppearance.Get("Linux_NoDlls", "No supported DLLs found");
+            if (problem is null && scan.StreamlineFiles.Count > 0)
+            {
+                ScanSummary = LanguageAppearance.Format("Linux_StreamlineFound", "{0} Streamline components found", scan.StreamlineFiles.Count);
+                CardDllLabel = "Streamline"; CardDllVersion = LanguageAppearance.Format("Linux_ComponentCount", "{0} components", scan.StreamlineFiles.Count);
+            }
+            if (problem is not null) { CardDllLabel = LanguageAppearance.Get("Linux_GuiRemainingScan", "Scan"); CardDllVersion = problem; }
         }
         else
         {
@@ -181,13 +212,19 @@ public sealed class GameRowViewModel : ObservableObject
                                 .Distinct(StringComparer.OrdinalIgnoreCase)
                                 .OrderBy(version => version, StringComparer.OrdinalIgnoreCase));
                         var count = group.Count();
-                        return $"{DllTypes.Get(group.Key).DisplayName}: {versions} ({count} file{(count == 1 ? string.Empty : "s")})";
+                        return count == 1
+                            ? LanguageAppearance.Format("Linux_ScanOneFile", "{0}: {1} ({2} file)", DllTypes.Get(group.Key).DisplayName, versions, count)
+                            : LanguageAppearance.Format("Linux_ScanFiles", "{0}: {1} ({2} files)", DllTypes.Get(group.Key).DisplayName, versions, count);
                     }));
         }
 
-        ScanDetail = scan.Warnings.Count == 0
-            ? $"{scan.Dlls.Count} supported DLL file{(scan.Dlls.Count == 1 ? string.Empty : "s")} scanned."
-            : $"{scan.Dlls.Count} supported DLL files; {scan.Warnings.Count} warning{(scan.Warnings.Count == 1 ? string.Empty : "s")}.";
+        ScanDetail = ScanPresentation.Detail(scan, LanguageAppearance.Current) + (scan.StreamlineFiles.Count == 0 ? "" : "\n" + LanguageAppearance.Get("Linux_StreamlineList", "Streamline components:") + "\n" + string.Join("\n", scan.StreamlineFiles));
+        if (scan.CachedAtUtc is { } observed)
+        {
+            ScanSummary = LanguageAppearance.Format("Linux_LastKnown", "Last known — {0}", ScanSummary);
+            CardDllVersion = LanguageAppearance.Format("Linux_LastKnownVersion", "{0} (last known)", CardDllVersion);
+            ScanDetail = LanguageAppearance.Format("Linux_LastChecked", "Last checked {0:g}; not verified this session.\n{1}", observed.ToLocalTime(), ScanDetail);
+        }
     }
 
     private static string FormatCardVersion(string? version)

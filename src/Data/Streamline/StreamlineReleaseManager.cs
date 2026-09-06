@@ -1,142 +1,49 @@
 using System;
 using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using DLSS_Swapper.Helpers;
 
 namespace DLSS_Swapper.Data.Streamline;
 
-internal sealed record StreamlinePackage(string Tag, string DirectoryPath);
+internal sealed record StreamlinePackage(string Tag, string DirectoryPath, bool WasDownloaded = false);
+internal sealed record StreamlineRelease(string Tag, string DownloadUrl);
 
 internal static class StreamlineReleaseManager
 {
-    const string LatestReleaseApi =
-        "https://api.github.com/repos/NVIDIA-RTX/Streamline/releases/latest";
-
     internal static async Task<StreamlinePackage> PrepareLatestAsync(
         Action<long, long, double>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        using var response = await App.CurrentApp.HttpClient
-            .GetAsync(LatestReleaseApi, cancellationToken)
-            .ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-
-        await using var responseStream = await response.Content
-            .ReadAsStreamAsync(cancellationToken)
-            .ConfigureAwait(false);
-        using var document = await JsonDocument
-            .ParseAsync(responseStream, cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-        var root = document.RootElement;
-        var tag = root.GetProperty("tag_name").GetString();
-        if (string.IsNullOrWhiteSpace(tag))
-        {
-            throw new InvalidDataException("NVIDIA's latest Streamline release has no version tag.");
-        }
-
-        var asset = root.GetProperty("assets")
-            .EnumerateArray()
-            .Select(item => new
+        var release = await StreamlineSdkAcquisition.FetchLatestAsync(
+            App.CurrentApp.HttpClient, cancellationToken).ConfigureAwait(false);
+        var package = await StreamlineSdkAcquisition.PrepareAsync(
+            release,
+            Path.Combine(Storage.GetStorageFolder(), "streamline"),
+            Path.Combine(Storage.GetTemp(), "streamline"),
+            async (url, output, token) =>
             {
-                Name = item.GetProperty("name").GetString(),
-                Url = item.GetProperty("browser_download_url").GetString(),
-            })
-            .SingleOrDefault(item =>
-                item.Name is not null
-                && item.Name.StartsWith("streamline-sdk-", StringComparison.OrdinalIgnoreCase)
-                && item.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
-        if (asset?.Url is null)
-        {
-            throw new InvalidDataException(
-                "NVIDIA's latest Streamline release has no unambiguous SDK ZIP asset.");
-        }
-
-        var packageDirectory = Path.Combine(
-            Storage.GetStorageFolder(),
-            "streamline",
-            SanitizePathSegment(tag));
-        if (HasCompletePackage(packageDirectory))
-        {
-            return new(tag, packageDirectory);
-        }
-
-        var workingDirectory = Path.Combine(Storage.GetTemp(), "streamline");
-        Directory.CreateDirectory(workingDirectory);
-        var archivePath = Path.Combine(
-            workingDirectory,
-            $"{SanitizePathSegment(tag)}-{Guid.NewGuid():N}.zip");
-        try
-        {
-            await using (var output = new FileStream(
-                archivePath,
-                FileMode.CreateNew,
-                FileAccess.Write,
-                FileShare.None,
-                FileDownloader.BufferSize,
-                useAsync: true))
-            {
-                var downloader = new FileDownloader(asset.Url);
+                var downloader = new FileDownloader(url);
                 await downloader.DownloadFileToStreamAsync(
-                    output,
-                    cancellationToken,
-                    progressCallback: progress).ConfigureAwait(false);
-            }
+                    output, token, progressCallback: progress).ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+        return new(package.Tag, package.DirectoryPath, package.WasDownloaded);
+    }
 
-            StreamlineComponentSet.ExtractProductionFiles(archivePath, packageDirectory);
-            return new(tag, packageDirectory);
-        }
-        finally
-        {
-            try
-            {
-                File.Delete(archivePath);
-            }
-            catch
-            {
-                // A stale temporary archive is safe to remove during normal cache cleanup.
-            }
-        }
+    // Metadata lookup has no package extraction or storage writes.
+    internal static async Task<StreamlineRelease> FetchLatestAsync(CancellationToken cancellationToken = default)
+    {
+        var release = await StreamlineSdkAcquisition.FetchLatestAsync(
+            App.CurrentApp.HttpClient, cancellationToken).ConfigureAwait(false);
+        return new(release.Tag, release.DownloadUrl);
     }
 
     internal static StreamlinePackage? FindNewestCached()
     {
-        var root = Path.Combine(Storage.GetStorageFolder(), "streamline");
-        if (Directory.Exists(root) == false)
-        {
-            return null;
-        }
-
-        var directory = Directory
-            .EnumerateDirectories(root)
-            .Where(HasCompletePackage)
-            .OrderByDescending(path => path, StringComparer.OrdinalIgnoreCase)
-            .FirstOrDefault();
-        return directory is null
-            ? null
-            : new(Path.GetFileName(directory), directory);
-    }
-
-    static bool HasCompletePackage(string directory)
-    {
-        return Directory.Exists(directory)
-            && StreamlineComponentSet.FileNames.All(fileName =>
-            {
-                var path = Path.Combine(directory, fileName);
-                return File.Exists(path) && new FileInfo(path).Length > 0;
-            });
-    }
-
-    static string SanitizePathSegment(string value)
-    {
-        foreach (var invalidCharacter in Path.GetInvalidFileNameChars())
-        {
-            value = value.Replace(invalidCharacter, '_');
-        }
-
-        return value;
+        var directory = StreamlinePackageCache.FindNewest(
+            Path.Combine(Storage.GetStorageFolder(), "streamline"),
+            StreamlineSdkAcquisition.HasCompletePackage);
+        return directory is null ? null : new(Path.GetFileName(directory), directory);
     }
 }

@@ -15,6 +15,10 @@ public sealed record PerformanceLimits(
 
 public sealed class ManualGameState
 {
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalData { get; set; }
+
+    public ManualGameLaunch? Launch { get; set; }
     public string Name { get; set; } = string.Empty;
 
     public string RootPath { get; set; } = string.Empty;
@@ -28,6 +32,9 @@ public sealed class ManualGameState
 
 public sealed class GamePreferenceState
 {
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalData { get; set; }
+
     public string RootPath { get; set; } = string.Empty;
 
     public bool IsFavorite { get; set; }
@@ -41,6 +48,9 @@ public sealed class GamePreferenceState
 
 public sealed class GameHistoryState
 {
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalData { get; set; }
+
     public string RootPath { get; set; } = string.Empty;
 
     public DateTimeOffset EventTimeUtc { get; set; } = DateTimeOffset.UtcNow;
@@ -54,31 +64,65 @@ public sealed class GameHistoryState
     public string Detail { get; set; } = string.Empty;
 }
 
-public sealed class LinuxLibraryState
+public sealed partial class LinuxLibraryState
 {
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalData { get; set; }
+
     public const int CurrentSchemaVersion = 2;
     public const string DefaultMediaWikiApiEndpoint = "https://en.wikipedia.org/w/api.php";
     public const string DefaultMediaWikiImageHost = "upload.wikimedia.org";
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
+    public ProxySettings? Proxy { get; set; }
+    public string Language { get; set; } = "en-US";
+    public SavedWindowPlacement? WindowPlacement { get; set; }
+    public string? LastLaunchVersion { get; set; }
+    public string ApplicationLoggingLevel { get; set; } = "Error";
+
     public List<ManualGameState> ManualGames { get; set; } = [];
 
+    public List<DllCatalogEntry> ImportedDlls { get; set; } = [];
+
     public List<string> ExcludedSteamAppIds { get; set; } = [];
+    public List<ProviderGameIdentity> ExcludedProviderGames { get; set; } = [];
 
     public List<string> AdditionalSteamRoots { get; set; } = [];
+    public List<string> ProviderWinePrefixes { get; set; } = [];
+    public Dictionary<string, string> ProviderWineRunners { get; set; } = new(StringComparer.Ordinal);
+    public List<string> LegendaryConfigDirectories { get; set; } = [];
+    public List<string> HeroicConfigDirectories { get; set; } = [];
+    public string? HeroicExecutable { get; set; }
 
     public List<string> CustomScanPatterns { get; set; } = [];
+    public List<string> IgnoredPaths { get; set; } = [];
 
     public List<GamePreferenceState> GamePreferences { get; set; } = [];
 
     public List<GameHistoryState> GameHistory { get; set; } = [];
+    public DiscoverySnapshot? DiscoverySnapshot { get; set; }
 
     public bool HasCompletedInitialDeepScan { get; set; }
 
     public bool HasSelectedStorageProfile { get; set; }
 
     public bool HddMode { get; set; }
+    public string? AppTheme { get; set; }
+    public int? ScanConcurrency { get; set; }
+    public int? ArtworkConcurrency { get; set; }
+    public int BatchSwapConcurrency { get; set; } = 15;
+    private int _uiCollectionBatchSize = 550;
+    public int UiCollectionBatchSize
+    {
+        get => _uiCollectionBatchSize;
+        set => _uiCollectionBatchSize = Math.Clamp(value, 10, 1000);
+    }
+
+    public bool AllowDebugDlls { get; set; }
+
+    public bool AllowUntrustedDlls { get; set; }
+    public bool OnlyShowDownloadedDlls { get; set; }
 
     public int CardSize { get; set; }
 
@@ -89,6 +133,9 @@ public sealed class LinuxLibraryState
     public int GridRows { get; set; }
 
     public bool GridView { get; set; } = true;
+    public bool HideNonSwappableGames { get; set; } = true;
+    public bool GroupGameLibrariesTogether { get; set; } = true;
+    public List<LibrarySelectionEntry> LibrarySelection { get; set; } = [];
 
     public bool SuppressSingleFolderNotice { get; set; }
 
@@ -96,18 +143,34 @@ public sealed class LinuxLibraryState
 
     public bool SuppressMultiGameDirectoryNotice { get; set; }
 
+    public bool DontShowManualLaunchPrompt { get; set; }
+
+    public bool SetupManualLaunchOnImport { get; set; }
+
     public string MediaWikiApiEndpoint { get; set; } = DefaultMediaWikiApiEndpoint;
 
     public string MediaWikiImageHost { get; set; } = DefaultMediaWikiImageHost;
 
     [JsonIgnore]
-    public PerformanceLimits Performance => HddMode
-        ? PerformanceLimits.Hdd
-        : PerformanceLimits.Standard;
+    public PerformanceLimits Performance => new(
+        Math.Clamp(ScanConcurrency ?? (HddMode ? PerformanceLimits.Hdd : PerformanceLimits.Standard).ScanConcurrency, 1, 26),
+        Math.Clamp(ArtworkConcurrency ?? (HddMode ? PerformanceLimits.Hdd : PerformanceLimits.Standard).ArtworkConcurrency, 1, 64));
+
+    public void ApplyStorageProfile(bool hddMode)
+    {
+        HddMode = hddMode;
+        ScanConcurrency = null;
+        ArtworkConcurrency = null;
+        BatchSwapConcurrency = 15;
+        UiCollectionBatchSize = 550;
+        HasSelectedStorageProfile = true;
+    }
 }
 
 public sealed class LibraryStateStore
 {
+    private byte[]? _loadedBytes;
+    private bool _loadFailed;
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -126,23 +189,23 @@ public sealed class LibraryStateStore
 
     public LinuxLibraryState Load()
     {
+        _loadFailed = true;
         if (!File.Exists(StatePath))
         {
+            _loadedBytes = null;
+            _loadFailed = false;
             return Normalize(new LinuxLibraryState());
         }
 
         try
         {
-            using var stream = new FileStream(
-                StatePath,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.Read,
-                bufferSize: 64 * 1024,
-                FileOptions.SequentialScan);
-            var state = JsonSerializer.Deserialize<LinuxLibraryState>(stream, SerializerOptions)
+            var bytes = File.ReadAllBytes(StatePath);
+            var state = JsonSerializer.Deserialize<LinuxLibraryState>(bytes, SerializerOptions)
                 ?? throw new InvalidDataException("The Linux library state is empty.");
-            return Normalize(state);
+            var normalized = Normalize(state);
+            _loadedBytes = bytes;
+            _loadFailed = false;
+            return normalized;
         }
         catch (JsonException exception)
         {
@@ -156,11 +219,27 @@ public sealed class LibraryStateStore
     {
         ArgumentNullException.ThrowIfNull(state);
         var normalized = Normalize(state);
+        if (_loadFailed)
+        {
+            throw new InvalidOperationException("Saved library data could not be read. It has not been overwritten.");
+        }
+        using var coordination = AcquireCoordinationLock();
         Directory.CreateDirectory(StateDirectory);
+
+        // Keep the lock file: deleting it can let two processes lock different files.
+        // The lock serializes this application's check-and-replace, not external editors.
+        using var writeLock = AcquireWriteLock();
+        var currentBytes = File.Exists(StatePath) ? File.ReadAllBytes(StatePath) : null;
+        if ((_loadedBytes is null) != (currentBytes is null)
+            || (_loadedBytes is not null && !currentBytes!.AsSpan().SequenceEqual(_loadedBytes)))
+        {
+            throw new IOException("Saved library data changed in another instance. Reopen the app or retry the CLI command before saving; no changes were overwritten.");
+        }
 
         var temporaryPath = Path.Combine(
             StateDirectory,
             $".{Path.GetFileName(StatePath)}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp");
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(normalized, SerializerOptions);
         try
         {
             using (var stream = new FileStream(
@@ -171,7 +250,7 @@ public sealed class LibraryStateStore
                 bufferSize: 64 * 1024,
                 FileOptions.WriteThrough))
             {
-                JsonSerializer.Serialize(stream, normalized, SerializerOptions);
+                stream.Write(bytes);
                 stream.Flush(flushToDisk: true);
             }
 
@@ -183,6 +262,7 @@ public sealed class LibraryStateStore
             }
 
             File.Move(temporaryPath, StatePath, overwrite: true);
+            _loadedBytes = bytes;
         }
         finally
         {
@@ -190,6 +270,53 @@ public sealed class LibraryStateStore
             {
                 File.Delete(temporaryPath);
             }
+        }
+    }
+
+    internal FileStream AcquireWriteLock()
+    {
+        try
+        {
+            return new FileStream(Path.Combine(StateDirectory, ".state.write.lock"),
+                FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        }
+        catch (IOException error)
+        {
+            throw new IOException("Another instance may be saving library data. Retry after it finishes. No changes were overwritten.", error);
+        }
+    }
+
+    // Unlike a lock file inside the state directory, this survives a directory reset.
+    internal IDisposable AcquireCoordinationLock(int millisecondsTimeout = 0)
+    {
+        var identity = Path.TrimEndingDirectorySeparator(StateDirectory);
+        if (OperatingSystem.IsWindows()) identity = identity.ToUpperInvariant();
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(identity)));
+        var mutex = new Mutex(false, "LLE.LibraryState." + hash);
+        var acquired = false;
+        try
+        {
+            try { acquired = mutex.WaitOne(millisecondsTimeout); }
+            catch (AbandonedMutexException) { acquired = true; }
+            if (!acquired)
+                throw new IOException("Another instance is saving or resetting library data. Retry after it finishes.");
+            return new CoordinationLease(mutex);
+        }
+        catch
+        {
+            if (acquired) mutex.ReleaseMutex();
+            mutex.Dispose();
+            throw;
+        }
+    }
+
+    private sealed class CoordinationLease(Mutex mutex) : IDisposable
+    {
+        public void Dispose()
+        {
+            mutex.ReleaseMutex();
+            mutex.Dispose();
         }
     }
 
@@ -207,8 +334,16 @@ public sealed class LibraryStateStore
         state.ExcludedSteamAppIds ??= [];
         state.AdditionalSteamRoots ??= [];
         state.CustomScanPatterns ??= [];
+        state.IgnoredPaths = GameViewPolicy.NormalizeIgnoredPaths(state.IgnoredPaths ?? []);
         state.GamePreferences ??= [];
         state.GameHistory ??= [];
+
+        ValidateSavedRecords(state.ManualGames, item => item.RootPath, "manual game", true);
+        _ = LibrarySelection.Read(state);
+        ValidateSavedRecords(state.GamePreferences, item => item.RootPath, "game preference", true);
+        ValidateSavedRecords(state.GameHistory, item => item.RootPath, "history", false);
+        if (state.GameHistory.Any(item => string.IsNullOrWhiteSpace(item.EventType)))
+            throw new InvalidDataException("Saved history contains an entry without an event type. The saved file has not been changed.");
 
         var manualPaths = new HashSet<string>(PathComparers.FileSystemPath);
         state.ManualGames = state.ManualGames
@@ -233,6 +368,10 @@ public sealed class LibraryStateStore
             state.ExcludedSteamAppIds,
             StringComparer.Ordinal);
         state.AdditionalSteamRoots = NormalizePaths(state.AdditionalSteamRoots);
+        state.ProviderWinePrefixes = NormalizePaths(state.ProviderWinePrefixes ?? []);
+        state.ProviderWineRunners ??= new(StringComparer.Ordinal);
+        state.LegendaryConfigDirectories = NormalizePaths(state.LegendaryConfigDirectories ?? []);
+        state.HeroicConfigDirectories = NormalizePaths(state.HeroicConfigDirectories ?? []);
         state.CustomScanPatterns = FastScanPatternIndex.NormalizeCustomPatterns(
             state.CustomScanPatterns).ToList();
         var preferencePaths = new HashSet<string>(PathComparers.FileSystemPath);
@@ -242,7 +381,7 @@ public sealed class LibraryStateStore
             .Select(preference =>
             {
                 preference.RootPath = NormalizeStatePath(preference.RootPath);
-                preference.Notes = NormalizeOptional(preference.Notes);
+                // Notes are user text: retain whitespace, empty strings and line endings.
                 preference.CustomArtworkPath = NormalizeOptionalPath(
                     preference.CustomArtworkPath);
                 return preference;
@@ -250,7 +389,8 @@ public sealed class LibraryStateStore
             .Where(preference => preference.IsFavorite
                 || preference.IsHidden
                 || preference.Notes is not null
-                || preference.CustomArtworkPath is not null)
+                || preference.CustomArtworkPath is not null
+                || preference.AdditionalData?.Count > 0)
             .Where(preference => preferencePaths.Add(preference.RootPath))
             .OrderBy(preference => preference.RootPath, PathComparers.FileSystemPath)
             .ToList();
@@ -264,11 +404,11 @@ public sealed class LibraryStateStore
                 history.EventType = history.EventType.Trim();
                 history.AssetType = history.AssetType?.Trim() ?? string.Empty;
                 history.Version = history.Version?.Trim() ?? string.Empty;
-                history.Detail = history.Detail?.Trim() ?? string.Empty;
+                history.Detail ??= string.Empty;
                 return history;
             })
             .OrderByDescending(history => history.EventTimeUtc)
-            .Take(5000)
+            // Saving one game must not silently discard another game's history.
             .ToList();
         if (state.CardSize is < ResponsiveGridLayout.MinimumCardSize
             or > ResponsiveGridLayout.MaximumCardSize)
@@ -281,6 +421,23 @@ public sealed class LibraryStateStore
         state.MediaWikiApiEndpoint = NormalizeMediaWikiEndpoint(state.MediaWikiApiEndpoint);
         state.MediaWikiImageHost = NormalizeImageHost(state.MediaWikiImageHost);
         return state;
+    }
+
+    private static void ValidateSavedRecords<T>(IEnumerable<T> records, Func<T, string?> getRoot, string label, bool uniqueRoot)
+        where T : class
+    {
+        var byRoot = new Dictionary<string, T>(PathComparers.FileSystemPath);
+        foreach (var item in records)
+        {
+            if (item is null || string.IsNullOrWhiteSpace(getRoot(item)))
+                throw new InvalidDataException($"Saved {label} data contains an entry without a game path. The saved file has not been changed.");
+            var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(getRoot(item)!.Trim()));
+            if (!uniqueRoot) continue;
+            if (byRoot.TryGetValue(root, out var prior)
+                && JsonSerializer.Serialize(prior, SerializerOptions) != JsonSerializer.Serialize(item, SerializerOptions))
+                throw new InvalidDataException($"Saved {label} data contains conflicting entries for '{root}'. The saved file has not been changed.");
+            byRoot.TryAdd(root, item);
+        }
     }
 
     public static string GetDefaultStateDirectory()
@@ -410,11 +567,13 @@ public sealed class PersistentLibrary
 {
     private readonly LibraryStateStore _store;
     private readonly object _stateLock = new();
+    private byte[] _committedState;
 
     public PersistentLibrary(LibraryStateStore store)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         State = store.Load();
+        _committedState = JsonSerializer.SerializeToUtf8Bytes(State);
     }
 
     public LinuxLibraryState State { get; private set; }
@@ -426,9 +585,17 @@ public sealed class PersistentLibrary
         ArgumentNullException.ThrowIfNull(update);
         lock (_stateLock)
         {
-            var result = update(State);
-            _store.Save(State);
-            return result;
+            try
+            {
+                var result = update(State);
+                Save();
+                return result;
+            }
+            catch
+            {
+                RestoreCommittedState();
+                throw;
+            }
         }
     }
 
@@ -463,7 +630,9 @@ public sealed class PersistentLibrary
         });
     }
 
-    public IReadOnlyList<SelectedGame> Merge(SteamDiscoveryResult discovery)
+    public IReadOnlyList<SelectedGame> Merge(SteamDiscoveryResult discovery) => Merge(discovery, []);
+
+    public IReadOnlyList<SelectedGame> Merge(SteamDiscoveryResult discovery, IReadOnlyList<ProviderGame> providerGames)
     {
         ArgumentNullException.ThrowIfNull(discovery);
         lock (_stateLock)
@@ -491,7 +660,54 @@ public sealed class PersistentLibrary
                         manualGame.SteamAppId));
             }
 
+            var providerExclusions = (State.ExcludedProviderGames ?? []).ToHashSet();
+            // Expand old app-ID exclusions through catalog aliases, regardless of source order.
+            bool expanded;
+            do
+            {
+                expanded = false;
+                foreach (var providerGame in providerGames)
+                {
+                    var identities = providerGame.IdentityAliases.Append(providerGame.Identity).ToArray();
+                    if (identities.Any(providerExclusions.Contains))
+                        foreach (var identity in identities) expanded |= providerExclusions.Add(identity);
+                }
+            } while (expanded);
+            foreach (var providerGame in providerGames)
+            {
+                if (!Enum.IsDefined(providerGame.Identity.Provider) || string.IsNullOrWhiteSpace(providerGame.Identity.Id)
+                    || !Path.IsPathFullyQualified(providerGame.InstallDirectory))
+                    throw new InvalidDataException("Discovered provider game has invalid identity or installation path.");
+                if (providerExclusions.Contains(providerGame.Identity)) continue;
+                var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(providerGame.InstallDirectory));
+                if (games.TryGetValue(root, out var existing))
+                {
+                    // Steam/manual ownership remains unchanged; retain every provider route for provider-owned rows.
+                    if (existing.ProviderIdentity is null) continue;
+                    var choices = existing.ProviderLaunchChoices.Concat(providerGame.Launch is { } launch ? [launch] : [])
+                        .Distinct().ToArray();
+                    games[root] = existing with
+                    {
+                        ProviderLaunch = choices.FirstOrDefault(),
+                        BattleNet = existing.BattleNet ?? providerGame.BattleNet,
+                        CoverUrl = existing.CoverUrl ?? providerGame.CoverUrl,
+                        LocalIconPath = existing.LocalIconPath ?? providerGame.LocalIconPath,
+                        LocalIconIndex = existing.LocalIconPath is not null ? existing.LocalIconIndex : providerGame.LocalIconIndex,
+                        ProviderLaunchChoices = choices,
+                        ProviderIdentityAliases = existing.ProviderIdentityAliases.Concat(providerGame.IdentityAliases)
+                            .Append(providerGame.Identity).Append(existing.ProviderIdentity).Distinct().ToArray(),
+                    };
+                    continue;
+                }
+                games.Add(root, new SelectedGame(providerGame.Name, root, null)
+                { ProviderIdentity = providerGame.Identity, WinePrefix = providerGame.WinePrefix, ProviderLaunch = providerGame.Launch, BattleNet = providerGame.BattleNet,
+                    ProviderLaunchChoices = providerGame.Launch is { } initialLaunch ? [initialLaunch] : [],
+                    ProviderIdentityAliases = providerGame.IdentityAliases, LocalIconPath = providerGame.LocalIconPath, CoverUrl = providerGame.CoverUrl,
+                    LocalIconIndex = providerGame.LocalIconIndex });
+            }
+
             return games.Values
+                .Where(game => !GameViewPolicy.IsIgnored(State, game.RootPath))
                 .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(game => game.RootPath, PathComparers.FileSystemPath)
                 .ToArray();
@@ -507,9 +723,9 @@ public sealed class PersistentLibrary
                 .Select(game => game.RootPath)
                 .ToHashSet(PathComparers.FileSystemPath);
             var added = 0;
-            foreach (var input in paths)
+            // Finish validating and enumerating before changing the library.
+            foreach (var path in paths.Select(ValidateGameDirectory).ToArray())
             {
-                var path = ValidateGameDirectory(input);
                 if (!existing.Add(path))
                 {
                     continue;
@@ -619,10 +835,27 @@ public sealed class PersistentLibrary
                 EventType = eventType.Trim(),
                 AssetType = assetType.Trim(),
                 Version = version.Trim(),
-                Detail = detail.Trim(),
+                Detail = detail,
             });
             Save();
         }
+    }
+
+    public void RecordOperationHistory(IReadOnlyList<OperationResult> results, string eventType)
+    {
+        ArgumentNullException.ThrowIfNull(results);
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
+        if (results.Count == 0) return;
+        var entries = results.Select(result => new GameHistoryState
+        {
+            RootPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(result.Game.RootPath)),
+            EventTimeUtc = DateTimeOffset.UtcNow,
+            EventType = eventType.Trim(),
+            AssetType = result.Family.Trim(),
+            Version = result.Message.Trim(),
+            Detail = result.Target,
+        }).ToArray();
+        UpdateState(state => state.GameHistory.AddRange(entries));
     }
 
     public void RemoveGameState(string rootPath)
@@ -642,9 +875,26 @@ public sealed class PersistentLibrary
     {
         lock (_stateLock)
         {
-            _store.Save(State);
+            try
+            {
+                var candidate = JsonSerializer.Deserialize<LinuxLibraryState>(
+                    JsonSerializer.SerializeToUtf8Bytes(State))!;
+                LibraryStateStore.Normalize(candidate);
+                var committed = JsonSerializer.SerializeToUtf8Bytes(candidate);
+                _store.Save(candidate);
+                State = candidate;
+                _committedState = committed;
+            }
+            catch
+            {
+                RestoreCommittedState();
+                throw;
+            }
         }
     }
+
+    private void RestoreCommittedState() =>
+        State = JsonSerializer.Deserialize<LinuxLibraryState>(_committedState)!;
 
     public void ResetLocalData(string? cacheDirectory = null)
     {
@@ -652,6 +902,7 @@ public sealed class PersistentLibrary
         {
             new LocalDataResetService(_store, cacheDirectory).Reset();
             State = _store.Load();
+            _committedState = JsonSerializer.SerializeToUtf8Bytes(State);
         }
     }
 

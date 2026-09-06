@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DlssSwapper.Linux.Gui.ProviderWineLaunchDialog" Title="{DynamicResource Linux_Xaml_62}"
+        Width="700" Height="430" MinWidth="420" MinHeight="320" WindowStartupLocation="CenterOwner">
+  <Grid Margin="18" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+    <TextBlock x:Name="GameNameText" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="12">
+        <TextBlock Text="{DynamicResource Linux_Xaml_63}" TextWrapping="Wrap" />
+        <TextBlock x:Name="ClientText" TextWrapping="Wrap" />
+        <TextBlock x:Name="PrefixText" TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource Linux_Xaml_64}" FontWeight="SemiBold" />
+        <TextBox x:Name="RunnerText" PlaceholderText="{DynamicResource Linux_Xaml_65}" />
+        <TextBlock x:Name="ErrorText" TextWrapping="Wrap" />
+      </StackPanel>
+    </ScrollViewer>
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+      <Button Content="{DynamicResource Linux_Xaml_66}" Click="Browse_Click" />
+      <Button x:Name="SaveButton" Grid.Column="2" Content="{DynamicResource Linux_ProviderWineLaunchDialog_161}" Classes="primary" Click="Launch_Click" />
+      <Button Grid.Column="3" Content="{DynamicResource General_Cancel}" Click="Cancel_Click" />
+    </Grid>
+  </Grid>
+</Window>

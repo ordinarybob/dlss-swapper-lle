@@ -666,6 +666,8 @@ public class Settings
     }
 
     internal static ProxySettings ProxySettings { get; } = new ProxySettings();
+    public bool DontShowManualLaunchPrompt { get; set; }
+    public bool SetupManualLaunchOnImport { get; set; }
 
     internal void SaveJson()
     {

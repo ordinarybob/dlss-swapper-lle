@@ -26,6 +26,15 @@ internal static class Program
                 return 0;
             }
 
+            // Experimental explicit-path operations need neither library state nor a download cache.
+            if (options.Command == "streamline")
+            {
+                var result = StreamlineWorkflow.Execute(options.Paths[0], options.Operands[0],
+                    options.PackageDirectory, options.DryRun);
+                Console.WriteLine(result.Message);
+                return result.Success ? 0 : 1;
+            }
+
             var stateStore = createStateStore?.Invoke() ?? new LibraryStateStore();
             if (options.Command == "reset")
             {
@@ -59,23 +68,37 @@ internal static class Program
             if (options.Command == "discover")
             {
                 WriteDiscovery(discovery);
+                var providers = ProviderDiscovery.Discover(library.State, cancellation.Token, includeDefaultSteamRoots);
+                WriteWarnings(providers.Warnings);
+                foreach (var game in library.Merge(discovery, providers.Games).Where(game => game.SteamAppId is null))
+                    Console.WriteLine($"{game.ProviderIdentity?.Provider.ToString() ?? "Manual"}\t{game.Name}\t{game.RootPath}");
                 return 0;
             }
 
 
             if (options.Command == "filesystems")
             {
-                return RunFilesystems(options, library, discovery);
+                return RunFilesystems(options, library, discovery, cancellation.Token, includeDefaultSteamRoots);
             }
 
             WriteWarnings(discovery.Warnings);
-            var games = GameSelector.Resolve(options, discovery);
+            var selectsLibrary = options.All || (options.Command == "scan" && options.AppIds.Count == 0
+                && options.Paths.Count == 0 && options.Roots.Count == 0);
+            IReadOnlyList<SelectedGame>? libraryGames = null;
+            if (selectsLibrary)
+            {
+                var providers = ProviderDiscovery.Discover(library.State, cancellation.Token, includeDefaultSteamRoots);
+                WriteWarnings(providers.Warnings);
+                libraryGames = library.Merge(discovery, providers.Games);
+            }
+            var games = GameSelector.Resolve(options, discovery, libraryGames);
             return options.Command switch
             {
-                "scan" => RunScan(options, games),
+                "scan" => RunScan(options, games, library),
                 "update" => await RunUpdateAsync(
                     options,
                     games,
+                    library,
                     createDownloadCache,
                     cancellation.Token).ConfigureAwait(false),
                 "restore" => RunRestore(options, games),
@@ -120,17 +143,53 @@ internal static class Program
             case "restore-steam":
                 Console.WriteLine($"Restored Steam games: {library.RestoreSteamGames()}");
                 return 0;
+            case "restore-providers":
+                library.UpdateState(state => state.ExcludedProviderGames = []);
+                Console.WriteLine("Cleared launcher-game exclusions. Game files were not changed.");
+                return 0;
+            case "add-provider-prefix":
+            case "remove-provider-prefix":
+            case "add-legendary-config":
+            case "remove-legendary-config":
+            case "add-heroic-config":
+            case "remove-heroic-config":
+                if (!Path.IsPathFullyQualified(value!)) throw new UsageException("Provider configuration paths must be absolute.");
+                var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(value!));
+                if (action.EndsWith("heroic-config", StringComparison.Ordinal) && new DirectoryInfo(normalized).Name != "heroic")
+                    throw new UsageException("Heroic configuration folders must end in heroic.");
+                library.UpdateState(state =>
+                {
+                    var entries = action.EndsWith("provider-prefix", StringComparison.Ordinal)
+                        ? state.ProviderWinePrefixes : action.EndsWith("heroic-config", StringComparison.Ordinal)
+                            ? state.HeroicConfigDirectories : state.LegendaryConfigDirectories;
+                    if (action.StartsWith("add-", StringComparison.Ordinal))
+                    {
+                        if (!entries.Contains(normalized, PathComparers.FileSystemPath)) entries.Add(normalized);
+                    }
+                    else entries.RemoveAll(path => PathComparers.FileSystemPath.Equals(path, normalized));
+                });
+                Console.WriteLine("Saved provider configuration. Launcher and game files were not changed.");
+                return 0;
+            case "set-heroic-executable":
+                if (!Path.IsPathFullyQualified(value!)) throw new UsageException("Heroic executable path must be absolute.");
+                library.UpdateState(state => state.HeroicExecutable = Path.GetFullPath(value!));
+                Console.WriteLine("Saved Heroic executable path. Nothing was launched.");
+                return 0;
+            case "clear-heroic-executable":
+                library.UpdateState(state => state.HeroicExecutable = null);
+                Console.WriteLine("Heroic will use PATH for native launches.");
+                return 0;
             case "add-steam-root":
                 return ChangeStringState(
                     library,
-                    library.State.AdditionalSteamRoots,
+                    state => state.AdditionalSteamRoots,
                     NormalizeExistingDirectory(value!),
                     add: true,
                     "Steam root");
             case "remove-steam-root":
                 return ChangeStringState(
                     library,
-                    library.State.AdditionalSteamRoots,
+                    state => state.AdditionalSteamRoots,
                     Path.TrimEndingDirectorySeparator(Path.GetFullPath(value!)),
                     add: false,
                     "Steam root");
@@ -143,7 +202,7 @@ internal static class Program
                 }
                 return ChangeStringState(
                     library,
-                    library.State.CustomScanPatterns,
+                    state => state.CustomScanPatterns,
                     value!,
                     add: true,
                     "Fast Scan pattern");
@@ -156,7 +215,7 @@ internal static class Program
                 }
                 return ChangeStringState(
                     library,
-                    library.State.CustomScanPatterns,
+                    state => state.CustomScanPatterns,
                     value!,
                     add: false,
                     "Fast Scan pattern");
@@ -165,25 +224,21 @@ internal static class Program
         }
     }
 
-    private static int ChangeStringState(
+    internal static int ChangeStringState(
         PersistentLibrary library,
-        List<string> values,
+        Func<LinuxLibraryState, List<string>> selectValues,
         string value,
         bool add,
         string label)
     {
-        var changed = add
-            ? !values.Contains(value, PathComparers.FileSystemPath)
-            : values.RemoveAll(item => PathComparers.FileSystemPath.Equals(item, value)) > 0;
-        if (add && changed)
+        var changed = library.UpdateState(state =>
         {
+            var values = selectValues(state);
+            if (!add) return values.RemoveAll(item => PathComparers.FileSystemPath.Equals(item, value)) > 0;
+            if (values.Contains(value, PathComparers.FileSystemPath)) return false;
             values.Add(value);
-        }
-
-        if (changed)
-        {
-            library.Save();
-        }
+            return true;
+        });
 
         Console.WriteLine($"{label}: {(changed ? (add ? "added" : "removed") : "unchanged")}");
         return 0;
@@ -212,12 +267,19 @@ internal static class Program
         }
 
         Console.WriteLine($"Excluded Steam games: {state.ExcludedSteamAppIds.Count}");
+        Console.WriteLine($"Excluded provider identities: {state.ExcludedProviderGames.Count}");
+        foreach (var prefix in state.ProviderWinePrefixes) Console.WriteLine($"  provider-prefix\t{prefix}");
+        foreach (var directory in state.LegendaryConfigDirectories) Console.WriteLine($"  legendary-config\t{directory}");
+        foreach (var directory in state.HeroicConfigDirectories) Console.WriteLine($"  heroic-config\t{directory}");
+        Console.WriteLine($"Heroic executable: {state.HeroicExecutable ?? "heroic (PATH)"}");
     }
 
     private static int RunFilesystems(
         CliOptions options,
         PersistentLibrary library,
-        SteamDiscoveryResult discovery)
+        SteamDiscoveryResult discovery,
+        CancellationToken token,
+        bool includeDefaults)
     {
         var paths = new List<string>();
         if (options.Paths.Count > 0 || options.Roots.Count > 0)
@@ -230,7 +292,9 @@ internal static class Program
         }
         else
         {
-            paths.AddRange(library.Merge(discovery).Select(game => game.RootPath));
+            var providers = ProviderDiscovery.Discover(library.State, token, includeDefaults);
+            WriteWarnings(providers.Warnings);
+            paths.AddRange(library.Merge(discovery, providers.Games).Select(game => game.RootPath));
             paths.AddRange(library.State.AdditionalSteamRoots);
             paths.AddRange(options.SteamRoots.Select(NormalizeExistingDirectory));
         }
@@ -294,9 +358,10 @@ internal static class Program
 
     private static int RunScan(
         CliOptions options,
-        IReadOnlyList<SelectedGame> games)
+        IReadOnlyList<SelectedGame> games,
+        PersistentLibrary library)
     {
-        var catalog = DllCatalog.Load(ResolveManifestPath(options));
+        var catalog = LoadCatalog(options, library);
         var scanner = new DllScanner();
         var detectedCount = 0;
         foreach (var game in games)
@@ -326,10 +391,11 @@ internal static class Program
     private static async Task<int> RunUpdateAsync(
         CliOptions options,
         IReadOnlyList<SelectedGame> games,
+        PersistentLibrary library,
         Func<DownloadCache> createDownloadCache,
         CancellationToken cancellationToken)
     {
-        var catalog = DllCatalog.Load(ResolveManifestPath(options));
+        var catalog = LoadCatalog(options, library);
         var candidates = CandidateSelector.Resolve(options, catalog);
         var scanner = new DllScanner();
         var scans = games.Select(game => scanner.Scan(game, catalog)).ToArray();
@@ -355,17 +421,34 @@ internal static class Program
         return results.Any(result => !result.Success) ? 1 : 0;
     }
 
+    private static DllCatalog LoadCatalog(CliOptions options, PersistentLibrary library)
+    {
+        var savedCatalog = Path.Combine(library.StateDirectory, "manifest.json");
+        var catalog = DllCatalog.Load(options.ManifestPath is null && File.Exists(savedCatalog)
+            ? savedCatalog : ResolveManifestPath(options));
+        foreach (var entry in library.State.ImportedDlls ?? []) catalog.AddImported(entry);
+        // Keep CLI trust/debug defaults unchanged; GUI settings do not silently widen CLI eligibility.
+        return catalog;
+    }
+
     private static int RunRestore(
         CliOptions options,
         IReadOnlyList<SelectedGame> games)
     {
         var familyFilter = CandidateSelector.ResolveFamilyFilter(options.Families);
         var scanner = new DllScanner();
+        var restoreWarnings = new List<string>();
         var plan = games
-            .SelectMany(scanner.PlanRestore)
+            .SelectMany(game =>
+            {
+                var items = scanner.PlanRestore(game, out var warnings);
+                restoreWarnings.AddRange(warnings);
+                return items;
+            })
             .Where(item => familyFilter.Count == 0 || familyFilter.Contains(item.Family.Type))
             .ToArray();
         Console.WriteLine($"Restore targets: {plan.Length}");
+        foreach (var warning in restoreWarnings) Console.Error.WriteLine($"WARNING: {warning}");
         foreach (var item in plan)
         {
             Console.WriteLine(

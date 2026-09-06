@@ -17,7 +17,13 @@
             FalseValue="Collapsed" />
     </UserControl.Resources>
 
-    <StackPanel Spacing="12">
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="0" />
+        </Grid.RowDefinitions>
         <StackPanel Spacing="6">
             <Button
                 HorizontalAlignment="Left"
@@ -31,7 +37,40 @@
                 TextWrapping="Wrap" />
         </StackPanel>
 
+        <Grid Grid.Row="1" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+        <CheckBox Content="Include Streamline updates (experimental)"
+                  IsChecked="{x:Bind ViewModel.IncludeStreamline, Mode=TwoWay}" />
+        <Button Grid.Column="1" Content="Components…" IsEnabled="{x:Bind ViewModel.IncludeStreamline, Mode=OneWay}">
+            <Button.Flyout>
+                <Flyout>
+                    <StackPanel Width="300" Spacing="8">
+                        <TextBlock Text="Streamline components" FontWeight="SemiBold" />
+                        <TextBlock Text="Only installed components are updated. Originals are retained." TextWrapping="Wrap" />
+                        <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.StreamlineRows, Mode=OneWay}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="usercontrols:BatchStreamlineRowModel">
+                                        <CheckBox Content="{x:Bind FileName}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                                  ToolTipService.ToolTip="{x:Bind Description}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Flyout>
+            </Button.Flyout>
+        </Button>
+        </Grid>
+        <Border Grid.Row="2" MinHeight="36">
+        <TextBlock Text="{x:Bind ViewModel.StreamlineStatus, Mode=OneWay}" TextWrapping="Wrap"
+                   Visibility="{x:Bind ViewModel.IncludeStreamline, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" />
+        </Border>
         <ScrollViewer
+            Grid.Row="3"
             MaxHeight="480"
             HorizontalScrollBarVisibility="Disabled"
             HorizontalScrollMode="Disabled"
@@ -120,5 +159,5 @@
                 </ItemsControl>
             </StackPanel>
         </ScrollViewer>
-    </StackPanel>
+    </Grid>
 </UserControl>

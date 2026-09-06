@@ -10,6 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
+    <Compile Include="..\..\src\Data\Streamline\StreamlineBatchUpdateWorkflow.cs" Link="WindowsWorkflow\StreamlineBatchUpdateWorkflow.cs" />
+    <Compile Include="..\..\src\Data\BatchSwapResult.cs" Link="WindowsWorkflow\BatchSwapResult.cs" />
     <ProjectReference Include="..\DlssSwapper.Linux.Cli\DlssSwapper.Linux.Cli.csproj" />
   </ItemGroup>
 </Project>

@@ -89,6 +89,10 @@
                         </Button.Content>
                     </Button>
 
+                    <Button Content="Launch setup" Command="{Binding ConfigureLaunchCommand}"
+                            Visibility="{Binding IsManuallyAdded, Converter={StaticResource BoolToVisibilityConverter}}"
+                            ToolTipService.ToolTip="Choose or change the executable and launch options" />
+
                     <Button
                         Style="{StaticResource CompactFooterIconButtonStyle}"
                         ToolTipService.ToolTip="{Binding TranslationProperties.NotesText, Mode=OneWay}"

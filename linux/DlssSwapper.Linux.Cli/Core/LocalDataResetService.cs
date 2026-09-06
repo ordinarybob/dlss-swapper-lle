@@ -18,6 +18,16 @@ public sealed class LocalDataResetService
 
     public void Reset()
     {
+        // Validate every target before deleting any data.
+        ValidateOwnedDirectory(_store.StateDirectory);
+        ValidateOwnedDirectory(_cacheDirectory);
+        using var coordination = _store.AcquireCoordinationLock();
+        if (Directory.Exists(_store.StateDirectory))
+        {
+            // Check for an existing writer before removal. The coordination lease
+            // remains held after releasing this file handle and through both deletes.
+            using (_store.AcquireWriteLock()) { }
+        }
         DeleteOwnedDirectory(_store.StateDirectory);
         if (!PathComparers.FileSystemPath.Equals(
             _store.StateDirectory,
@@ -28,6 +38,13 @@ public sealed class LocalDataResetService
     }
 
     private static void DeleteOwnedDirectory(string path)
+    {
+        if (!Directory.Exists(path)) return;
+        ValidateOwnedDirectory(path);
+        Directory.Delete(path, recursive: true);
+    }
+
+    private static void ValidateOwnedDirectory(string path)
     {
         if (!Directory.Exists(path))
         {
@@ -44,7 +61,5 @@ public sealed class LocalDataResetService
             throw new InvalidOperationException(
                 $"Refusing to reset an unexpected or linked directory: {fullPath}");
         }
-
-        Directory.Delete(fullPath, recursive: true);
     }
 }

@@ -14,11 +14,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\src\Data\Streamline\StreamlineComponentSet.cs" Link="Core\StreamlineComponentSet.cs" />
+    <Content Include="../Runtime/**/*" Link="%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\src\Translations\**\Resources.resw" Link="Translations\%(RecursiveDir)Resources.resw" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Translations\**\Linux.resw" Link="Translations\%(RecursiveDir)Linux.resw" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\src\Assets\ea_app_titles.json" Link="Assets\ea_app_titles.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <Content Include="..\..\src\Assets\static_manifest.json" Link="Assets\static_manifest.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\DlssSwapper.Shared\DlssSwapper.Shared.csproj" />
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.35.1" />
+    <PackageReference Include="FuzzySharp" Version="2.0.2" />
+    <Compile Include="..\..\src\Data\EAApp\GameSearchResult.cs" Link="Platform\GameSearchResult.cs" />
+    <Compile Include="..\..\src\Data\BattleNet\Proto\BattleNetProductDb.cs" Link="Platform\BattleNetProductDb.cs" />
+    <Compile Include="..\..\src\Data\UbisoftConnect\UbisoftConnectConfigurationItem.cs" Link="Platform\UbisoftConnectConfigurationItem.cs" />
   </ItemGroup>
 </Project>

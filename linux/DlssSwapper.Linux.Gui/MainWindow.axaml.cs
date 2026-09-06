@@ -44,10 +44,19 @@ public sealed partial class MainWindow : Window
     private CancellationTokenSource? _artworkCancellation;
     private Task? _artworkTask;
     private Task? _deepScanTask;
+    private long _libraryViewGeneration;
+    private Task? _customCoverTask;
+    private Task? _startupTask;
     private bool _opened;
+    internal WindowState StateBeforeMinimizing { get; private set; } = WindowState.Normal;
 
-    public MainWindow()
+    private readonly MainWindowServices? _services;
+
+    public MainWindow() : this(null) { }
+
+    internal MainWindow(MainWindowServices? services)
     {
+        _services = services;
         AvaloniaXamlLoader.Load(this);
         DataContext = _viewModel;
 
@@ -66,48 +75,127 @@ public sealed partial class MainWindow : Window
                 - ResponsiveGridLayout.MinimumCardSize
                 + 1).ToArray();
 
+        TryInitializeLibrary();
+        if (_library is { } savedLibrary) WindowPlacement.Attach(this, savedLibrary, message => Console.Error.WriteLine(message));
+        StateBeforeMinimizing = WindowState;
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == WindowStateProperty && WindowState != WindowState.Minimized)
+                StateBeforeMinimizing = WindowState;
+        };
+        LanguageAppearance.Changed += RefreshLanguage;
+        Opened += MainWindow_Opened;
+        Closing += MainWindow_Closing;
+        Closed += MainWindow_Closed;
+        DragDrop.SetAllowDrop(this, true);
+        AddHandler(DragDrop.DragOverEvent, CoverDragOver);
+        AddHandler(DragDrop.DropEvent, CoverDrop);
+    }
+
+    private bool TryInitializeLibrary()
+    {
         try
         {
             var manifestPath = Path.Combine(
                 AppContext.BaseDirectory,
                 "Assets",
                 "static_manifest.json");
-            _catalog = DllCatalog.Load(manifestPath);
-            _library = new PersistentLibrary(new LibraryStateStore());
+            var store = new LibraryStateStore();
+            var savedCatalog = Path.Combine(store.StateDirectory, "manifest.json");
+            var result = _services is null ? LibraryStartup.Load(savedCatalog, store, manifestPath) : _services.Load();
+            if (!result.Succeeded)
+            {
+                ShowStartupError(result.Error!);
+                return false;
+            }
+            _catalog = result.Catalog!;
+            _library = result.Library!;
+            if (_services is null)
+            {
+                AppLog.Configure(_library.StateDirectory, _library.State.ApplicationLoggingLevel);
+                AppLog.Write(ApplicationLogLevel.Info, DiagnosticsReport.BuildIdentity());
+            }
+            ThemeAppearance.Apply(_library.State.AppTheme);
+            LanguageAppearance.Apply(_library.State.Language);
+            _catalog.Policy = new(_library.State.AllowDebugDlls, _library.State.AllowUntrustedDlls);
+            foreach (var imported in _library.State.ImportedDlls ?? []) _catalog.AddImported(imported);
             _scanService = new LibraryScanService(_catalog, _scanner);
+            _artworkHttpClient.DefaultRequestHeaders.UserAgent.Clear();
             _artworkHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "DLSS-Swapper-LLE-Linux/1.0");
-            _artworkService = new ArtworkService(
+            _artworkService?.Dispose();
+            _artworkService = _services is not null ? _services.CreateArtwork() : new ArtworkService(
                 _artworkHttpClient,
                 new AvaloniaArtworkImageProcessor());
             _viewModel.IsGridView = _library.State.GridView;
             _viewModel.GridCardSize = _library.State.CardSize;
             _gridCardSizeInput.SelectedItem = _library.State.CardSize;
-            _viewModel.StatusText = "Loading the persistent game library…";
+            _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage1", "Loading the persistent game library…");
+            _viewModel.StartupError = string.Empty;
+            return true;
         }
         catch (Exception exception)
         {
-            _viewModel.StatusText =
-                $"The bundled DLL catalog could not be loaded: {exception.Message}";
-            AddAlert("Error", exception.Message);
+            ShowStartupError(LanguageAppearance.Format("Linux_GuiRemainingStartupRetry", "Library startup could not finish. No reset was performed. Retry after resolving this error:\n{0}", exception.Message));
+            return false;
         }
-
-        Opened += MainWindow_Opened;
-        Closing += MainWindow_Closing;
-        Closed += MainWindow_Closed;
     }
 
-    private void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
+    private void ShowStartupError(string error)
     {
+        AppLog.Write(ApplicationLogLevel.Error, error);
+        _library = null;
+        _scanService = null;
+        _viewModel.IsLoadingLibrary = false;
+        _viewModel.StartupError = error;
+        _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage2", "Startup needs attention. See the details and Retry loading.");
+    }
+
+    private async void RetryStartup_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_viewModel.IsBusy || !_viewModel.HasStartupError || _lifetime.IsCancellationRequested) return;
+        if (TryInitializeLibrary())
+        {
+            _startupTask = FinishStartupAsync();
+            await _startupTask;
+        }
+    }
+
+    private bool _libraryPageStopped;
+    private Task? _libraryStopping;
+    private async void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
+    {
+        if (_streamlineMutationActive)
+        {
+            e.Cancel = true;
+            _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage3", "Wait for the Streamline file operation to finish before closing.");
+            return;
+        }
+        if (_libraryPage is not null && !_libraryPageStopped)
+        {
+            e.Cancel = true;
+            if (_libraryStopping is not null) return;
+            try
+            {
+                _libraryStopping = _libraryPage.StopAsync();
+                await _libraryStopping;
+                _libraryPageStopped = true;
+                Dispatcher.UIThread.Post(() => Close());
+            }
+            catch (Exception error) { AppLog.Write(ApplicationLogLevel.Error, error.Message); _viewModel.StatusText = error.Message; }
+            return;
+        }
         _lifetime.Cancel();
+        ++_publicationGeneration;
         _artworkCancellation?.Cancel();
     }
 
     private async void MainWindow_Closed(object? sender, EventArgs e)
     {
+        LanguageAppearance.Changed -= RefreshLanguage;
         try
         {
-            var backgroundTasks = new[] { _artworkTask, _deepScanTask }
+            var backgroundTasks = new[] { _startupTask, _artworkTask, _deepScanTask, _customCoverTask, _viewPublication, _rowPreparation }
                 .Where(task => task is not null)
                 .Cast<Task>()
                 .ToArray();
@@ -147,18 +235,72 @@ public sealed partial class MainWindow : Window
         }
 
         _opened = true;
-        if (_library is { } library && !library.State.HasSelectedStorageProfile)
+        if (!_viewModel.HasStartupError)
         {
-            var hddMode = await new StorageProfileDialog().ShowDialog<bool>(this);
-            library.UpdateState(state =>
-            {
-                state.HddMode = hddMode;
-                state.HasSelectedStorageProfile = true;
-            });
+            _startupTask = FinishStartupAsync();
+            await _startupTask;
         }
+    }
 
-        UpdateGridGeometry();
-        await RefreshLibraryAsync(runInitialDeepScan: true);
+    private void RefreshLanguage()
+    {
+        _viewModel.RefreshLanguage();
+        foreach (var row in _allRows) row.RefreshLanguage();
+    }
+
+    private async Task FinishStartupAsync()
+    {
+        try
+        {
+            if (_services is null && _library?.State.Proxy is { } proxy)
+            {
+                HttpClient.DefaultProxy = new System.Net.WebProxy(proxy.Address());
+                var password = proxy.CredentialId is { } id ? await ProxyKeyring.ReadAsync(id, _lifetime.Token) : null;
+                HttpClient.DefaultProxy = proxy.CreateProxy(password);
+            }
+            if (_library is { } library && !library.State.HasSelectedStorageProfile)
+            {
+                var hddMode = await new StorageProfileDialog().ShowDialog<bool?>(this);
+                if (_lifetime.IsCancellationRequested) return;
+                if (hddMode.HasValue) library.UpdateState(state =>
+                {
+                    state.ApplyStorageProfile(hddMode.Value);
+                });
+            }
+
+            UpdateGridGeometry();
+            if (_library is { } savedLibrary)
+            {
+                try { await ReplaceScansAsync(DiscoverySnapshot.ReadScans(savedLibrary)); }
+                catch (Exception error) { AddAlert("Warning", LanguageAppearance.Format("Linux_ScanLoadFailed", "Saved scan results could not be loaded: {0}", error.Message)); }
+            }
+            await RefreshLibraryAsync(runInitialDeepScan: true);
+            if (_services is null && _library is { } versionLibrary)
+            {
+                try
+                {
+                    var version = typeof(App).Assembly.GetName().Version?.ToString() ?? "0.0.0.0";
+                    var refreshed = await LibraryStartup.RefreshForVersionAsync(_artworkHttpClient, versionLibrary, version, _lifetime.Token);
+                    if (refreshed is not null)
+                    {
+                        refreshed.Policy = new(versionLibrary.State.AllowDebugDlls, versionLibrary.State.AllowUntrustedDlls);
+                        foreach (var imported in versionLibrary.State.ImportedDlls) refreshed.AddImported(imported);
+                        _catalog = refreshed;
+                        _scanService = new LibraryScanService(refreshed, _scanner);
+                    }
+                }
+                catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+                catch (Exception error)
+                {
+                    AddAlert("Warning", LanguageAppearance.Format("Linux_VersionCatalogRefreshFailed",
+                        "The catalog refresh for this app version could not finish. The cached catalog remains available; the app will retry next launch. {0}", error.Message));
+                }
+            }
+        }
+        catch (Exception error)
+        {
+            ShowStartupError(LanguageAppearance.Format("Linux_GuiRemainingStartupFailed", "Library startup could not finish. No reset was performed.\n{0}", error.Message));
+        }
     }
 
     private async void AddOneGame_Click(object? sender, RoutedEventArgs e) =>
@@ -181,19 +323,19 @@ public sealed partial class MainWindow : Window
         {
             ManualImportKind.Single => (
                 library.State.SuppressSingleFolderNotice,
-                "Select a single games installation folder.",
-                "Select Game Folder",
-                "Select Game Folder"),
+                LanguageAppearance.Get("Linux_GuiRemainingImportSingle", "Select a single games installation folder."),
+                LanguageAppearance.Get("Linux_GuiRemainingSelectSingle", "Select Game Folder"),
+                LanguageAppearance.Get("Linux_GuiRemainingSelectSingle", "Select Game Folder")),
             ManualImportKind.Multiple => (
                 library.State.SuppressMultipleFoldersNotice,
-                "Select multiple separate game installation folders.",
-                "Select Game Folders",
-                "Select Game Folders"),
+                LanguageAppearance.Get("Linux_GuiRemainingImportMultiple", "Select multiple separate game installation folders."),
+                LanguageAppearance.Get("Linux_GuiRemainingSelectMultiple", "Select Game Folders"),
+                LanguageAppearance.Get("Linux_GuiRemainingSelectMultiple", "Select Game Folders")),
             ManualImportKind.Parent => (
                 library.State.SuppressMultiGameDirectoryNotice,
-                "Select the main folder where the games you want to add are installed. Each immediate child folder will be added as a separate manually added game. The parent folder itself is not added, and nested folders are not searched.",
-                "Select Multi-Game Directory",
-                "Select Multi-Game Directory"),
+                LanguageAppearance.Get("Linux_GuiRemainingImportParent", "Select the main folder where the games you want to add are installed. Each immediate child folder will be added as a separate manually added game. The parent folder itself is not added, and nested folders are not searched."),
+                LanguageAppearance.Get("Linux_GuiRemainingSelectParent", "Select Multi-Game Directory"),
+                LanguageAppearance.Get("Linux_GuiRemainingSelectParent", "Select Multi-Game Directory")),
             _ => throw new InvalidOperationException("Unknown manual import kind."),
         };
 
@@ -241,25 +383,29 @@ public sealed partial class MainWindow : Window
             .Select(folder => folder.Path.LocalPath)
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .ToArray();
+        var previousPaths = library.State.ManualGames.Select(game => game.RootPath).ToHashSet(PathComparer);
+        if (kind == ManualImportKind.Single && !await EditSingleImportAsync(library, localPaths)) return;
         var added = kind == ManualImportKind.Parent
             ? library.AddImmediateChildren(localPaths[0])
-            : library.AddManualGames(localPaths);
-        _viewModel.StatusText = $"Persisted {added} new game path{Plural(added)}.";
+            : kind == ManualImportKind.Single ? 1 : library.AddManualGames(localPaths);
+        _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesOperation1", "Persisted {0} new game path{1}.", added, Plural(added));
         await RefreshLibraryAsync(runInitialDeepScan: false);
+        var newGames = library.State.ManualGames.Where(game => !previousPaths.Contains(game.RootPath)).ToArray();
+        try { await ManualLaunchSetupWindow.OfferAsync(this, library, newGames); }
+        catch (Exception ex) { _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage4", "Games were imported, but launch setup could not finish: {0}", ex.Message); }
     }
 
     private async void DeepScan_Click(object? sender, RoutedEventArgs e)
     {
         if (_deepScanTask is { IsCompleted: false })
         {
-            _viewModel.StatusText = "Deep Scan is already running in the background.";
+            _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage5", "Deep Scan is already running in the background.");
             return;
         }
 
         var confirmed = await new ConfirmationDialog(
-            "Deep Scan",
-            "Deep Scan runs automatically the first time you launch DLSS Swapper LLE and learns path patterns for Fast Scan. "
-            + "Run it again only after your library changes and a game is missing. If you know which game is missing, add that game directly instead.")
+            LanguageAppearance.Get("GamesPage_DeepScan", "Deep Scan"),
+            LanguageAppearance.Get("Linux_DeepScanPrompt", "Deep Scan runs automatically the first time you launch DLSS Swapper LLE and learns path patterns for Fast Scan. Run it again only after your library changes and a game is missing. If you know which game is missing, add that game directly instead."))
             .ShowDialog<bool>(this);
         if (!confirmed)
         {
@@ -273,17 +419,17 @@ public sealed partial class MainWindow : Window
         }
 
         var games = await DiscoverMergedGamesAsync(library);
-        await RunBusyAsync("Deep Scan is checking every game directory…", async () =>
+        await RunBusyAsync(LanguageAppearance.Get("Linux_GamesOperation2", "Deep Scan is checking every game directory…"), async () =>
         {
             var result = await service.ScanDeepAsync(
                 games,
                 library,
                 CreateScanProgress(isDeepScan: true),
                 _lifetime.Token);
-            ReplaceScans(result.Games);
+            await ReplaceLibraryScansAsync(library, result.Games);
             StartArtworkHydration();
             _viewModel.StatusText =
-                $"Deep Scan found {_viewModel.GameCount} swappable game{Plural(_viewModel.GameCount)} and learned {result.LearnedPatternCount} new fast-scan pattern{Plural(result.LearnedPatternCount)}.";
+                LanguageAppearance.Format("Linux_GamesOperation3", "Deep Scan inspected {0} game{1} and learned {2} new fast-scan pattern{3}.", _viewModel.GameCount, Plural(_viewModel.GameCount), result.LearnedPatternCount, Plural(result.LearnedPatternCount));
         });
     }
 
@@ -298,20 +444,17 @@ public sealed partial class MainWindow : Window
         }
 
         var confirmed = await new ConfirmationDialog(
-            "Remove games",
-            $"Remove {rows.Length} selected game{Plural(rows.Length)} from this library? Steam games remain excluded during normal refresh; manually added games can be imported again.")
+            LanguageAppearance.Get("Linux_RemoveGamesTitle", "Remove games"),
+            LanguageAppearance.Format("Linux_RemoveGamesPrompt", "Remove {0} selected game{1} from this library?", rows.Length, Plural(rows.Length)) + "\n\n" + RemovalNotice)
             .ShowDialog<bool>(this);
         if (!confirmed)
         {
             return;
         }
 
-        var manualPaths = library.State.ManualGames
-            .Select(game => game.RootPath)
-            .ToHashSet(PathComparer);
         foreach (var row in rows)
         {
-            RemoveGameFromLibrary(row, library, manualPaths);
+            RemoveGameFromLibrary(row, library);
         }
 
         await RefreshLibraryAsync(runInitialDeepScan: false);
@@ -325,52 +468,117 @@ public sealed partial class MainWindow : Window
         }
 
         var restored = library.RestoreSteamGames();
-        _viewModel.StatusText = $"Restored {restored} excluded Steam game{Plural(restored)}.";
+        _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesOperation4", "Restored {0} excluded Steam game{1}.", restored, Plural(restored));
         await RefreshLibraryAsync(runInitialDeepScan: false);
     }
 
-    private async void Settings_Click(object? sender, RoutedEventArgs e)
+    private async void RestoreExcludedProviders_Click(object? sender, RoutedEventArgs e)
     {
-        if (!TryGetLibrary(out var library))
+        if (!TryGetLibrary(out var library)) return;
+        try
+        {
+            library.UpdateState(state => state.ExcludedProviderGames = []);
+            await RefreshLibraryAsync(runInitialDeepScan: false);
+            _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage6", "Cleared launcher-game exclusions and refreshed the library. Unavailable installations remain absent.");
+        }
+        catch (Exception error) { _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage7", "Could not restore excluded launcher games: {0}", error.Message); }
+    }
+
+    private SettingsPage? _settingsPage;
+    private LibraryPage? _libraryPage;
+
+    private void GamesNavigation_Click(object? sender, RoutedEventArgs e) => ShowGamesPage();
+
+    private void ShowGamesPage()
+    {
+        this.FindControl<Control>("GamesPageHost")!.IsVisible = true;
+        this.FindControl<Control>("SettingsPageHost")!.IsVisible = false;
+        this.FindControl<Control>("LibraryPageHost")!.IsVisible = false;
+        this.FindControl<Button>("LibraryNavigationButton")!.Classes.Set("navSelected", false);
+        this.FindControl<Button>("GamesNavigationButton")!.Classes.Set("navSelected", true);
+        this.FindControl<Button>("SettingsNavigationButton")!.Classes.Set("navSelected", false);
+    }
+
+    private void Settings_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_viewModel.IsBusy || !TryGetLibrary(out var library))
         {
             return;
         }
 
-        var settings = new SettingsWindow(library);
-        var saved = await settings.ShowDialog<bool>(this);
-        if (saved)
+        if (_settingsPage is null)
         {
+            var page = new SettingsPage(library, () => DiagnosticsReport.Capture(library, _allRows.Select(row => row.Game).ToArray()));
+            page.Finished += async saved =>
+            {
+                _settingsPage = null;
+                this.FindControl<ContentControl>("SettingsPageHost")!.Content = null;
+                ShowGamesPage();
+                await SettingsFinishedAsync(page, library, saved);
+            };
+            _settingsPage = page;
+        }
+        this.FindControl<ContentControl>("SettingsPageHost")!.Content = _settingsPage;
+        this.FindControl<Control>("SettingsPageHost")!.IsVisible = true;
+        this.FindControl<Control>("GamesPageHost")!.IsVisible = false;
+        this.FindControl<Control>("LibraryPageHost")!.IsVisible = false;
+        this.FindControl<Button>("LibraryNavigationButton")!.Classes.Set("navSelected", false);
+        this.FindControl<Button>("GamesNavigationButton")!.Classes.Set("navSelected", false);
+        this.FindControl<Button>("SettingsNavigationButton")!.Classes.Set("navSelected", true);
+    }
+
+    private async Task SettingsFinishedAsync(SettingsPage settings, PersistentLibrary library, bool saved)
+    {
+        if (saved || settings.LibrarySelectionChanged)
+        {
+            ApplyGameView();
+            if (_catalog is not null) _catalog.Policy = new(library.State.AllowDebugDlls, library.State.AllowUntrustedDlls);
             _viewModel.GridCardSize = library.State.CardSize;
             _gridCardSizeInput.SelectedItem = library.State.CardSize;
             UpdateGridGeometry();
             _viewModel.StatusText = library.State.HddMode
-                ? "Settings saved. HDD scan and artwork limits are active."
-                : "Settings saved. Standard scan and artwork limits are active.";
+                ? LanguageAppearance.Format("Linux_GuiRemainingHddSaved", "Settings saved. HDD profile: {0} scan workers, {1} artwork workers.", library.State.Performance.ScanConcurrency, library.State.Performance.ArtworkConcurrency)
+                : LanguageAppearance.Format("Linux_GuiRemainingStandardSaved", "Settings saved. Standard profile: {0} scan workers, {1} artwork workers.", library.State.Performance.ScanConcurrency, library.State.Performance.ArtworkConcurrency);
             await RefreshLibraryAsync(runInitialDeepScan: settings.WasReset);
         }
     }
 
-    private async void DllLibrary_Click(object? sender, RoutedEventArgs e)
+    private void DllLibrary_Click(object? sender, RoutedEventArgs e)
     {
         if (!TryGetCatalog(out var catalog))
         {
             return;
         }
 
-        var selectedEntry = await new DllLibraryWindow(catalog)
-            .ShowDialog<DllCatalogEntry?>(this);
-        if (selectedEntry is null)
+        if (_libraryPage is null)
         {
-            return;
+            var page = new LibraryPage(catalog, _library);
+            page.UseRequested += async entry => { ShowGamesPage(); await ApplyLibraryEntryAsync(entry); };
+            page.CatalogChanged += refreshed => { _catalog = refreshed; _scanService = new LibraryScanService(refreshed, _scanner); };
+            _libraryPage = page;
+            this.FindControl<ContentControl>("LibraryPageHost")!.Content = page;
+            if (_services is null) page.Start();
         }
+        else _libraryPage.UpdateCatalog(catalog);
+        this.FindControl<Control>("LibraryPageHost")!.IsVisible = true;
+        this.FindControl<Control>("GamesPageHost")!.IsVisible = false;
+        this.FindControl<Control>("SettingsPageHost")!.IsVisible = false;
+        this.FindControl<Button>("LibraryNavigationButton")!.Classes.Set("navSelected", true);
+        this.FindControl<Button>("GamesNavigationButton")!.Classes.Set("navSelected", false);
+        this.FindControl<Button>("SettingsNavigationButton")!.Classes.Set("navSelected", false);
+    }
+
+    private async Task ApplyLibraryEntryAsync(DllCatalogEntry selectedEntry)
+    {
+        if (!TryGetCatalog(out var catalog)) return;
 
         if (!TryGetSelectedRows(out var rows))
         {
-            _viewModel.StatusText = $"{DllTypes.Get(selectedEntry.Type).DisplayName} {selectedEntry.Version} is downloaded. Select games before applying it.";
+            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesOperation5", "{0} {1} is downloaded. Select games before applying it.", DllTypes.Get(selectedEntry.Type).DisplayName, selectedEntry.Version);
             return;
         }
 
-        var unscanned = rows.Where(row => row.ScanResult is null).ToArray();
+        var unscanned = rows.Where(row => row.ScanResult is null || row.ScanResult.CachedAtUtc is not null).ToArray();
         if (unscanned.Length > 0)
         {
             foreach (var (row, scan) in await ScanRowsAsync(unscanned, catalog))
@@ -381,7 +589,7 @@ public sealed partial class MainWindow : Window
 
         var identityResolved = false;
         await RunBusyAsync(
-            $"Resolving the exact {DllTypes.Get(selectedEntry.Type).DisplayName} build identity…",
+            LanguageAppearance.Format("Linux_GamesOperation6", "Resolving the exact {0} build identity…", DllTypes.Get(selectedEntry.Type).DisplayName),
             async () =>
             {
                 var resolved = await Task.Run(() => rows
@@ -419,7 +627,7 @@ public sealed partial class MainWindow : Window
             new Dictionary<DllType, DllCatalogEntry>
             {
                 [selectedEntry.Type] = selectedEntry,
-            });
+            }, LanguageAppearance.Current);
         var ready = plan.Where(item => item.Status == UpdatePlanStatus.Ready).ToArray();
         var targetCount = ready.Sum(item => item.Targets.Count);
         if (targetCount == 0)
@@ -427,7 +635,7 @@ public sealed partial class MainWindow : Window
             var currentCount = plan.Count(item => item.Status == UpdatePlanStatus.AlreadyCurrent);
             var skippedCount = plan.Count(item => item.Status == UpdatePlanStatus.Skipped);
             _viewModel.StatusText =
-                $"Exact-version plan is a no-op: {currentCount} current, {skippedCount} incompatible or indeterminate.";
+                LanguageAppearance.Format("Linux_GamesOperation7", "Exact-version plan is a no-op: {0} current, {1} incompatible or indeterminate.", currentCount, skippedCount);
             return;
         }
 
@@ -436,8 +644,8 @@ public sealed partial class MainWindow : Window
             .Distinct(PathComparer)
             .Count();
         var confirmed = await new ConfirmationDialog(
-            "Confirm exact DLL version",
-            $"Apply {family} {selectedEntry.Version} ({selectedEntry.Md5[..8]}) to {targetCount} detected DLL file{Plural(targetCount)} in {gameCount} selected game{Plural(gameCount)}?",
+            LanguageAppearance.Get("Linux_ConfirmExactTitle", "Confirm exact DLL version"),
+            LanguageAppearance.Format("Linux_ConfirmExactPrompt", "Apply {0} {1} ({2}) to {3} detected DLL file{4} in {5} selected game{6}?", family, selectedEntry.Version, selectedEntry.Md5[..8], targetCount, Plural(targetCount), gameCount, Plural(gameCount)),
             ConfirmationDialog.GameFileWriteWarning)
             .ShowDialog<bool>(this);
         if (!confirmed)
@@ -445,13 +653,13 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        await RunBusyAsync($"Applying exact {family} {selectedEntry.Version}…", async () =>
+        await RunBusyAsync(LanguageAppearance.Format("Linux_GamesOperation8", "Applying exact {0} {1}…", family, selectedEntry.Version), async () =>
         {
             using var cache = new DownloadCache();
             var results = await Task.Run(() => DllOperations.ApplyUpdatesAsync(
                 plan,
                 cache,
-                _lifetime.Token));
+                _lifetime.Token, LanguageAppearance.Current));
             ShowOperationFailures(results);
             foreach (var result in results.Where(result => result.Success))
             {
@@ -473,12 +681,13 @@ public sealed partial class MainWindow : Window
             var succeeded = results.Count(result => result.Success);
             var failed = results.Count - succeeded;
             _viewModel.StatusText =
-                $"Exact-version update finished: {succeeded} succeeded, {failed} failed.";
+                LanguageAppearance.Format("Linux_GamesOperation9", "Exact-version update finished: {0} succeeded, {1} failed.", succeeded, failed);
         });
     }
 
-    private void GameLaunch_Click(object? sender, RoutedEventArgs e)
+    private async void GameLaunch_Click(object? sender, RoutedEventArgs e)
     {
+        if (_viewModel.IsBusy) return;
         if (!TryGetMenuGame(sender, out var row))
         {
             return;
@@ -488,21 +697,51 @@ public sealed partial class MainWindow : Window
         {
             var installedSteamGame = _lastSteamGames.FirstOrDefault(game =>
                 PathComparer.Equals(game.InstallDirectory, row.RootPath));
-            var target = installedSteamGame is null
-                ? row.RootPath
-                : $"steam://rungameid/{installedSteamGame.AppId}";
-            using var process = Process.Start(new ProcessStartInfo
+            if (installedSteamGame is not null)
             {
-                FileName = target,
-                UseShellExecute = true,
-            });
-            _viewModel.StatusText = installedSteamGame is null
-                ? $"Opened {row.Name}'s installation folder."
-                : $"Sent {row.Name} to Steam.";
+                using var process = Process.Start(new ProcessStartInfo { FileName = $"steam://rungameid/{installedSteamGame.AppId}", UseShellExecute = true });
+                _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage8", "Sent {0} to Steam.", row.Name);
+                return;
+            }
+            if (row.Game.ProviderLaunch is { } providerLaunch)
+            {
+                string? wineRunner = null;
+                if (providerLaunch.Launcher == ProviderLauncher.Wine)
+                {
+                    if (_library is null) return;
+                    wineRunner = _library.State.ProviderWineRunners.GetValueOrDefault(providerLaunch.ConfigurationDirectory)
+                        ?? LaunchSuggestions.FindWine(Environment.GetEnvironmentVariable("PATH"));
+                    string? setupError = null;
+                    try { providerLaunch.CreateStartInfo(wineRunner: wineRunner); }
+                    catch (Exception error) when (error is IOException or InvalidOperationException or UnauthorizedAccessException or ArgumentException)
+                    { setupError = error.Message; }
+                    if (setupError is not null)
+                    {
+                        wineRunner = await new ProviderWineLaunchDialog(row.Name, providerLaunch, wineRunner,
+                            error: setupError).ShowDialog<string?>(this);
+                        if (wineRunner is null) return;
+                        _library.UpdateState(state => state.ProviderWineRunners[providerLaunch.ConfigurationDirectory] = wineRunner);
+                    }
+                }
+                using var request = Process.Start(providerLaunch.CreateStartInfo(_library?.State.HeroicExecutable, wineRunner));
+                _viewModel.StatusText = request is null ? LanguageAppearance.Format("Linux_LaunchDispatchFailed", "Could not dispatch the launch request for {0}.", row.Name)
+                    : LanguageAppearance.Format("Linux_LaunchDispatched", "Sent a launch request for {0} to {1}.", row.Name, providerLaunch.ClientName ?? providerLaunch.Launcher.ToString());
+                return;
+            }
+            var manual = _library?.State.ManualGames.FirstOrDefault(game => PathComparer.Equals(game.RootPath, row.RootPath));
+            if (manual is null) { _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage9", "No launch configuration is available for this game."); return; }
+            if (manual.Launch is null)
+            {
+                await ManualLaunchSetupWindow.ConfigureAsync(this, _library!, [manual]);
+                _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage10", "Launch setup closed. Use Launch when ready; saving did not start the game.");
+                return;
+            }
+            using var launched = Process.Start(manual.Launch.CreateStartInfo());
+            _viewModel.StatusText = launched is null ? LanguageAppearance.Format("Linux_LaunchStartFailed", "Could not start {0}.", row.Name) : LanguageAppearance.Format("Linux_LaunchStarted", "Started the configured executable for {0}.", row.Name);
         }
         catch (Exception exception)
         {
-            _viewModel.StatusText = $"Could not launch {row.Name}: {exception.Message}";
+            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage11", "Could not launch {0}: {1}", row.Name, exception.Message);
         }
     }
 
@@ -515,17 +754,15 @@ public sealed partial class MainWindow : Window
 
         var notes = await new GameNotesDialog(
             row.Name,
-            library.FindGamePreference(row.RootPath)?.Notes)
+            library.FindGamePreference(row.RootPath)?.Notes,
+            draft => library.UpdateGamePreference(row.RootPath, preference => preference.Notes = draft))
             .ShowDialog<string?>(this);
         if (notes is null)
         {
             return;
         }
 
-        library.UpdateGamePreference(
-            row.RootPath,
-            preference => preference.Notes = string.IsNullOrWhiteSpace(notes) ? null : notes);
-        _viewModel.StatusText = $"Saved notes for {row.Name}.";
+        _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage12", "Saved notes for {0}.", row.Name);
     }
 
     private async void GameHistory_Click(object? sender, RoutedEventArgs e)
@@ -552,14 +789,14 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var preference = library.UpdateGamePreference(
-            row.RootPath,
-            value => value.IsFavorite = !value.IsFavorite);
+        GamePreferenceState preference;
+        try { preference = library.UpdateGamePreference(row.RootPath, value => value.IsFavorite = !value.IsFavorite); }
+        catch (Exception ex) { _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage13", "Could not save favorites for {0}: {1}", row.Name, ex.Message); return; }
         row.ApplyPreference(preference);
         ApplyGameView();
         _viewModel.StatusText = preference.IsFavorite
-            ? $"Added {row.Name} to favorites."
-            : $"Removed {row.Name} from favorites.";
+            ? LanguageAppearance.Format("Linux_FavoriteAdded", "Added {0} to favorites.", row.Name)
+            : LanguageAppearance.Format("Linux_FavoriteRemoved", "Removed {0} from favorites.", row.Name);
     }
 
     private async void GameReload_Click(object? sender, RoutedEventArgs e)
@@ -579,30 +816,48 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var preference = library.UpdateGamePreference(
-            row.RootPath,
-            value => value.IsHidden = !value.IsHidden);
+        GamePreferenceState preference;
+        try { preference = library.UpdateGamePreference(row.RootPath, value => value.IsHidden = !value.IsHidden); }
+        catch (Exception ex) { _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage14", "Could not save visibility for {0}: {1}", row.Name, ex.Message); return; }
         row.ApplyPreference(preference);
         ApplyGameView();
         _viewModel.StatusText = preference.IsHidden
-            ? $"Hid {row.Name}. Use the Hidden filter to show it again."
-            : $"Restored {row.Name} to the library view.";
+            ? LanguageAppearance.Format("Linux_GameHidden", "Hid {0}. Use the Hidden filter to show it again.", row.Name)
+            : LanguageAppearance.Format("Linux_GameUnhidden", "Restored {0} to the library view.", row.Name);
     }
 
     private async void GameCustomCover_Click(object? sender, RoutedEventArgs e)
     {
+        if (_viewModel.IsBusy || _lifetime.IsCancellationRequested) return;
         if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
         {
             return;
         }
 
+        if (library.FindGamePreference(row.RootPath)?.CustomArtworkPath is { } confirmedPath)
+        {
+            if (!await new ConfirmationDialog(LanguageAppearance.Get("Linux_RemoveCoverTitle", "Remove custom cover"),
+                LanguageAppearance.Format("Linux_RemoveCoverPrompt", "Remove the custom cover for {0} and return to ordinary artwork? Your source image will not be deleted.", row.Name)).ShowDialog<bool>(this)) return;
+            if (_viewModel.IsBusy || _lifetime.IsCancellationRequested) return;
+            try
+            {
+                CustomCoverWorkflow.Remove(library, row.RootPath, confirmedPath);
+                row.ApplyPreference(library.FindGamePreference(row.RootPath) ?? new GamePreferenceState());
+                row.ClearArtwork();
+                StartArtworkHydration();
+                _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage15", "Removed custom cover for {0}.", row.Name);
+            }
+            catch (Exception ex) { _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage16", "Could not remove custom cover: {0}", ex.Message); }
+            return;
+        }
+
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = $"Select cover art for {row.Name}",
+            Title = LanguageAppearance.Format("Linux_MainWindow_96", "Select cover art for {0}", row.Name),
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Image files")
+                new FilePickerFileType(LanguageAppearance.Get("Linux_FileTypeImages", "Image files"))
                 {
                     Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"],
                     MimeTypes = ["image/png", "image/jpeg", "image/webp", "image/bmp"],
@@ -614,26 +869,50 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var path = files[0].Path.LocalPath;
+        await ApplyCustomCoverAsync(row, library, files[0].Path.LocalPath);
+    }
+
+    private Task ApplyCustomCoverAsync(GameRowViewModel row, PersistentLibrary library, string path)
+    {
+        if (_viewModel.IsBusy || _lifetime.IsCancellationRequested) return Task.CompletedTask;
+        return _customCoverTask = RunBusyAsync(LanguageAppearance.Format("Linux_GamesOperation10", "Saving custom cover for {0}…", row.Name),
+            () => ApplyCustomCoverCoreAsync(row, library, path));
+    }
+
+    private async Task ApplyCustomCoverCoreAsync(GameRowViewModel row, PersistentLibrary library, string path)
+    {
         if (!File.Exists(path))
         {
-            _viewModel.StatusText = "The selected cover-art file is unavailable.";
+            _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage17", "The selected cover-art file is unavailable.");
             return;
         }
 
         var fullPath = Path.GetFullPath(path);
-        var artworkError = TrySetArtwork(row, fullPath);
-        if (artworkError is not null)
+        try
         {
-            _viewModel.StatusText = $"The selected cover art could not be opened: {artworkError}";
+            fullPath = await CustomCoverWorkflow.SaveAsync(library, row.RootPath, fullPath,
+                new AvaloniaArtworkImageProcessor(), _lifetime.Token);
+        }
+        catch (Exception ex)
+        {
+            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage18", "Could not apply custom cover art to {0}: {1}", row.Name, ex.Message);
             return;
         }
 
-        library.UpdateGamePreference(
-            row.RootPath,
-            preference => preference.CustomArtworkPath = fullPath);
-        library.RecordHistory(row.RootPath, "Cover changed", "Artwork", detail: path);
-        _viewModel.StatusText = $"Applied custom cover art to {row.Name}.";
+        var displayError = TrySetArtwork(row, fullPath);
+        row.ApplyPreference(library.FindGamePreference(row.RootPath)!);
+        if (displayError is not null)
+        {
+            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage19", "Custom cover saved, but could not be displayed: {0}", displayError);
+            return;
+        }
+        try { library.RecordHistory(row.RootPath, "Cover changed", "Artwork", detail: path); }
+        catch (Exception ex)
+        {
+            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage20", "Custom cover saved for {0}, but its history could not be saved: {1}", row.Name, ex.Message);
+            return;
+        }
+        _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage21", "Applied custom cover art to {0}.", row.Name);
     }
 
     private async void GameUpdateLatest_Click(object? sender, RoutedEventArgs e)
@@ -643,7 +922,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        if (row.ScanResult is null)
+        if (row.ScanResult is null || row.ScanResult.CachedAtUtc is not null)
         {
             await ReloadGameAsync(row, catalog, recordHistory: false);
         }
@@ -657,18 +936,18 @@ public sealed partial class MainWindow : Window
             .Select(dll => dll.Type)
             .Distinct()
             .ToDictionary(type => type, catalog.GetLatest);
-        var plan = _planner.Plan([row.ScanResult], candidates);
+        var plan = _planner.Plan([row.ScanResult], candidates, LanguageAppearance.Current);
         var ready = plan.Where(item => item.Status == UpdatePlanStatus.Ready).ToArray();
         var targetCount = ready.Sum(item => item.Targets.Count);
         if (targetCount == 0)
         {
-            _viewModel.StatusText = $"{row.Name} already has the latest detected DLL versions.";
+            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage22", "{0} already has the latest detected DLL versions.", row.Name);
             return;
         }
 
         var confirmed = await new ConfirmationDialog(
-            "Confirm DLL update",
-            $"Update {targetCount} detected DLL file{Plural(targetCount)} in {row.Name}? An adjacent .dlsss backup is created when needed.",
+            LanguageAppearance.Get("Linux_ConfirmUpdateTitle", "Confirm DLL update"),
+            LanguageAppearance.Format("Linux_ConfirmUpdatePrompt", "Update {0} detected DLL file{1} in {2}? An adjacent .dlsss backup is created when needed.", targetCount, Plural(targetCount), row.Name),
             ConfirmationDialog.GameFileWriteWarning)
             .ShowDialog<bool>(this);
         if (!confirmed)
@@ -676,13 +955,13 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        await RunBusyAsync($"Updating detected DLLs in {row.Name}…", async () =>
+        await RunBusyAsync(LanguageAppearance.Format("Linux_GamesOperation11", "Updating detected DLLs in {0}…", row.Name), async () =>
         {
             using var cache = new DownloadCache();
             var results = await Task.Run(() => DllOperations.ApplyUpdatesAsync(
                 plan,
                 cache,
-                _lifetime.Token));
+                _lifetime.Token, LanguageAppearance.Current));
             ShowOperationFailures(results);
             foreach (var result in results.Where(result => result.Success))
             {
@@ -699,7 +978,7 @@ public sealed partial class MainWindow : Window
             }
 
             var succeeded = results.Count(result => result.Success);
-            _viewModel.StatusText = $"Updated {succeeded} DLL file{Plural(succeeded)} in {row.Name}.";
+            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesOperation12", "Updated {0} DLL file{1} in {2}.", succeeded, Plural(succeeded), row.Name);
         });
     }
 
@@ -711,8 +990,8 @@ public sealed partial class MainWindow : Window
         }
 
         var confirmed = await new ConfirmationDialog(
-            "Remove game",
-            $"Remove {row.Name} from this library?")
+            LanguageAppearance.Get("Linux_RemoveGameTitle", "Remove game"),
+            LanguageAppearance.Format("Linux_RemoveGamePrompt", "Remove {0} from this library?", row.Name) + "\n\n" + RemovalNotice)
             .ShowDialog<bool>(this);
         if (!confirmed)
         {
@@ -841,24 +1120,26 @@ public sealed partial class MainWindow : Window
 
     private void SelectAll_Click(object? sender, RoutedEventArgs e)
     {
+        var selected = GameViewPolicy.ShouldSelectAll(_viewModel.Games.Select(game => game.IsSelected));
         foreach (var game in _viewModel.Games)
         {
-            game.IsSelected = true;
+            game.IsSelected = selected;
         }
     }
 
     private async Task RefreshLibraryAsync(bool runInitialDeepScan)
     {
-        if (!TryGetLibrary(out var library)
+        if (_viewModel.IsBusy || !TryGetLibrary(out var library)
             || !TryGetScanService(out var service))
         {
             return;
         }
 
         IReadOnlyList<SelectedGame> games = [];
+        var generation = ++_libraryViewGeneration;
         var succeeded = false;
         _viewModel.IsLoadingLibrary = true;
-        await RunBusyAsync("Discovering and fast-scanning the game library…", async () =>
+        await RunBusyAsync(LanguageAppearance.Get("Linux_DiscoveringGames", "Discovering and fast-scanning the game library…"), async () =>
         {
             games = await DiscoverMergedGamesAsync(library);
             var result = await service.ScanFastAsync(
@@ -866,11 +1147,11 @@ public sealed partial class MainWindow : Window
                 library.State,
                 CreateScanProgress(isDeepScan: false),
                 _lifetime.Token);
-            ReplaceScans(result.Games);
+            await ReplaceLibraryScansAsync(library, result.Games);
             StartArtworkHydration();
             _viewModel.IsLoadingLibrary = false;
             _viewModel.StatusText =
-                $"Fast Scan loaded {_viewModel.GameCount} swappable game{Plural(_viewModel.GameCount)} in {result.Elapsed.TotalSeconds:F2} seconds.";
+                LanguageAppearance.Format("Linux_FastScanFinished", "Fast Scan inspected {0} game{1} in {2:F2} seconds.", _viewModel.GameCount, Plural(_viewModel.GameCount), result.Elapsed.TotalSeconds);
             succeeded = true;
         });
 
@@ -885,33 +1166,42 @@ public sealed partial class MainWindow : Window
             && games.Count > 0
             && !_lifetime.IsCancellationRequested)
         {
-            _deepScanTask = RunInitialDeepScanAsync(games, library, service);
+            _deepScanTask = RunInitialDeepScanAsync(games, library, service, generation);
         }
     }
 
     private async Task<IReadOnlyList<SelectedGame>> DiscoverMergedGamesAsync(
         PersistentLibrary library)
     {
-        var discovery = await Task.Run(
-            () => _steamDiscovery.Discover(new SteamDiscoveryOptions
+        var discovery = _services is not null ? await _services.DiscoverSteam(_lifetime.Token) : await Task.Run(
+            () => !LibrarySelection.Enabled(library.State, "Steam") ? new SteamDiscoveryResult([], []) : _steamDiscovery.Discover(new SteamDiscoveryOptions
             {
                 AdditionalRoots = library.State.AdditionalSteamRoots,
             }),
             _lifetime.Token);
-        _lastSteamGames = discovery.Games;
+        var mergedSteam = DiscoveryCacheReconciliation.Steam(library.State.DiscoverySnapshot?.SteamGames ?? [], discovery);
+        _lastSteamGames = mergedSteam.Games;
         foreach (var warning in discovery.Warnings)
         {
             AddAlert("Warning", warning);
         }
 
-        var games = library.Merge(discovery);
+        var providers = await Task.Run(() => _services is null
+            ? ProviderDiscovery.Discover(library.State, _lifetime.Token, respectLibrarySelection: true)
+            : _services.DiscoverProviders(library.State, _lifetime.Token), _lifetime.Token);
+        foreach (var warning in providers.Warnings) AddAlert("Warning", warning);
+        var mergedProviders = DiscoveryCacheReconciliation.Providers(library.State.DiscoverySnapshot?.ProviderGames ?? [], providers);
+        var games = library.Merge(new(mergedSteam.Games, discovery.Warnings), mergedProviders.Games)
+            .Where(game => LibrarySelection.Includes(library.State, game)).ToArray();
+        try { DiscoverySnapshot.Save(library, discovery, providers); }
+        catch (Exception error) { AddAlert("Warning", LanguageAppearance.Format("Linux_DiscoverySaveFailed", "Discovery results could not be saved: {0}", error.Message)); }
         foreach (var filesystem in FilesystemInspector.InspectPaths(
             games.Select(game => game.RootPath))
             .GroupBy(item => (item.MountPoint, item.Type))
             .Select(group => group.First()))
         {
             var detail = filesystem.Warning
-                ?? $"{filesystem.Type} mounted at {filesystem.MountPoint}";
+                ?? LanguageAppearance.Format("Linux_GuiRemainingFilesystem", "{0} mounted at {1}", filesystem.Type, filesystem.MountPoint);
             AddAlert(filesystem.Warning is null ? "Detected" : "Warning", detail);
         }
 
@@ -921,21 +1211,22 @@ public sealed partial class MainWindow : Window
     private async Task RunInitialDeepScanAsync(
         IReadOnlyList<SelectedGame> games,
         PersistentLibrary library,
-        LibraryScanService service)
+        LibraryScanService service, long generation)
     {
         try
         {
             _viewModel.StatusText =
-                $"Fast Scan is ready with {_viewModel.GameCount} game{Plural(_viewModel.GameCount)}. Initial Deep Scan is learning any missing layouts in the background…";
+                LanguageAppearance.Format("Linux_FastScanReady", "Fast Scan is ready with {0} game{1}. Initial Deep Scan is learning any missing layouts in the background…", _viewModel.GameCount, Plural(_viewModel.GameCount));
             var result = await service.ScanDeepAsync(
                 games,
                 library,
                 CreateScanProgress(isDeepScan: true),
                 _lifetime.Token);
-            ReplaceScans(result.Games);
+            if (generation != _libraryViewGeneration) return;
+            await ReplaceLibraryScansAsync(library, result.Games);
             StartArtworkHydration();
             _viewModel.StatusText =
-                $"Initial Deep Scan completed in {result.Elapsed.TotalSeconds:F2} seconds; learned {result.LearnedPatternCount} new fast-scan pattern{Plural(result.LearnedPatternCount)}.";
+                LanguageAppearance.Format("Linux_InitialScanFinished", "Initial Deep Scan completed in {0:F2} seconds; learned {1} new fast-scan pattern{2}.", result.Elapsed.TotalSeconds, result.LearnedPatternCount, Plural(result.LearnedPatternCount));
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
         {
@@ -944,7 +1235,7 @@ public sealed partial class MainWindow : Window
         catch (Exception exception)
         {
             _viewModel.StatusText =
-                $"Initial Deep Scan did not complete and will retry next launch: {exception.Message}";
+                LanguageAppearance.Format("Linux_InitialScanFailed", "Initial Deep Scan did not complete and will retry next launch: {0}", exception.Message);
             AddAlert("Warning", exception.Message);
         }
     }
@@ -952,40 +1243,74 @@ public sealed partial class MainWindow : Window
     private Progress<LibraryScanProgress> CreateScanProgress(bool isDeepScan) =>
         new Progress<LibraryScanProgress>(progress =>
         {
-            var label = isDeepScan ? "Deep Scan" : "Fast Scan";
+            var label = isDeepScan ? LanguageAppearance.Get("GamesPage_DeepScan", "Deep Scan") : LanguageAppearance.Get("Linux_GuiRemainingFastScan", "Fast Scan");
             _viewModel.StatusText =
-                $"{label}: {progress.ProcessedGames:N0} / {progress.TotalGames:N0} game roots processed…";
+                LanguageAppearance.Format("Linux_ScanProgress", "{0}: {1:N0} / {2:N0} game roots processed…", label, progress.ProcessedGames, progress.TotalGames);
         });
 
-    private void ReplaceScans(IReadOnlyList<ScanResult> scans)
+    private async Task ReplaceLibraryScansAsync(PersistentLibrary library, IReadOnlyList<ScanResult> scans)
     {
-        foreach (var row in _allRows)
-        {
-            row.PropertyChanged -= GameRow_PropertyChanged;
-            row.ClearArtwork();
-        }
+        IReadOnlyList<ScanResult> previous = [];
+        try { previous = DiscoverySnapshot.ReadScans(library); }
+        catch (Exception error) { AddAlert("Warning", LanguageAppearance.Format("Linux_ScanLoadFailed", "Saved scan results could not be loaded: {0}", error.Message)); }
+        try { DiscoverySnapshot.SaveScans(library, scans); }
+        catch (Exception error) { AddAlert("Warning", LanguageAppearance.Format("Linux_ScanSaveFailed", "Scan results could not be saved: {0}", error.Message)); }
+        await ReplaceScansAsync(DiscoverySnapshot.ReconcileScans(previous, scans));
+    }
 
-        _viewModel.Games.Clear();
-        _allRows.Clear();
-        _knownPaths.Clear();
-        foreach (var scan in scans.Where(scan => scan.Dlls.Count > 0))
+    private async Task ReplaceScansAsync(IReadOnlyList<ScanResult> scans)
+    {
+        var token = _lifetime.Token;
+        ++_publicationGeneration;
+        await _viewPublication;
+        token.ThrowIfCancellationRequested();
+        var selectedRoots = _allRows.Where(row => row.IsSelected).Select(row => row.RootPath).ToHashSet(PathComparer);
+        _preparingRows = true;
+        _viewModel.IsPublishingView = true;
+        try
         {
-            if (!AddGame(scan.Game))
+            _rowPreparation = PrepareRowsAsync();
+            await _rowPreparation;
+
+            async Task PrepareRowsAsync()
             {
-                continue;
+                await RunUiBatchesAsync(_allRows.ToArray(), row =>
+                {
+                    row.PropertyChanged -= GameRow_PropertyChanged;
+                    row.ClearArtwork();
+                });
+                _viewModel.Games.Clear();
+                _allRows.Clear();
+                _knownPaths.Clear();
+                await RunUiBatchesAsync(scans, scan =>
+                {
+                    if (!AddGame(scan.Game)) return;
+                    _allRows[^1].SetScanResult(scan);
+                    _allRows[^1].IsSelected = selectedRoots.Contains(_allRows[^1].RootPath);
+                });
             }
-
-            _allRows[^1].SetScanResult(scan);
+            token.ThrowIfCancellationRequested();
+        }
+        finally
+        {
+            _preparingRows = false;
+            _viewModel.IsPublishingView = false;
         }
 
         _viewModel.GameCount = _allRows.Count;
         _viewModel.SelectedCount = _allRows.Count(row => row.IsSelected);
         ApplyGameView();
+        await _viewPublication;
     }
 
     private void ApplyGameView()
     {
-        IEnumerable<GameRowViewModel> rows = _allRows;
+        if (_preparingRows || _lifetime.IsCancellationRequested) return;
+        IEnumerable<GameRowViewModel> rows = _allRows.Where(row => _library is null || LibrarySelection.Includes(_library.State, row.Game));
+        var hideEmpty = _library?.State.HideNonSwappableGames ?? true;
+        if (this.FindControl<MenuItem>("SwappableFilterMenu") is { } option)
+            option.Header = hideEmpty ? LanguageAppearance.Get("Linux_MainWindow_95", "Show games without swappable items") : LanguageAppearance.Get("Linux_MainWindow_94", "Hide games without swappable items");
+        if (hideEmpty) rows = rows.Where(row => row.ScanResult is { } scan && (scan.Dlls.Count > 0 || scan.StreamlineFiles.Count > 0 || scan.Warnings.Count > 0));
         var search = _searchTextBox.Text?.Trim();
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -999,12 +1324,10 @@ public sealed partial class MainWindow : Window
             .Select(game => game.RootPath)
             .ToHashSet(PathComparer)
             ?? new HashSet<string>(PathComparer);
-        rows = _filterComboBox.SelectedIndex == 8
-            ? rows.Where(row => row.IsHidden)
-            : rows.Where(row => !row.IsHidden);
+        rows = rows.Where(row => GameViewPolicy.MatchesHidden(row.IsHidden, _filterComboBox.SelectedIndex == 8, _includeHidden));
         rows = _filterComboBox.SelectedIndex switch
         {
-            1 => rows.Where(row => !manualPaths.Contains(row.RootPath)),
+            1 => rows.Where(row => GameViewPolicy.IsSteam(row.Game, manualPaths.Contains(row.RootPath))),
             2 => rows.Where(row => manualPaths.Contains(row.RootPath)),
             3 => rows.Where(row => HasFamily(row, DllType.Dlss)),
             4 => rows.Where(row => HasFamily(
@@ -1029,16 +1352,19 @@ public sealed partial class MainWindow : Window
         {
             1 => rows.OrderBy(row => row.Source, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
-            2 => rows.OrderByDescending(GetHighestVersion, StringComparer.OrdinalIgnoreCase)
+            2 => rows.OrderByDescending(GetHighestVersion, DlssSwapper.Shared.VersionTextComparer.Instance)
                 .ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
             _ => rows.OrderBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
         };
 
-        _viewModel.Games.Clear();
-        foreach (var row in rows)
-        {
-            _viewModel.Games.Add(row);
-        }
+        var visible = rows.ToArray();
+        var grouped = _library?.State.GroupGameLibrariesTogether ?? true;
+        if (this.FindControl<MenuItem>("GroupLibrariesMenu") is { } grouping)
+            grouping.Header = grouped ? LanguageAppearance.Get("Linux_MainWindow_93", "Ungroup game libraries") : LanguageAppearance.Get("Linux_MainWindow_92", "Group game libraries");
+        var groups = DlssSwapper.Shared.GameGrouping.Build(visible, row => row.IsFavorite,
+            row => GameViewPolicy.LibraryName(row.Game,
+                manualPaths.Contains(row.RootPath)), grouped, _library is null ? null : LibrarySelection.Read(_library.State).Select(entry => entry.Id).ToArray());
+        _viewPublication = PublishViewAsync(visible, groups);
     }
 
     private static bool HasFamily(GameRowViewModel row, params DllType[] families) =>
@@ -1047,7 +1373,7 @@ public sealed partial class MainWindow : Window
     private static string GetHighestVersion(GameRowViewModel row) =>
         row.ScanResult?.Dlls
             .Select(dll => dll.Version)
-            .OrderByDescending(version => version, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(version => version, DlssSwapper.Shared.VersionTextComparer.Instance)
             .FirstOrDefault()
         ?? string.Empty;
 
@@ -1093,7 +1419,8 @@ public sealed partial class MainWindow : Window
                     if (customArtworkPath is not null && File.Exists(customArtworkPath))
                     {
                         var error = await Dispatcher.UIThread.InvokeAsync(
-                            () => TrySetArtwork(row, customArtworkPath));
+                            () => library.FindGamePreference(row.RootPath)?.CustomArtworkPath == customArtworkPath
+                                ? TrySetArtwork(row, customArtworkPath) : null);
                         if (error is not null)
                         {
                             warnings.Add((row.Name, error));
@@ -1120,7 +1447,8 @@ public sealed partial class MainWindow : Window
                     if (result.Path is not null && File.Exists(result.Path))
                     {
                         var error = await Dispatcher.UIThread.InvokeAsync(
-                            () => TrySetArtwork(row, result.Path));
+                            () => library.FindGamePreference(row.RootPath)?.CustomArtworkPath == customArtworkPath
+                                ? TrySetArtwork(row, result.Path) : null);
                         if (error is not null)
                         {
                             warnings.Add((row.Name, error));
@@ -1174,9 +1502,11 @@ public sealed partial class MainWindow : Window
 
         _viewModel.IsBusy = true;
         _viewModel.StatusText = status;
+        AppLog.Write(ApplicationLogLevel.Info, status);
         try
         {
             await action();
+            AppLog.Write(ApplicationLogLevel.Debug, "Operation completed: " + status);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
         {
@@ -1184,7 +1514,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            _viewModel.StatusText = $"Operation failed: {exception.Message}";
+            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage23", "Operation failed: {0}", exception.Message);
             AddAlert("Error", exception.Message);
         }
         finally
@@ -1209,6 +1539,8 @@ public sealed partial class MainWindow : Window
             rows.Select(row => row.Game).ToArray(),
             _library.State,
             cancellationToken: _lifetime.Token);
+        try { DiscoverySnapshot.SaveScans(_library, result.Games); }
+        catch (Exception error) { AddAlert("Warning", LanguageAppearance.Format("Linux_ScanSaveFailed", "Scan results could not be saved: {0}", error.Message)); }
         var byPath = result.Games.ToDictionary(
             scan => scan.Game.RootPath,
             PathComparer);
@@ -1220,7 +1552,7 @@ public sealed partial class MainWindow : Window
 
     private bool AddGame(SelectedGame game)
     {
-        var normalizedPath = NormalizeExistingDirectory(game.RootPath);
+        var normalizedPath = NormalizeExistingDirectory(game.RootPath, allowMissing: true);
         if (!_knownPaths.Add(normalizedPath))
         {
             return false;
@@ -1255,7 +1587,7 @@ public sealed partial class MainWindow : Window
     {
         if (e.PropertyName == nameof(GameRowViewModel.IsSelected))
         {
-            _viewModel.SelectedCount = _allRows.Count(row => row.IsSelected);
+            UpdateSelectionSummary();
         }
     }
 
@@ -1269,6 +1601,8 @@ public sealed partial class MainWindow : Window
 
     private void AddAlert(string outcome, string message)
     {
+        AppLog.Write(outcome is "Error" or "Failed" ? ApplicationLogLevel.Error :
+            outcome == "Warning" ? ApplicationLogLevel.Warning : ApplicationLogLevel.Info, message);
         if (outcome.Equals("Warning", StringComparison.OrdinalIgnoreCase)
             || outcome.Equals("Error", StringComparison.OrdinalIgnoreCase)
             || outcome.Equals("Failed", StringComparison.OrdinalIgnoreCase))
@@ -1286,19 +1620,19 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            return $"Could not open artwork for {row.Name}: {exception.Message}";
+            return LanguageAppearance.Format("Linux_GuiRemainingArtworkOpen", "Could not open artwork for {0}: {1}", row.Name, exception.Message);
         }
     }
 
     private bool TryGetSelectedRows(out GameRowViewModel[] rows)
     {
-        rows = _viewModel.Games.Where(game => game.IsSelected).ToArray();
+        rows = _viewModel.Games.Where(game => game.IsSelected && (_library is null || LibrarySelection.Includes(_library.State, game.Game))).ToArray();
         if (rows.Length != 0)
         {
             return true;
         }
 
-        _viewModel.StatusText = "Select at least one game first.";
+        _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage24", "Select at least one game first.");
         return false;
     }
 
@@ -1319,12 +1653,12 @@ public sealed partial class MainWindow : Window
         DllCatalog catalog,
         bool recordHistory)
     {
-        await RunBusyAsync($"Reloading {row.Name}…", async () =>
+        await RunBusyAsync(LanguageAppearance.Format("Linux_GamesOperation13", "Reloading {0}…", row.Name), async () =>
         {
             var scans = await ScanRowsAsync([row], catalog);
             if (scans.Count == 0)
             {
-                _viewModel.StatusText = $"{row.Name} is no longer available for Fast Scan.";
+                _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage25", "{0} is no longer available for Fast Scan.", row.Name);
                 return;
             }
 
@@ -1351,29 +1685,15 @@ public sealed partial class MainWindow : Window
                 }
             }
 
-            _viewModel.StatusText = $"Reloaded {row.Name}; found {scans[0].Scan.Dlls.Count} supported DLL file{Plural(scans[0].Scan.Dlls.Count)}.";
+            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesOperation14", "Reloaded {0}; found {1} supported DLL file{2}.", row.Name, scans[0].Scan.Dlls.Count, Plural(scans[0].Scan.Dlls.Count));
         });
     }
 
+    private static string RemovalNotice => LanguageAppearance.Get("Linux_RemovalNotice", "Launcher games are excluded; their notes, preferences and history are kept. Manually added entries and their saved details/history are removed. Game files are not deleted.");
+
     private static void RemoveGameFromLibrary(
         GameRowViewModel row,
-        PersistentLibrary library,
-        HashSet<string>? manualPaths = null)
-    {
-        manualPaths ??= library.State.ManualGames
-            .Select(game => game.RootPath)
-            .ToHashSet(PathComparer);
-        if (manualPaths.Contains(row.RootPath))
-        {
-            library.RemoveManualGame(row.RootPath);
-        }
-        else if (row.Game.SteamAppId is not null)
-        {
-            library.ExcludeSteamGame(row.Game.SteamAppId);
-        }
-
-        library.RemoveGameState(row.RootPath);
-    }
+        PersistentLibrary library) => LibraryRemovalWorkflow.Remove(library, row.Game);
 
     private bool TryGetCatalog(out DllCatalog catalog)
     {
@@ -1384,7 +1704,7 @@ public sealed partial class MainWindow : Window
         }
 
         _viewModel.StatusText =
-            "The DLL catalog is unavailable. Verify Assets/static_manifest.json and restart.";
+            LanguageAppearance.Get("Linux_CatalogUnavailable", "The DLL catalog is unavailable. Verify Assets/static_manifest.json and restart.");
         return false;
     }
 
@@ -1397,7 +1717,7 @@ public sealed partial class MainWindow : Window
         }
 
         _viewModel.StatusText =
-            "The persistent Linux library state is unavailable. Review the startup error.";
+            LanguageAppearance.Get("Linux_LibraryUnavailable", "The persistent Linux library state is unavailable. Review the startup error.");
         return false;
     }
 
@@ -1410,7 +1730,7 @@ public sealed partial class MainWindow : Window
         }
 
         _viewModel.StatusText =
-            "The Linux scan service is unavailable. Verify the DLL catalog and restart.";
+            LanguageAppearance.Get("Linux_ScannerUnavailable", "The Linux scan service is unavailable. Verify the DLL catalog and restart.");
         return false;
     }
 
@@ -1424,18 +1744,19 @@ public sealed partial class MainWindow : Window
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .ToArray();
 
-    private static string NormalizeExistingDirectory(string value)
+    private static string NormalizeExistingDirectory(string value, bool allowMissing = false)
     {
         var expanded = ExpandHome(value.Trim());
         var fullPath = Path.GetFullPath(expanded);
         if (IsFileSystemRoot(fullPath))
         {
-            throw new ArgumentException($"Filesystem roots cannot be selected: {value}");
+            throw new ArgumentException(LanguageAppearance.Format("Linux_GuiRemainingRootRejected", "Filesystem roots cannot be selected: {0}", value));
         }
 
         if (!Directory.Exists(fullPath))
         {
-            throw new DirectoryNotFoundException($"Directory does not exist: {value}");
+            if (allowMissing) return Path.TrimEndingDirectorySeparator(fullPath);
+            throw new DirectoryNotFoundException(LanguageAppearance.Format("Linux_GuiRemainingDirectoryMissing", "Directory does not exist: {0}", value));
         }
 
         var directory = new DirectoryInfo(fullPath);
@@ -1443,7 +1764,7 @@ public sealed partial class MainWindow : Window
             ?? directory;
         if (IsFileSystemRoot(directory.FullName))
         {
-            throw new ArgumentException($"Filesystem roots cannot be selected: {value}");
+            throw new ArgumentException(LanguageAppearance.Format("Linux_GuiRemainingRootRejected", "Filesystem roots cannot be selected: {0}", value));
         }
 
         return Path.TrimEndingDirectorySeparator(directory.FullName);

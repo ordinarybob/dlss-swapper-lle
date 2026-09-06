@@ -15,6 +15,9 @@ public enum ArtworkOrigin
     SteamCdn,
     MediaWikiCache,
     MediaWiki,
+    Provider,
+    ProviderCache,
+    ProviderLocal,
 }
 
 public sealed record ArtworkResult(
@@ -41,6 +44,7 @@ public sealed class ArtworkService : IDisposable
     private readonly HttpClient _httpClient;
     private readonly IArtworkImageProcessor _imageProcessor;
     private readonly string _cacheRoot;
+    private readonly Lazy<EaArtworkCatalog> _eaCatalog;
     private readonly SemaphoreSlim _mediaWikiGate = new(1, 1);
     private readonly TimeSpan _minimumMediaWikiInterval;
     private DateTimeOffset _lastMediaWikiRequest = DateTimeOffset.MinValue;
@@ -49,12 +53,14 @@ public sealed class ArtworkService : IDisposable
         HttpClient httpClient,
         IArtworkImageProcessor imageProcessor,
         string? cacheRoot = null,
-        TimeSpan? minimumMediaWikiInterval = null)
+        TimeSpan? minimumMediaWikiInterval = null,
+        EaArtworkCatalog? eaCatalog = null)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _imageProcessor = imageProcessor
             ?? throw new ArgumentNullException(nameof(imageProcessor));
         _cacheRoot = Path.GetFullPath(cacheRoot ?? GetDefaultCacheRoot());
+        _eaCatalog = new(() => eaCatalog ?? EaArtworkCatalog.LoadDefault());
         _minimumMediaWikiInterval = minimumMediaWikiInterval
             ?? TimeSpan.FromMilliseconds(500);
     }
@@ -70,6 +76,19 @@ public sealed class ArtworkService : IDisposable
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(knownSteamGames);
+
+        string? providerWarning = null;
+        if (game.ProviderIdentity?.Provider is GameProvider.BattleNet or GameProvider.Ea or GameProvider.Ubisoft or GameProvider.Gog)
+        {
+            var provider = await ResolveProviderArtworkAsync(game, cancellationToken).ConfigureAwait(false);
+            if (provider.Path is not null) return provider;
+            if (game.ProviderIdentity.Provider == GameProvider.Ea)
+            {
+                var local = await ResolveLocalProviderArtworkAsync(game, cancellationToken).ConfigureAwait(false);
+                if (local.Path is not null) return local;
+                providerWarning = local.Warning;
+            }
+        }
 
         var appId = game.SteamAppId;
         if (string.IsNullOrWhiteSpace(appId))
@@ -89,7 +108,7 @@ public sealed class ArtworkService : IDisposable
                 cancellationToken).ConfigureAwait(false);
             if (steam.Path is not null)
             {
-                return steam with { ResolvedSteamAppId = appId };
+                return steam with { ResolvedSteamAppId = appId, Warning = steam.Warning ?? providerWarning };
             }
         }
 
@@ -97,7 +116,85 @@ public sealed class ArtworkService : IDisposable
             game,
             state,
             cancellationToken).ConfigureAwait(false);
-        return fallback with { ResolvedSteamAppId = appId };
+        return fallback with { ResolvedSteamAppId = appId,
+            Warning = fallback.Warning ?? providerWarning ?? (game.ProviderIdentity?.Provider == GameProvider.Ea ? _eaCatalog.Value.Warning : null) };
+    }
+
+    private async Task<ArtworkResult> ResolveProviderArtworkAsync(SelectedGame game, CancellationToken token)
+    {
+        var sources = game.ProviderIdentity?.Provider == GameProvider.Ea ? new[] { _eaCatalog.Value.FindCover(game.Name) }
+            : game.ProviderIdentity?.Provider is GameProvider.Ubisoft or GameProvider.Gog ? new[] { game.CoverUrl }
+            : new[] { game.BattleNet?.CoverUrl,
+            "https://dlss-swapper-downloads.beeradmoore.com/images/covers/battlenet/"
+                + Uri.EscapeDataString(game.ProviderIdentity!.Id) + ".webp" };
+        foreach (var source in sources.Distinct(StringComparer.Ordinal))
+        {
+            token.ThrowIfCancellationRequested();
+            if (!Uri.TryCreate(source, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps) continue;
+            var directory = GetLookupDirectory(game.RootPath);
+            var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(uri.AbsoluteUri)));
+            var cached = Path.Combine(directory, "provider_" + key + ".png");
+            if (File.Exists(cached)) return new(cached, ArtworkOrigin.ProviderCache, null);
+            var missing = cached + ".missing";
+            if (HasRecentMarker(missing)) continue;
+            try
+            {
+                var bytes = await DownloadImageAsync(uri, token).ConfigureAwait(false);
+                if (bytes is null) { MarkMissing(missing); continue; }
+                await SaveProviderPortraitAsync(bytes.Value, cached, token).ConfigureAwait(false);
+                ClearMarker(missing);
+                return new(cached, ArtworkOrigin.Provider, null);
+            }
+            catch (Exception error) when (error is HttpRequestException or IOException or UnauthorizedAccessException or ArgumentException)
+            { /* Try the next authoritative cover source, then the existing artwork fallbacks. */ }
+        }
+        return new(null, ArtworkOrigin.None, null);
+    }
+
+    private async Task SaveProviderPortraitAsync(ReadOnlyMemory<byte> bytes, string cached, CancellationToken token)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(cached)!);
+        var staged = cached + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            await _imageProcessor.SavePortraitAsync(bytes, staged, 400, 600, token).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+            File.Move(staged, cached, overwrite: true);
+        }
+        finally { if (File.Exists(staged)) File.Delete(staged); }
+    }
+
+    private async Task<ArtworkResult> ResolveLocalProviderArtworkAsync(SelectedGame game, CancellationToken token)
+    {
+        var path = game.LocalIconPath;
+        if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path) || !File.Exists(path)
+            || !new[] { ".bmp", ".png", ".jpg", ".jpeg", ".webp", ".exe", ".dll" }.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+            return new(null, ArtworkOrigin.None, null);
+        try
+        {
+            using var input = File.OpenRead(path);
+            byte[] bytes;
+            if (Path.GetExtension(path).Equals(".exe", StringComparison.OrdinalIgnoreCase)
+                || Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                token.ThrowIfCancellationRequested();
+                bytes = DlssSwapper.Shared.PeIconReader.Extract(input, game.LocalIconIndex);
+            }
+            else
+            {
+                if (input.Length > MaximumCoverBytes) throw new IOException("Local cover exceeds the image size limit.");
+                bytes = new byte[checked((int)input.Length)];
+                await input.ReadExactlyAsync(bytes, token).ConfigureAwait(false);
+                if (input.ReadByte() != -1) throw new IOException("Local cover changed while reading.");
+            }
+            var key = Convert.ToHexString(SHA256.HashData(bytes));
+            var cached = Path.Combine(GetLookupDirectory(game.RootPath), "local_" + key + ".png");
+            if (File.Exists(cached)) return new(cached, ArtworkOrigin.ProviderCache, null);
+            await SaveProviderPortraitAsync(bytes, cached, token).ConfigureAwait(false);
+            return new(cached, ArtworkOrigin.ProviderLocal, null);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or BadImageFormatException)
+        { return new(null, ArtworkOrigin.None, null, "Local provider artwork failed: " + error.Message); }
     }
 
     public static string NormalizeTitle(string title)

@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,10 +33,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     [Column("title")]
     public partial string Title { get; set; } = string.Empty;
 
-    // Used to cache the title as a base64 string
-    string? _titleBase64;
-    [Ignore]
-    public string TitleBase64 => _titleBase64 ??= Convert.ToBase64String(Encoding.UTF8.GetBytes(Title));
 
     [Column("install_path")]
     public string InstallPath { get; set; } = string.Empty;
@@ -315,7 +310,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 exhaustiveResultsAvailable = true;
 
                 var dllHistory = new List<GameHistory>();
-                var unknownGameAssets = new List<GameAsset>();
 
                 void ProcessGame_ProcessGameAsset(GameAsset gameAsset)
                 {
@@ -381,11 +375,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         });
                     }
 
-                    if (gameAsset.HasCurrentHash()
-                        && DLLManager.Instance.IsInKnownGameAsset(gameAsset, this) == false)
-                    {
-                        unknownGameAssets.Add(gameAsset);
-                    }
 
                     LoadBackupForGameAsset(gameAsset, replacementAssets, oldGameAssets);
 
@@ -423,10 +412,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         await Database.Instance.Connection.InsertAllAsync(replacementAssets, false).ConfigureAwait(false);
                     }
 
-                    if (unknownGameAssets.Count > 0)
-                    {
-                        GameManager.Instance.AddUnknownGameAssets(GameLibrary, Title, unknownGameAssets);
-                    }
 
                     var shouldUpdatedCover = true;
 

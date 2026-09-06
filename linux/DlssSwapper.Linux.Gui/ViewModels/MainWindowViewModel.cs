@@ -4,7 +4,7 @@ namespace DlssSwapper.Linux.Gui.ViewModels;
 
 public sealed class MainWindowViewModel : ObservableObject
 {
-    private string _statusText = "Loading the bundled DLL catalog…";
+    private string _statusText = LanguageAppearance.Get("Linux_LoadingCatalog", "Loading the bundled DLL catalog…");
     private bool _isBusy;
     private bool _isLoadingLibrary = true;
     private int _gameCount;
@@ -15,8 +15,22 @@ public sealed class MainWindowViewModel : ObservableObject
     private bool _isBatchMode;
     private int _selectedCount;
     private string _alertText = string.Empty;
+    private string _startupError = string.Empty;
+
+    public string StartupError
+    {
+        get => _startupError;
+        set
+        {
+            if (SetProperty(ref _startupError, value))
+                OnPropertyChanged(nameof(HasStartupError));
+        }
+    }
+
+    public bool HasStartupError => !string.IsNullOrEmpty(StartupError);
 
     public ObservableCollection<GameRowViewModel> Games { get; } = [];
+    public ObservableCollection<DlssSwapper.Shared.GameGroup<GameRowViewModel>> GameGroups { get; } = [];
 
     public string StatusText
     {
@@ -72,14 +86,14 @@ public sealed class MainWindowViewModel : ObservableObject
     }
 
     public string GamesHeading => IsLoadingLibrary
-        ? "Games · Loading"
-        : $"Games ({GameCount})";
+        ? $"{LanguageAppearance.Get("GamesPage_Title", "Games")} · {LanguageAppearance.Get("General_Loading", "Loading")}"
+        : $"{LanguageAppearance.Get("GamesPage_Title", "Games")} ({GameCount})";
 
     public string VisibleGameCountText => IsLoadingLibrary
         ? string.Empty
         : $"({GameCount})";
 
-    public string HeaderStatusText => IsLoadingLibrary || IsBusy
+    public string HeaderStatusText => IsPublishingView ? LanguageAppearance.Get("Linux_UpdatingView", "Updating game view…") : IsLoadingLibrary || IsBusy
         ? StatusText
         : string.Empty;
 
@@ -148,10 +162,31 @@ public sealed class MainWindowViewModel : ObservableObject
         }
     }
 
-    public string SelectionHeading => $"{SelectedCount} selected";
+    public string SelectionHeading => LanguageAppearance.Format("GamesPage_SelectionMode_CountTemplate", "{0} selected", SelectedCount);
 
-    public bool CanInteract => !IsBusy;
+    public void RefreshLanguage()
+    {
+        OnPropertyChanged(nameof(GamesHeading));
+        OnPropertyChanged(nameof(SelectionHeading));
+        OnPropertyChanged(nameof(HeaderStatusText));
+    }
 
-    public bool CanActOnSelection => !IsBusy && SelectedCount > 0;
+    private bool _isPublishingView;
+    public bool IsPublishingView
+    {
+        get => _isPublishingView;
+        set
+        {
+            if (SetProperty(ref _isPublishingView, value))
+            {
+                OnPropertyChanged(nameof(CanInteract));
+                OnPropertyChanged(nameof(CanActOnSelection));
+                OnPropertyChanged(nameof(HeaderStatusText));
+            }
+        }
+    }
+    public bool CanInteract => !IsBusy && !IsPublishingView;
+
+    public bool CanActOnSelection => CanInteract && SelectedCount > 0;
 
 }

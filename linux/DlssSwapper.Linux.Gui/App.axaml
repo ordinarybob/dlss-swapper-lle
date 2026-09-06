@@ -2,55 +2,134 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="DlssSwapper.Linux.Gui.App"
              RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="LleWindowBrush" Color="#202020" />
+          <SolidColorBrush x:Key="LleMutedBrush" Color="#C8C8C8" />
+          <SolidColorBrush x:Key="LleWarningSurfaceBrush" Color="#302610" />
+          <SolidColorBrush x:Key="LleWarningBorderBrush" Color="#725B22" />
+          <SolidColorBrush x:Key="LleWarningTextBrush" Color="#E7C66C" />
+          <SolidColorBrush x:Key="LleSeparatorBrush" Color="#666666" />
+          <SolidColorBrush x:Key="LleCommandBorderBrush" Color="#424242" />
+          <SolidColorBrush x:Key="LleArtworkPlaceholderBrush" Color="#252525" />
+          <SolidColorBrush x:Key="LleFavoriteBrush" Color="#F2C94C" />
+          <SolidColorBrush x:Key="LleCardBrush" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="LlePanelBorderBrush" Color="#444444" />
+          <SolidColorBrush x:Key="LleFooterBorderBrush" Color="#414141" />
+          <SolidColorBrush x:Key="LleDangerSurfaceBrush" Color="#33262A" />
+          <SolidColorBrush x:Key="LleDangerOutlineBrush" Color="#9F3A45" />
+          <SolidColorBrush x:Key="LleDividerBrush" Color="#404040" />
+          <SolidColorBrush x:Key="LleTextBrush" Color="#F5F5F5" />
+          <SolidColorBrush x:Key="LleControlBrush" Color="#2D2D2D" />
+          <SolidColorBrush x:Key="LleControlBorderBrush" Color="#484848" />
+          <SolidColorBrush x:Key="LleHoverBrush" Color="#383838" />
+          <SolidColorBrush x:Key="LleHoverBorderBrush" Color="#616161" />
+          <SolidColorBrush x:Key="LlePressedBrush" Color="#242424" />
+          <SolidColorBrush x:Key="LleAccentBrush" Color="#B15BE7" />
+          <SolidColorBrush x:Key="LleAccentHoverBrush" Color="#C778F2" />
+          <SolidColorBrush x:Key="LleDangerBrush" Color="#8F3440" />
+          <SolidColorBrush x:Key="LleDangerBorderBrush" Color="#A94A56" />
+          <SolidColorBrush x:Key="LleCardBorderBrush" Color="#3E3E3E" />
+          <SolidColorBrush x:Key="LleCommandBrush" Color="#292929" />
+          <SolidColorBrush x:Key="LleCommandHoverBrush" Color="#353535" />
+          <SolidColorBrush x:Key="LleCommandHoverBorderBrush" Color="#636363" />
+          <SolidColorBrush x:Key="LleNavHoverBrush" Color="#373737" />
+          <SolidColorBrush x:Key="LleNavSelectedBrush" Color="#363636" />
+          <SolidColorBrush x:Key="LleSelectionBrush" Color="#AFAFAF" />
+          <SolidColorBrush x:Key="LleGameBorderBrush" Color="#5A5A5A" />
+          <SolidColorBrush x:Key="LleErrorTextBrush" Color="#FFB4AB" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="LleWindowBrush" Color="#F3F3F3" />
+          <SolidColorBrush x:Key="LleMutedBrush" Color="#555555" />
+          <SolidColorBrush x:Key="LleWarningSurfaceBrush" Color="#FFF4CE" />
+          <SolidColorBrush x:Key="LleWarningBorderBrush" Color="#806000" />
+          <SolidColorBrush x:Key="LleWarningTextBrush" Color="#604800" />
+          <SolidColorBrush x:Key="LleSeparatorBrush" Color="#888888" />
+          <SolidColorBrush x:Key="LleCommandBorderBrush" Color="#BDBDBD" />
+          <SolidColorBrush x:Key="LleArtworkPlaceholderBrush" Color="#E4E4E4" />
+          <SolidColorBrush x:Key="LleFavoriteBrush" Color="#805D00" />
+          <SolidColorBrush x:Key="LleCardBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="LlePanelBorderBrush" Color="#BDBDBD" />
+          <SolidColorBrush x:Key="LleFooterBorderBrush" Color="#BDBDBD" />
+          <SolidColorBrush x:Key="LleDangerSurfaceBrush" Color="#FDE7E9" />
+          <SolidColorBrush x:Key="LleDangerOutlineBrush" Color="#9F3A45" />
+          <SolidColorBrush x:Key="LleDividerBrush" Color="#BDBDBD" />
+          <SolidColorBrush x:Key="LleTextBrush" Color="#202020" />
+          <SolidColorBrush x:Key="LleControlBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="LleControlBorderBrush" Color="#A0A0A0" />
+          <SolidColorBrush x:Key="LleHoverBrush" Color="#E8E8E8" />
+          <SolidColorBrush x:Key="LleHoverBorderBrush" Color="#707070" />
+          <SolidColorBrush x:Key="LlePressedBrush" Color="#DCDCDC" />
+          <SolidColorBrush x:Key="LleAccentBrush" Color="#7133A0" />
+          <SolidColorBrush x:Key="LleAccentHoverBrush" Color="#60258B" />
+          <SolidColorBrush x:Key="LleDangerBrush" Color="#8F3440" />
+          <SolidColorBrush x:Key="LleDangerBorderBrush" Color="#A94A56" />
+          <SolidColorBrush x:Key="LleCardBorderBrush" Color="#C8C8C8" />
+          <SolidColorBrush x:Key="LleCommandBrush" Color="#FAFAFA" />
+          <SolidColorBrush x:Key="LleCommandHoverBrush" Color="#E4E4E4" />
+          <SolidColorBrush x:Key="LleCommandHoverBorderBrush" Color="#707070" />
+          <SolidColorBrush x:Key="LleNavHoverBrush" Color="#E0E0E0" />
+          <SolidColorBrush x:Key="LleNavSelectedBrush" Color="#D9D9D9" />
+          <SolidColorBrush x:Key="LleSelectionBrush" Color="#555555" />
+          <SolidColorBrush x:Key="LleGameBorderBrush" Color="#999999" />
+          <SolidColorBrush x:Key="LleErrorTextBrush" Color="#A4262C" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
   <Application.Styles>
     <FluentTheme />
     <Style Selector="Window">
-      <Setter Property="Background" Value="#202020" />
-      <Setter Property="Foreground" Value="#F5F5F5" />
+      <Setter Property="FlowDirection" Value="{DynamicResource LleFlowDirection}" />
+      <Setter Property="Background" Value="{DynamicResource LleWindowBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource LleTextBrush}" />
       <Setter Property="FontFamily" Value="Ubuntu Sans, DejaVu Sans" />
       <Setter Property="FontSize" Value="14" />
     </Style>
     <Style Selector="Button">
       <Setter Property="MinHeight" Value="30" />
-      <Setter Property="Background" Value="#2D2D2D" />
-      <Setter Property="Foreground" Value="#F5F5F5" />
-      <Setter Property="BorderBrush" Value="#484848" />
+      <Setter Property="Background" Value="{DynamicResource LleControlBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource LleTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleControlBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="10,4" />
     </Style>
     <Style Selector="Button:pointerover">
-      <Setter Property="Background" Value="#383838" />
-      <Setter Property="BorderBrush" Value="#616161" />
+      <Setter Property="Background" Value="{DynamicResource LleHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleHoverBorderBrush}" />
     </Style>
     <Style Selector="Button:pressed">
-      <Setter Property="Background" Value="#242424" />
+      <Setter Property="Background" Value="{DynamicResource LlePressedBrush}" />
     </Style>
     <Style Selector="TextBox, ComboBox, NumericUpDown">
-      <Setter Property="Background" Value="#2D2D2D" />
-      <Setter Property="Foreground" Value="#F5F5F5" />
-      <Setter Property="BorderBrush" Value="#484848" />
+      <Setter Property="Background" Value="{DynamicResource LleControlBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource LleTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleControlBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="Button.primary">
-      <Setter Property="Background" Value="#B15BE7" />
+      <Setter Property="Background" Value="{DynamicResource LleAccentBrush}" />
       <Setter Property="Foreground" Value="White" />
-      <Setter Property="BorderBrush" Value="#B15BE7" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleAccentBrush}" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Button.primary:pointerover">
-      <Setter Property="Background" Value="#C778F2" />
-      <Setter Property="BorderBrush" Value="#C778F2" />
+      <Setter Property="Background" Value="{DynamicResource LleAccentHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleAccentHoverBrush}" />
     </Style>
     <Style Selector="Button.danger">
-      <Setter Property="Background" Value="#8F3440" />
+      <Setter Property="Background" Value="{DynamicResource LleDangerBrush}" />
       <Setter Property="Foreground" Value="White" />
-      <Setter Property="BorderBrush" Value="#A94A56" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleDangerBorderBrush}" />
     </Style>
     <Style Selector="Border.card">
-      <Setter Property="Background" Value="#2B2B2B" />
-      <Setter Property="BorderBrush" Value="#3E3E3E" />
+      <Setter Property="Background" Value="{DynamicResource LleCardBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleCardBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="5" />
       <Setter Property="Padding" Value="14" />
@@ -65,7 +144,7 @@
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="TextBlock.muted">
-      <Setter Property="Foreground" Value="#C8C8C8" />
+      <Setter Property="Foreground" Value="{DynamicResource LleMutedBrush}" />
     </Style>
     <Style Selector="Button.command">
       <Setter Property="Width" Value="50" />
@@ -74,16 +153,16 @@
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="Padding" Value="3,2" />
       <Setter Property="Margin" Value="0" />
-      <Setter Property="Background" Value="#292929" />
-      <Setter Property="BorderBrush" Value="#424242" />
+      <Setter Property="Background" Value="{DynamicResource LleCommandBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleCommandBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
     </Style>
     <Style Selector="Button.command:pointerover">
-      <Setter Property="Background" Value="#353535" />
-      <Setter Property="BorderBrush" Value="#636363" />
+      <Setter Property="Background" Value="{DynamicResource LleCommandHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleCommandHoverBorderBrush}" />
     </Style>
     <Style Selector="Button.nav">
       <Setter Property="Width" Value="42" />
@@ -98,11 +177,11 @@
       <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="Button.nav:pointerover">
-      <Setter Property="Background" Value="#373737" />
+      <Setter Property="Background" Value="{DynamicResource LleNavHoverBrush}" />
     </Style>
     <Style Selector="Button.navSelected">
-      <Setter Property="Background" Value="#363636" />
-      <Setter Property="BorderBrush" Value="#AFAFAF" />
+      <Setter Property="Background" Value="{DynamicResource LleNavSelectedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleSelectionBrush}" />
       <Setter Property="BorderThickness" Value="3,0,0,0" />
     </Style>
     <Style Selector="Border.gameCard">
@@ -114,7 +193,7 @@
       <Setter Property="Margin" Value="5" />
     </Style>
     <Style Selector="Border.gameCard:pointerover">
-      <Setter Property="BorderBrush" Value="#5A5A5A" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleGameBorderBrush}" />
     </Style>
     <Style Selector="TextBox.headerSearch">
       <Setter Property="Height" Value="30" />
@@ -122,8 +201,8 @@
       <Setter Property="Padding" Value="8,0" />
       <Setter Property="FontSize" Value="14" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
-      <Setter Property="Background" Value="#2D2D2D" />
-      <Setter Property="BorderBrush" Value="#484848" />
+      <Setter Property="Background" Value="{DynamicResource LleControlBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LleControlBorderBrush}" />
       <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="TextBlock.commandLabel">
@@ -138,7 +217,7 @@
     <Style Selector="Path.commandIcon">
       <Setter Property="Width" Value="20" />
       <Setter Property="Height" Value="20" />
-      <Setter Property="Stroke" Value="#F5F5F5" />
+      <Setter Property="Stroke" Value="{DynamicResource LleTextBrush}" />
       <Setter Property="StrokeThickness" Value="1.7" />
       <Setter Property="Stretch" Value="Uniform" />
       <Setter Property="HorizontalAlignment" Value="Center" />

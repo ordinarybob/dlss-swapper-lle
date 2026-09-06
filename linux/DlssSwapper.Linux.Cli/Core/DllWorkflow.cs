@@ -4,7 +4,18 @@ using System.Security.Cryptography;
 
 namespace DlssSwapper.Linux.Cli.Core;
 
-public sealed record SelectedGame(string Name, string RootPath, string? SteamAppId);
+public sealed record SelectedGame(string Name, string RootPath, string? SteamAppId)
+{
+    public DlssSwapper.Linux.Cli.Platform.ProviderGameIdentity? ProviderIdentity { get; init; }
+    public string? WinePrefix { get; init; }
+    public string? LocalIconPath { get; init; }
+    public string? CoverUrl { get; init; }
+    public int LocalIconIndex { get; init; }
+    public DlssSwapper.Linux.Cli.Platform.BattleNetMetadata? BattleNet { get; init; }
+    public DlssSwapper.Linux.Cli.Platform.ProviderLaunch? ProviderLaunch { get; init; }
+    public IReadOnlyList<DlssSwapper.Linux.Cli.Platform.ProviderLaunch> ProviderLaunchChoices { get; init; } = [];
+    public IReadOnlyList<DlssSwapper.Linux.Cli.Platform.ProviderGameIdentity> ProviderIdentityAliases { get; init; } = [];
+}
 
 public sealed record DetectedDll(
     DllType Type,
@@ -21,7 +32,11 @@ public sealed record DetectedDll(
 public sealed record ScanResult(
     SelectedGame Game,
     IReadOnlyList<DetectedDll> Dlls,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings)
+{
+    public IReadOnlyList<string> StreamlineFiles { get; init; } = [];
+    public DateTimeOffset? CachedAtUtc { get; init; }
+}
 
 public enum UpdatePlanStatus
 {
@@ -45,12 +60,18 @@ public sealed record RestorePlanItem(
     string TargetPath,
     string RelativeTargetPath);
 
+public enum OperationOutcome { Completed, AlreadyCurrent, Skipped, Cancelled, Failed }
+
 public sealed record OperationResult(
     SelectedGame Game,
     string Family,
     string Target,
     bool Success,
-    string Message);
+    string Message,
+    OperationOutcome? Outcome = null)
+{
+    public OperationOutcome EffectiveOutcome => Outcome ?? (Success ? OperationOutcome.Completed : OperationOutcome.Failed);
+}
 
 public sealed class DllScanner
 {
@@ -116,10 +137,13 @@ public sealed class DllScanner
         bool computeHashes)
     {
         var dlls = new List<DetectedDll>();
+        var streamline = new List<string>();
         foreach (var file in files)
         {
             if (!DllTypes.TryFromFileName(file, out var definition))
             {
+                if (DLSS_Swapper.Data.Streamline.StreamlineComponentSet.FileNames.Contains(Path.GetFileName(file), StringComparer.OrdinalIgnoreCase))
+                    streamline.Add(file);
                 continue;
             }
 
@@ -149,10 +173,13 @@ public sealed class DllScanner
         return new ScanResult(
             game,
             dlls.OrderBy(dll => dll.RelativePath, StringComparer.Ordinal).ToArray(),
-            warnings);
+            warnings) { StreamlineFiles = streamline };
     }
 
     public IReadOnlyList<RestorePlanItem> PlanRestore(SelectedGame game)
+        => PlanRestore(game, out _);
+
+    public IReadOnlyList<RestorePlanItem> PlanRestore(SelectedGame game, out IReadOnlyList<string> scanWarnings)
     {
         ArgumentNullException.ThrowIfNull(game);
         const string backupSuffix = ".dlsss";
@@ -183,6 +210,7 @@ public sealed class DllScanner
                 Path.GetRelativePath(game.RootPath, target)));
         }
 
+        scanWarnings = warnings.ToArray();
         return items
             .OrderBy(item => item.RelativeTargetPath, StringComparer.Ordinal)
             .ToArray();
@@ -284,10 +312,11 @@ public sealed class UpdatePlanner
 {
     public IReadOnlyList<UpdatePlanItem> Plan(
         IReadOnlyList<ScanResult> scans,
-        IReadOnlyDictionary<DllType, DllCatalogEntry> candidates)
+        IReadOnlyDictionary<DllType, DllCatalogEntry> candidates, Translations? translations = null)
     {
         ArgumentNullException.ThrowIfNull(scans);
         ArgumentNullException.ThrowIfNull(candidates);
+        string T(string key, string fallback, params object?[] args) => translations?.Format(key, fallback, args) ?? string.Format(fallback, args);
         var plan = new List<UpdatePlanItem>();
         foreach (var scan in scans)
         {
@@ -300,7 +329,7 @@ public sealed class UpdatePlanner
 
                 var family = DllTypes.Get(familyGroup.Key);
                 var targets = familyGroup.ToArray();
-                var compatibility = CheckCompatibility(familyGroup.Key, targets, candidate);
+                var compatibility = scan.CachedAtUtc is not null ? T("Linux_PlanRescan", "Scan the game again before updating; these are last-known files.") : CheckCompatibility(familyGroup.Key, targets, candidate, translations);
                 if (compatibility is not null)
                 {
                     plan.Add(new UpdatePlanItem(
@@ -331,8 +360,8 @@ public sealed class UpdatePlanner
                         ? UpdatePlanStatus.AlreadyCurrent
                         : UpdatePlanStatus.Ready,
                     changedTargets.Length == 0
-                        ? "Already current."
-                        : $"Update to {candidate.Version}."));
+                        ? T("Linux_OperationCurrent", "Already current.")
+                        : T("Linux_PlanUpdate", "Update to {0}.", candidate.Version)));
             }
         }
 
@@ -342,8 +371,9 @@ public sealed class UpdatePlanner
     private static string? CheckCompatibility(
         DllType type,
         IReadOnlyList<DetectedDll> targets,
-        DllCatalogEntry candidate)
+        DllCatalogEntry candidate, Translations? translations)
     {
+        string T(string key, string fallback, params object?[] args) => translations?.Format(key, fallback, args) ?? string.Format(fallback, args);
         if (type != DllType.Dlss)
         {
             return null;
@@ -352,7 +382,7 @@ public sealed class UpdatePlanner
         if (targets.Any(target =>
                 target.Version.Equals("unknown", StringComparison.OrdinalIgnoreCase)))
         {
-            return "Skipped because the existing DLSS generation could not be determined.";
+            return T("Linux_PlanUnknownGeneration", "Skipped because the existing DLSS generation could not be determined.");
         }
 
         var hasV1 = targets.Any(target =>
@@ -361,70 +391,80 @@ public sealed class UpdatePlanner
             !target.Version.StartsWith("1.", StringComparison.Ordinal));
         if (hasV1 && hasV2Plus)
         {
-            return "Skipped because the game mixes DLSS generations.";
+            return T("Linux_PlanMixedGenerations", "Skipped because the game mixes DLSS generations.");
         }
 
         var candidateIsV1 = candidate.Version.StartsWith("1.", StringComparison.Ordinal);
         return hasV1 != candidateIsV1
-            ? "Skipped because the selected DLSS generation is incompatible."
+            ? T("Linux_PlanIncompatible", "Skipped because the selected DLSS generation is incompatible.")
             : null;
     }
 }
+
+public sealed record CacheAcquisition(string Path, bool WasDownloaded);
 
 public sealed class DownloadCache : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly string _cacheRoot;
-    private readonly Dictionary<(DllType Type, string Version, string Md5), Task<string>> _downloads = [];
+    private readonly bool _ownsHttpClient;
+    private readonly Dictionary<(DllType Type, string Version, string Md5), SemaphoreSlim> _downloads = [];
 
-    public DownloadCache()
+    public DownloadCache(HttpClient? httpClient = null, string? cacheRoot = null)
     {
-        _cacheRoot = GetCacheRoot();
-        _httpClient = new HttpClient
+        _cacheRoot = cacheRoot ?? GetCacheRoot();
+        _ownsHttpClient = httpClient is null;
+        _httpClient = httpClient ?? new HttpClient
         {
             Timeout = TimeSpan.FromMinutes(5),
         };
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("DLSS-Swapper-LLE-Linux-MVP");
+        if (_ownsHttpClient)
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("DLSS-Swapper-LLE-Linux-MVP");
     }
 
     public async Task<string> GetAsync(
         DllCatalogEntry entry,
         CancellationToken cancellationToken)
+        => (await AcquireAsync(entry, cancellationToken).ConfigureAwait(false)).Path;
+
+    public async Task<CacheAcquisition> AcquireAsync(
+        DllCatalogEntry entry,
+        CancellationToken cancellationToken)
+        => await AcquireAsync(entry, cancellationToken, null).ConfigureAwait(false);
+
+    public async Task<CacheAcquisition> AcquireAsync(
+        DllCatalogEntry entry,
+        CancellationToken cancellationToken,
+        Action<long, long>? transferProgress)
     {
         ArgumentNullException.ThrowIfNull(entry);
         var key = (entry.Type, entry.Version, entry.Md5);
-        Task<string> download;
+        cancellationToken.ThrowIfCancellationRequested();
+        SemaphoreSlim gate;
         lock (_downloads)
         {
-            if (!_downloads.TryGetValue(key, out download!))
+            if (!_downloads.TryGetValue(key, out gate!))
             {
-                download = GetCoreAsync(entry, cancellationToken);
-                _downloads.Add(key, download);
+                gate = new SemaphoreSlim(1, 1);
+                _downloads.Add(key, gate);
             }
         }
 
+        // Each caller owns its cancellation. A later caller revalidates the completed cache.
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            return await download.ConfigureAwait(false);
+            return await GetCoreAsync(entry, cancellationToken, transferProgress).ConfigureAwait(false);
         }
-        catch
+        finally
         {
-            lock (_downloads)
-            {
-                if (_downloads.TryGetValue(key, out var current)
-                    && ReferenceEquals(current, download))
-                {
-                    _downloads.Remove(key);
-                }
-            }
-
-            throw;
+            gate.Release();
         }
     }
 
     public void Dispose()
     {
-        _httpClient.Dispose();
+        if (_ownsHttpClient) _httpClient.Dispose();
     }
 
     public string GetCachedPath(DllCatalogEntry entry)
@@ -438,7 +478,35 @@ public sealed class DownloadCache : IDisposable
             definition.FileName);
     }
 
-    public bool IsCached(DllCatalogEntry entry) => File.Exists(GetCachedPath(entry));
+    public bool IsCached(DllCatalogEntry entry)
+    {
+        var path = GetCachedPath(entry);
+        if (!File.Exists(path)) return false;
+        if (!entry.IsImported) return true;
+        // Local-only entries cannot be repaired by downloading. Show reimport guidance for
+        // corrupt or unreadable payloads rather than treating their mere presence as readiness.
+        try { return DllScanner.ComputeMd5(path) == entry.Md5; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    public async Task<bool> ImportAsync(DllCatalogEntry entry, string source, CancellationToken token)
+    {
+        var destination = GetCachedPath(entry);
+        if (File.Exists(destination) && DllScanner.ComputeMd5(destination) == entry.Md5) return false;
+        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+        var temporary = destination + ".import-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            await using (var input = File.OpenRead(source))
+            await using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                await input.CopyToAsync(output, token).ConfigureAwait(false);
+            if (DllScanner.ComputeMd5(temporary) != entry.Md5) throw new IOException("Import contents changed while copying.");
+            token.ThrowIfCancellationRequested();
+            File.Move(temporary, destination, true);
+            return true;
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
 
     public bool Remove(DllCatalogEntry entry)
     {
@@ -456,16 +524,12 @@ public sealed class DownloadCache : IDisposable
             Directory.Delete(directory);
         }
 
-        lock (_downloads)
-        {
-            _downloads.Remove((entry.Type, entry.Version, entry.Md5));
-        }
         return true;
     }
 
-    private async Task<string> GetCoreAsync(
+    private async Task<CacheAcquisition> GetCoreAsync(
         DllCatalogEntry entry,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Action<long, long>? transferProgress)
     {
         var definition = DllTypes.Get(entry.Type);
         var cachePath = GetCachedPath(entry);
@@ -476,9 +540,10 @@ public sealed class DownloadCache : IDisposable
                 entry.Md5,
                 StringComparison.OrdinalIgnoreCase))
         {
-            return cachePath;
+            return new(cachePath, false);
         }
 
+        if (entry.IsImported || entry.DownloadUri is null) throw new IOException("The imported DLL is missing or changed. Import it again from the original source.");
         using var request = new HttpRequestMessage(HttpMethod.Get, entry.DownloadUri);
         using var response = await _httpClient.SendAsync(
             request,
@@ -507,6 +572,7 @@ public sealed class DownloadCache : IDisposable
         {
             var buffer = new byte[81920];
             long total = 0;
+            transferProgress?.Invoke(0, entry.ZipFileSize);
             while (true)
             {
                 var read = await responseStream.ReadAsync(buffer, cancellationToken)
@@ -526,6 +592,7 @@ public sealed class DownloadCache : IDisposable
                 await archiveBuffer.WriteAsync(
                     buffer.AsMemory(0, read),
                     cancellationToken).ConfigureAwait(false);
+                transferProgress?.Invoke(total, entry.ZipFileSize);
             }
 
             if (total != entry.ZipFileSize)
@@ -574,9 +641,9 @@ public sealed class DownloadCache : IDisposable
         }
 
         Directory.CreateDirectory(cacheDirectory);
-        await File.WriteAllBytesAsync(cachePath, dllBytes, cancellationToken)
+        await CacheFileWriter.WriteAsync(cachePath, dllBytes, cancellationToken)
             .ConfigureAwait(false);
-        return cachePath;
+        return new(cachePath, true);
     }
 
     private static string GetCacheRoot()
@@ -607,20 +674,21 @@ public static class DllOperations
     public static async Task<IReadOnlyList<OperationResult>> ApplyUpdatesAsync(
         IReadOnlyList<UpdatePlanItem> plan,
         DownloadCache cache,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Translations? translations = null)
     {
         ArgumentNullException.ThrowIfNull(cache);
         return await ApplyUpdatesAsync(
             plan,
             cache.GetAsync,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken, translations).ConfigureAwait(false);
     }
 
     public static async Task<IReadOnlyList<OperationResult>> ApplyUpdatesAsync(
         IReadOnlyList<UpdatePlanItem> plan,
         Func<DllCatalogEntry, CancellationToken, Task<string>> getPayloadAsync,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Translations? translations = null)
     {
+        string T(string key, string fallback, params object?[] args) => translations?.Format(key, fallback, args) ?? string.Format(fallback, args);
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(getPayloadAsync);
         var results = new List<OperationResult>();
@@ -639,7 +707,7 @@ public static class DllOperations
                     item.Family.DisplayName,
                     item.Game.RootPath,
                     false,
-                    $"Download failed: {exception.Message}"));
+                    T("Linux_OperationDownloadFailed", "Download failed: {0}", exception.Message)));
                 continue;
             }
 
@@ -650,7 +718,7 @@ public static class DllOperations
                         StringComparison.OrdinalIgnoreCase))
                 {
                     throw new InvalidDataException(
-                        "Downloaded DLL hash no longer matches the selected manifest entry.");
+                        T("Linux_OperationHashChanged", "Downloaded DLL hash no longer matches the selected manifest entry."));
                 }
             }
             catch (Exception exception) when (exception is InvalidDataException
@@ -662,7 +730,7 @@ public static class DllOperations
                     item.Family.DisplayName,
                     item.Game.RootPath,
                     false,
-                    $"Payload validation failed: {exception.Message}"));
+                    T("Linux_OperationPayloadFailed", "Payload validation failed: {0}", exception.Message)));
                 continue;
             }
 
@@ -690,7 +758,7 @@ public static class DllOperations
                             item.Family.DisplayName,
                             target.RelativePath,
                             true,
-                            "Already current."));
+                            T("Linux_OperationCurrent", "Already current."), OperationOutcome.AlreadyCurrent));
                         continue;
                     }
 
@@ -706,7 +774,11 @@ public static class DllOperations
                             backupPath,
                             mustExist: false,
                             "DLL backup");
-                        File.Copy(targetPath, backupPath);
+                        await DllFileReplacement.CopyAsync(targetPath, backupPath, DllScanner.ComputeMd5(targetPath), false, () =>
+                        {
+                            ValidateMutationPath(item.Game, targetPath, true, "DLL target");
+                            ValidateMutationPath(item.Game, backupPath, false, "DLL backup");
+                        }, cancellationToken).ConfigureAwait(false);
                     }
 
                     ValidateMutationPath(
@@ -714,13 +786,16 @@ public static class DllOperations
                         targetPath,
                         mustExist: true,
                         "DLL target");
-                    File.Copy(sourcePath, targetPath, overwrite: true);
+                    await DllFileReplacement.CopyAsync(sourcePath, targetPath, item.Candidate.Md5, true, () =>
+                    {
+                        ValidateMutationPath(item.Game, targetPath, true, "DLL target");
+                    }, cancellationToken).ConfigureAwait(false);
                     results.Add(new OperationResult(
                         item.Game,
                         item.Family.DisplayName,
                         target.RelativePath,
                         true,
-                        $"Updated to {item.Candidate.Version}."));
+                        T("Linux_OperationUpdated", "Updated to {0}.", item.Candidate.Version)));
                 }
                 catch (Exception exception) when (exception is IOException
                     or UnauthorizedAccessException)
@@ -739,8 +814,9 @@ public static class DllOperations
     }
 
     public static IReadOnlyList<OperationResult> ApplyRestores(
-        IReadOnlyList<RestorePlanItem> plan)
+        IReadOnlyList<RestorePlanItem> plan, Translations? translations = null)
     {
+        string T(string key, string fallback, params object?[] args) => translations?.Format(key, fallback, args) ?? string.Format(fallback, args);
         ArgumentNullException.ThrowIfNull(plan);
         var results = new List<OperationResult>();
         foreach (var item in plan)
@@ -763,7 +839,7 @@ public static class DllOperations
                     item.Family.DisplayName,
                     item.RelativeTargetPath,
                     true,
-                    "Restored original DLL."));
+                    T("Linux_OperationRestored", "Restored original DLL.")));
             }
             catch (Exception exception) when (exception is IOException
                 or UnauthorizedAccessException)

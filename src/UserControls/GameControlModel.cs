@@ -325,11 +325,29 @@ public partial class GameControlModel : ObservableObject
     }
 
     [RelayCommand]
+    async Task ConfigureLaunchAsync()
+    {
+        if (Game is Data.ManuallyAdded.ManuallyAddedGame manual && TryGetActionHost(out var host))
+            await ManualLaunchSetup.ConfigureAsync(host.XamlRoot, new[] { manual });
+    }
+
+    [RelayCommand]
     async Task LaunchAsync()
     {
+        if (Game is Data.ManuallyAdded.ManuallyAddedGame && !GameManager.Instance.CanLaunchGame(Game))
+        {
+            await ConfigureLaunchAsync();
+            // Saving a manifest is not permission to start the game.
+            return;
+        }
         if (GameManager.Instance.CanLaunchGame(Game))
         {
-            await GameManager.Instance.LaunchGameAsync(Game);
+            try { await GameManager.Instance.LaunchGameAsync(Game); }
+            catch (Exception ex)
+            {
+                if (TryGetActionHost(out var host))
+                    await new EasyContentDialog(host.XamlRoot) { Title = "Could not launch game", CloseButtonText = "Okay", Content = ex.Message }.ShowAsync();
+            }
         }
         else
         {
@@ -503,8 +521,8 @@ public partial class GameControlModel : ObservableObject
             Title = $"Streamline components (experimental) - {Game.Title}",
             CloseButtonText = ResourceHelper.GetString("General_Close"),
             DefaultButton = ContentDialogButton.Close,
-            Content = new StreamlineComponentsControl(Game),
         };
+        dialog.Content = new StreamlineComponentsControl(Game, dialog);
         dialog.Resources["ContentDialogMinWidth"] = 0d;
         dialog.Resources["ContentDialogMaxWidth"] = 760d;
         await dialog.ShowAsync();

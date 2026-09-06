@@ -1,4 +1,5 @@
 using System;
+using DlssSwapper.Shared;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Enumeration;
@@ -13,94 +14,8 @@ internal static class GameAssetCandidatePathIndex
     const int EnumerationBufferSize = 64 * 1024;
     const string Wildcard = "*";
 
-    // Relative directory shapes derived from confirmed game-asset paths. This list
-    // is an antichain: no entry is retained when another same-depth wildcard pattern
-    // already covers every path it could match.
-    static readonly string[] _directoryPatterns =
-    [
-        "",
-        "*",
-        @"*\*",
-        @"*\*\win64",
-        @"*\binaries\*",
-        @"*\windows\x64",
-        @"*\x64\dxr",
-        @"*\x64\dxr2",
-        @"*\x64\slinfo",
-        @"*\binaries\win64r\amd_fidelityfx",
-        @"*\binaries\win64r\streamline",
-        @"*\binaries\win64r\xess",
-        @"*\tscgame\binaries\win64",
-        @"*\intel-xess-feature-test\bin\x64\xess_1_0",
-        @"*\intel-xess-feature-test\bin\x64\xess_1_1",
-        @"*\intel-xess-feature-test\bin\x64\xess_1_2",
-        @"*\intel-xess-feature-test\bin\x64\xess_1_3",
-        @"*\nvidia-dlss-test\nvidia-dlss-test-1\bin\x64",
-        @"*\nvidia-dlss-test\nvidia-dlss-test-2\bin\x64",
-        @"*\nvidia-dlss-test\nvidia-dlss-test-3\bin\x64",
-        @"*\nvidia-dlss-test\nvidia-dlss-test-4\bin\x64",
-        @"*\*\dlss\binaries\thirdparty\win64",
-        @"*\*\streamline\binaries\thirdparty\win64",
-        @"*\*\thirdparty\nvidia\ngx\win64",
-        @"*\*\xess\binaries\thirdparty\win64",
-        @"*\binaries\*\nvidia\ngx\win64",
-        @"*\binaries\thirdparty\*\ngx\win64",
-        @"*\binaries\thirdparty\nvidia\*\win64",
-        @"*\binaries\thirdparty\nvidia\ngx\*",
-        @"*\plugins\*\binaries\thirdparty\win64",
-        @"*\plugins\dlss\*\thirdparty\win64",
-        @"*\plugins\dlss\binaries\*\win64",
-        @"*\plugins\dlss\binaries\thirdparty\*",
-        @"*\plugins\streamline\*\thirdparty\win64",
-        @"*\plugins\streamline\binaries\*\win64",
-        @"*\plugins\streamline\binaries\thirdparty\*",
-        @"*\plugins\xess\*\thirdparty\win64",
-        @"*\plugins\xess\binaries\*\win64",
-        @"*\plugins\xess\binaries\thirdparty\*",
-        @"*\*\marketplace\dlss\binaries\thirdparty\win64",
-        @"*\*\marketplace\xess\binaries\thirdparty\win64",
-        @"*\*\nvidia\dlss\binaries\thirdparty\win64",
-        @"*\plugins\*\dlss\binaries\thirdparty\win64",
-        @"*\plugins\*\streamline\binaries\thirdparty\win64",
-        @"*\plugins\*\xess\binaries\thirdparty\win64",
-        @"*\plugins\dlss\binaries\thirdparty\win64\development",
-        @"*\plugins\dlssplugin\streamlinecore\binaries\thirdparty\win64",
-        @"*\plugins\marketplace\*\binaries\thirdparty\win64",
-        @"*\plugins\marketplace\dlss\*\thirdparty\win64",
-        @"*\plugins\marketplace\dlss\binaries\*\win64",
-        @"*\plugins\marketplace\dlss\binaries\thirdparty\*",
-        @"*\plugins\marketplace\xess\*\thirdparty\win64",
-        @"*\plugins\marketplace\xess\binaries\*\win64",
-        @"*\plugins\marketplace\xess\binaries\thirdparty\*",
-        @"*\plugins\nvidia\*\binaries\thirdparty\win64",
-        @"*\plugins\nvidia\dlss\*\thirdparty\win64",
-        @"*\plugins\nvidia\dlss\binaries\*\win64",
-        @"*\plugins\nvidia\dlss\binaries\thirdparty\*",
-        @"*\*\runtime\intel\xess\binaries\thirdparty\win64",
-        @"*\*\runtime\nvidia\dlss\binaries\thirdparty\win64",
-        @"*\*\runtime\nvidia\streamline\binaries\thirdparty\win64",
-        @"*\hmdproject\plugins\nvidia\dlss\binaries\thirdparty\win64",
-        @"*\plugins\*\intel\xess\binaries\thirdparty\win64",
-        @"*\plugins\*\nvidia\dlss\binaries\thirdparty\win64",
-        @"*\plugins\*\nvidia\streamline\binaries\thirdparty\win64",
-        @"*\plugins\runtime\*\dlss\binaries\thirdparty\win64",
-        @"*\plugins\runtime\*\streamline\binaries\thirdparty\win64",
-        @"*\plugins\runtime\*\xess\binaries\thirdparty\win64",
-        @"*\plugins\runtime\intel\*\binaries\thirdparty\win64",
-        @"*\plugins\runtime\intel\xess\*\thirdparty\win64",
-        @"*\plugins\runtime\intel\xess\binaries\*\win64",
-        @"*\plugins\runtime\intel\xess\binaries\thirdparty\*",
-        @"*\plugins\runtime\nvidia\*\binaries\thirdparty\win64",
-        @"*\plugins\runtime\nvidia\dlss\*\thirdparty\win64",
-        @"*\plugins\runtime\nvidia\dlss\binaries\*\win64",
-        @"*\plugins\runtime\nvidia\dlss\binaries\thirdparty\*",
-        @"*\plugins\runtime\nvidia\streamline\*\thirdparty\win64",
-        @"*\plugins\runtime\nvidia\streamline\binaries\*\win64",
-        @"*\plugins\runtime\nvidia\streamline\binaries\thirdparty\*",
-        @"*\engine\plugins\*\nvidia\dlss\binaries\thirdparty\win64",
-        @"*\engine\plugins\marketplace\*\dlss\binaries\thirdparty\win64",
-        @"*\engine\plugins\marketplace\*\streamline\binaries\thirdparty\win64",
-    ];
+    static readonly string[] _directoryPatterns = ScanPatternRules.BuiltInPatterns
+        .Select(pattern => pattern.Replace('/', Path.DirectorySeparatorChar)).ToArray();
 
     static readonly object _patternLock = new();
     static string[] _cachedCustomPatterns = [];
@@ -135,26 +50,7 @@ internal static class GameAssetCandidatePathIndex
         var relativeDirectory = Path.GetRelativePath(
             Path.TrimEndingDirectorySeparator(Path.GetFullPath(installPath)),
             assetDirectory);
-        if (relativeDirectory == ".")
-        {
-            return true;
-        }
-
-        var components = relativeDirectory.Split(
-            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
-            StringSplitOptions.RemoveEmptyEntries);
-        if (components.Length == 0
-            || components.Any(static component => component is "." or ".."))
-        {
-            return false;
-        }
-
-        // Game/project folder names vary, but the layout beneath that first
-        // directory is reusable. This is the same generalization used by the
-        // built-in index and avoids learning a one-game-only absolute shape.
-        components[0] = Wildcard;
-        pattern = string.Join(Path.DirectorySeparatorChar, components);
-        return true;
+        return ScanPatternRules.TryCreateAdaptivePattern(relativeDirectory, Path.DirectorySeparatorChar, false, out pattern);
     }
 
     internal static int AddAdaptiveDirectoryPatterns(IEnumerable<string> patterns)
@@ -183,12 +79,21 @@ internal static class GameAssetCandidatePathIndex
         string installPath,
         CancellationToken cancellationToken = default)
     {
-        var patternRoot = GetPatternRoot();
         var results = new List<DiscoveredGameAsset>();
         var discoveredPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var directory in EnumerateCandidateDirectories(installPath, cancellationToken))
+            ProbeCandidateDirectory(directory, results, discoveredPaths);
+        return results;
+    }
+
+    // Shared directory discovery for asset scanning and manual launch setup.
+    internal static IEnumerable<string> EnumerateCandidateDirectories(
+        string installPath, CancellationToken cancellationToken = default)
+    {
+        var patternRoot = GetPatternRoot();
         if (patternRoot.IsCandidate)
         {
-            ProbeCandidateDirectory(installPath, results, discoveredPaths);
+            yield return installPath;
         }
 
         var pending = new Stack<PendingDirectory>();
@@ -208,7 +113,7 @@ internal static class GameAssetCandidatePathIndex
 
                 if (nextStates.Exists(static node => node.IsCandidate))
                 {
-                    ProbeCandidateDirectory(directory, results, discoveredPaths);
+                    yield return directory;
                 }
 
                 if (nextStates.Exists(static node => node.HasChildren))
@@ -218,7 +123,6 @@ internal static class GameAssetCandidatePathIndex
             }
         }
 
-        return results;
     }
 
     static IEnumerable<string> EnumerateNextDirectories(PendingDirectory current)
@@ -344,36 +248,13 @@ internal static class GameAssetCandidatePathIndex
         }
     }
 
-    static string[] RemoveSubsumedPatterns(IEnumerable<string> patterns)
-    {
-        var distinctPatterns = patterns
-            .Where(static pattern => string.IsNullOrWhiteSpace(pattern) == false || pattern.Length == 0)
-            .Select(static pattern => pattern.Trim()
-                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
-                .Trim(Path.DirectorySeparatorChar))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        return distinctPatterns
-            .Where(pattern => distinctPatterns.Any(otherPattern =>
-                otherPattern.Equals(pattern, StringComparison.OrdinalIgnoreCase) == false
-                && PatternSubsumes(otherPattern, pattern)) == false)
-            .ToArray();
-    }
-
-    static bool PatternSubsumes(string broaderPattern, string narrowerPattern)
-    {
-        var broaderComponents = broaderPattern.Length == 0
-            ? []
-            : broaderPattern.Split(Path.DirectorySeparatorChar);
-        var narrowerComponents = narrowerPattern.Length == 0
-            ? []
-            : narrowerPattern.Split(Path.DirectorySeparatorChar);
-        return broaderComponents.Length == narrowerComponents.Length
-            && broaderComponents.Zip(narrowerComponents).All(pair =>
-                pair.First == Wildcard
-                || pair.First.Equals(pair.Second, StringComparison.OrdinalIgnoreCase));
-    }
+    static string[] RemoveSubsumedPatterns(IEnumerable<string> patterns) =>
+        ScanPatternRules.RemoveSubsumed(patterns,
+            static pattern => string.IsNullOrWhiteSpace(pattern) && pattern.Length != 0
+                ? null
+                : pattern.Trim().Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+                    .Trim(Path.DirectorySeparatorChar),
+            Path.DirectorySeparatorChar);
 
     static PatternNode CreatePatternGraph(IEnumerable<string> patterns)
     {

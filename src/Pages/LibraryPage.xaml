@@ -454,7 +454,19 @@
             </SelectorBar>
         </ScrollViewer>
 
-        <GridView Grid.Row="3" x:Name="MainGridView" Margin="16,0,16,0" SizeChanged="MainGridView_SizeChanged" ItemsSource="{x:Bind ViewModel.SelectedLibraryList, Mode=OneWay}" SelectionMode="None" IsItemClickEnabled="True" ItemClick="MainGridView_ItemClick">
+        <Border Grid.Row="3" Margin="24,3,24,12" Padding="16" VerticalAlignment="Top"
+                Visibility="{x:Bind ViewModel.StreamlineVisibility, Mode=OneWay}"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6">
+            <StackPanel Spacing="12">
+                <TextBlock Text="{x:Bind ViewModel.StreamlineVersion, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />
+                <TextBlock Text="NVIDIA Streamline components used by game features such as DLSS and Reflex. Download once for individual game or batch updates; downloading does not change game files." TextWrapping="Wrap" />
+                <TextBlock Text="{x:Bind ViewModel.StreamlineStatus, Mode=OneWay}" TextWrapping="Wrap" />
+                <ProgressBar IsIndeterminate="True" Visibility="{x:Bind ViewModel.IsStreamlineDownloading, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                <Button Content="Download latest package" Command="{x:Bind ViewModel.DownloadStreamlineCommand}" />
+            </StackPanel>
+        </Border>
+        <GridView Grid.Row="3" x:Name="MainGridView" Visibility="{x:Bind ViewModel.DllLibraryVisibility, Mode=OneWay}" Margin="16,0,16,0" SizeChanged="MainGridView_SizeChanged" ItemsSource="{x:Bind ViewModel.SelectedLibraryList, Mode=OneWay}" SelectionMode="None" IsItemClickEnabled="True" ItemClick="MainGridView_ItemClick">
 
             <GridView.ItemsPanel>
                 <ItemsPanelTemplate>

@@ -30,54 +30,7 @@ internal partial class BattleNetLibrary : IGameLibrary
     public string ClientPath { get; private set; } = string.Empty;
     string _installPath = string.Empty;
 
-    // Definitions come from multiple places:
-    // - https://github.com/dafzor/bnetlauncher/blob/master/bnetlauncher/Resources/gamesdb.ini
-    // - https://github.com/lutris/lutris/blob/master/lutris/util/battlenet/definitions.py
-    // - BattleNet agent log on launch
-    //
-    // Key is Uid, not ProductCode
-    private readonly Dictionary<string, BattleNetLauncherGame> _knownGames = new Dictionary<string, BattleNetLauncherGame>()
-    {
-        { "rtro", new BattleNetLauncherGame("rtro", "rtro", "RTRO", "Blizzard Arcade Collection") },
-        { "auks", new BattleNetLauncherGame("auks", "auks", "AUKS", "Call of Duty") },
-        { "wlby", new BattleNetLauncherGame("wlby", "wlby", "WLBY", "Crash Bandicoot 4: It's About Time") },
-        { "w1r", new BattleNetLauncherGame("w1r", "w1r", "W1R", "Warcraft I: Remastered") },
-        { "diablo3", new BattleNetLauncherGame("diablo3", "d3", "D3", "Diablo III") },
-        { "aris", new BattleNetLauncherGame("aris", "aris", "ARIS", "Doom: The Dark Ages") },
-        { "heroes", new BattleNetLauncherGame("heroes", "hero", "Hero", "Heroes of the Storm") },
-        { "d3cn", new BattleNetLauncherGame("d3cn", "d3cn", "D3CN", "暗黑破壞神III") }, // to verify
-        { "aqua", new BattleNetLauncherGame("aqua", "aqua", "AQUA", "Avowed") },
-        { "s2", new BattleNetLauncherGame("s2", "s2", "S2", "StarCraft II") },
-        { "w2", new BattleNetLauncherGame("w2", "w2bn", "W2", "Warcraft II: Battle.net Edition") },
-        { "fenris", new BattleNetLauncherGame("fenris", "fenris", "Fen", "Diablo IV") },
-        { "d1", new BattleNetLauncherGame("d1", "drtl", "D1", "Diablo") },
-        { "scor", new BattleNetLauncherGame("scor", "scor", "SCOR", "Sea of Thieves") },
-        { "w3", new BattleNetLauncherGame("w3", "w3", "W3", "Warcraft III: Reforged") },
-        { "fore", new BattleNetLauncherGame("fore", "fore", "FORE", "Call of Duty: Vanguard") }, // to verify
-        { "s1", new BattleNetLauncherGame("s1", "s1", "S1", "StarCraft") },
-        { "wow", new BattleNetLauncherGame("wow", "wow", "WoW", "World of Warcraft") },
-        { "osi", new BattleNetLauncherGame("osi", "osi", "OSI", "Diablo II: Resurrected") },
-        { "lazarus", new BattleNetLauncherGame("lazarus", "lazr", "LAZR", "Call of Duty: MW2 Campaign Remastered") }, // to verify
-        { "odin", new BattleNetLauncherGame("odin", "odin", "ODIN", "Call of Duty: Modern Warfare") }, // to verify
-        { "pinta", new BattleNetLauncherGame("pinta", "pinta", "PNTA", "Call of Duty: Modern Warfare III") }, // to verify
-        { "prometheus", new BattleNetLauncherGame("prometheus", "pro", "Pro", "Overwatch") },
-        { "viper", new BattleNetLauncherGame("viper", "viper", "VIPR", "Call of Duty: Black Ops 4") }, // to verify
-        { "zeus", new BattleNetLauncherGame("zeus", "zeus", "ZEUS", "Call of Duty: Black Ops Cold War") }, // to verify
-        { "w1", new BattleNetLauncherGame("w1", "war1", "W1", "Warcraft: Orcs & Humans") },
-        { "w2r", new BattleNetLauncherGame("w2r", "w2r", "W2R", "Warcraft II Remastered") },
-        { "hs_beta", new BattleNetLauncherGame("hs_beta", "hsb", "WTCG", "Hearthstone") },
-        
-        // The launcher is not working, but that is acceptable because WoW is hidden.
-        { "wow_classic", new BattleNetLauncherGame("wow_classic", "wow_classic", "Wow_wow_classic", "World of Warcraft Classic") }, // to verify
-
-        // Does not appear in aggregate.json so they have no cover photos.
-        { "lbra", new BattleNetLauncherGame("lbra", "lbra", "LBRA", "Tony Hawk's Pro Skater 3+4") },
-        { "ark", new BattleNetLauncherGame("ark", "ark", "ARK", "The Outer Worlds 2") },
-        { "nina", new BattleNetLauncherGame("nina", "nina", "NINA", "Call of Duty: Modern Warfare II") },
-
-
-        // Mobile-only titles such as Diablo Immortal and Warcraft Rumble are intentionally excluded.
-    };
+    private static readonly System.Collections.Frozen.FrozenDictionary<string, DlssSwapper.Shared.BattleNetGameDefinition> _knownGames = DlssSwapper.Shared.BattleNetGameCatalog.Games;
 
     // Ignore the Battle.net agent installation and all World of Warcraft installations.
     // WoW DLL swaps lead to disconnects without exception, and it only supports XeLL anyway.

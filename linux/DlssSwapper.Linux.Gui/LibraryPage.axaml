@@ -1,0 +1,126 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DlssSwapper.Linux.Gui.LibraryPage"
+        >
+  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="18" RowSpacing="12">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <TextBlock Text="{DynamicResource LibraryPage_Title}" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3">
+        <Button x:Name="ImportButton" Classes="command" AutomationProperties.Name="{DynamicResource General_Import}">
+          <Grid RowDefinitions="22,24,10">
+            <Path Data="M3,12 H20 M13,5 L20,12 L13,19 M22,3 V21" Classes="commandIcon" />
+            <TextBlock Grid.Row="1" Text="{DynamicResource General_Import}" Classes="commandLabel" />
+            <TextBlock Grid.Row="2" Text="⌄" HorizontalAlignment="Center" FontSize="9" />
+          </Grid>
+          <Button.Flyout><MenuFlyout>
+            <MenuItem Header="{DynamicResource Linux_Xaml_18}" Click="Import_Click" />
+            <MenuItem Header="{DynamicResource Linux_Xaml_14}" Click="Models_Click" />
+          </MenuFlyout></Button.Flyout>
+        </Button>
+        <Button x:Name="ExportAllButton" Classes="command" AutomationProperties.Name="{DynamicResource General_ExportAll}" Click="ExportAll_Click">
+          <Grid RowDefinitions="22,24,10">
+            <Path Data="M2,3 V21 M5,12 H22 M15,5 L22,12 L15,19" Classes="commandIcon" />
+            <TextBlock Grid.Row="1" Text="{DynamicResource General_ExportAll}" Classes="commandLabel" />
+          </Grid>
+        </Button>
+        <Button x:Name="DownloadLatestButton" Classes="command" AutomationProperties.Name="{DynamicResource LibraryPage_DownloadLatest}" Click="DownloadLatest_Click">
+          <Grid RowDefinitions="22,24,10">
+            <Path Data="M12,2 V18 M5,11 L12,18 L19,11 M3,22 H21" Classes="commandIcon" />
+            <TextBlock Grid.Row="1" Text="{DynamicResource LibraryPage_DownloadLatest}" Classes="commandLabel" />
+          </Grid>
+        </Button>
+        <Button x:Name="RefreshButton" Classes="command" AutomationProperties.Name="{DynamicResource General_Refresh}" Click="Refresh_Click">
+          <Grid RowDefinitions="22,24,10">
+            <Path Data="M20,7 V12 H15 M20,12 A8,8 0 1 0 18.2,17.1" Classes="commandIcon" />
+            <TextBlock Grid.Row="1" Text="{DynamicResource General_Refresh}" Classes="commandLabel" />
+          </Grid>
+        </Button>
+      </StackPanel>
+    </Grid>
+    <Grid Grid.Row="1" RowDefinitions="Auto,Auto" RowSpacing="10">
+      <ListBox x:Name="FamilyComboBox" AutomationProperties.Name="{DynamicResource Linux_Xaml_5}"
+                ItemsPanel="{StaticResource FamilyItemsPanel}" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                SelectionChanged="Filter_Changed" />
+      <TextBox x:Name="SearchTextBox" Grid.Row="1" PlaceholderText="{DynamicResource Linux_Xaml_6}"
+               AutomationProperties.Name="{DynamicResource Linux_Xaml_7}"
+               TextChanged="Search_Changed" />
+    </Grid>
+    <Border x:Name="DllPanel" Grid.Row="2" Classes="card">
+      <Grid>
+        <ListBox x:Name="EntryListBox"
+                 ItemsPanel="{StaticResource ReleaseItemsPanel}"
+                 AutomationProperties.Name="{DynamicResource Linux_Xaml_8}"
+                 SelectionChanged="EntrySelection_Changed">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border Classes="card" Width="280" Height="72" Margin="4" Padding="8" ToolTip.Tip="{Binding Details}">
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="26,22" ColumnSpacing="6">
+                  <TextBlock Text="{Binding Version}" FontSize="18" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Version}" />
+                  <TextBlock Grid.Row="1" Text="{Binding Status}" FontSize="11" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Details}" />
+                  <StackPanel Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                    <Button Classes="releaseAction" AutomationProperties.Name="{DynamicResource SettingsPage_Logging_Info}" ToolTip.Tip="{Binding Details}" Click="CardInfo_Click">
+                      <TextBlock Text="ⓘ" FontSize="17" />
+                    </Button>
+                    <Button Classes="releaseAction" IsVisible="{Binding ShowDownload}" AutomationProperties.Name="{Binding DownloadAction}" ToolTip.Tip="{Binding DownloadAction}" Click="CardDownload_Click">
+                      <Grid>
+                        <Path IsVisible="{Binding !IsDownloading}" Data="M12,2 V18 M5,11 L12,18 L19,11 M3,22 H21" Classes="commandIcon" />
+                        <Path IsVisible="{Binding IsDownloading}" Data="M4,4 L20,20 M20,4 L4,20" Classes="commandIcon" />
+                      </Grid>
+                    </Button>
+                    <Button Classes="releaseAction" IsVisible="{Binding ShowExport}" AutomationProperties.Name="{DynamicResource General_Export}" ToolTip.Tip="{DynamicResource General_Export}" Click="CardExport_Click">
+                      <Path Data="M2,3 V21 M5,12 H22 M15,5 L22,12 L15,19" Classes="commandIcon" />
+                    </Button>
+                    <Button Classes="releaseAction" IsVisible="{Binding ShowRemove}" AutomationProperties.Name="{DynamicResource General_Remove}" ToolTip.Tip="{DynamicResource General_Remove}" Click="CardRemove_Click">
+                      <Path Data="M3,6 H21 M9,6 V2 H15 V6 M6,6 L7,22 H17 L18,6 M10,10 V18 M14,10 V18" Classes="commandIcon" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+    </Border>
+    <Border x:Name="StreamlinePanel" Grid.Row="2" Classes="card" IsVisible="False" VerticalAlignment="Top">
+      <StackPanel Spacing="12" Margin="12">
+        <TextBlock Text="{DynamicResource Linux_Xaml_9}" FontSize="20" FontWeight="SemiBold" />
+        <TextBlock x:Name="StreamlineStatusText" Text="{DynamicResource Linux_Xaml_10}" TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource Linux_Xaml_11}" TextWrapping="Wrap" />
+        <Button x:Name="DownloadStreamlineButton" Content="{DynamicResource Linux_Xaml_12}"
+                Click="DownloadStreamline_Click" />
+      </StackPanel>
+    </Border>
+    <ScrollViewer Grid.Row="3" MaxHeight="180" HorizontalScrollBarVisibility="Disabled">
+      <TextBlock x:Name="StatusText" Text="{DynamicResource Linux_Xaml_13}" TextWrapping="Wrap" />
+    </ScrollViewer>
+    <Grid Grid.Row="4">
+      <WrapPanel>
+        <Button x:Name="UseButton" Content="{DynamicResource Linux_Xaml_22}" Classes="primary" Margin="0,0,8,8" Click="Use_Click" />
+        <Button x:Name="CancelDownloadButton" Content="{DynamicResource Linux_Xaml_21}" Margin="0,0,8,8" IsEnabled="False" Click="CancelDownload_Click" />
+      </WrapPanel>
+    </Grid>
+  </Grid>
+  <UserControl.Resources>
+    <ItemsPanelTemplate x:Key="ReleaseItemsPanel">
+      <WrapPanel />
+    </ItemsPanelTemplate>
+    <ItemsPanelTemplate x:Key="FamilyItemsPanel">
+      <StackPanel Orientation="Horizontal" />
+    </ItemsPanelTemplate>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Button.releaseAction">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="Padding" Value="3" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ListBox TextBlock">
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+  </UserControl.Styles>
+</UserControl>

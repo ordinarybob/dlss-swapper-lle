@@ -32,16 +32,12 @@ internal partial class GameManager : ObservableObject
     public CollectionViewSource GroupedGameCollectionViewSource { get; init; }
     public CollectionViewSource UngroupedGameCollectionViewSource { get; init; }
 
-    [ObservableProperty]
-    public partial bool UnknownAssetsFound { get; set; } = false;
 
-    List<UnknownGameAsset> _unknownGameAssets { get; } = new List<UnknownGameAsset>();
 
     [ObservableProperty]
     public partial bool ShowHiddenGames { get; set; } = false;
 
     object gameLock = new object();
-    object unknownGameAsseetLock = new object();
 
     GameGroup allGamesGroup;
     GameGroup favouriteGamesGroup;
@@ -269,8 +265,6 @@ internal partial class GameManager : ObservableObject
         BeginUiBatch();
         try
         {
-            UnknownAssetsFound = false;
-            _unknownGameAssets.Clear();
 
             foreach (var gameLibraryEnum in GameManager.Instance.GetGameLibraries(true))
             {
@@ -320,13 +314,6 @@ internal partial class GameManager : ObservableObject
         try
         {
             var tasks = new List<Task<List<Game>>>();
-            if (forceNeedsProcessing == true)
-            {
-                lock (unknownGameAsseetLock)
-                {
-                    _unknownGameAssets.Clear();
-                }
-            }
             foreach (var gameLibraryEnum in GameManager.Instance.GetGameLibraries(true))
             {
                 var gameLibrary = IGameLibrary.GetGameLibrary(gameLibraryEnum);
@@ -637,37 +624,6 @@ internal partial class GameManager : ObservableObject
     }
 
 
-    public void AddUnknownGameAssets(GameLibrary gameLibrary, string gameTitle, List<GameAsset> gameAssets)
-    {
-        lock (unknownGameAsseetLock)
-        {
-            if (UnknownAssetsFound == false)
-            {
-                App.CurrentApp.RunOnUIThread(() =>
-                {
-                    UnknownAssetsFound = true;
-                });
-            }
-
-            foreach (var gameAsset in gameAssets)
-            {
-                _unknownGameAssets.Add(new UnknownGameAsset(gameLibrary, gameTitle, gameAsset));
-            }
-        }
-    }
-
-    public List<UnknownGameAsset> GetUnknownGameAssets()
-    {
-        var unknownGameAssets = new List<UnknownGameAsset>();
-
-        lock (unknownGameAsseetLock)
-        {
-            unknownGameAssets.AddRange(_unknownGameAssets);
-        }
-
-        return unknownGameAssets;
-    }
-
     public GameLibrarySettings? GetGameLibrarySettings(GameLibrary gameLibrary)
     {
         return Settings.Instance.GameLibrarySettings.FirstOrDefault(x => x.GameLibrary == gameLibrary);
@@ -693,6 +649,11 @@ internal partial class GameManager : ObservableObject
 
     public bool CanLaunchGame(Game game)
     {
+        if (game is DLSS_Swapper.Data.ManuallyAdded.ManuallyAddedGame manual)
+            return !string.IsNullOrWhiteSpace(manual.LaunchExecutable)
+                && !DLSS_Swapper.Data.ManuallyAdded.ManualLaunchManifest.IsExcluded(manual.LaunchExecutable)
+                && manual.LaunchExecutable.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                && File.Exists(manual.LaunchExecutable);
         // Xbox App games are only valid if ApplicationId is loaded.
         if (game.GameLibrary == GameLibrary.XboxApp)
         {
@@ -731,7 +692,19 @@ internal partial class GameManager : ObservableObject
             return;
         }
 
-        if (game.GameLibrary == GameLibrary.Steam)
+        if (game is DLSS_Swapper.Data.ManuallyAdded.ManuallyAddedGame manual)
+        {
+            var manifest = DLSS_Swapper.Data.ManuallyAdded.ManualLaunchManifest.Validate(
+                manual.LaunchExecutable!, manual.LaunchArguments ?? "", manual.LaunchWorkingDirectory ?? "");
+            var startInfo = new ProcessStartInfo(manifest.Executable)
+            {
+                UseShellExecute = true,
+                Arguments = manifest.Arguments,
+                WorkingDirectory = manifest.WorkingDirectory,
+            };
+            using var process = Process.Start(startInfo);
+        }
+        else if (game.GameLibrary == GameLibrary.Steam)
         {
             await Launcher.LaunchUriAsync(new Uri($"steam://rungameid/{game.PlatformId}"));
         }

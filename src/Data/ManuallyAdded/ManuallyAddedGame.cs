@@ -18,6 +18,12 @@ public class ManuallyAddedGame : Game
 
     [Column("steam_app_id")]
     public string? SteamAppId { get; set; }
+    [Column("launch_executable")]
+    public string? LaunchExecutable { get; set; }
+    [Column("launch_arguments")]
+    public string? LaunchArguments { get; set; }
+    [Column("launch_working_directory")]
+    public string? LaunchWorkingDirectory { get; set; }
 
 
     public ManuallyAddedGame()

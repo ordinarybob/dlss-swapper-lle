@@ -1,0 +1,733 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Linux_BatchUpdateWindow_1" xml:space="preserve"><value>Batch operation could not finish: {0}</value></data>
+  <data name="Linux_BatchUpdateWindow_2" xml:space="preserve"><value>Cancelled before applying. No game files changed; any downloaded package remains cached.</value></data>
+  <data name="Linux_BatchUpdateWindow_3" xml:space="preserve"><value>Updating game files…</value></data>
+  <data name="Linux_BatchUpdateWindow_4" xml:space="preserve"><value>Cancelled. No game files changed; any downloaded package remains cached.</value></data>
+  <data name="Linux_BatchUpdateWindow_5" xml:space="preserve"><value>No files were changed.
+
+</value></data>
+  <data name="Linux_BatchUpdateWindow_6" xml:space="preserve"><value>Preparing the comparison. Any package download here does not change game files.</value></data>
+  <data name="Linux_BatchUpdateWindow_7" xml:space="preserve"><value>Cancel operation</value></data>
+  <data name="Linux_BatchUpdateWindow_8" xml:space="preserve"><value>Select a DLL version or Streamline components first.</value></data>
+  <data name="Linux_BatchUpdateWindow_9" xml:space="preserve"><value>Could not check the SDK version: {0}</value></data>
+  <data name="Linux_BatchUpdateWindow_10" xml:space="preserve"><value>Downloaded automatically when applying.</value></data>
+  <data name="Linux_BatchUpdateWindow_11" xml:space="preserve"><value>Downloaded-only mode: uses the cached SDK.</value></data>
+  <data name="Linux_BatchUpdateWindow_12" xml:space="preserve"><value>Latest SDK: {0}. </value></data>
+  <data name="Linux_BatchUpdateWindow_13" xml:space="preserve"><value>Checking latest SDK version…</value></data>
+  <data name="Linux_BatchUpdateWindow_14" xml:space="preserve"><value>Stopping after the current file operation. Completed updates are kept.</value></data>
+  <data name="Linux_BatchUpdateWindow_15" xml:space="preserve"><value>No Streamline components found in the selected games.</value></data>
+  <data name="Linux_BatchUpdateWindow_16" xml:space="preserve"><value>Select components. Partial sets are not recommended because they can mix incompatible SDK versions.</value></data>
+  <data name="Linux_BatchUpdateWindow_17" xml:space="preserve"><value>Only installed files are updated. First originals are kept. NVIDIA preset controls are unavailable in this Linux app.</value></data>
+  <data name="Linux_BatchUpdateWindow_18" xml:space="preserve"><value>Select latest detected DLL versions</value></data>
+  <data name="Linux_BatchUpdateWindow_19" xml:space="preserve"><value>Batch update — {0} games</value></data>
+  <data name="Linux_BatchUpdateWindow_20" xml:space="preserve"><value>View / save report</value></data>
+  <data name="Linux_BatchUpdateWindow_21" xml:space="preserve"><value>Components…</value></data>
+  <data name="Linux_BatchUpdateWindow_22" xml:space="preserve"><value>Include Streamline updates (experimental)</value></data>
+  <data name="Linux_DllLibraryWindow_23" xml:space="preserve"><value>Download selected</value></data>
+  <data name="Linux_DllLibraryWindow_24" xml:space="preserve"><value>Select one release first.</value></data>
+  <data name="Linux_DllLibraryWindow_25" xml:space="preserve"><value>Streamline SDK: {0}</value></data>
+  <data name="Linux_DllLibraryWindow_26" xml:space="preserve"><value>Streamline SDK download cancelled.</value></data>
+  <data name="Linux_DllLibraryWindow_27" xml:space="preserve"><value>Streamline SDK {0} — ready</value></data>
+  <data name="Linux_DllLibraryWindow_28" xml:space="preserve"><value>Streamline SDK — downloading and checking package…</value></data>
+  <data name="Linux_DllLibraryWindow_29" xml:space="preserve"><value>Streamline SDK — version check failed: {0}</value></data>
+  <data name="Linux_DllLibraryWindow_30" xml:space="preserve"><value>Streamline SDK — latest: {0}</value></data>
+  <data name="Linux_DllLibraryWindow_31" xml:space="preserve"><value>Latest-family download stopped: {0}</value></data>
+  <data name="Linux_DllLibraryWindow_32" xml:space="preserve"><value>Checking/downloading Streamline SDK…</value></data>
+  <data name="Linux_DllLibraryWindow_33" xml:space="preserve"><value>Checking and downloading latest releases…</value></data>
+  <data name="Linux_DllLibraryWindow_34" xml:space="preserve"><value>Removal did not finish: {0}. If the cache file was removed, the remaining imported record can be removed again or recovered by reimporting.</value></data>
+  <data name="Linux_DllLibraryWindow_35" xml:space="preserve"><value>That release is not downloaded.</value></data>
+  <data name="Linux_DllLibraryWindow_36" xml:space="preserve"><value>Removed {0} {1} ({2}) from the shared cache.</value></data>
+  <data name="Linux_DllLibraryWindow_37" xml:space="preserve"><value>Removed the imported DLL and its Library record. No game files were changed.</value></data>
+  <data name="Linux_DllLibraryWindow_38" xml:space="preserve"><value>Export failed: {0}</value></data>
+  <data name="Linux_DllLibraryWindow_39" xml:space="preserve"><value>Export cancelled. The destination was not replaced.</value></data>
+  <data name="Linux_DllLibraryWindow_40" xml:space="preserve"><value>Exported {0} DLL(s) to {1}. No game files were changed.</value></data>
+  <data name="Linux_DllLibraryWindow_41" xml:space="preserve"><value>Exporting DLLs. No game files will change.</value></data>
+  <data name="Linux_DllLibraryWindow_42" xml:space="preserve"><value>Export downloaded DLLs</value></data>
+  <data name="Linux_DllLibraryWindow_43" xml:space="preserve"><value>There are no downloaded DLLs to export.</value></data>
+  <data name="Linux_DllLibraryWindow_44" xml:space="preserve"><value>Catalog refresh failed; the previous catalog is still available. {0}</value></data>
+  <data name="Linux_DllLibraryWindow_45" xml:space="preserve"><value>DLL catalog refreshed. No DLLs were downloaded and no game files changed.</value></data>
+  <data name="Linux_DllLibraryWindow_46" xml:space="preserve"><value>Refreshing the DLL catalog…</value></data>
+  <data name="Linux_DllLibraryWindow_47" xml:space="preserve"><value>Model import failed: {0}</value></data>
+  <data name="Linux_DllLibraryWindow_48" xml:space="preserve"><value>Import from local model cache…</value></data>
+  <data name="Linux_DllLibraryWindow_49" xml:space="preserve"><value>Download from NVIDIA server…</value></data>
+  <data name="Linux_DllLibraryWindow_50" xml:space="preserve"><value>Import NVIDIA models</value></data>
+  <data name="Linux_DllLibraryWindow_51" xml:space="preserve"><value>Import stopped: {0}. No game files were changed.</value></data>
+  <data name="Linux_DllLibraryWindow_52" xml:space="preserve"><value>Checking and importing files into the Library. No game files will change.</value></data>
+  <data name="Linux_DllLibraryWindow_53" xml:space="preserve"><value>Import DLLs or ZIPs into the Library — no game files will change</value></data>
+  <data name="Linux_DllLibraryWindow_54" xml:space="preserve"><value>{0:N0} release build{1} available under your current settings.</value></data>
+  <data name="Linux_DllLibraryWindow_Downloads_55" xml:space="preserve"><value>Cancelling downloads… Completed downloads will be kept.</value></data>
+  <data name="Linux_DllLibraryWindow_Downloads_56" xml:space="preserve"><value>Checking/downloading {0} of {1}: {2}</value></data>
+  <data name="Linux_DllRecordDetailsWindow_57" xml:space="preserve"><value>DLL information — {0}</value></data>
+  <data name="Linux_DllRestoreWindow_58" xml:space="preserve"><value>Restore could not finish: {0}</value></data>
+  <data name="Linux_DllRestoreWindow_59" xml:space="preserve"><value>Could not inspect backups: {0}</value></data>
+  <data name="Linux_DllRestoreWindow_60" xml:space="preserve"><value>
+Inspection incomplete:
+</value></data>
+  <data name="Linux_DllRestoreWindow_61" xml:space="preserve"><value>Choose the families whose original files you want to restore.</value></data>
+  <data name="Linux_DllRestoreWindow_62" xml:space="preserve"><value>{0}
+Installed: {1} → Original: {2}</value></data>
+  <data name="Linux_DllRestoreWindow_63" xml:space="preserve"><value>{0} — {1} file(s)</value></data>
+  <data name="Linux_DllRestoreWindow_64" xml:space="preserve"><value>No readable backups found. Inspection was incomplete; see the warnings below.</value></data>
+  <data name="Linux_DllRestoreWindow_65" xml:space="preserve"><value>No ordinary-DLL original backups found.</value></data>
+  <data name="Linux_DllRestoreWindow_66" xml:space="preserve"><value>Select DLL families to restore. Every listed backup in a selected family is restored. These ordinary-DLL backups are consumed on successful restoration; Streamline originals are separate and are not touched.</value></data>
+  <data name="Linux_DllRestoreWindow_67" xml:space="preserve"><value>Restore original DLLs — {0}</value></data>
+  <data name="Linux_DllRestoreWindow_68" xml:space="preserve"><value>Restore selected families</value></data>
+  <data name="Linux_DllRestoreWindow_69" xml:space="preserve"><value>Inspecting original backups…</value></data>
+  <data name="Linux_GameDllPickerWindow_70" xml:space="preserve"><value>Stopping after the current file operation. Completed changes are kept.</value></data>
+  <data name="Linux_GameDllPickerWindow_71" xml:space="preserve"><value>Waiting for inspection to finish.</value></data>
+  <data name="Linux_GameDllPickerWindow_72" xml:space="preserve"><value>Operation failed: {0}</value></data>
+  <data name="Linux_GameDllPickerWindow_73" xml:space="preserve"><value>Cancelled before applying changes.</value></data>
+  <data name="Linux_GameDllPickerWindow_74" xml:space="preserve"><value>Acquiring the selected DLL and applying it…</value></data>
+  <data name="Linux_GameDllPickerWindow_75" xml:space="preserve"><value>No compatible catalog releases are available for these installed files. Original backups can still be restored when present.</value></data>
+  <data name="Linux_GameDllPickerWindow_76" xml:space="preserve"><value>No releases match this filter. Clear downloaded-only to see available versions.</value></data>
+  <data name="Linux_GameDllPickerWindow_77" xml:space="preserve"><value>Could not inspect DLLs: {0}</value></data>
+  <data name="Linux_GameDllPickerWindow_78" xml:space="preserve"><value>No readable DLLs or original backups found.
+</value></data>
+  <data name="Linux_GameDllPickerWindow_79" xml:space="preserve"><value>Could not open the folder: {0}</value></data>
+  <data name="Linux_GameDllPickerWindow_80" xml:space="preserve"><value>DLL versions — {0}</value></data>
+  <data name="Linux_GameDllPickerWindow_81" xml:space="preserve"><value>DLL information</value></data>
+  <data name="Linux_GameDllPickerWindow_82" xml:space="preserve"><value>Restore this family</value></data>
+  <data name="Linux_GameDllPickerWindow_83" xml:space="preserve"><value>Show downloaded releases only</value></data>
+  <data name="Linux_GameDllPickerWindow_84" xml:space="preserve"><value>Open containing folder</value></data>
+  <data name="Linux_GameHistoryWindow_85" xml:space="preserve"><value>History — {0}</value></data>
+  <data name="Linux_GameNotesDialog_86" xml:space="preserve"><value>Could not save notes: {0} Your text is still here; retry or cancel.</value></data>
+  <data name="Linux_GameNotesDialog_87" xml:space="preserve"><value>Game-name control is missing.</value></data>
+  <data name="Linux_GameTitleDialog_88" xml:space="preserve"><value>Could not save title: {0} Your edit is still here; retry or cancel.</value></data>
+  <data name="Linux_GameTitleDialog_89" xml:space="preserve"><value>Enter a game title.</value></data>
+  <data name="Linux_GameTitleDialog_90" xml:space="preserve"><value>Title for this manually added game</value></data>
+  <data name="Linux_GameTitleDialog_91" xml:space="preserve"><value>Edit game title</value></data>
+  <data name="Linux_MainWindow_92" xml:space="preserve"><value>Group game libraries</value></data>
+  <data name="Linux_MainWindow_93" xml:space="preserve"><value>Ungroup game libraries</value></data>
+  <data name="Linux_MainWindow_94" xml:space="preserve"><value>Hide games without swappable items</value></data>
+  <data name="Linux_MainWindow_95" xml:space="preserve"><value>Show games without swappable items</value></data>
+  <data name="Linux_MainWindow_96" xml:space="preserve"><value>Select cover art for {0}</value></data>
+  <data name="Linux_MainWindow_ScanFilters_97" xml:space="preserve"><value>Scan details — {0}</value></data>
+  <data name="Linux_MainWindow_ScanFilters_98" xml:space="preserve"><value>Include hidden games</value></data>
+  <data name="Linux_MainWindow_ScanFilters_99" xml:space="preserve"><value>Exclude hidden games</value></data>
+  <data name="Linux_ManualGameImportDialog_100" xml:space="preserve"><value>Could not add game: {0} Your choices are still here; retry or cancel.</value></data>
+  <data name="Linux_ManualGameImportDialog_101" xml:space="preserve"><value>Adding the game was cancelled.</value></data>
+  <data name="Linux_ManualGameImportDialog_102" xml:space="preserve"><value>Select cover art</value></data>
+  <data name="Linux_ManualGameImportDialog_103" xml:space="preserve"><value>Add cover (optional)</value></data>
+  <data name="Linux_ManualGameImportDialog_104" xml:space="preserve"><value>Add game</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_105" xml:space="preserve"><value>Could not scan: {0}. Browse for the executable.</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_106" xml:space="preserve"><value>Best-effort suggestions are ready. Verify the executable, Wine choice and launch method before saving.</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_107" xml:space="preserve"><value>No executable suggestion found. Browse for the executable you use.</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_108" xml:space="preserve"><value>Could not save: {0}</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_109" xml:space="preserve"><value>Finish later</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_110" xml:space="preserve"><value>Skip game</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_111" xml:space="preserve"><value>Save and next</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_112" xml:space="preserve"><value>Choose the Wine executable</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_113" xml:space="preserve"><value>Browse for Wine…</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_114" xml:space="preserve"><value>Choose the game executable</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_115" xml:space="preserve"><value>Browse for executable…</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_116" xml:space="preserve"><value>Launch options</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_117" xml:space="preserve"><value>Verify the suggested executable—not an installer, uninstaller or crash reporter. Saving does not launch it.</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_118" xml:space="preserve"><value>Launch setup ({0}/{1}) — {2}</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_119" xml:space="preserve"><value>Could not save your preference: {0}. Try again, or clear Don't show this again to continue without saving it.</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_120" xml:space="preserve"><value>Don't show this again</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_121" xml:space="preserve"><value>Do you want a manifest for launching these games?
+
+The app will make a best-effort selection of the game's executable. Verify every suggestion before saving. For Windows games, choose your Wine executable and optional prefix. Saving changes only this app's library and does not launch the game.
+
+No skips setup. Remembering Yes opens setup automatically on future imports.</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_122" xml:space="preserve"><value>Set up game launching?</value></data>
+  <data name="Linux_ManualLaunchSetupWindow_123" xml:space="preserve"><value>Looking for executables…</value></data>
+  <data name="Linux_NetworkTestsWindow_124" xml:space="preserve"><value>Copy results</value></data>
+  <data name="Linux_NetworkTestsWindow_125" xml:space="preserve"><value>Cancel test</value></data>
+  <data name="Linux_NetworkTestsWindow_126" xml:space="preserve"><value>Download failed</value></data>
+  <data name="Linux_NetworkTestsWindow_127" xml:space="preserve"><value>Download worked</value></data>
+  <data name="Linux_NetworkTestsWindow_128" xml:space="preserve"><value>Copy link</value></data>
+  <data name="Linux_NetworkTestsWindow_129" xml:space="preserve"><value>Open browser</value></data>
+  <data name="Linux_NetworkTestsWindow_131" xml:space="preserve"><value>Network tests</value></data>
+  <data name="Linux_NgxModelImportWindow_132" xml:space="preserve"><value>Importing…</value></data>
+  <data name="Linux_NgxModelImportWindow_133" xml:space="preserve"><value>Downloading and validating…</value></data>
+  <data name="Linux_NgxModelImportWindow_134" xml:space="preserve"><value>Model discovery failed: {0}</value></data>
+  <data name="Linux_NgxModelImportWindow_135" xml:space="preserve"><value>Scan cancelled. Close and reopen to scan again.</value></data>
+  <data name="Linux_NgxModelImportWindow_136" xml:space="preserve"><value>{0} recognized model(s). Verify your selection before importing.
+</value></data>
+  <data name="Linux_NgxModelImportWindow_137" xml:space="preserve"><value>Cannot import: {0}</value></data>
+  <data name="Linux_NgxModelImportWindow_138" xml:space="preserve"><value> Unverified import is allowed by your settings.</value></data>
+  <data name="Linux_NgxModelImportWindow_139" xml:space="preserve"><value>Already in the Library</value></data>
+  <data name="Linux_NgxModelImportWindow_140" xml:space="preserve"><value>Checking identity and signature…</value></data>
+  <data name="Linux_NgxModelImportWindow_141" xml:space="preserve"><value>{0} {1} — {2:N0} bytes</value></data>
+  <data name="Linux_NgxModelImportWindow_142" xml:space="preserve"><value>{0} model versions available. Select versions to download and import.</value></data>
+  <data name="Linux_NgxModelImportWindow_143" xml:space="preserve"><value>Select cached NVIDIA models to add to the Library. Driver files and games are not changed.</value></data>
+  <data name="Linux_NgxModelImportWindow_144" xml:space="preserve"><value>Select NVIDIA model versions to download and import into the Library. Driver files and games are not changed.</value></data>
+  <data name="Linux_NgxModelImportWindow_145" xml:space="preserve"><value>Fetching NVIDIA model versions…</value></data>
+  <data name="Linux_NgxModelImportWindow_146" xml:space="preserve"><value>Import selected</value></data>
+  <data name="Linux_NgxModelImportWindow_147" xml:space="preserve"><value>Scanning configured NVIDIA model cache…</value></data>
+  <data name="Linux_OperationReportWindow_148" xml:space="preserve"><value>Could not save report: {0}</value></data>
+  <data name="Linux_OperationReportWindow_149" xml:space="preserve"><value>Report saved.</value></data>
+  <data name="Linux_OperationReportWindow_150" xml:space="preserve"><value>Save operation report</value></data>
+  <data name="Linux_OperationReportWindow_151" xml:space="preserve"><value>Could not copy report: {0}</value></data>
+  <data name="Linux_OperationReportWindow_152" xml:space="preserve"><value>Report copied.</value></data>
+  <data name="Linux_OperationReportWindow_153" xml:space="preserve"><value>Save report…</value></data>
+  <data name="Linux_OperationReportWindow_154" xml:space="preserve"><value>Copy report</value></data>
+  <data name="Linux_ProviderLaunchDialog_155" xml:space="preserve"><value>Game ID: {0}
+Configuration: {1}</value></data>
+  <data name="Linux_ProviderLaunchDialog_156" xml:space="preserve"><value>Choose a launcher.</value></data>
+  <data name="Linux_ProviderLaunchDialog_157" xml:space="preserve"><value>Choose the launcher configuration to edit. Nothing will be launched.</value></data>
+  <data name="Linux_ProviderLaunchDialog_158" xml:space="preserve"><value>Configure</value></data>
+  <data name="Linux_ProviderWineLaunchDialog_159" xml:space="preserve"><value>Choose Wine executable</value></data>
+  <data name="Linux_ProviderWineLaunchDialog_160" xml:space="preserve"><value>Saving does not launch the game.</value></data>
+  <data name="Linux_ProviderWineLaunchDialog_161" xml:space="preserve"><value>Save and launch</value></data>
+  <data name="Linux_ProviderWineLaunchDialog_162" xml:space="preserve"><value>Wine prefix: </value></data>
+  <data name="Linux_ProviderWineLaunchDialog_163" xml:space="preserve"><value>Client: {0}
+Executable: {1}
+Request: {2}</value></data>
+  <data name="Linux_ProxySettingsWindow_164" xml:space="preserve"><value> The newly stored keyring entry could not be removed.</value></data>
+  <data name="Linux_ProxySettingsWindow_165" xml:space="preserve"><value> Settings rollback failed; the old keyring entry remains.</value></data>
+  <data name="Linux_ProxySettingsWindow_166" xml:space="preserve"><value>Clear proxy and password</value></data>
+  <data name="Linux_ProxySettingsWindow_167" xml:space="preserve"><value>Changes take effect after restarting the app. Passwords are stored in the desktop keyring. Clear restores the system proxy settings.</value></data>
+  <data name="Linux_ProxySettingsWindow_168" xml:space="preserve"><value>Leave blank to retain the saved password</value></data>
+  <data name="Linux_ProxySettingsWindow_169" xml:space="preserve"><value>Proxy settings</value></data>
+  <data name="Linux_SettingsWindow_170" xml:space="preserve"><value>Could not save settings: {0}</value></data>
+  <data name="Linux_SettingsWindow_171" xml:space="preserve"><value>The persistent library is unavailable.</value></data>
+  <data name="Linux_SettingsWindow_172" xml:space="preserve"><value>Reset failed: {0}</value></data>
+  <data name="Linux_SettingsWindow_173" xml:space="preserve"><value>Configuration: {0}</value></data>
+  <data name="Linux_SettingsWindow_Libraries_174" xml:space="preserve"><value>Could not save library selection: {0}</value></data>
+  <data name="Linux_SettingsWindow_Libraries_175" xml:space="preserve"><value>Library selection saved. Disabling a library does not remove its saved data.</value></data>
+  <data name="Linux_SettingsWindow_Libraries_176" xml:space="preserve"><value>Could not reorder library: {0}</value></data>
+  <data name="Linux_SettingsWindow_Libraries_177" xml:space="preserve"><value>Move down</value></data>
+  <data name="Linux_SettingsWindow_Libraries_178" xml:space="preserve"><value>Move up</value></data>
+  <data name="Linux_SettingsWindow_Theme_179" xml:space="preserve"><value>Could not save theme: {0}</value></data>
+  <data name="Linux_StreamlineGameWindow_180" xml:space="preserve"><value>Stopping after the current operation. A file replacement already in progress will finish safely.</value></data>
+  <data name="Linux_StreamlineGameWindow_181" xml:space="preserve"><value>
+Files changed successfully, but history could not be saved: {0}</value></data>
+  <data name="Linux_StreamlineGameWindow_182" xml:space="preserve"><value>Select Streamline production package</value></data>
+  <data name="Linux_StreamlineGameWindow_183" xml:space="preserve"><value>No changes available for these components, or a required file is unavailable.</value></data>
+  <data name="Linux_StreamlineGameWindow_184" xml:space="preserve"><value>Downloading SDK; game files have not changed yet…</value></data>
+  <data name="Linux_StreamlineGameWindow_185" xml:space="preserve"><value>Restore: {0}
+{1}</value></data>
+  <data name="Linux_StreamlineGameWindow_186" xml:space="preserve"><value>Installed: {0}    Available: {1}    Original: {2}</value></data>
+  <data name="Linux_StreamlineGameWindow_187" xml:space="preserve"><value>No Streamline components found.</value></data>
+  <data name="Linux_StreamlineGameWindow_188" xml:space="preserve"><value> • Selected package: {0}</value></data>
+  <data name="Linux_StreamlineGameWindow_189" xml:space="preserve"><value>Latest SDK: {0}</value></data>
+  <data name="Linux_StreamlineGameWindow_190" xml:space="preserve"><value>Cancelled before changing game files. Any downloaded package remains cached.</value></data>
+  <data name="Linux_StreamlineGameWindow_191" xml:space="preserve"><value>Apply all</value></data>
+  <data name="Linux_StreamlineGameWindow_192" xml:space="preserve"><value>Apply selected</value></data>
+  <data name="Linux_StreamlineGameWindow_193" xml:space="preserve"><value>Recover interrupted operation</value></data>
+  <data name="Linux_StreamlineGameWindow_194" xml:space="preserve"><value>Restore selected</value></data>
+  <data name="Linux_StreamlineGameWindow_195" xml:space="preserve"><value>Restore all originals</value></data>
+  <data name="Linux_StreamlineGameWindow_196" xml:space="preserve"><value>Use local package</value></data>
+  <data name="Linux_StreamlineGameWindow_197" xml:space="preserve"><value>No new files downloaded.</value></data>
+  <data name="Linux_StreamlineGameWindow_198" xml:space="preserve"><value>Downloaded SDK {0}. No game files changed.</value></data>
+  <data name="Linux_StreamlineGameWindow_199" xml:space="preserve"><value>Get latest package</value></data>
+  <data name="Linux_StreamlineGameWindow_200" xml:space="preserve"><value>Only existing components are replaced. First originals are kept for restoration. SDK release numbers and DLL versions may differ; game compatibility is not verified.</value></data>
+  <data name="Linux_StreamlineGameWindow_201" xml:space="preserve"><value>Streamline components (experimental) — {0}</value></data>
+  <data name="Linux_StreamlineGameWindow_202" xml:space="preserve"><value>Select all components</value></data>
+  <data name="Linux_Xaml_1" xml:space="preserve"><value>This operation writes game files. Close the game before continuing.</value></data>
+  <data name="Linux_Xaml_2" xml:space="preserve"><value>Continue</value></data>
+  <data name="Linux_Xaml_3" xml:space="preserve"><value>DLL Library</value></data>
+  <data name="Linux_Xaml_4" xml:space="preserve"><value>Browse releases allowed by your settings, manage the shared download cache, or apply one exact build to the selected games.</value></data>
+  <data name="Linux_Xaml_5" xml:space="preserve"><value>DLL family</value></data>
+  <data name="Linux_Xaml_6" xml:space="preserve"><value>Search versions or build hashes</value></data>
+  <data name="Linux_Xaml_7" xml:space="preserve"><value>Search DLL releases</value></data>
+  <data name="Linux_Xaml_8" xml:space="preserve"><value>DLL releases</value></data>
+  <data name="Linux_Xaml_9" xml:space="preserve"><value>Streamline SDK</value></data>
+  <data name="Linux_Xaml_10" xml:space="preserve"><value>Streamline SDK — checking latest version…</value></data>
+  <data name="Linux_Xaml_11" xml:space="preserve"><value>NVIDIA Streamline components support game features such as DLSS and Reflex. Download the package once for individual game or batch updates. Downloading does not change game files.</value></data>
+  <data name="Linux_Xaml_12" xml:space="preserve"><value>Download latest SDK</value></data>
+  <data name="Linux_Xaml_13" xml:space="preserve"><value>Select a release.</value></data>
+  <data name="Linux_Xaml_14" xml:space="preserve"><value>Import NVIDIA models…</value></data>
+  <data name="Linux_Xaml_15" xml:space="preserve"><value>Refresh catalog</value></data>
+  <data name="Linux_Xaml_16" xml:space="preserve"><value>Export selected…</value></data>
+  <data name="Linux_Xaml_17" xml:space="preserve"><value>Export all downloaded…</value></data>
+  <data name="Linux_Xaml_18" xml:space="preserve"><value>Import DLL / ZIP…</value></data>
+  <data name="Linux_Xaml_19" xml:space="preserve"><value>Remove downloaded</value></data>
+  <data name="Linux_Xaml_20" xml:space="preserve"><value>Download latest families</value></data>
+  <data name="Linux_Xaml_21" xml:space="preserve"><value>Cancel downloads</value></data>
+  <data name="Linux_Xaml_22" xml:space="preserve"><value>Use with selected games</value></data>
+  <data name="Linux_Xaml_23" xml:space="preserve"><value>Game history</value></data>
+  <data name="Linux_Xaml_24" xml:space="preserve"><value>Event time</value></data>
+  <data name="Linux_Xaml_25" xml:space="preserve"><value>Event</value></data>
+  <data name="Linux_Xaml_26" xml:space="preserve"><value>Asset</value></data>
+  <data name="Linux_Xaml_27" xml:space="preserve"><value>Details</value></data>
+  <data name="Linux_Xaml_28" xml:space="preserve"><value>Game notes</value></data>
+  <data name="Linux_Xaml_29" xml:space="preserve"><value>Add notes for this game.</value></data>
+  <data name="Linux_Xaml_30" xml:space="preserve"><value>Add&amp;#x0a;Games</value></data>
+  <data name="Linux_Xaml_31" xml:space="preserve"><value>Add separate games</value></data>
+  <data name="Linux_Xaml_32" xml:space="preserve"><value>Add parent directory</value></data>
+  <data name="Linux_Xaml_33" xml:space="preserve"><value>Deep&amp;#x0a;Scan</value></data>
+  <data name="Linux_Xaml_34" xml:space="preserve"><value>Restore excluded Steam games</value></data>
+  <data name="Linux_Xaml_35" xml:space="preserve"><value>Restore excluded launcher games</value></data>
+  <data name="Linux_Xaml_36" xml:space="preserve"><value>All games</value></data>
+  <data name="Linux_Xaml_37" xml:space="preserve"><value>Steam</value></data>
+  <data name="Linux_Xaml_38" xml:space="preserve"><value>Manually added</value></data>
+  <data name="Linux_Xaml_39" xml:space="preserve"><value>Frame generation</value></data>
+  <data name="Linux_Xaml_40" xml:space="preserve"><value>Ray reconstruction</value></data>
+  <data name="Linux_Xaml_41" xml:space="preserve"><value>FSR</value></data>
+  <data name="Linux_Xaml_42" xml:space="preserve"><value>Grid</value></data>
+  <data name="Linux_Xaml_43" xml:space="preserve"><value>List</value></data>
+  <data name="Linux_Xaml_44" xml:space="preserve"><value>Source</value></data>
+  <data name="Linux_Xaml_45" xml:space="preserve"><value>DLL version</value></data>
+  <data name="Linux_Xaml_46" xml:space="preserve"><value>Dismiss warning</value></data>
+  <data name="Linux_Xaml_47" xml:space="preserve"><value>Startup error details</value></data>
+  <data name="Linux_Xaml_48" xml:space="preserve"><value>Retry loading</value></data>
+  <data name="Linux_Xaml_49" xml:space="preserve"><value>Grid card size</value></data>
+  <data name="Linux_Xaml_50" xml:space="preserve"><value>Launch setup…</value></data>
+  <data name="Linux_Xaml_51" xml:space="preserve"><value>Edit title…</value></data>
+  <data name="Linux_Xaml_52" xml:space="preserve"><value>Scan details</value></data>
+  <data name="Linux_Xaml_53" xml:space="preserve"><value>Restore original DLLs…</value></data>
+  <data name="Linux_Xaml_54" xml:space="preserve"><value>Choose DLL versions…</value></data>
+  <data name="Linux_Xaml_55" xml:space="preserve"><value>Streamline (experimental)</value></data>
+  <data name="Linux_Xaml_56" xml:space="preserve"><value>Inspect components</value></data>
+  <data name="Linux_Xaml_57" xml:space="preserve"><value>Update from local production folder</value></data>
+  <data name="Linux_Xaml_58" xml:space="preserve"><value>Restore originals</value></data>
+  <data name="Linux_Xaml_59" xml:space="preserve"><value>Batch update</value></data>
+  <data name="Linux_Xaml_60" xml:space="preserve"><value>Choose launcher</value></data>
+  <data name="Linux_Xaml_61" xml:space="preserve"><value>More than one launcher knows about this installation. Choose which launcher should start it using its saved game settings.</value></data>
+  <data name="Linux_Xaml_62" xml:space="preserve"><value>Wine launcher setup</value></data>
+  <data name="Linux_Xaml_63" xml:space="preserve"><value>Choose the Wine executable used by this launcher.</value></data>
+  <data name="Linux_Xaml_64" xml:space="preserve"><value>Wine executable</value></data>
+  <data name="Linux_Xaml_65" xml:space="preserve"><value>Full path to the Wine executable</value></data>
+  <data name="Linux_Xaml_66" xml:space="preserve"><value>Browse…</value></data>
+  <data name="Linux_Xaml_67" xml:space="preserve"><value>DLSS Swapper LLE — Settings</value></data>
+  <data name="Linux_Xaml_68" xml:space="preserve"><value>Theme</value></data>
+  <data name="Linux_Xaml_69" xml:space="preserve"><value>Game libraries</value></data>
+  <data name="Linux_Xaml_70" xml:space="preserve"><value>Changes save immediately. Disabling a library keeps its saved data.</value></data>
+  <data name="Linux_Xaml_71" xml:space="preserve"><value>DLL release selection</value></data>
+  <data name="Linux_Xaml_72" xml:space="preserve"><value>Allow debug DLL releases</value></data>
+  <data name="Linux_Xaml_73" xml:space="preserve"><value>Allow DLL releases without a valid catalog signature</value></data>
+  <data name="Linux_Xaml_74" xml:space="preserve"><value>Show downloaded releases only in game DLL pickers</value></data>
+  <data name="Linux_Xaml_75" xml:space="preserve"><value>Filters game version choices to downloaded releases.</value></data>
+  <data name="Linux_Xaml_76" xml:space="preserve"><value>Debug and untrusted releases are excluded by default.</value></data>
+  <data name="Linux_Xaml_77" xml:space="preserve"><value>Performance and grid</value></data>
+  <data name="Linux_Xaml_78" xml:space="preserve"><value>My game library is on a HDD</value></data>
+  <data name="Linux_Xaml_79" xml:space="preserve"><value>HDD mode uses fewer workers. Changing the mode resets the performance limits.</value></data>
+  <data name="Linux_Xaml_80" xml:space="preserve"><value>Concurrent game scans (1–26)</value></data>
+  <data name="Linux_Xaml_81" xml:space="preserve"><value>Concurrent artwork loading (1–64)</value></data>
+  <data name="Linux_Xaml_82" xml:space="preserve"><value>UI updates per batch (10–1000)</value></data>
+  <data name="Linux_Xaml_83" xml:space="preserve"><value>UI changes per batch</value></data>
+  <data name="Linux_Xaml_84" xml:space="preserve"><value>Concurrent game updates (1–26; default 15)</value></data>
+  <data name="Linux_Xaml_85" xml:space="preserve"><value>Reset performance defaults</value></data>
+  <data name="Linux_Xaml_86" xml:space="preserve"><value>Storage and local data</value></data>
+  <data name="Linux_Xaml_87" xml:space="preserve"><value>The app reports NTFS/FUSE libraries because they can be slower and have weaker Linux permission semantics than ext4 or Btrfs. Use the CLI filesystems command for the current mount report.</value></data>
+  <data name="Linux_Xaml_88" xml:space="preserve"><value>Reset Linux local data</value></data>
+  <data name="Linux_Xaml_89" xml:space="preserve"><value>Removes LLE-owned Linux settings and application cache. Artwork cached beside a SteamLibrary is preserved.</value></data>
+  <data name="Linux_Xaml_90" xml:space="preserve"><value>Steam libraries</value></data>
+  <data name="Linux_Xaml_91" xml:space="preserve"><value>Steam's standard locations are discovered automatically. Add only non-standard Steam roots here, one per line.</value></data>
+  <data name="Linux_Xaml_92" xml:space="preserve"><value>Additional Steam roots</value></data>
+  <data name="Linux_Xaml_93" xml:space="preserve"><value>/mnt/games/SteamLibrary</value></data>
+  <data name="Linux_Xaml_94" xml:space="preserve"><value>Manually added games that do not resolve on Steam use this MediaWiki source. Only exact title matches and HTTPS portrait images from the allowed host are accepted.</value></data>
+  <data name="Linux_Xaml_95" xml:space="preserve"><value>Reset Wikipedia source</value></data>
+  <data name="Linux_Xaml_96" xml:space="preserve"><value>Deep Scan adds reusable layouts to learned and custom patterns automatically. Use * for exactly one directory level.</value></data>
+  <data name="Linux_Xaml_97" xml:space="preserve"><value>One relative pattern per line</value></data>
+  <data name="Linux_Xaml_98" xml:space="preserve"><value>Advanced launcher locations</value></data>
+  <data name="Linux_Xaml_99" xml:space="preserve"><value>Wine prefixes: one folder containing drive_c per line.</value></data>
+  <data name="Linux_Xaml_100" xml:space="preserve"><value>Additional Legendary folders containing installed.json</value></data>
+  <data name="Linux_Xaml_101" xml:space="preserve"><value>Additional Heroic configuration folders, one per line</value></data>
+  <data name="Linux_Xaml_102" xml:space="preserve"><value>Heroic executable or AppImage (optional; native Heroic only)</value></data>
+  <data name="Linux_Xaml_103" xml:space="preserve"><value>Absolute path; leave blank to use heroic from PATH</value></data>
+  <data name="Linux_Xaml_104" xml:space="preserve"><value>Proxy…</value></data>
+  <data name="Linux_ReimportNeeded" xml:space="preserve"><value>Reimport needed</value></data>
+  <data name="Linux_Downloaded" xml:space="preserve"><value>Downloaded</value></data>
+  <data name="Linux_Available" xml:space="preserve"><value>Available</value></data>
+  <data name="Linux_NotScanned" xml:space="preserve"><value>Not scanned</value></data>
+  <data name="Linux_ScanHint" xml:space="preserve"><value>Select this game, then scan it.</value></data>
+  <data name="Linux_RemoveCover" xml:space="preserve"><value>Remove custom cover</value></data>
+  <data name="Linux_AddCover" xml:space="preserve"><value>Add custom cover</value></data>
+  <data name="Linux_ExplicitPath" xml:space="preserve"><value>Explicit path</value></data>
+  <data name="Linux_SteamApp" xml:space="preserve"><value>Steam app {0}</value></data>
+  <data name="Linux_NoDlls" xml:space="preserve"><value>No supported DLLs found</value></data>
+  <data name="Linux_StreamlineFound" xml:space="preserve"><value>{0} Streamline components found</value></data>
+  <data name="Linux_ComponentCount" xml:space="preserve"><value>{0} components</value></data>
+  <data name="Linux_ScanOneFile" xml:space="preserve"><value>{0}: {1} ({2} file)</value></data>
+  <data name="Linux_ScanFiles" xml:space="preserve"><value>{0}: {1} ({2} files)</value></data>
+  <data name="Linux_StreamlineList" xml:space="preserve"><value>Streamline components:</value></data>
+  <data name="Linux_LastKnown" xml:space="preserve"><value>Last known — {0}</value></data>
+  <data name="Linux_LastKnownVersion" xml:space="preserve"><value>{0} (last known)</value></data>
+  <data name="Linux_LastChecked" xml:space="preserve"><value>Last checked {0:g}; not verified this session.&#10;{1}</value></data>
+  <data name="Linux_LoadingCatalog" xml:space="preserve"><value>Loading the bundled DLL catalog…</value></data>
+  <data name="Linux_UpdatingView" xml:space="preserve"><value>Updating game view…</value></data>
+  <data name="Linux_FolderUnavailable" xml:space="preserve"><value>Game folder unavailable</value></data>
+  <data name="Linux_ScanWarnings" xml:space="preserve"><value>Scan has warnings</value></data>
+  <data name="Linux_ScannedOne" xml:space="preserve"><value>{0} supported DLL file scanned.</value></data>
+  <data name="Linux_ScannedFiles" xml:space="preserve"><value>{0} supported DLL files scanned.</value></data>
+  <data name="Linux_NoResults" xml:space="preserve"><value>No operation results.</value></data>
+  <data name="Linux_ReportCount" xml:space="preserve"><value>{0} file or family results&#10;</value></data>
+  <data name="Linux_ReportRow" xml:space="preserve"><value>{0} — {1}&#10;Game folder: {2}&#10;Target: {3}&#10;{4}: {5}</value></data>
+  <data name="Linux_ImportSummary" xml:space="preserve"><value>{0} succeeded · {1} failed or cancelled. No game files were changed.&#10;</value></data>
+  <data name="Linux_ImportOK" xml:space="preserve"><value>OK</value></data>
+  <data name="Linux_NotImported" xml:space="preserve"><value>Not imported</value></data>
+  <data name="Linux_NoDownloads" xml:space="preserve"><value>No new files were downloaded.</value></data>
+  <data name="Linux_DownloadHeading" xml:space="preserve"><value>Downloaded:</value></data>
+  <data name="Linux_DownloadFailed" xml:space="preserve"><value>Failed: {0}: {1}</value></data>
+  <data name="Linux_DownloadCancelled" xml:space="preserve"><value>Cancelled: {0} item(s) were not completed.</value></data>
+  <data name="Linux_NoGameChanges" xml:space="preserve"><value>No game files were changed.</value></data>
+  <data name="Linux_TranslationLoaded" xml:space="preserve"><value>Translations loaded.</value></data>
+  <data name="Linux_TranslationSaved" xml:space="preserve"><value>Translations saved.</value></data>
+  <data name="Linux_TranslationPreview" xml:space="preserve"><value>Preview applied. Closing the toolbox restores your saved language.</value></data>
+  <data name="Linux_TranslationExported" xml:space="preserve"><value>ZIP saved locally. Nothing was uploaded.</value></data>
+  <data name="Linux_TranslationDiscard" xml:space="preserve"><value>Continue and discard unsaved translation changes?</value></data>
+  <data name="Linux_VersionCatalogRefreshFailed" xml:space="preserve"><value>The catalog refresh for this app version could not finish. The cached catalog remains available; the app will retry next launch. {0}</value></data>
+  <data name="Linux_IgnoredFoldersHelp" xml:space="preserve"><value>Games installed in these folders or their subfolders are not shown or scanned. Use one absolute folder path per line. Remove a line to include those games again.</value></data>
+  <data name="Linux_IgnoredFolderBrowse" xml:space="preserve"><value>Add ignored folder…</value></data>
+  <data name="Linux_CopyBuildIdentity" xml:space="preserve"><value>Copy build information</value></data>
+  <data name="Linux_BuildIdentityCopied" xml:space="preserve"><value>Build information copied.</value></data>
+  <data name="Linux_BuildIdentityCopyFailed" xml:space="preserve"><value>Could not copy build information: {0}</value></data>
+  <data name="Linux_ApplicationLogLevel" xml:space="preserve"><value>Application log level</value></data>
+  <data name="Linux_OpenApplicationLog" xml:space="preserve"><value>Open application log</value></data>
+  <data name="Linux_NoApplicationLog" xml:space="preserve"><value>No application log has been written today.</value></data>
+  <data name="Linux_Acknowledgements" xml:space="preserve"><value>Acknowledgements</value></data>
+  <data name="Linux_LibraryCancelling" xml:space="preserve"><value>Cancelling…</value></data>
+  <data name="Linux_LibraryCheckingDownload" xml:space="preserve"><value>Checking/downloading…</value></data>
+  <data name="Linux_LibraryVerified" xml:space="preserve"><value>Downloaded and verified</value></data>
+  <data name="Linux_LibraryAlreadyVerified" xml:space="preserve"><value>Already downloaded and verified</value></data>
+  <data name="Linux_LibraryDownloadCancelled" xml:space="preserve"><value>Download cancelled</value></data>
+  <data name="Linux_LibraryDownloadFailed" xml:space="preserve"><value>Download failed: {0}</value></data>
+  <data name="Linux_LibraryTransferKnown" xml:space="preserve"><value>{0:N0} / {1:N0} bytes ({2}%)</value></data>
+  <data name="Linux_LibraryTransferUnknown" xml:space="preserve"><value>{0:N0} bytes (total size unknown)</value></data>
+  <data name="Linux_LibraryTransfer" xml:space="preserve"><value>Downloading {0}: {1}. Verification must finish before it is ready.</value></data>
+  <data name="Linux_LibraryAllFamilies" xml:space="preserve"><value>All families</value></data>
+  <data name="Linux_LibraryRemoveTitle" xml:space="preserve"><value>Remove Library DLL?</value></data>
+  <data name="Linux_LibraryRemoveConfirm" xml:space="preserve"><value>Remove {0} {1} ({2}) from the Library cache? No game files or game backups will change.</value></data>
+  <data name="Linux_LibraryRemoveImported" xml:space="preserve"><value>This also removes its imported Library record. You will need the source DLL or ZIP to import it again.</value></data>
+  <data name="Linux_LibraryRemoveDownloadable" xml:space="preserve"><value>You can download it again later.</value></data>
+  <data name="Linux_BatchResults" xml:space="preserve"><value>Batch update results</value></data>
+  <data name="Linux_MissingCachedSdk" xml:space="preserve"><value>No cached Streamline SDK. Download it from the Library or turn off downloaded-only filtering in Settings.</value></data>
+  <data name="Linux_BatchConfirmCount" xml:space="preserve"><value>Update {0} files across {1} selected games?</value></data>
+  <data name="Linux_BatchPartialSdk" xml:space="preserve"><value>Updating only part of a Streamline set is not recommended. Mixed SDK versions may break game features or prevent the game from starting. Apply the complete set unless you understand the compatibility risks.</value></data>
+  <data name="Linux_BatchConfirmTitle" xml:space="preserve"><value>Confirm batch update</value></data>
+  <data name="Linux_GameWriteWarning" xml:space="preserve"><value>This operation writes game files. Close the game before continuing.</value></data>
+  <data name="Linux_VersionChecking" xml:space="preserve"><value>checking…</value></data>
+  <data name="Linux_VersionError" xml:space="preserve"><value>unavailable — {0}</value></data>
+  <data name="Linux_VersionPending" xml:space="preserve"><value>Version lookup pending</value></data>
+  <data name="Linux_VersionUnavailable" xml:space="preserve"><value>Version unavailable</value></data>
+  <data name="Linux_StreamlinePartialWarning" xml:space="preserve"><value>Updating or restoring only part of the set may mix Streamline versions. This is not recommended and can break the game.</value></data>
+  <data name="Linux_StreamlineRestoreTitle" xml:space="preserve"><value>Restore components?</value></data>
+  <data name="Linux_StreamlineApplyTitle" xml:space="preserve"><value>Apply components?</value></data>
+  <data name="Linux_StreamlineRecoverTitle" xml:space="preserve"><value>Recover Streamline?</value></data>
+  <data name="Linux_StreamlineRecoverPrompt" xml:space="preserve"><value>Recover the interrupted operation from retained recovery files.</value></data>
+  <data name="Linux_InstalledSuffix" xml:space="preserve"><value> — installed</value></data>
+  <data name="Linux_OriginalSuffix" xml:space="preserve"><value> — original</value></data>
+  <data name="Linux_InstalledFile" xml:space="preserve"><value>Installed: {0}
+{1}</value></data>
+  <data name="Linux_OriginalFile" xml:space="preserve"><value>Original: {0}
+{1}</value></data>
+  <data name="Linux_RestoreFile" xml:space="preserve"><value>{0} → original {1}</value></data>
+  <data name="Linux_ApplyDllPrompt" xml:space="preserve"><value>Apply {0} to every detected {1} file in {2}? Missing downloads are acquired automatically.</value></data>
+  <data name="Linux_IncompleteUpdate" xml:space="preserve"><value>Inspection was incomplete. Only listed files are included.</value></data>
+  <data name="Linux_IncompleteRestore" xml:space="preserve"><value>Inspection was incomplete. Only the listed files will be restored; other backups may exist.</value></data>
+  <data name="Linux_RestoreOriginalsTitle" xml:space="preserve"><value>Restore originals?</value></data>
+  <data name="Linux_ApplyDllTitle" xml:space="preserve"><value>Apply DLL version?</value></data>
+  <data name="Linux_GamesMessage1" xml:space="preserve"><value>Loading the persistent game library…</value></data>
+  <data name="Linux_GamesMessage2" xml:space="preserve"><value>Startup needs attention. See the details and Retry loading.</value></data>
+  <data name="Linux_GamesMessage3" xml:space="preserve"><value>Wait for the Streamline file operation to finish before closing.</value></data>
+  <data name="Linux_GamesMessage4" xml:space="preserve"><value>Games were imported, but launch setup could not finish: {0}</value></data>
+  <data name="Linux_GamesMessage5" xml:space="preserve"><value>Deep Scan is already running in the background.</value></data>
+  <data name="Linux_GamesMessage6" xml:space="preserve"><value>Cleared launcher-game exclusions and refreshed the library. Unavailable installations remain absent.</value></data>
+  <data name="Linux_GamesMessage7" xml:space="preserve"><value>Could not restore excluded launcher games: {0}</value></data>
+  <data name="Linux_GamesMessage8" xml:space="preserve"><value>Sent {0} to Steam.</value></data>
+  <data name="Linux_GamesMessage9" xml:space="preserve"><value>No launch configuration is available for this game.</value></data>
+  <data name="Linux_GamesMessage10" xml:space="preserve"><value>Launch setup closed. Use Launch when ready; saving did not start the game.</value></data>
+  <data name="Linux_GamesMessage11" xml:space="preserve"><value>Could not launch {0}: {1}</value></data>
+  <data name="Linux_GamesMessage12" xml:space="preserve"><value>Saved notes for {0}.</value></data>
+  <data name="Linux_GamesMessage13" xml:space="preserve"><value>Could not save favorites for {0}: {1}</value></data>
+  <data name="Linux_GamesMessage14" xml:space="preserve"><value>Could not save visibility for {0}: {1}</value></data>
+  <data name="Linux_GamesMessage15" xml:space="preserve"><value>Removed custom cover for {0}.</value></data>
+  <data name="Linux_GamesMessage16" xml:space="preserve"><value>Could not remove custom cover: {0}</value></data>
+  <data name="Linux_GamesMessage17" xml:space="preserve"><value>The selected cover-art file is unavailable.</value></data>
+  <data name="Linux_GamesMessage18" xml:space="preserve"><value>Could not apply custom cover art to {0}: {1}</value></data>
+  <data name="Linux_GamesMessage19" xml:space="preserve"><value>Custom cover saved, but could not be displayed: {0}</value></data>
+  <data name="Linux_GamesMessage20" xml:space="preserve"><value>Custom cover saved for {0}, but its history could not be saved: {1}</value></data>
+  <data name="Linux_GamesMessage21" xml:space="preserve"><value>Applied custom cover art to {0}.</value></data>
+  <data name="Linux_GamesMessage22" xml:space="preserve"><value>{0} already has the latest detected DLL versions.</value></data>
+  <data name="Linux_GamesMessage23" xml:space="preserve"><value>Operation failed: {0}</value></data>
+  <data name="Linux_GamesMessage24" xml:space="preserve"><value>Select at least one game first.</value></data>
+  <data name="Linux_GamesMessage25" xml:space="preserve"><value>{0} is no longer available for Fast Scan.</value></data>
+  <data name="Linux_GamesMessage26" xml:space="preserve"><value>This game's launch settings are managed by its launcher.</value></data>
+  <data name="Linux_GamesMessage27" xml:space="preserve"><value>Saved the Wine runner for this prefix. Nothing was launched.</value></data>
+  <data name="Linux_GamesMessage28" xml:space="preserve"><value>Could not configure launching: {0}</value></data>
+  <data name="Linux_GamesMessage29" xml:space="preserve"><value>Titles from launchers cannot be edited. Only manually added games can be renamed.</value></data>
+  <data name="Linux_GamesMessage30" xml:space="preserve"><value>Saved title: {0}.</value></data>
+  <data name="Linux_GamesMessage31" xml:space="preserve"><value>Could not save grouping: {0}</value></data>
+  <data name="Linux_GamesMessage32" xml:space="preserve"><value>Could not save filter: {0}</value></data>
+  <data name="Linux_GamesMessage33" xml:space="preserve"><value>Could not add game: {0}</value></data>
+  <data name="Linux_GamesMessage34" xml:space="preserve"><value>Could not set cover: {0}</value></data>
+  <data name="Linux_BatchScanning" xml:space="preserve"><value>Scanning selected games before planning updates…</value></data>
+  <data name="Linux_BatchClosed" xml:space="preserve"><value>Batch closed without applying updates.</value></data>
+  <data name="Linux_BatchFinished" xml:space="preserve"><value>Batch finished: {0} results, {1} failed or skipped.</value></data>
+  <data name="Linux_OperationHistoryFailed" xml:space="preserve"><value>Game operation results could not be saved to history: {0}</value></data>
+  <data name="Linux_InspectDllVersions" xml:space="preserve"><value>Inspecting DLL versions for {0}…</value></data>
+  <data name="Linux_DllPickerClosed" xml:space="preserve"><value>DLL picker closed without applying changes.</value></data>
+  <data name="Linux_HistorySaveFailed" xml:space="preserve"><value>History could not be saved: {0}</value></data>
+  <data name="Linux_InspectOriginalDlls" xml:space="preserve"><value>Inspecting original DLLs for {0}…</value></data>
+  <data name="Linux_RestoreClosed" xml:space="preserve"><value>Restore closed without changing files.</value></data>
+  <data name="Linux_RestoreFinished" xml:space="preserve"><value>Restore finished: {0} restored, {1} failed.</value></data>
+  <data name="Linux_LaunchDispatchFailed" xml:space="preserve"><value>Could not dispatch the launch request for {0}.</value></data>
+  <data name="Linux_LaunchDispatched" xml:space="preserve"><value>Sent a launch request for {0} to {1}.</value></data>
+  <data name="Linux_LaunchStartFailed" xml:space="preserve"><value>Could not start {0}.</value></data>
+  <data name="Linux_LaunchStarted" xml:space="preserve"><value>Started the configured executable for {0}.</value></data>
+  <data name="Linux_FavoriteAdded" xml:space="preserve"><value>Added {0} to favorites.</value></data>
+  <data name="Linux_FavoriteRemoved" xml:space="preserve"><value>Removed {0} from favorites.</value></data>
+  <data name="Linux_GameHidden" xml:space="preserve"><value>Hid {0}. Use the Hidden filter to show it again.</value></data>
+  <data name="Linux_GameUnhidden" xml:space="preserve"><value>Restored {0} to the library view.</value></data>
+  <data name="Linux_RemoveCoverTitle" xml:space="preserve"><value>Remove custom cover</value></data>
+  <data name="Linux_RemoveCoverPrompt" xml:space="preserve"><value>Remove the custom cover for {0} and return to ordinary artwork? Your source image will not be deleted.</value></data>
+  <data name="Linux_DeepScanPrompt" xml:space="preserve"><value>Deep Scan runs automatically the first time you launch DLSS Swapper LLE and learns path patterns for Fast Scan. Run it again only after your library changes and a game is missing. If you know which game is missing, add that game directly instead.</value></data>
+  <data name="Linux_RemoveGamesTitle" xml:space="preserve"><value>Remove games</value></data>
+  <data name="Linux_RemoveGamesPrompt" xml:space="preserve"><value>Remove {0} selected game{1} from this library?</value></data>
+  <data name="Linux_ConfirmExactTitle" xml:space="preserve"><value>Confirm exact DLL version</value></data>
+  <data name="Linux_ConfirmExactPrompt" xml:space="preserve"><value>Apply {0} {1} ({2}) to {3} detected DLL file{4} in {5} selected game{6}?</value></data>
+  <data name="Linux_ConfirmUpdateTitle" xml:space="preserve"><value>Confirm DLL update</value></data>
+  <data name="Linux_ConfirmUpdatePrompt" xml:space="preserve"><value>Update {0} detected DLL file{1} in {2}? An adjacent .dlsss backup is created when needed.</value></data>
+  <data name="Linux_RemoveGameTitle" xml:space="preserve"><value>Remove game</value></data>
+  <data name="Linux_RemoveGamePrompt" xml:space="preserve"><value>Remove {0} from this library?</value></data>
+  <data name="Linux_RemovalNotice" xml:space="preserve"><value>Launcher games are excluded; their notes, preferences and history are kept. Manually added entries and their saved details/history are removed. Game files are not deleted.</value></data>
+  <data name="Linux_FastScanFinished" xml:space="preserve"><value>Fast Scan inspected {0} game{1} in {2:F2} seconds.</value></data>
+  <data name="Linux_FastScanReady" xml:space="preserve"><value>Fast Scan is ready with {0} game{1}. Initial Deep Scan is learning any missing layouts in the background…</value></data>
+  <data name="Linux_InitialScanFinished" xml:space="preserve"><value>Initial Deep Scan completed in {0:F2} seconds; learned {1} new fast-scan pattern{2}.</value></data>
+  <data name="Linux_InitialScanFailed" xml:space="preserve"><value>Initial Deep Scan did not complete and will retry next launch: {0}</value></data>
+  <data name="Linux_ScanProgress" xml:space="preserve"><value>{0}: {1:N0} / {2:N0} game roots processed…</value></data>
+  <data name="Linux_ScanLoadFailed" xml:space="preserve"><value>Saved scan results could not be loaded: {0}</value></data>
+  <data name="Linux_ScanSaveFailed" xml:space="preserve"><value>Scan results could not be saved: {0}</value></data>
+  <data name="Linux_DiscoverySaveFailed" xml:space="preserve"><value>Discovery results could not be saved: {0}</value></data>
+  <data name="Linux_CatalogUnavailable" xml:space="preserve"><value>The DLL catalog is unavailable. Verify Assets/static_manifest.json and restart.</value></data>
+  <data name="Linux_LibraryUnavailable" xml:space="preserve"><value>The persistent Linux library state is unavailable. Review the startup error.</value></data>
+  <data name="Linux_ScannerUnavailable" xml:space="preserve"><value>The Linux scan service is unavailable. Verify the DLL catalog and restart.</value></data>
+  <data name="Linux_DiscoveringGames" xml:space="preserve"><value>Discovering and fast-scanning the game library…</value></data>
+  <data name="Linux_GamesOperation1" xml:space="preserve"><value>Persisted {0} new game path{1}.</value></data>
+  <data name="Linux_GamesOperation2" xml:space="preserve"><value>Deep Scan is checking every game directory…</value></data>
+  <data name="Linux_GamesOperation3" xml:space="preserve"><value>Deep Scan inspected {0} game{1} and learned {2} new fast-scan pattern{3}.</value></data>
+  <data name="Linux_GamesOperation4" xml:space="preserve"><value>Restored {0} excluded Steam game{1}.</value></data>
+  <data name="Linux_GamesOperation5" xml:space="preserve"><value>{0} {1} is downloaded. Select games before applying it.</value></data>
+  <data name="Linux_GamesOperation6" xml:space="preserve"><value>Resolving the exact {0} build identity…</value></data>
+  <data name="Linux_GamesOperation7" xml:space="preserve"><value>Exact-version plan is a no-op: {0} current, {1} incompatible or indeterminate.</value></data>
+  <data name="Linux_GamesOperation8" xml:space="preserve"><value>Applying exact {0} {1}…</value></data>
+  <data name="Linux_GamesOperation9" xml:space="preserve"><value>Exact-version update finished: {0} succeeded, {1} failed.</value></data>
+  <data name="Linux_GamesOperation10" xml:space="preserve"><value>Saving custom cover for {0}…</value></data>
+  <data name="Linux_GamesOperation11" xml:space="preserve"><value>Updating detected DLLs in {0}…</value></data>
+  <data name="Linux_GamesOperation12" xml:space="preserve"><value>Updated {0} DLL file{1} in {2}.</value></data>
+  <data name="Linux_GamesOperation13" xml:space="preserve"><value>Reloading {0}…</value></data>
+  <data name="Linux_GamesOperation14" xml:space="preserve"><value>Reloaded {0}; found {1} supported DLL file{2}.</value></data>
+  <data name="Linux_Streamline_NotSaved" xml:space="preserve"><value>Not saved</value></data>
+  <data name="Linux_Streamline_NoBackup" xml:space="preserve"><value>No original backup</value></data>
+  <data name="Linux_Streamline_Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Linux_Streamline_Missing" xml:space="preserve"><value>Missing</value></data>
+  <data name="Linux_Streamline_Unreadable" xml:space="preserve"><value>Unreadable</value></data>
+  <data name="Linux_Streamline_NotDownloaded" xml:space="preserve"><value>Not downloaded</value></data>
+  <data name="Linux_Streamline_InstalledUnavailable" xml:space="preserve"><value>Installed file unavailable</value></data>
+  <data name="Linux_Streamline_ComparisonNeedsPackage" xml:space="preserve"><value>Download a package to compare</value></data>
+  <data name="Linux_Streamline_SourceMissing" xml:space="preserve"><value>Source file missing</value></data>
+  <data name="Linux_Streamline_SourceUnreadable" xml:space="preserve"><value>Source file unreadable</value></data>
+  <data name="Linux_Streamline_ComparisonUnavailable" xml:space="preserve"><value>File comparison unavailable</value></data>
+  <data name="Linux_Streamline_Identical" xml:space="preserve"><value>Identical — no change</value></data>
+  <data name="Linux_Streamline_UnknownOrder" xml:space="preserve"><value>Different files — version order unknown</value></data>
+  <data name="Linux_Streamline_Upgrade" xml:space="preserve"><value>Upgrade</value></data>
+  <data name="Linux_Streamline_Downgrade" xml:space="preserve"><value>Downgrade</value></data>
+  <data name="Linux_Streamline_DifferentBytes" xml:space="preserve"><value>Same version — different files</value></data>
+  <data name="Linux_Streamline_GameFolder" xml:space="preserve"><value>(game folder)</value></data>
+  <data name="Linux_StreamlineDescription_common" xml:space="preserve"><value>Shared Streamline services that pass the game's rendering resources and frame data to feature plugins and manage their NVIDIA NGX connection.</value></data>
+  <data name="Linux_StreamlineDescription_deepdvc" xml:space="preserve"><value>Connects the game to RTX Dynamic Vibrance, an AI color-enhancement effect that adjusts saturation. It is not an upscaler or frame generator.</value></data>
+  <data name="Linux_StreamlineDescription_directsr" xml:space="preserve"><value>Connects the game to DirectSR super resolution through DirectX 12, using the upscaling variant selected by the game.</value></data>
+  <data name="Linux_StreamlineDescription_dlss" xml:space="preserve"><value>Connects the game to DLSS Super Resolution for AI upscaling, or DLAA for anti-aliasing at native resolution. This is the Streamline plugin, not nvngx_dlss.dll.</value></data>
+  <data name="Linux_StreamlineDescription_dlss_d" xml:space="preserve"><value>Connects the game to DLSS Ray Reconstruction, which replaces ray-tracing denoisers with AI reconstruction. This is the Streamline plugin, not nvngx_dlssd.dll.</value></data>
+  <data name="Linux_StreamlineDescription_dlss_g" xml:space="preserve"><value>Connects the game to DLSS Frame Generation, which creates additional frames from the game's rendered frames. This is the Streamline plugin, not nvngx_dlssg.dll.</value></data>
+  <data name="Linux_StreamlineDescription_interposer" xml:space="preserve"><value>The game's entry point into Streamline. It loads feature plugins and routes the graphics API calls Streamline needs.</value></data>
+  <data name="Linux_StreamlineDescription_nis" xml:space="preserve"><value>NVIDIA Image Scaling: spatial upscaling and sharpening, or sharpening alone. This is a separate algorithm from DLSS.</value></data>
+  <data name="Linux_StreamlineDescription_nvperf" xml:space="preserve"><value>Connects Streamline to NVIDIA Nsight Perf SDK for GPU performance measurement and profiling. It is not an upscaler or frame generator.</value></data>
+  <data name="Linux_StreamlineDescription_pcl" xml:space="preserve"><value>Records PC latency markers and timing measurements during gameplay. It measures latency; Reflex handles low-latency control separately.</value></data>
+  <data name="Linux_StreamlineDescription_reflex" xml:space="preserve"><value>Connects the game to NVIDIA Reflex low-latency control and its frame-rate limiter. PC latency statistics are handled separately by sl.pcl.dll in newer SDKs.</value></data>
+  <data name="Linux_StreamlineDescription_unknown" xml:space="preserve"><value>No description is available for this component.</value></data>
+  <data name="Linux_LibraryReorderHint" xml:space="preserve"><value>Drag to reorder this library; or use Move up and Move down.</value></data>
+  <data name="Linux_LibraryUnsupportedHint" xml:space="preserve"><value>This library is not supported by the current Linux discovery adapters.</value></data>
+  <data name="Linux_SettingsApiInvalid" xml:space="preserve"><value>Enter an absolute HTTPS MediaWiki API URL without credentials, a query, or a fragment.</value></data>
+  <data name="Linux_SettingsImageHostInvalid" xml:space="preserve"><value>Enter one DNS host name for cover images, without a scheme or path.</value></data>
+  <data name="Linux_SettingsHeroicFoldersInvalid" xml:space="preserve"><value>Heroic folders must be absolute paths ending in heroic.</value></data>
+  <data name="Linux_SettingsHeroicExeInvalid" xml:space="preserve"><value>The Heroic executable path must be absolute, or blank to use PATH.</value></data>
+  <data name="Linux_SettingsProviderFoldersInvalid" xml:space="preserve"><value>Provider folders must be absolute paths, one per line. Missing or disconnected folders can remain saved.</value></data>
+  <data name="Linux_ProxyUsernameRequired" xml:space="preserve"><value>Enter the username for this password.</value></data>
+  <data name="Linux_FileTypeDllZip" xml:space="preserve"><value>DLL or ZIP</value></data>
+  <data name="Linux_FileTypeZip" xml:space="preserve"><value>ZIP archive</value></data>
+  <data name="Linux_FileTypeImages" xml:space="preserve"><value>Image files</value></data>
+  <data name="Linux_FileTypeTranslations" xml:space="preserve"><value>Translation files</value></data>
+  <data name="Linux_LibraryImportLocal" xml:space="preserve"><value>Import requires a local file.</value></data>
+  <data name="Linux_LibraryExportLocal" xml:space="preserve"><value>Export requires a local file path.</value></data>
+  <data name="Linux_LibraryStorageUnavailable" xml:space="preserve"><value>Cache removed, but imported Library storage is unavailable.</value></data>
+  <data name="Linux_LaunchSuggestions" xml:space="preserve"><value>Executable suggestions</value></data>
+  <data name="Linux_LaunchExecutable" xml:space="preserve"><value>Executable</value></data>
+  <data name="Linux_LaunchMethod" xml:space="preserve"><value>Launch method</value></data>
+  <data name="Linux_LaunchWine" xml:space="preserve"><value>Wine executable</value></data>
+  <data name="Linux_LaunchPrefix" xml:space="preserve"><value>Wine prefix (optional)</value></data>
+  <data name="Linux_LaunchWorkingFolder" xml:space="preserve"><value>Working folder (optional)</value></data>
+  <data name="Linux_LaunchArguments" xml:space="preserve"><value>Arguments (one argument per line; do not add shell quoting)</value></data>
+  <data name="Linux_LaunchNative" xml:space="preserve"><value>Native Linux executable</value></data>
+  <data name="Linux_LaunchThroughWine" xml:space="preserve"><value>Windows executable through Wine</value></data>
+  <data name="Linux_NetworkUserAgentHint" xml:space="preserve"><value>Custom User-Agent for test 10 only</value></data>
+  <data name="Linux_NetworkBrowserInstructions" xml:space="preserve"><value>Test 4: Open or copy {0}, then report whether the browser downloaded it. Opening the browser is not a passed test.</value></data>
+  <data name="Linux_NetworkBrowserCancelled" xml:space="preserve"><value>Test 4: Cancelled</value></data>
+  <data name="Linux_NetworkBrowserRequested" xml:space="preserve"><value>Browser launch requested; awaiting your download result.</value></data>
+  <data name="Linux_NetworkBrowserFailed" xml:space="preserve"><value>Browser launch failed.</value></data>
+  <data name="Linux_NetworkBrowserError" xml:space="preserve"><value>Browser launch failed: {0}</value></data>
+  <data name="Linux_NetworkClipboardUnavailable" xml:space="preserve"><value>Clipboard is unavailable.</value></data>
+  <data name="Linux_NetworkCopyFailed" xml:space="preserve"><value>Copy failed: {0}</value></data>
+  <data name="Linux_NetworkBrowserWorked" xml:space="preserve"><value>Test 4: User reported the browser download worked.</value></data>
+  <data name="Linux_NetworkBrowserDidNotWork" xml:space="preserve"><value>Test 4: User reported the browser download failed.</value></data>
+  <data name="Linux_NetworkBrowserResultRequired" xml:space="preserve"><value>The browser test requires the user's reported result.</value></data>
+  <data name="Linux_NetworkTestHeader" xml:space="preserve"><value>Test {0}: {1} — {2}</value></data>
+  <data name="Linux_NetworkDnsEmpty" xml:space="preserve"><value>DNS returned no addresses.</value></data>
+  <data name="Linux_NetworkAddress" xml:space="preserve"><value>Address: {0}</value></data>
+  <data name="Linux_NetworkReceivedProgress" xml:space="preserve"><value>Received {0:N0} / {1} bytes</value></data>
+  <data name="Linux_NetworkUnknownSize" xml:space="preserve"><value>unknown</value></data>
+  <data name="Linux_NetworkIncomplete" xml:space="preserve"><value>Incomplete response body.</value></data>
+  <data name="Linux_NetworkReceived" xml:space="preserve"><value>Received {0:N0} bytes</value></data>
+  <data name="Linux_NetworkPassed" xml:space="preserve"><value>Passed</value></data>
+  <data name="Linux_NetworkCancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Linux_NetworkFailed" xml:space="preserve"><value>Failed: {0}</value></data>
+  <data name="Linux_NetworkDuration" xml:space="preserve"><value>Duration: {0:0.00} seconds</value></data>
+  <data name="Linux_LibrarySize" xml:space="preserve"><value>{0:F1} MiB</value></data>
+  <data name="Linux_DllDetailsFamily" xml:space="preserve"><value>Family</value></data>
+  <data name="Linux_DllDetailsVersion" xml:space="preserve"><value>Version</value></data>
+  <data name="Linux_DllDetailsBytes" xml:space="preserve"><value>{0} bytes</value></data>
+  <data name="Linux_DllDetailsHash" xml:space="preserve"><value>DLL MD5</value></data>
+  <data name="Linux_DllDetailsArchiveHash" xml:space="preserve"><value>Archive MD5</value></data>
+  <data name="Linux_DllDetailsSignature" xml:space="preserve"><value>Catalog signature status</value></data>
+  <data name="Linux_DllDetailsValid" xml:space="preserve"><value>valid</value></data>
+  <data name="Linux_DllDetailsInvalid" xml:space="preserve"><value>not valid</value></data>
+  <data name="Linux_DllDetailsHashNotice" xml:space="preserve"><value>MD5 identifies file contents; it does not establish signature authenticity.</value></data>
+  <data name="Linux_DllDetailsLine" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Linux_GuiRemainingDesktopLink" xml:space="preserve"><value>The desktop could not open the link.</value></data>
+  <data name="Linux_GuiRemainingClipboard" xml:space="preserve"><value>Clipboard is unavailable.</value></data>
+  <data name="Linux_GuiRemainingDesktopLog" xml:space="preserve"><value>The desktop could not open the log file.</value></data>
+  <data name="Linux_GuiRemainingLocalFile" xml:space="preserve"><value>Choose a local file.</value></data>
+  <data name="Linux_GuiRemainingLocalFolder" xml:space="preserve"><value>Choose a local folder.</value></data>
+  <data name="Linux_GuiRemainingFolderRoot" xml:space="preserve"><value>(game folder root)</value></data>
+  <data name="Linux_GuiRemainingResetTitle" xml:space="preserve"><value>Reset Linux local data</value></data>
+  <data name="Linux_GuiRemainingResetPrompt" xml:space="preserve"><value>Remove this user's LLE Linux settings, learned paths, game preferences, history, downloaded DLL cache, and application artwork cache?</value></data>
+  <data name="Linux_GuiRemainingResetWarning" xml:space="preserve"><value>SteamLibrary-adjacent artwork is preserved. This cannot be undone.</value></data>
+  <data name="Linux_GuiRemainingOneGameFolder" xml:space="preserve"><value>Choose one local game folder.</value></data>
+  <data name="Linux_GuiRemainingRemoveCover" xml:space="preserve"><value>Remove cover</value></data>
+  <data name="Linux_GuiRemainingRemoveCoverPrompt" xml:space="preserve"><value>Remove this custom cover?</value></data>
+  <data name="Linux_GuiRemainingImportCancelled" xml:space="preserve"><value>Cancelled; not imported.</value></data>
+  <data name="Linux_GuiRemainingImportSingle" xml:space="preserve"><value>Select a single games installation folder.</value></data>
+  <data name="Linux_GuiRemainingSelectSingle" xml:space="preserve"><value>Select Game Folder</value></data>
+  <data name="Linux_GuiRemainingImportMultiple" xml:space="preserve"><value>Select multiple separate game installation folders.</value></data>
+  <data name="Linux_GuiRemainingSelectMultiple" xml:space="preserve"><value>Select Game Folders</value></data>
+  <data name="Linux_GuiRemainingImportParent" xml:space="preserve"><value>Select the main folder where the games you want to add are installed. Each immediate child folder will be added as a separate manually added game. The parent folder itself is not added, and nested folders are not searched.</value></data>
+  <data name="Linux_GuiRemainingSelectParent" xml:space="preserve"><value>Select Multi-Game Directory</value></data>
+  <data name="Linux_GuiRemainingStartupRetry" xml:space="preserve"><value>Library startup could not finish. No reset was performed. Retry after resolving this error:
+{0}</value></data>
+  <data name="Linux_GuiRemainingStartupFailed" xml:space="preserve"><value>Library startup could not finish. No reset was performed.
+{0}</value></data>
+  <data name="Linux_GuiRemainingHddSaved" xml:space="preserve"><value>Settings saved. HDD profile: {0} scan workers, {1} artwork workers.</value></data>
+  <data name="Linux_GuiRemainingStandardSaved" xml:space="preserve"><value>Settings saved. Standard profile: {0} scan workers, {1} artwork workers.</value></data>
+  <data name="Linux_GuiRemainingFilesystem" xml:space="preserve"><value>{0} mounted at {1}</value></data>
+  <data name="Linux_GuiRemainingArtworkOpen" xml:space="preserve"><value>Could not open artwork for {0}: {1}</value></data>
+  <data name="Linux_GuiRemainingRootRejected" xml:space="preserve"><value>Filesystem roots cannot be selected: {0}</value></data>
+  <data name="Linux_GuiRemainingDirectoryMissing" xml:space="preserve"><value>Directory does not exist: {0}</value></data>
+  <data name="Linux_GuiRemainingGameListFailed" xml:space="preserve"><value>Could not update the game list: {0}</value></data>
+  <data name="Linux_Diagnostic0" xml:space="preserve"><value>Recorded version/revision</value></data>
+  <data name="Linux_Diagnostic1" xml:space="preserve"><value>Assembly ID</value></data>
+  <data name="Linux_Diagnostic2" xml:space="preserve"><value>Application</value></data>
+  <data name="Linux_Diagnostic3" xml:space="preserve"><value>Linux GUI</value></data>
+  <data name="Linux_Diagnostic4" xml:space="preserve"><value>Build target</value></data>
+  <data name="Linux_Diagnostic5" xml:space="preserve"><value>Portable .NET target</value></data>
+  <data name="Linux_Diagnostic6" xml:space="preserve"><value>Package format</value></data>
+  <data name="Linux_Diagnostic7" xml:space="preserve"><value>Not recorded by this build</value></data>
+  <data name="Linux_Diagnostic8" xml:space="preserve"><value>Self-contained runtime</value></data>
+  <data name="Linux_Diagnostic9" xml:space="preserve"><value>OS</value></data>
+  <data name="Linux_Diagnostic10" xml:space="preserve"><value>OS version</value></data>
+  <data name="Linux_Diagnostic11" xml:space="preserve"><value>OS architecture</value></data>
+  <data name="Linux_Diagnostic12" xml:space="preserve"><value>Process architecture</value></data>
+  <data name="Linux_Diagnostic13" xml:space="preserve"><value>Runtime</value></data>
+  <data name="Linux_Diagnostic14" xml:space="preserve"><value>Privileged process</value></data>
+  <data name="Linux_Diagnostic15" xml:space="preserve"><value>Library storage</value></data>
+  <data name="Linux_Diagnostic16" xml:space="preserve"><value>Working directory</value></data>
+  <data name="Linux_Diagnostic17" xml:space="preserve"><value>Application directory</value></data>
+  <data name="Linux_Diagnostic18" xml:space="preserve"><value>Assembly location</value></data>
+  <data name="Linux_Diagnostic19" xml:space="preserve"><value>Process path</value></data>
+  <data name="Linux_Diagnostic20" xml:space="preserve"><value>Libraries</value></data>
+  <data name="Linux_Diagnostic21" xml:space="preserve"><value>Unavailable: library initialization did not complete.</value></data>
+  <data name="Linux_Diagnostic22" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Linux_Diagnostic23" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Linux_Diagnostic24" xml:space="preserve"><value>Games: </value></data>
+  <data name="Linux_Diagnostic25" xml:space="preserve"><value>Not available</value></data>
+  <data name="Linux_Diagnostic26" xml:space="preserve"><value>Library details unavailable: </value></data>
+  <data name="Linux_Diagnostic27" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Linux_Diagnostic28" xml:space="preserve"><value>Unavailable — </value></data>
+  <data name="Linux_GuiRemainingFastScan" xml:space="preserve"><value>Fast Scan</value></data>
+  <data name="Linux_GuiRemainingScan" xml:space="preserve"><value>Scan</value></data>
+  <data name="Linux_GuiRemainingTrustedCatalog" xml:space="preserve"><value>Trusted catalog match</value></data>
+  <data name="Linux_NvidiaControlsUnavailable" xml:space="preserve"><value>NVIDIA driver-profile presets, DLSS indicators and DLSS logging controls from the Windows app are unavailable here. DLL and Streamline updates are unaffected.</value></data>
+  <data name="Linux_PlanRescan" xml:space="preserve"><value>Scan the game again before updating; these are last-known files.</value></data>
+  <data name="Linux_OperationCurrent" xml:space="preserve"><value>Already current.</value></data>
+  <data name="Linux_PlanUpdate" xml:space="preserve"><value>Update to {0}.</value></data>
+  <data name="Linux_PlanUnknownGeneration" xml:space="preserve"><value>Skipped because the existing DLSS generation could not be determined.</value></data>
+  <data name="Linux_PlanMixedGenerations" xml:space="preserve"><value>Skipped because the game mixes DLSS generations.</value></data>
+  <data name="Linux_PlanIncompatible" xml:space="preserve"><value>Skipped because the selected DLSS generation is incompatible.</value></data>
+  <data name="Linux_OperationDownloadFailed" xml:space="preserve"><value>Download failed: {0}</value></data>
+  <data name="Linux_OperationHashChanged" xml:space="preserve"><value>Downloaded DLL hash no longer matches the selected manifest entry.</value></data>
+  <data name="Linux_OperationPayloadFailed" xml:space="preserve"><value>Payload validation failed: {0}</value></data>
+  <data name="Linux_OperationUpdated" xml:space="preserve"><value>Updated to {0}.</value></data>
+  <data name="Linux_OperationRestored" xml:space="preserve"><value>Restored original DLL.</value></data>
+  <data name="Linux_BatchSdkFailed" xml:space="preserve"><value>SDK download failed: {0}</value></data>
+  <data name="Linux_BatchRecoveryRequired" xml:space="preserve"><value>Recover the interrupted Streamline operation before updating.</value></data>
+  <data name="Linux_OperationCancelled" xml:space="preserve"><value>Not applied: cancelled.</value></data>
+  <data name="Linux_OperationChanged" xml:space="preserve"><value>The installed file changed since confirmation. Review it and try again.</value></data>
+  <data name="Linux_OperationNoMatch" xml:space="preserve"><value>No matching installed components; nothing changed.</value></data>
+  <data name="Linux_StreamlineRecoveryRequired" xml:space="preserve"><value>Recover the interrupted operation before applying or restoring files.</value></data>
+  <data name="Linux_StreamlineSelectComponent" xml:space="preserve"><value>Select at least one component.</value></data>
+  <data name="Linux_StreamlineFilesChanged" xml:space="preserve"><value>Files changed since confirmation. Review the refreshed versions and try again.</value></data>
+  <data name="Linux_StreamlineNoRestorable" xml:space="preserve"><value>No selected originals can be restored, or a source is unavailable.</value></data>
+  <data name="Linux_StreamlineNoUpdatable" xml:space="preserve"><value>No selected files need updating, or a source is unavailable.</value></data>
+  <data name="Linux_StreamlineNoChanges" xml:space="preserve"><value>All Streamline components already match; no files changed.</value></data>
+  <data name="Linux_StreamlineRestored" xml:space="preserve"><value>Restored {0} existing Streamline component(s).</value></data>
+  <data name="Linux_StreamlineUpdated" xml:space="preserve"><value>Updated {0} existing Streamline component(s).</value></data>
+  <data name="Linux_GuiRemainingArtwork" xml:space="preserve"><value>Artwork</value></data>
+  <data name="Linux_HistoryDllUpdated" xml:space="preserve"><value>DLL updated</value></data>
+  <data name="Linux_HistoryDllDetected" xml:space="preserve"><value>DLL detected</value></data>
+  <data name="Linux_HistoryDllOperation" xml:space="preserve"><value>DLL operation</value></data>
+  <data name="Linux_HistoryDllRestore" xml:space="preserve"><value>DLL restore result</value></data>
+  <data name="Linux_HistoryBatchUpdate" xml:space="preserve"><value>Batch update result</value></data>
+  <data name="Linux_HistoryCoverChanged" xml:space="preserve"><value>Cover changed</value></data>
+  <data name="Linux_HistoryStreamlineUpdate" xml:space="preserve"><value>Streamline update</value></data>
+  <data name="Linux_HistoryStreamlineRestore" xml:space="preserve"><value>Streamline restore</value></data>
+  <data name="Linux_HistoryStreamlineRecover" xml:space="preserve"><value>Streamline recover</value></data>
+  <data name="Linux_RestoreInspectFailed" xml:space="preserve"><value>Could not inspect {0}: {1}</value></data>
+  <data name="Linux_RestoreFilesChanged" xml:space="preserve"><value>Files changed since confirmation. Review the versions and try again.</value></data>
+  <data name="Linux_RestoreCancelled" xml:space="preserve"><value>Not restored: cancelled.</value></data>
+  <data name="Linux_ImportModelTooLarge" xml:space="preserve"><value>Model exceeds the supported DLL size limit.</value></data>
+  <data name="Linux_ImportUnsupportedFamily" xml:space="preserve"><value>Unsupported DLL family.</value></data>
+  <data name="Linux_ImportChooseX64" xml:space="preserve"><value>Choose a Windows x64 DLL for this family.</value></data>
+  <data name="Linux_ImportModelChanged" xml:space="preserve"><value>The selected model changed after inspection. Scan again before importing it.</value></data>
+  <data name="Linux_ImportModelUnrecognized" xml:space="preserve"><value>This is not a recognized NVIDIA DLSS model. Signature settings do not override model identity.</value></data>
+  <data name="Linux_ImportNotPerformed" xml:space="preserve"><value>{0} Import was not performed.</value></data>
+  <data name="Linux_ImportRetry" xml:space="preserve"><value>Import did not finish. Its Library record was saved; reimport this DLL to retry. {0}</value></data>
+  <data name="Linux_ImportAcquired" xml:space="preserve"><value>Imported {0} {1}. No game files changed.</value></data>
+  <data name="Linux_ImportAvailable" xml:space="preserve"><value>Already available: {0} {1}.</value></data>
+  <data name="Linux_ImportCancelled" xml:space="preserve"><value>Not imported: cancelled.</value></data>
+  <data name="Linux_ImportDllTooLarge" xml:space="preserve"><value>DLL exceeds the supported size limit.</value></data>
+  <data name="Linux_ImportZipEmpty" xml:space="preserve"><value>The ZIP contains no DLL files.</value></data>
+  <data name="Linux_ImportZipTooLarge" xml:space="preserve"><value>The ZIP exceeds the supported import size or entry limit.</value></data>
+  <data name="Linux_ImportChooseDllZip" xml:space="preserve"><value>Choose a DLL or ZIP file.</value></data>
+  <data name="Linux_NgxEmptyList" xml:space="preserve"><value>NVIDIA returned an empty model list.</value></data>
+  <data name="Linux_NgxInvalidList" xml:space="preserve"><value>NVIDIA returned an invalid model list.</value></data>
+  <data name="Linux_NgxNextPageFailed" xml:space="preserve"><value>NVIDIA model listing could not advance to the next page.</value></data>
+  <data name="Linux_NgxInvalidKey" xml:space="preserve"><value>Invalid NVIDIA model key.</value></data>
+  <data name="Linux_NgxDownloadTooLarge" xml:space="preserve"><value>Model download exceeds its listed size.</value></data>
+  <data name="Linux_NgxDownloadIncomplete" xml:space="preserve"><value>Model download is incomplete.</value></data>
+  <data name="Linux_VerifierMissing" xml:space="preserve"><value>Signature verification is unavailable: the verifier or code-signing certificates are missing.</value></data>
+  <data name="Linux_VerifierPaths" xml:space="preserve"><value>Signature verifier paths must be absolute.</value></data>
+  <data name="Linux_VerifierStart" xml:space="preserve"><value>Could not start the signature verifier.</value></data>
+  <data name="Linux_VerifierTimeout" xml:space="preserve"><value>Signature verification timed out. The DLL was not verified.</value></data>
+  <data name="Linux_VerifierValid" xml:space="preserve"><value>Embedded signature verified.</value></data>
+  <data name="Linux_VerifierInvalid" xml:space="preserve"><value>The DLL signature or its certificate chain could not be verified.</value></data>
+  <data name="Linux_VerifierFailed" xml:space="preserve"><value>Signature verification failed: {0}</value></data>
+  <data name="Linux_NgxConfigRelative" xml:space="preserve"><value>NGX configuration path is not absolute: {0}</value></data>
+  <data name="Linux_NgxConfigLarge" xml:space="preserve"><value>NGX configuration exceeds 1 MiB.</value></data>
+  <data name="Linux_NgxConfigModelsPath" xml:space="preserve"><value>NGX configuration needs an absolute ngx_models_path.</value></data>
+  <data name="Linux_NgxConfigReadFailed" xml:space="preserve"><value>Could not read NGX configuration {0}: {1}</value></data>
+  <data name="Linux_NgxConfigMissing" xml:space="preserve"><value>No NGX configuration was found. No driver settings were changed and the updater was not started.</value></data>
+  <data name="Linux_NgxCacheRelative" xml:space="preserve"><value>The model-cache path must be absolute.</value></data>
+  <data name="Linux_NgxCacheMissing" xml:space="preserve"><value>Model cache is missing or unavailable: {0}</value></data>
+  <data name="Linux_NgxScanLimit" xml:space="preserve"><value>Model scan stopped at its 20,000-entry limit; results are incomplete.</value></data>
+  <data name="Linux_NgxSkippedLink" xml:space="preserve"><value>Skipped linked path: {0}</value></data>
+  <data name="Linux_NgxSkippedDepth" xml:space="preserve"><value>Skipped deeply nested directory: {0}</value></data>
+  <data name="Linux_NgxModelLarge" xml:space="preserve"><value>Model exceeds the supported size limit.</value></data>
+  <data name="Linux_NgxInspectFailed" xml:space="preserve"><value>Could not inspect {0}: {1}</value></data>
+  <data name="Linux_NgxScanFailed" xml:space="preserve"><value>Could not scan {0}: {1}</value></data>
+  <data name="Linux_StreamlineNoRecovery" xml:space="preserve"><value>No interrupted Streamline operation was found.</value></data>
+  <data name="Linux_StreamlineRecovered" xml:space="preserve"><value>Interrupted Streamline operations recovered.</value></data>
+</root>

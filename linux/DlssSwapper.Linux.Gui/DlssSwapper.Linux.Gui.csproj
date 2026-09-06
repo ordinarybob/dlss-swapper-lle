@@ -1,4 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Content Include="$(NuGetPackageRoot)skiasharp.nativeassets.linux/3.119.4/LICENSE.txt" Link="Acknowledgements/SkiaSharp/license.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(NuGetPackageRoot)skiasharp.nativeassets.linux/3.119.4/THIRD-PARTY-NOTICES.txt" Link="Acknowledgements/SkiaSharp/third-party-notices.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(NuGetPackageRoot)harfbuzzsharp.nativeassets.linux/8.3.1.3/LICENSE.txt" Link="Acknowledgements/HarfBuzzSharp/license.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(NuGetPackageRoot)harfbuzzsharp.nativeassets.linux/8.3.1.3/THIRD-PARTY-NOTICES.txt" Link="Acknowledgements/HarfBuzzSharp/third-party-notices.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(NuGetPackageRoot)microsoft.netcore.app.runtime.linux-x64/10.0.0/LICENSE.TXT" Link="Acknowledgements/.NET Runtime/license.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(NuGetPackageRoot)microsoft.netcore.app.runtime.linux-x64/10.0.0/THIRD-PARTY-NOTICES.TXT" Link="Acknowledgements/.NET Runtime/third-party-notices.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../src/Acknowledgements/You/*" Link="Acknowledgements/You/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../src/Acknowledgements/DLSS/*" Link="Acknowledgements/DLSS/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../src/Acknowledgements/Streamline/*" Link="Acknowledgements/Streamline/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../src/Acknowledgements/FidelityFX-SDK/*" Link="Acknowledgements/FidelityFX-SDK/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../src/Acknowledgements/XeSS/*" Link="Acknowledgements/XeSS/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../src/Acknowledgements/YamlDotNet/*" Link="Acknowledgements/YamlDotNet/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../Acknowledgements/**/*" Link="Acknowledgements/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../LICENSE" Link="Acknowledgements/DLSS Swapper LLE/license.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
@@ -13,6 +29,12 @@
     <Deterministic>true</Deterministic>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="LlePackageFormat" Value="$(LlePackageFormat)" />
+    <AssemblyMetadata Include="LleSelfContained" Value="$(SelfContained)" />
+    <AssemblyMetadata Include="LleRuntimeIdentifier" Value="$(RuntimeIdentifier)" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />

@@ -61,6 +61,7 @@ public partial class LibraryPageModel : ObservableObject
             upscalerSelectorBar.Items.Add(new SelectorBarItem() { Text = DLLManager.Instance.GetAssetTypeName(GameAssetType.XeSS_DX11), Tag = GameAssetType.XeSS_DX11 });
             upscalerSelectorBar.Items.Add(new SelectorBarItem() { Text = DLLManager.Instance.GetAssetTypeName(GameAssetType.XeSS_FG), Tag = GameAssetType.XeSS_FG });
             upscalerSelectorBar.Items.Add(new SelectorBarItem() { Text = DLLManager.Instance.GetAssetTypeName(GameAssetType.XeLL), Tag = GameAssetType.XeLL });
+            upscalerSelectorBar.Items.Add(new SelectorBarItem() { Text = "Streamline", Tag = StreamlineLibraryTag });
 
             SelectedSelectorBarItem = upscalerSelectorBar.Items[0];
         }
@@ -94,6 +95,8 @@ public partial class LibraryPageModel : ObservableObject
 
         if (e.PropertyName == nameof(SelectedSelectorBarItem))
         {
+            OnPropertyChanged(nameof(StreamlineVisibility));
+            OnPropertyChanged(nameof(DllLibraryVisibility));
             if (SelectedSelectorBarItem?.Tag is GameAssetType gameAssetType)
             {
                 SelectLibrary(gameAssetType);
@@ -105,6 +108,7 @@ public partial class LibraryPageModel : ObservableObject
     async Task RefreshAsync()
     {
         IsRefreshing = true;
+        var streamlineRefresh = RefreshStreamlineAsync();
 
         var didUpdate = await DLLManager.Instance.UpdateManifestAsync();
 
@@ -128,6 +132,7 @@ public partial class LibraryPageModel : ObservableObject
             await errorDialog.ShowAsync();
         }
 
+        await streamlineRefresh;
         IsRefreshing = false;
     }
 
@@ -136,16 +141,10 @@ public partial class LibraryPageModel : ObservableObject
     {
         // NOTE: DLL type
         // Check that there are records to export first.
-        var allDllRecords = new List<DLLRecord>();
-        allDllRecords.AddRange(DLLManager.Instance.DLSSRecords.Where(x => x.LocalRecord?.IsDownloaded == true));
-        allDllRecords.AddRange(DLLManager.Instance.DLSSGRecords.Where(x => x.LocalRecord?.IsDownloaded == true));
-        allDllRecords.AddRange(DLLManager.Instance.DLSSDRecords.Where(x => x.LocalRecord?.IsDownloaded == true));
-        allDllRecords.AddRange(DLLManager.Instance.FSR31DX12Records.Where(x => x.LocalRecord?.IsDownloaded == true));
-        allDllRecords.AddRange(DLLManager.Instance.FSR31VKRecords.Where(x => x.LocalRecord?.IsDownloaded == true));
-        allDllRecords.AddRange(DLLManager.Instance.XeSSRecords.Where(x => x.LocalRecord?.IsDownloaded == true));
-        allDllRecords.AddRange(DLLManager.Instance.XeSSFGRecords.Where(x => x.LocalRecord?.IsDownloaded == true));
-        allDllRecords.AddRange(DLLManager.Instance.XeSSDX11Records.Where(x => x.LocalRecord?.IsDownloaded == true));
-        allDllRecords.AddRange(DLLManager.Instance.XeLLRecords.Where(x => x.LocalRecord?.IsDownloaded == true));
+        var allDllRecords = DllFamilyRegistry.All
+            .SelectMany(family => family.Records(DLLManager.Instance))
+            .Where(record => record.LocalRecord?.IsDownloaded == true)
+            .ToList();
 
         if (allDllRecords.Count == 0)
         {
@@ -1586,20 +1585,7 @@ public partial class LibraryPageModel : ObservableObject
 
     internal void SelectLibrary(GameAssetType gameAssetType)
     {
-        // NOTE: DLL type
-        var newList = gameAssetType switch
-        {
-            GameAssetType.DLSS => DLLManager.Instance.DLSSRecords,
-            GameAssetType.DLSS_G => DLLManager.Instance.DLSSGRecords,
-            GameAssetType.DLSS_D => DLLManager.Instance.DLSSDRecords,
-            GameAssetType.FSR_31_DX12 => DLLManager.Instance.FSR31DX12Records,
-            GameAssetType.FSR_31_VK => DLLManager.Instance.FSR31VKRecords,
-            GameAssetType.XeSS => DLLManager.Instance.XeSSRecords,
-            GameAssetType.XeLL => DLLManager.Instance.XeLLRecords,
-            GameAssetType.XeSS_DX11 => DLLManager.Instance.XeSSDX11Records,
-            GameAssetType.XeSS_FG => DLLManager.Instance.XeSSFGRecords,
-            _ => null,
-        };
+        var newList = DllFamilyRegistry.Find(gameAssetType)?.Records(DLLManager.Instance);
         SelectedLibraryList = null;
         SelectedLibraryList = newList;
         OnPropertyChanged(nameof(SelectedLibraryList));
@@ -1608,104 +1594,67 @@ public partial class LibraryPageModel : ObservableObject
     [RelayCommand]
     async Task DownloadLatestAsync()
     {
-        // NOTE: DLL type
-        var startedDownloads = 0;
-        startedDownloads += DownloadLatestRecord(DLLManager.Instance.DLSSRecords);
-        startedDownloads += DownloadLatestRecord(DLLManager.Instance.DLSSDRecords);
-        startedDownloads += DownloadLatestRecord(DLLManager.Instance.DLSSGRecords);
-        startedDownloads += DownloadLatestRecord(DLLManager.Instance.FSR31DX12Records);
-        startedDownloads += DownloadLatestRecord(DLLManager.Instance.FSR31VKRecords);
-        startedDownloads += DownloadLatestRecord(DLLManager.Instance.XeSSRecords);
-        startedDownloads += DownloadLatestRecord(DLLManager.Instance.XeSSFGRecords);
-        startedDownloads += DownloadLatestRecord(DLLManager.Instance.XeSSDX11Records);
-        startedDownloads += DownloadLatestRecord(DLLManager.Instance.XeLLRecords);
-
-        if (startedDownloads == 0)
+        var downloads = new List<Task<LibraryDownloadResult>>();
+        var alreadyDownloading = new List<string>();
+        foreach (var family in DllFamilyRegistry.All)
         {
-            var dialog = new EasyContentDialog(_libraryPage.XamlRoot)
-            {
-                Title = ResourceHelper.GetString("LibraryPage_NoNewDLLs_Title"),
-                CloseButtonText = ResourceHelper.GetString("General_Okay"),
-                DefaultButton = ContentDialogButton.Close,
-                Content = ResourceHelper.GetString("LibraryPage_NoNewDLLs_Message"),
-            };
-            await dialog.ShowAsync();
+            QueueLatestRecord(family.Records(DLLManager.Instance), downloads, alreadyDownloading);
         }
-        else
+        downloads.Add(AcquireStreamlineAsync());
+        var results = await Task.WhenAll(downloads);
+        var sections = new List<string>();
+        var acquired = results.Where(result => result.Downloaded).Select(result => result.Name).ToList();
+        var failed = results.Where(result => result.Error is not null)
+            .Select(result => $"{result.Name}: {result.Error}").ToList();
+        if (acquired.Count > 0) sections.Add("Downloaded:\n" + string.Join("\n", acquired));
+        if (failed.Count > 0) sections.Add("Could not download:\n" + string.Join("\n", failed));
+        if (alreadyDownloading.Count > 0)
+            sections.Add("Already downloading separately:\n" + string.Join("\n", alreadyDownloading));
+        if (sections.Count == 0) sections.Add("Everything is already downloaded.");
         {
             var dialog = new EasyContentDialog(_libraryPage.XamlRoot)
             {
-                Title = ResourceHelper.GetString("LibraryPage_DownloadsStarted_Title"),
+                Title = "Download latest",
                 CloseButtonText = ResourceHelper.GetString("General_Okay"),
                 DefaultButton = ContentDialogButton.Close,
-                Content = ResourceHelper.GetFormattedResourceTemplate("LibraryPage_DownloadsStarted_Message", startedDownloads),
+                Content = new ScrollViewer
+                {
+                    MaxHeight = 480,
+                    Content = new TextBlock { Text = string.Join("\n\n", sections), TextWrapping = TextWrapping.Wrap },
+                },
             };
             await dialog.ShowAsync();
         }
     }
 
-    int DownloadLatestRecord(IReadOnlyList<DLLRecord> records)
+    void QueueLatestRecord(IReadOnlyList<DLLRecord> records,
+        List<Task<LibraryDownloadResult>> downloads, List<string> alreadyDownloading)
     {
-        var startedCount = 0;
-        var record = GetLatestRecord(records, false);
-        if (record?.LocalRecord?.IsDownloaded == false)
+        void Queue(DLLRecord? record)
         {
-            _ = record.DownloadAsync();
-            ++startedCount;
+            if (record?.LocalRecord?.IsDownloaded != false) return;
+            var name = $"{DLLManager.Instance.GetAssetTypeName(record.AssetType)} {record.DisplayName}";
+            if (record.LocalRecord.FileDownloader is not null)
+                alreadyDownloading.Add(name);
+            else
+                downloads.Add(DownloadLibraryRecordAsync(record, name));
         }
-
+        Queue(GetLatestRecord(records, false));
         if (Settings.Instance.AllowDebugDlls)
-        {
-            record = GetLatestRecord(records, true);
-            if (record?.LocalRecord?.IsDownloaded == false)
-            {
-                _ = record.DownloadAsync();
-                ++startedCount;
-            }
-        }
-
-        return startedCount;
+            Queue(GetLatestRecord(records, true));
     }
 
-    DLLRecord? GetLatestRecord(IReadOnlyList<DLLRecord> records, bool devDllsOnly)
+    static async Task<LibraryDownloadResult> DownloadLibraryRecordAsync(DLLRecord record, string name)
     {
-        if (records.Count == 0)
+        try
         {
-            return null;
+            var result = await record.DownloadAsync();
+            return new(name, result.Success, result.Success ? null
+                : result.Cancelled ? "Cancelled" : result.Message);
         }
-
-        DLLRecord? latestRecord = null;
-        foreach (var record in records)
-        {
-            if (record.IsDevFile == devDllsOnly)
-            {
-                if (latestRecord is null)
-                {
-                    latestRecord = record;
-                }
-                else
-                {
-                    if (record.AssetType == GameAssetType.FSR_31_DX12 ||
-                        record.AssetType == GameAssetType.FSR_31_VK ||
-                        record.AssetType == GameAssetType.FSR_31_DX12_BACKUP ||
-                        record.AssetType == GameAssetType.FSR_31_VK_BACKUP)
-                    {
-                        if (record.DisplayVersionVersion > latestRecord.DisplayVersionVersion)
-                        {
-                            latestRecord = record;
-                        }
-                    }
-                    else
-                    {
-                        if (record.VersionNumber > latestRecord.VersionNumber)
-                        {
-                            latestRecord = record;
-                        }
-                    }
-                }
-            }
-        }
-
-        return latestRecord;
+        catch (Exception ex) { return new(name, false, ex.Message); }
     }
+
+    DLLRecord? GetLatestRecord(IReadOnlyList<DLLRecord> records, bool devDllsOnly) =>
+        DllRecordSelection.FindLatest(records, DllRecordSelectionPolicy.LibraryVersion, devDllsOnly);
 }

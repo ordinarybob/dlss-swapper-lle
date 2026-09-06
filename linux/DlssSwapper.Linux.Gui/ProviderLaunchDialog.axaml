@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DlssSwapper.Linux.Gui.ProviderLaunchDialog"
+        Title="{DynamicResource Linux_Xaml_60}" Width="660" Height="330" MinWidth="420" MinHeight="280"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="18" RowSpacing="12">
+    <TextBlock x:Name="GameNameText" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="12">
+        <TextBlock x:Name="IntroText" Text="{DynamicResource Linux_Xaml_61}" TextWrapping="Wrap" />
+        <ComboBox x:Name="LauncherChoices" HorizontalAlignment="Stretch" SelectionChanged="SelectionChanged">
+          <ComboBox.ItemTemplate><DataTemplate x:CompileBindings="False"><TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" /></DataTemplate></ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBlock x:Name="ConfigurationText" TextWrapping="Wrap" />
+      </StackPanel>
+    </ScrollViewer>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button x:Name="LaunchButton" Content="{DynamicResource GamePage_Launch}" Classes="primary" Click="Launch_Click" />
+      <Button Content="{DynamicResource General_Cancel}" Click="Cancel_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

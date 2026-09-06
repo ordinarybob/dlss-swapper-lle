@@ -12,14 +12,14 @@
                  FontSize="17"
                  TextWrapping="Wrap" />
       <CheckBox x:Name="DontShowAgainCheckBox"
-                Content="Don't show again" />
+                Content="{DynamicResource General_DontShowAgain}" />
     </StackPanel>
-    <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="#404040"
+    <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource LleDividerBrush}"
             Padding="24,14">
       <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
         <Button x:Name="ProceedButton" Grid.Column="0" Classes="primary"
                 Click="Proceed_Click" />
-        <Button Grid.Column="1" Content="Cancel" Click="Cancel_Click" />
+        <Button Grid.Column="1" Content="{DynamicResource General_Cancel}" Click="Cancel_Click" />
       </Grid>
     </Border>
   </Grid>

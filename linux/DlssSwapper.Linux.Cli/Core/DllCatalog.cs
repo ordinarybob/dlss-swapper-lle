@@ -1,6 +1,9 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DlssSwapper.Linux.Cli.Core;
+
+public sealed record DllCatalogPolicy(bool AllowDebug = false, bool AllowUntrusted = false);
 
 public sealed record DllCatalogEntry(
     DllType Type,
@@ -8,14 +11,52 @@ public sealed record DllCatalogEntry(
     ulong VersionNumber,
     string Md5,
     string ZipMd5,
-    Uri DownloadUri,
+    Uri? DownloadUri,
     long FileSize,
     long ZipFileSize,
     bool IsSignatureValid,
-    bool IsDevFile);
+    bool IsDevFile,
+    string? AdditionalLabel = null,
+    string? InternalName = null,
+    string? InternalNameExtra = null,
+    string? FileDescription = null,
+    bool IsImported = false)
+{
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalData { get; set; }
+
+    private (DllType, string, ulong, string, string, Uri?, long, long, bool, bool, string?, string?, string?, string?, bool) EqualityKey =>
+        (Type, Version, VersionNumber, Md5, ZipMd5, DownloadUri, FileSize, ZipFileSize,
+            IsSignatureValid, IsDevFile, AdditionalLabel, InternalName, InternalNameExtra, FileDescription, IsImported);
+    public bool Equals(DllCatalogEntry? other) => other is not null && EqualityKey.Equals(other.EqualityKey);
+    public override int GetHashCode() => EqualityKey.GetHashCode();
+}
 
 public sealed class DllCatalog
 {
+    // Local inspection and recovery must not depend on release metadata being available.
+    public static DllCatalog Empty() => new(
+        DllTypes.All.ToDictionary(family => family.Type, _ => (IReadOnlyList<DllCatalogEntry>)Array.Empty<DllCatalogEntry>()),
+        new Dictionary<(DllType Type, string Md5), string>());
+
+    public DllCatalogPolicy Policy { get; set; } = new();
+    public IReadOnlyList<DllCatalogEntry> GetExportEntries() => _entries.Values.SelectMany(entries => entries)
+        .Concat(_imports.Values).DistinctBy(entry => (entry.Type, entry.Md5)).ToArray();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(DllType, string), DllCatalogEntry> _imports = new();
+
+    public DllCatalogEntry? FindByHash(DllType type, string hash) => _entries[type].Concat(_imports.Values.Where(entry => entry.Type == type))
+        .FirstOrDefault(entry => entry.Md5.Equals(hash, StringComparison.OrdinalIgnoreCase));
+
+    public void AddImported(DllCatalogEntry entry)
+    {
+        if (!entry.IsImported || entry.DownloadUri is not null) throw new InvalidDataException("Invalid imported record.");
+        _ = DllTypes.Get(entry.Type);
+        var hash = NormalizeMd5(entry.Md5);
+        // Persisted imports retain the result of verification at import time, like catalog records.
+        _imports[(entry.Type, hash)] = entry with { Md5 = hash };
+    }
+
+    public void RemoveImported(DllCatalogEntry entry) => _imports.TryRemove((entry.Type, NormalizeMd5(entry.Md5)), out _);
     private const long MaximumDllBytes = 512L * 1024 * 1024;
     private const long MaximumZipBytes = 1024L * 1024 * 1024;
 
@@ -131,8 +172,13 @@ public sealed class DllCatalog
         };
     }
 
-    public bool TryGetKnownVersion(DllType type, string md5, out string version) =>
-        _knownVersions.TryGetValue((type, NormalizeMd5(md5)), out version!);
+    public bool TryGetKnownVersion(DllType type, string md5, out string version)
+    {
+        var hash = NormalizeMd5(md5);
+        if (_knownVersions.TryGetValue((type, hash), out version!)) return true;
+        if (_imports.TryGetValue((type, hash), out var imported)) { version = imported.Version; return true; }
+        version = ""; return false;
+    }
 
     public static string NormalizeMd5(string value)
     {
@@ -147,7 +193,9 @@ public sealed class DllCatalog
     }
 
     private IEnumerable<DllCatalogEntry> GetEligibleEntries(DllType type) =>
-        _entries[type].Where(entry => entry.IsSignatureValid && !entry.IsDevFile);
+        _entries[type].Concat(_imports.Values.Where(entry => entry.Type == type && !_entries[type].Any(known => known.Md5 == entry.Md5)))
+            .Where(entry => (Policy.AllowUntrusted || entry.IsSignatureValid) && (Policy.AllowDebug || !entry.IsDevFile))
+            .OrderByDescending(entry => entry.VersionNumber);
 
     private static DllCatalogEntry ParseEntry(DllType type, JsonElement item)
     {
@@ -176,8 +224,16 @@ public sealed class DllCatalog
             fileSize,
             zipFileSize,
             GetRequiredBoolean(item, "is_signature_valid"),
-            GetRequiredBoolean(item, "is_dev_file"));
+            GetRequiredBoolean(item, "is_dev_file"),
+            OptionalString(item, "additional_label"),
+            OptionalString(item, "internal_name"),
+            OptionalString(item, "internal_name_extra"),
+            OptionalString(item, "file_description"));
     }
+
+    private static string? OptionalString(JsonElement item, string name) =>
+        item.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            && !string.IsNullOrWhiteSpace(value.GetString()) ? value.GetString() : null;
 
     private static string GetRequiredString(JsonElement item, string name)
     {

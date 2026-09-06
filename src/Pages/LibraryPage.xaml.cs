@@ -23,6 +23,7 @@ public sealed partial class LibraryPage : Page
     {
         this.InitializeComponent();
         ViewModel = new LibraryPageModel(this);
+        Loaded += async (_, _) => await ViewModel.RefreshStreamlineAsync();
     }
 
 

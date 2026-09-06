@@ -22,6 +22,7 @@ internal sealed class CliOptions
     internal List<string> Versions { get; } = [];
     internal List<string> Operands { get; } = [];
     internal string? ManifestPath { get; set; }
+    internal string? PackageDirectory { get; set; }
     internal bool All { get; set; }
     internal bool DryRun { get; set; }
     internal bool Yes { get; set; }
@@ -72,6 +73,9 @@ internal static class CliParser
                 case "--manifest":
                     options.ManifestPath = ReadValue(args, ref index, argument);
                     break;
+                case "--package":
+                    options.PackageDirectory = ReadValue(args, ref index, argument);
+                    break;
                 case "--all":
                     options.All = true;
                     break;
@@ -118,7 +122,7 @@ internal static class CliParser
         }
 
         if (options.Command is not ("discover" or "scan" or "update" or "restore"
-            or "state" or "filesystems" or "reset"))
+            or "state" or "filesystems" or "reset" or "streamline"))
         {
             throw new UsageException($"Unknown command '{options.Command}'.");
         }
@@ -126,6 +130,23 @@ internal static class CliParser
         var hasSelectors = options.AppIds.Count > 0
             || options.Paths.Count > 0
             || options.Roots.Count > 0;
+
+        if (options.Command == "streamline")
+        {
+            var action = options.Operands.Count == 1 ? options.Operands[0] : "";
+            if (action is not ("inspect" or "update" or "restore" or "recover")
+                || options.Paths.Count != 1 || options.AppIds.Count > 0 || options.Roots.Count > 0
+                || options.All || options.SteamRoots.Count > 0 || options.Families.Count > 0
+                || options.Versions.Count > 0 || options.ManifestPath is not null
+                || (action == "update") != (options.PackageDirectory is not null)
+                || (action == "inspect" && (options.Yes || options.DryRun)))
+                throw new UsageException("streamline requires inspect|update|restore|recover and exactly one --path; only update requires --package.");
+            if (action != "inspect" && !options.DryRun && !options.Yes)
+                throw new UsageException("Streamline writes require --yes; use --dry-run to inspect without changing files.");
+            return;
+        }
+        if (options.PackageDirectory is not null)
+            throw new UsageException("--package is only accepted by streamline update.");
 
         if (options.Command == "state")
         {
@@ -241,8 +262,11 @@ internal static class CliParser
         var action = options.Operands[0].ToLowerInvariant();
         var requiresValue = action is "add-game" or "remove-game"
             or "add-steam-root" or "remove-steam-root"
-            or "add-pattern" or "remove-pattern";
-        if (action is not ("show" or "restore-steam") && !requiresValue)
+            or "add-pattern" or "remove-pattern"
+            or "add-provider-prefix" or "remove-provider-prefix"
+            or "add-heroic-config" or "remove-heroic-config"
+            or "add-legendary-config" or "remove-legendary-config" or "set-heroic-executable";
+        if (action is not ("show" or "restore-steam" or "restore-providers" or "clear-heroic-executable") && !requiresValue)
         {
             throw new UsageException($"Unknown state action '{action}'.");
         }
@@ -266,7 +290,8 @@ internal static class GameSelector
 
     internal static IReadOnlyList<SelectedGame> Resolve(
         CliOptions options,
-        SteamDiscoveryResult discovery)
+        SteamDiscoveryResult discovery,
+        IReadOnlyList<SelectedGame>? libraryGames = null)
     {
         var games = new Dictionary<string, SelectedGame>(PathComparer);
         if (options.All
@@ -275,12 +300,10 @@ internal static class GameSelector
                 && options.Paths.Count == 0
                 && options.Roots.Count == 0))
         {
-            foreach (var steamGame in discovery.Games)
+            foreach (var game in libraryGames ?? discovery.Games.Select(steamGame => new SelectedGame(
+                steamGame.Name, steamGame.InstallDirectory, steamGame.AppId)).ToArray())
             {
-                Add(games, new SelectedGame(
-                    steamGame.Name,
-                    steamGame.InstallDirectory,
-                    steamGame.AppId));
+                Add(games, game);
             }
         }
 
@@ -493,6 +516,9 @@ internal static class CliHelp
             DLSS Swapper LLE Linux CLI
 
             Commands:
+              streamline inspect --path GAME
+              streamline update --path GAME --package PRODUCTION_FOLDER (--dry-run|--yes)
+              streamline (restore|recover) --path GAME (--dry-run|--yes)
               discover [--steam-root PATH ...]
               filesystems [--path PATH ...] [--root PATH ...] [--steam-root PATH ...]
               state [show]
@@ -512,7 +538,9 @@ internal static class CliHelp
               --path selects one explicit game directory and may be repeated.
               --root selects only each immediate child directory and may be repeated.
               Filesystem roots such as / are always rejected.
-              scan with no selectors scans all discovered Steam games.
+              scan with no selectors and --all use the saved library: Steam, manual games,
+              and supported launcher sources, respecting saved exclusions.
+              Explicit --app-id and --path selections override library exclusions.
               update and restore require an explicit selector or --all.
 
             Update behavior:
@@ -525,6 +553,12 @@ internal static class CliHelp
 
             Local state:
               state commands manage the same persistent library used by the GUI.
+              state add-provider-prefix PATH | remove-provider-prefix PATH
+              state add-legendary-config PATH | remove-legendary-config PATH
+              state add-heroic-config PATH | remove-heroic-config PATH
+              state set-heroic-executable PATH | clear-heroic-executable
+              state restore-providers clears launcher-game exclusions only.
+              Provider paths must be absolute; disconnected paths can remain saved.
               filesystems reports the backing filesystem and warns on NTFS/FUSE.
               reset --yes removes only LLE-owned Linux config and application cache.
               Artwork cached beside a SteamLibrary is intentionally preserved.

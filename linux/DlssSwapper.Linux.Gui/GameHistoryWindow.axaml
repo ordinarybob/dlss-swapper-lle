@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DlssSwapper.Linux.Gui.GameHistoryWindow"
-        Title="Game history"
+        Title="{DynamicResource Linux_Xaml_23}"
         Width="820"
         Height="520"
         MinWidth="520"
@@ -12,11 +12,11 @@
     <Border Grid.Row="1" Classes="card">
       <Grid RowDefinitions="Auto,*">
         <Grid ColumnDefinitions="1.4*,1.05*,1.05*,0.85*,2*" ColumnSpacing="10" Margin="8">
-          <TextBlock Text="Event time" FontWeight="SemiBold" />
-          <TextBlock Grid.Column="1" Text="Event" FontWeight="SemiBold" />
-          <TextBlock Grid.Column="2" Text="Asset" FontWeight="SemiBold" />
-          <TextBlock Grid.Column="3" Text="Version" FontWeight="SemiBold" />
-          <TextBlock Grid.Column="4" Text="Details" FontWeight="SemiBold" />
+          <TextBlock Text="{DynamicResource Linux_Xaml_24}" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="1" Text="{DynamicResource Linux_Xaml_25}" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="2" Text="{DynamicResource Linux_Xaml_26}" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="3" Text="{DynamicResource General_Version}" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="4" Text="{DynamicResource Linux_Xaml_27}" FontWeight="SemiBold" />
         </Grid>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
           <ItemsControl x:Name="HistoryItems">
@@ -37,6 +37,6 @@
         </ScrollViewer>
       </Grid>
     </Border>
-    <Button Grid.Row="2" Content="Close" HorizontalAlignment="Right" Click="Close_Click" />
+    <Button Grid.Row="2" Content="{DynamicResource General_Close}" HorizontalAlignment="Right" Click="Close_Click" />
   </Grid>
 </Window>

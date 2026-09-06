@@ -20,19 +20,7 @@ internal static class DllUpdateWorkflow
 
     internal static List<DLLRecord> GetEligibleRecords(GameAssetType type)
     {
-        var records = type switch
-        {
-            GameAssetType.DLSS => DLLManager.Instance.DLSSRecords.ToList(),
-            GameAssetType.DLSS_G => DLLManager.Instance.DLSSGRecords.ToList(),
-            GameAssetType.DLSS_D => DLLManager.Instance.DLSSDRecords.ToList(),
-            GameAssetType.FSR_31_DX12 => DLLManager.Instance.FSR31DX12Records.ToList(),
-            GameAssetType.FSR_31_VK => DLLManager.Instance.FSR31VKRecords.ToList(),
-            GameAssetType.XeSS => DLLManager.Instance.XeSSRecords.ToList(),
-            GameAssetType.XeLL => DLLManager.Instance.XeLLRecords.ToList(),
-            GameAssetType.XeSS_FG => DLLManager.Instance.XeSSFGRecords.ToList(),
-            GameAssetType.XeSS_DX11 => DLLManager.Instance.XeSSDX11Records.ToList(),
-            _ => [],
-        };
+        var records = DllFamilyRegistry.Find(type)?.Records(DLLManager.Instance).ToList() ?? [];
 
         if (Settings.Instance.OnlyShowDownloadedDlls)
         {
@@ -53,19 +41,8 @@ internal static class DllUpdateWorkflow
         return records;
     }
 
-    internal static DLLRecord? FindLatestRecord(IEnumerable<DLLRecord> records)
-    {
-        DLLRecord? latest = null;
-        foreach (var candidate in records)
-        {
-            if (latest is null || candidate.CompareTo(latest) < 0)
-            {
-                latest = candidate;
-            }
-        }
-
-        return latest;
-    }
+    internal static DLLRecord? FindLatestRecord(IEnumerable<DLLRecord> records) =>
+        DllRecordSelection.FindLatest(records, DllRecordSelectionPolicy.BatchRecordOrder);
 
     internal static List<DllUpdateSelection> GetLatestSelections(IEnumerable<Game> games)
     {

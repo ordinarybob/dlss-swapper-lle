@@ -4,10 +4,13 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <Grid MinWidth="520" MaxWidth="720" RowSpacing="12">
+    <!-- The native ContentDialog measures this body after reserving its title and footer.
+         Do not impose a window-derived Height: only the component list may scroll. -->
+    <Grid MinWidth="0" MaxWidth="720" RowSpacing="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="0" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -15,52 +18,156 @@
 
         <TextBlock
             Grid.Row="0"
-            Text="Updates only Streamline components already present in this game. No components are added, and the first original copy is retained for restore."
+            Text="Compare installed files with the selected SDK package before applying it. Only existing components are replaced; the first originals are kept for restore."
             TextWrapping="Wrap" />
 
         <StackPanel Grid.Row="1" Spacing="4">
             <TextBlock x:Name="DetectedText" Text="Checking this game…" FontWeight="SemiBold" />
             <TextBlock x:Name="PackageText" Text="Latest package not checked." TextWrapping="Wrap" />
+            <HyperlinkButton x:Name="ReleaseNotesLink" Content="Package release notes" Padding="0" Visibility="Collapsed" />
+            <TextBlock Text="SDK release numbers and individual DLL versions may differ. Compatibility with this game has not been verified." TextWrapping="Wrap" FontSize="12" Opacity="0.75" />
         </StackPanel>
 
-        <ListView
-            x:Name="ComponentList"
-            Grid.Row="2"
-            MaxHeight="180"
-            SelectionMode="None"
-            IsItemClickEnabled="False" />
+        <Grid Grid.Row="2" RowSpacing="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" MinHeight="0" />
+            </Grid.RowDefinitions>
+            <Grid>
+            <CheckBox x:Name="SelectAllCheckBox" VerticalAlignment="Top" HorizontalAlignment="Left" MinWidth="0"
+                      AutomationProperties.Name="Select all components" ToolTipService.ToolTip="Select all components"
+                      Click="SelectAllCheckBox_Click" />
+            <Grid Margin="40,0,0,0" ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.6*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition x:Name="ActionHeaderColumn" Width="0" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Component (hover for details)" FontWeight="SemiBold" TextWrapping="Wrap" FontSize="12" />
+                <TextBlock Grid.Column="1" Text="Installed" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Grid.Column="2" Text="Available" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Grid.Column="3" Text="Original" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock x:Name="ActionHeader" Grid.Column="4" Text="Update status" Visibility="Collapsed" FontWeight="SemiBold" TextWrapping="Wrap" />
+            </Grid>
+            </Grid>
+            <ListView x:Name="ComponentList" Grid.Row="1"
+                      SelectionMode="None" IsItemClickEnabled="False"
+                      ScrollViewer.VerticalScrollMode="Enabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0,8" />
+                        <Setter Property="MinHeight" Value="0" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Tag="{Binding TargetPath}" VerticalAlignment="Top" MinWidth="0"
+                                      AutomationProperties.Name="{Binding FileName}"
+                                      IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                      Click="ComponentCheckBox_Changed" />
+                        <Grid Grid.Column="1" ColumnSpacing="8" RowSpacing="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.6*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="{Binding ActionWidth}" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                       AutomationProperties.HelpText="{Binding Description}">
+                                <ToolTipService.ToolTip>
+                                    <ToolTip><TextBlock Text="{Binding Description}" TextWrapping="Wrap" MaxWidth="340" /></ToolTip>
+                                </ToolTipService.ToolTip>
+                            </TextBlock>
+                            <TextBlock Grid.Column="1" Text="{Binding InstalledVersion}" TextWrapping="Wrap" ToolTipService.ToolTip="{Binding Installed.Error}" />
+                            <TextBlock Grid.Column="2" Text="{Binding PackageVersion}" TextWrapping="Wrap" ToolTipService.ToolTip="{Binding Package.Error}" />
+                            <TextBlock Grid.Column="3" Text="{Binding OriginalVersion}" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="4" Text="{Binding UpdateText}" Visibility="{Binding ActionVisibility}" TextWrapping="Wrap" />
+                            <TextBlock Grid.Row="1" Grid.ColumnSpan="5" TextWrapping="Wrap" FontSize="12" Opacity="0.8">
+                                <Run Text="Restore: " /><Run Text="{Binding RestoreText}" />
+                            </TextBlock>
+                            <TextBlock Grid.Row="2" Grid.ColumnSpan="5" Text="{Binding RelativeDirectory}"
+                                       FontSize="11" Opacity="0.65" TextWrapping="Wrap"
+                                       MaxLines="2" TextTrimming="CharacterEllipsis"
+                                       ToolTipService.ToolTip="{Binding TargetPath}" />
+                        </Grid>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <TextBlock x:Name="EmptyComponentsText" Grid.Row="1" Margin="40,12,0,0"
+                       VerticalAlignment="Top" Text="No Streamline components found."
+                       FontWeight="SemiBold" TextWrapping="Wrap" Visibility="Collapsed" />
+        </Grid>
 
         <StackPanel Grid.Row="3" Spacing="6">
             <ProgressBar x:Name="DownloadProgress" Visibility="Collapsed" />
             <TextBlock x:Name="StatusText" TextWrapping="Wrap" />
+            <TextBlock x:Name="TrustText" TextWrapping="Wrap" FontSize="12" />
         </StackPanel>
 
-        <Grid Grid.Row="4" ColumnSpacing="8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <StackPanel Grid.Row="4" Spacing="8">
+            <TextBlock x:Name="SelectionText" Text="0 selected" FontSize="12" />
+            <Grid ColumnSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
             <Button
                 x:Name="PrepareButton"
-                Grid.Column="0"
                 HorizontalAlignment="Stretch"
                 Content="Get latest package"
                 Click="PrepareButton_Click" />
             <Button
-                x:Name="UpdateButton"
+                x:Name="RestoreButton"
                 Grid.Column="1"
                 HorizontalAlignment="Stretch"
-                Content="Update existing"
-                IsEnabled="False"
-                Click="UpdateButton_Click" />
-            <Button
-                x:Name="RestoreButton"
-                Grid.Column="2"
-                HorizontalAlignment="Stretch"
-                Content="Restore originals"
+                Content="Restore all originals"
                 IsEnabled="False"
                 Click="RestoreButton_Click" />
-        </Grid>
+            <Button x:Name="RestoreSelectedButton" Grid.Row="1" Grid.Column="1" Margin="0,8,0,0"
+                    HorizontalAlignment="Stretch" Content="Restore selected" IsEnabled="False"
+                    Click="RestoreSelectedButton_Click" />
+            </Grid>
+            <TextBlock Text="Streamline components work together. Applying only some files may mix SDK versions; compatibility is not guaranteed."
+                       TextWrapping="Wrap" FontSize="12" Opacity="0.75" />
+            <Button
+                x:Name="RecoverButton"
+                HorizontalAlignment="Stretch"
+                Content="Recover interrupted update"
+                Visibility="Collapsed"
+                Click="RecoverButton_Click" />
+        </StackPanel>
+        <StackPanel x:Name="ConfirmationPanel" Grid.Row="5" Spacing="8" Visibility="Collapsed">
+            <TextBlock Text="Confirm operation" FontWeight="SemiBold" />
+            <TextBlock x:Name="ConfirmationText" TextWrapping="Wrap" />
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+            <Button x:Name="ConfirmButton" HorizontalAlignment="Stretch" Click="ConfirmButton_Click" />
+            <Button Grid.Column="1" Content="Cancel" HorizontalAlignment="Stretch" Click="CancelConfirmation_Click" />
+            </Grid>
+        </StackPanel>
     </Grid>
 </UserControl>

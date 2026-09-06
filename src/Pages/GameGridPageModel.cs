@@ -274,15 +274,34 @@ public partial class GameGridPageModel : ObservableObject
 
         var dllSelections = picker.ViewModel.PlannedDllActions;
         var presetSelections = picker.ViewModel.PlannedPresetActions;
-        if (dllSelections.Count == 0 && presetSelections.Count == 0)
+        var streamlineSelections = picker.ViewModel.PlannedStreamlineActions;
+        if (dllSelections.Count == 0 && presetSelections.Count == 0 && streamlineSelections.Count == 0)
         {
             return;
         }
 
+        var partialApproved = false;
+        if (streamlineSelections.Count > 0 && DLSS_Swapper.Data.Streamline.StreamlineBatchUpdateWorkflow.HasPartialSets(
+            picker.ViewModel.StreamlineGames, streamlineSelections))
+        {
+            var warning = new EasyContentDialog(gameGridPage.XamlRoot)
+            {
+                Title = "Mixed Streamline versions",
+                Content = "This selection updates only part of Streamline in one or more games. Mixing versions is not recommended: it can cause crashes or broken graphics features. Update the complete component set whenever possible. Continue with this partial selection?",
+                PrimaryButtonText = "Continue with partial sets",
+                CloseButtonText = ResourceHelper.GetString("General_Cancel"),
+                DefaultButton = ContentDialogButton.Close,
+            };
+            if (await warning.ShowAsync() != ContentDialogResult.Primary) return;
+            partialApproved = true;
+        }
+        if (IsLoading || IsBatchUpdateRunning || games.Any(game => game.Processing)) return;
         IsBatchUpdateRunning = true;
         try
         {
             var results = await DllUpdateWorkflow.ApplyAsync(games, dllSelections);
+            results.AddRange(await DLSS_Swapper.Data.Streamline.StreamlineBatchUpdateWorkflow.ApplyAsync(
+                picker.ViewModel.StreamlineGames, streamlineSelections, partialApproved));
             results.AddRange(await BatchPresetUpdateWorkflow.ApplyAsync(games, presetSelections));
             var summaryDialog = new EasyContentDialog(gameGridPage.XamlRoot)
             {
@@ -706,6 +725,7 @@ public partial class GameGridPageModel : ObservableObject
 
     async Task ImportManualGamesAsync(IEnumerable<string> candidatePaths)
     {
+        var importedGames = new List<ManuallyAddedGame>();
         var added = 0;
         var alreadyPresent = 0;
         var failed = new List<string>();
@@ -742,6 +762,7 @@ public partial class GameGridPageModel : ObservableObject
                 await game.SaveToDatabaseAsync();
                 game.ProcessGame();
                 GameManager.Instance.AddGame(game);
+                importedGames.Add(game);
                 added++;
             }
             catch (Exception err)
@@ -756,6 +777,7 @@ public partial class GameGridPageModel : ObservableObject
             }
         }
 
+        await ManualLaunchSetup.OfferAsync(gameGridPage.XamlRoot, importedGames);
         var summary = new List<string>
         {
             ResourceHelper.GetFormattedResourceTemplate(
@@ -885,6 +907,7 @@ public partial class GameGridPageModel : ObservableObject
                     await game.SaveToDatabaseAsync();
                     game.ProcessGame();
                     GameManager.Instance.AddGame(game, true);
+                    await ManualLaunchSetup.OfferAsync(gameGridPage.XamlRoot, new[] { game });
                 }
                 else
                 {

@@ -1,36 +1,41 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DlssSwapper.Linux.Gui.ConfirmationDialog"
-        Width="520"
-        SizeToContent="Height"
-        CanResize="False"
+        Width="640"
+        Height="520"
+        MinWidth="440"
+        MinHeight="320"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False">
-  <StackPanel Margin="22" Spacing="16">
+  <Grid Margin="22" RowDefinitions="*,Auto" RowSpacing="16">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="16">
     <TextBlock x:Name="MessageText"
                TextWrapping="Wrap"
                FontSize="15" />
     <Border x:Name="WarningBorder"
             IsVisible="False"
-            Background="#33262A"
-            BorderBrush="#9F3A45"
+            Background="{DynamicResource LleDangerSurfaceBrush}"
+            BorderBrush="{DynamicResource LleDangerOutlineBrush}"
             BorderThickness="1"
             CornerRadius="6"
             Padding="10">
       <TextBlock x:Name="WarningText"
-                 Text="This operation writes game files. Close the game before continuing."
+                 Text="{DynamicResource Linux_Xaml_1}"
                  TextWrapping="Wrap" />
     </Border>
-    <StackPanel Orientation="Horizontal"
+    </StackPanel>
+    </ScrollViewer>
+    <StackPanel Grid.Row="1" Orientation="Horizontal"
                 HorizontalAlignment="Right"
                 Spacing="8">
-      <Button Content="Cancel"
+      <Button Content="{DynamicResource General_Cancel}"
               MinWidth="90"
               Click="Cancel_Click" />
-      <Button Content="Continue"
+      <Button Content="{DynamicResource Linux_Xaml_2}"
               MinWidth="90"
               Classes="danger"
               Click="Continue_Click" />
     </StackPanel>
-  </StackPanel>
+  </Grid>
 </Window>

@@ -448,4 +448,7 @@
 
   <Import Project="CopyPriFile.targets" />
 
+  <ItemGroup>
+    <ProjectReference Include="..\shared\DlssSwapper.Shared\DlssSwapper.Shared.csproj" />
+  </ItemGroup>
 </Project>

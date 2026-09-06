@@ -19,16 +19,20 @@ public sealed class BatchSwapResult
     public string ActionLabel { get; init; } = string.Empty;
     public string ReasonKey { get; init; } = string.Empty;
     public string ErrorMessage { get; init; } = string.Empty;
+    public string DetailMessage { get; init; } = string.Empty;
     public bool PromptToRelaunchAsAdmin { get; init; }
 
     public string DisplayText => Status switch
     {
+        BatchSwapStatus.Skipped when !string.IsNullOrWhiteSpace(DetailMessage) =>
+            $"{GameTitle} — {ActionLabel} — {DetailMessage}",
         BatchSwapStatus.Skipped =>
             $"{GameTitle} — {ActionLabel} — {ResourceHelper.GetString(ReasonKey)}",
         BatchSwapStatus.Error when string.IsNullOrWhiteSpace(ErrorMessage) =>
             $"{GameTitle} — {ActionLabel} — {ResourceHelper.GetString("GamesPage_Batch_Error_Generic")}",
         BatchSwapStatus.Error =>
             $"{GameTitle} — {ActionLabel} — {ErrorMessage}",
+        _ when !string.IsNullOrWhiteSpace(DetailMessage) => $"{GameTitle} — {ActionLabel} — {DetailMessage}",
         _ => $"{GameTitle} — {ActionLabel}",
     };
 }
