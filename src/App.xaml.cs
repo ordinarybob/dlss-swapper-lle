@@ -200,27 +200,8 @@ public sealed partial class App : Application
         {
             try
             {
-                var manifestPath = Storage.GetManifestPath();
-                if (File.Exists(manifestPath))
-                {
-                    var fileInfo = new FileInfo(manifestPath);
-                    using (var staticManifestStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("DLSS_Swapper.Assets.static_manifest.json"))
-                    {
-                        if (staticManifestStream is not null)
-                        {
-                            // If the static manifest is larger than the file, we likely want to replace the current manifest.
-                            if (staticManifestStream.Length >= fileInfo.Length)
-                            {
-                                using (var fileWriter = File.Create(manifestPath))
-                                {
-                                    var length = fileWriter.Length;
-                                    staticManifestStream.CopyTo(fileWriter);
-                                }
-                            }
-                        }
-                    }
-                }
-
+                // Catalog loading already falls back to the embedded manifest when
+                // needed. An app version or file size does not establish freshness.
                 Settings.Instance.LastLaunchVersion = versionString;
             }
             catch (Exception err)

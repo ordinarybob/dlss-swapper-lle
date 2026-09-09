@@ -1516,4 +1516,28 @@ Because of this we recommend using caution for multiplayer games.</value>
   <data name="SettingsPage_ResetLocalDataFailureTemplate" xml:space="preserve">
     <value>DLSS Swapper could not start the reset process. No app data was deleted.&#xD;&#xA;&#xD;&#xA;{0}</value>
   </data>
+  <data name="GamePage_MetadataSaveFailed" xml:space="preserve">
+    <value>Could not save the change. The previous value has been restored. Please try again.</value>
+  </data>
+  <data name="GamePage_RemoveFailed" xml:space="preserve">
+    <value>Could not finish removing the game. It remains in the list. Some cleanup may already have completed; check the logs for details.</value>
+  </data>
+  <data name="GamePage_ReloadFailed" xml:space="preserve">
+    <value>Could not finish rescanning the game. Check that its folder is available and try again.</value>
+  </data>
+  <data name="SettingsPage_ProxySaveFailed" xml:space="preserve">
+    <value>Could not save proxy settings. Check the HTTP or HTTPS server address and authentication details. If they are correct, the Windows credential store may be unavailable. Your previous settings have been kept.</value>
+  </data>
+  <data name="GamePage_OriginalBackupMissing" xml:space="preserve">
+    <value>An original backup is missing. Restore or repair the game before updating it.</value>
+  </data>
+  <data name="GamePage_LaunchChoiceSaveFailed" xml:space="preserve">
+    <value>Could not remember this choice. Try again, or clear 'Don't show this again' to continue without saving it.</value>
+  </data>
+  <data name="GamePage_ManualImportSaveFailed" xml:space="preserve">
+    <value>The game could not be saved. It has not been imported.</value>
+  </data>
+  <data name="GamePage_RestoreVisibilityFailed" xml:space="preserve">
+    <value>Could not save restored visibility for these games. They remain excluded:&#xD;&#xA;&#xD;&#xA;{0}</value>
+  </data>
 </root>

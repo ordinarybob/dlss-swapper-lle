@@ -10,7 +10,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace DLSS_Swapper.UserControls;
 
-internal static class ManualLaunchSetup
+internal static partial class ManualLaunchSetup
 {
     internal static async Task OfferAsync(XamlRoot root, IReadOnlyList<ManuallyAddedGame> games)
     {
@@ -22,14 +22,18 @@ internal static class ManualLaunchSetup
             var content = new StackPanel { Spacing = 12 };
             content.Children.Add(new TextBlock { Text = "Do you want a manifest for launching these games?\n\nThe app will scan each game folder and make a best-effort selection of the correct executable. You must verify each suggestion before saving; the app cannot guarantee it is the right one. You can change the selection or browse for another file.\n\nLaunch details are saved in this app's library; no game files are changed. No skips setup. Remembering Yes opens setup automatically on future imports.", TextWrapping = TextWrapping.Wrap });
             content.Children.Add(remember);
+            var error = new TextBlock { TextWrapping = TextWrapping.Wrap };
+            content.Children.Add(error);
             var prompt = new EasyContentDialog(root) { Title = "Set up game launching?", PrimaryButtonText = "Yes", CloseButtonText = "No", DefaultButton = ContentDialogButton.Close, Content = content };
-            setup = await prompt.ShowAsync() == ContentDialogResult.Primary;
-            if (remember.IsChecked == true)
+            bool SaveChoice(bool choice)
             {
-                Settings.Instance.DontShowManualLaunchPrompt = true;
-                Settings.Instance.SetupManualLaunchOnImport = setup;
-                Settings.Instance.SaveJson();
+                if (TryRememberChoice(choice, remember.IsChecked == true)) return true;
+                error.Text = ResourceHelper.GetString("GamePage_LaunchChoiceSaveFailed");
+                return false;
             }
+            prompt.PrimaryButtonClick += (_, e) => e.Cancel = !SaveChoice(true);
+            prompt.CloseButtonClick += (_, e) => e.Cancel = !SaveChoice(false);
+            setup = await prompt.ShowAsync() == ContentDialogResult.Primary;
         }
         if (setup) await ConfigureAsync(root, games);
     }

@@ -5,6 +5,23 @@ using DLSS_Swapper.Data;
 // UI-free contract tests use small record/manager doubles. Windows build validates
 // the same selectors against the actual observable collections and DLLRecord.
 var manifest = new Manifest();
+StagedFileTests.Run();
+DllArchiveExportTests.Run();
+DiscoveryMetadataTests.Run();
+await AssetDiscoveryTests.RunAsync();
+await NvidiaListingTests.RunAsync();
+ResourceFormattingTests.Run();
+await ArtworkQueueTests.RunAsync();
+NgxIdentityTests.Run();
+ProxySettingsTests.Run();
+await DownloaderHeaderTests.RunAsync();
+await DllApplyTests.RunAsync();
+LaunchPreferenceTests.Run();
+SourceCallSiteTests.Run();
+await DnsAndIconTests.RunAsync();
+await GameMetadataTests.RunAsync();
+await NotesRemovalTests.RunAsync();
+await ReloadTests.RunAsync();
 var manager = new DLLManager();
 var expected = new (GameAssetType Type, int Id, int Backup, string File, string Key)[]
 {
@@ -71,11 +88,23 @@ namespace DLSS_Swapper.Data
 {
     internal record DLLRecord
     {
+        [System.Text.Json.Serialization.JsonIgnore]
+        public LocalRecord? LocalRecord { get; set; } = new();
+        [System.Text.Json.Serialization.JsonIgnore]
+        public Func<Task<(bool Success, string Message, bool Cancelled)>> Download { get; set; } =
+            () => Task.FromResult((true, "", false));
+        public Task<(bool Success, string Message, bool Cancelled)> DownloadAsync() => Download();
         public GameAssetType AssetType { get; init; }
         public bool IsDevFile { get; init; }
         public ulong VersionNumber { get; init; }
         public Version DisplayVersionVersion { get; init; } = new(0, 0);
         public int CompareTo(DLLRecord other) => other.VersionNumber.CompareTo(VersionNumber);
+    }
+
+    internal sealed class LocalRecord
+    {
+        public object? FileDownloader { get; set; }
+        public bool IsDownloaded { get; set; }
     }
 
     internal class DLLManager

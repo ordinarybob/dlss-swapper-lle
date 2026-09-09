@@ -26,6 +26,9 @@ internal static class TranslationsTests
         }
         finally { System.Globalization.CultureInfo.CurrentCulture = hostCulture; }
         var fixture = new Translations("en-US");
+        if (fixture.Get("Linux_Xaml_30", "") != "Add\nGames"
+            || fixture.Get("Linux_Xaml_33", "") != "Deep\nScan")
+            throw new Exception("Toolbar labels must contain real line breaks, not escaped XML text.");
         var fixtureValues = (Dictionary<string, string>)fixture.Values;
         fixtureValues["Linux_ImportSummary"] = "accepted={0}; rejected={1}\n";
         fixtureValues["Linux_NotImported"] = "REJECTED";

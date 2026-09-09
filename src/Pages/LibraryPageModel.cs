@@ -10,8 +10,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
-using System.Xml.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -191,7 +189,6 @@ public partial class LibraryPageModel : ObservableObject
             Content = progressStackPanel,
         };
 
-        var tempExportPath = Path.Combine(Storage.GetTemp(), "export");
         var finalExportZip = string.Empty;
         try
         {
@@ -209,8 +206,6 @@ public partial class LibraryPageModel : ObservableObject
             {
                 return;
             }
-
-            Storage.CreateDirectoryIfNotExists(tempExportPath);
 
             _ = exportingDialog.ShowAsync();
 
@@ -300,19 +295,6 @@ public partial class LibraryPageModel : ObservableObject
         }
         catch (Exception err)
         {
-            // If export failed, remove the incomplete destination zip.
-            if (string.IsNullOrEmpty(finalExportZip) == false && File.Exists(finalExportZip))
-            {
-                try
-                {
-                    File.Delete(finalExportZip);
-                }
-                catch (Exception err2)
-                {
-                    Logger.Error(err2);
-                }
-            }
-
             exportingDialog.Hide();
 
             Logger.Error(err);
@@ -327,41 +309,13 @@ public partial class LibraryPageModel : ObservableObject
             };
             await dialog.ShowAsync();
         }
-        finally
-        {
-            // Clean up temp export path.
-            try
-            {
-                if (Directory.Exists(tempExportPath))
-                {
-                    Directory.Delete(tempExportPath, true);
-                }
-            }
-            catch (Exception err)
-            {
-                Logger.Error(err);
-            }
-        }
     }
 
     Exception? ExportDllWorker(string zipPath, List<(string SourceFileName, string EntryName)> filesToAdd, IProgress<int>? progress)
     {
         try
         {
-            using (var fileStream = File.Create(zipPath))
-            {
-                using (var zipArchive = new ZipArchive(fileStream, ZipArchiveMode.Create))
-                {
-                    var exported = 0;
-                    foreach (var fileToAdd in filesToAdd)
-                    {
-                        zipArchive.CreateEntryFromFile(fileToAdd.SourceFileName, fileToAdd.EntryName);
-                        ++exported;
-
-                        progress?.Report(exported);
-                    }
-                }
-            }
+            DllArchiveExport.Write(zipPath, filesToAdd, progress);
 
             return null;
         }
@@ -698,7 +652,7 @@ public partial class LibraryPageModel : ObservableObject
                         // Now that we know the zip itself is not a known zip we will extract each DLL and import them.
                         using (var archive = ZipFile.OpenRead(importFile))
                         {
-                            var zippedDlls = archive.Entries.Where(x => x.Name.EndsWith(".dll")).ToArray();
+                            var zippedDlls = archive.Entries.Where(x => x.Name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)).ToArray();
                             if (zippedDlls.Length == 0)
                             {
                                 throw new Exception(ResourceHelper.GetString("LibraryPage_ZipDidNotContainAnyDlls"));
@@ -1043,38 +997,20 @@ public partial class LibraryPageModel : ObservableObject
         _ = loadingDialog.ShowAsync();
 
         var ngxOtaUrl = "https://ngx.download.nvidia.com";
-        var xmlDownloader = new FileDownloader(ngxOtaUrl);
 
         var availableModels = new List<NGXModel>();
 
-        using (var memoryStream = new MemoryStream())
         {
             try
             {
-                var didDownload = await xmlDownloader.DownloadFileToStreamAsync(memoryStream, cancellationTokenSource.Token);
-                if (didDownload == false)
-                {
-                    throw new Exception("Could not download xml stream.");
-                }
+                var contents = await ListBucketResult.ReadAllAsync(ngxOtaUrl,
+                    async (url, output, token) =>
+                    {
+                        if (!await new FileDownloader(url).DownloadFileToStreamAsync(output, token))
+                            throw new IOException("Could not download NVIDIA file listing.");
+                    }, cancellationTokenSource.Token);
 
-                memoryStream.Position = 0;
-
-                var serializer = new XmlSerializer(typeof(ListBucketResult));
-                var readerSettings = new XmlReaderSettings
-                {
-                    DtdProcessing = DtdProcessing.Prohibit,
-                    XmlResolver = null,
-                };
-                using var xmlReader = XmlReader.Create(memoryStream, readerSettings);
-                var listBucketResult = serializer.Deserialize(xmlReader) as ListBucketResult;
-
-                if (listBucketResult is null)
-                {
-                    throw new Exception("ListBucketResult was null.");
-                }
-
-
-                foreach (var content in listBucketResult.Contents)
+                foreach (var content in contents)
                 {
                     if (content is null || content.Size == 0)
                     {
@@ -1126,7 +1062,7 @@ public partial class LibraryPageModel : ObservableObject
                 }
 
             }
-            catch (TaskCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
             {
                 // NOOP: User cancelled
                 return;

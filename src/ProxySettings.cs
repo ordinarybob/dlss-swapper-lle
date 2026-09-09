@@ -44,10 +44,16 @@ internal class ProxySettings
         }
     }
 
-    internal void SaveIfRequired(string? server, string? username, string? password)
+    internal bool SaveIfRequired(string? server, string? username, string? password)
     {
         try
         {
+            if (server is not null && (!Uri.TryCreate(server, UriKind.Absolute, out var uri)
+                || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+                || string.IsNullOrWhiteSpace(uri.Host) || !string.IsNullOrEmpty(uri.UserInfo)
+                || uri.AbsolutePath != "/" || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment)))
+                return false;
+            if (!string.IsNullOrEmpty(password) && string.IsNullOrWhiteSpace(username)) return false;
             var vault = new Windows.Security.Credentials.PasswordVault();
 
             if (server is not null)
@@ -66,7 +72,9 @@ internal class ProxySettings
             else
             {
                 // Try delete existing proxy settings
-                var proxyCredentails = vault.Retrieve("DLSS Swapper", "proxy");
+                Windows.Security.Credentials.PasswordCredential? proxyCredentails = null;
+                try { proxyCredentails = vault.Retrieve("DLSS Swapper", "proxy"); }
+                catch (System.Runtime.InteropServices.COMException ex) when (ex.HResult == -2147023728) { }
                 if (proxyCredentails is not null)
                 {
                     vault.Remove(proxyCredentails);
@@ -76,11 +84,12 @@ internal class ProxySettings
                 Settings.ProxySettings.Username = string.Empty;
                 Settings.ProxySettings.Password = string.Empty;
             }
-
+            return true;
         }
         catch (Exception ex)
         {
             Logger.Error(ex);
+            return false;
         }
     }
 }

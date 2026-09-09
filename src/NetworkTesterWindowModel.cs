@@ -645,43 +645,6 @@ public sealed partial class NetworkTesterWindowModel : ObservableObject, IDispos
         }
     }
 
-    [RelayCommand]
-    void RunTest9()
-    {
-        var testName = "Test 9";
-        RunningTest9 = true;
-        Test9Result = string.Empty;
-        var testStart = DateTime.Now;
-        AppendTestResults(testName, $"DNS lookup of DLSS Swapper file server ({_dlssSwapperDomainTestLink})");
-
-        try
-        {
-            var addresses = Dns.GetHostAddresses(_dlssSwapperDomainTestLink);
-
-            foreach (var address in addresses)
-            {
-                AppendTestResults(testName, $"Found IP address {address.ToString()}");
-            }
-
-            Test9Result = "✅";
-        }
-        catch (Exception err)
-        {
-            Test9Result = "❌";
-            AppendTestResults(testName, $"Failed, {err.Message}");
-            if (string.IsNullOrWhiteSpace(err.InnerException?.Message) == false)
-            {
-                AppendTestResults(testName, $"Inner Exception: {err.InnerException.Message}");
-            }
-            RunningTest9 = false;
-        }
-        finally
-        {
-            var duration = (DateTime.Now - testStart).TotalSeconds;
-            AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
-            RunningTest9 = false;
-        }
-    }
 
     [RelayCommand]
     async Task RunTest10Async()
@@ -722,7 +685,6 @@ public sealed partial class NetworkTesterWindowModel : ObservableObject, IDispos
                 Content = stackPanel,
             };
             var testStart = DateTime.Now;
-            var oldUserAgent = App.CurrentApp.HttpClient.DefaultRequestHeaders.UserAgent.FirstOrDefault();
             try
             {
                 var result = await dialog.ShowAsync();
@@ -732,10 +694,6 @@ public sealed partial class NetworkTesterWindowModel : ObservableObject, IDispos
                     testStart = DateTime.Now;
 
                     AppendTestResults(testName, $"Testing with User-Agent \"{userAgentTextBox.Text}\"");
-
-                    App.CurrentApp.HttpClient.DefaultRequestHeaders.UserAgent.Clear();
-                    App.CurrentApp.HttpClient.DefaultRequestHeaders.Add("User-Agent", userAgentTextBox.Text);
-
 
                     using (var memoryStream = new MemoryStream())
                     {
@@ -750,7 +708,7 @@ public sealed partial class NetworkTesterWindowModel : ObservableObject, IDispos
                         progressCallback: (downloadedBytes, totalBytes, percent) =>
                         {
                             AppendTestResults(testName, $"{downloadedBytes} / {totalBytes} ({percent:0.0}%)");
-                        });
+                        }, userAgent: userAgentTextBox.Text);
                         AppendTestResults(testName, $"Downloaded {memoryStream.Length} bytes");
                     }
                     Test10Result = "✅";
@@ -783,23 +741,6 @@ public sealed partial class NetworkTesterWindowModel : ObservableObject, IDispos
                 CompleteTest(cancellationTokenSource);
                 var duration = (DateTime.Now - testStart).TotalSeconds;
                 AppendTestResults(testName, $"Duration {duration:0.00} seconds\n");
-
-                if (oldUserAgent?.Product is not null)
-                {
-                    try
-                    {
-                        App.CurrentApp.HttpClient.DefaultRequestHeaders.UserAgent.Clear();
-                        App.CurrentApp.HttpClient.DefaultRequestHeaders.Add("User-Agent", oldUserAgent.Product.ToString());
-                    }
-                    catch (Exception err)
-                    {
-                        AppendTestResults(testName, $"Could not reset user agent, {err.Message}");
-                        if (string.IsNullOrWhiteSpace(err.InnerException?.Message) == false)
-                        {
-                            AppendTestResults(testName, $"Inner Exception: {err.InnerException.Message}");
-                        }
-                    }
-                }
 
                 RunningTest10 = false;
             }

@@ -900,7 +900,7 @@ internal partial class NVAPIHelper : ObservableObject
         var dlssgPath = Path.Combine(ngxModelsPath, "dlssg", "versions");
 
         // Local function so we can handle all DLSS at once.
-        List<NGXModel> LocalNgxModelSearch(string path, GameAssetType gameAssetType, string[] validProductNames)
+        List<NGXModel> LocalNgxModelSearch(string path, GameAssetType gameAssetType)
         {
             var tempList = new List<NGXModel>();
 
@@ -913,24 +913,11 @@ internal partial class NVAPIHelper : ObservableObject
                     var fileVersionInfo = FileVersionInfo.GetVersionInfo(binFile);
                     var isTrusted = WinTrust.VerifyEmbeddedSignature(binFile);
 
-                    var isValid = true;
-
-                    // Ignore a game if it is not trusted.
-                    if (isTrusted == false)
+                    // Trust exceptions never bypass product/family and architecture checks.
+                    if (NgxPayloadIdentity.Matches(binFile, fileVersionInfo.ProductName, gameAssetType)
+                        && (isTrusted || Settings.Instance.AllowUntrusted))
                     {
-                        isValid = false;
-                    }
-
-                    // Ignore games where we don't know if it is the correct product name
-                    if (validProductNames.Contains(fileVersionInfo.ProductName) == false)
-                    {
-                        isValid = false;
-                    }
-
-                    // If everything matches OR AllowUntrusted is on allow the game
-                    if (isValid || Settings.Instance.AllowUntrusted)
-                    {
-                        ngxModels.Add(new NGXModel(binFile, new Version(fileVersionInfo.FileMajorPart, fileVersionInfo.FileMinorPart, fileVersionInfo.FileBuildPart, fileVersionInfo.FilePrivatePart), gameAssetType , fileInfo.Length, string.Empty));
+                        tempList.Add(new NGXModel(binFile, new Version(fileVersionInfo.FileMajorPart, fileVersionInfo.FileMinorPart, fileVersionInfo.FileBuildPart, fileVersionInfo.FilePrivatePart), gameAssetType , fileInfo.Length, string.Empty));
                     }
                 }
             }
@@ -938,16 +925,9 @@ internal partial class NVAPIHelper : ObservableObject
             return tempList;
         }
 
-        ngxModels.AddRange(LocalNgxModelSearch(dlssPath, GameAssetType.DLSS, [
-            "NVIDIA Deep Learning SuperSampling",
-            "NGX DL SuperSampling"
-        ]));
-        ngxModels.AddRange(LocalNgxModelSearch(dlssdPath, GameAssetType.DLSS_D, [
-            "NVIDIA DLSS Ray Reconstruction"
-        ]));
-        ngxModels.AddRange(LocalNgxModelSearch(dlssgPath, GameAssetType.DLSS_G, [
-            "NVIDIA DLSS-G MFGLW"
-        ]));
+        ngxModels.AddRange(LocalNgxModelSearch(dlssPath, GameAssetType.DLSS));
+        ngxModels.AddRange(LocalNgxModelSearch(dlssdPath, GameAssetType.DLSS_D));
+        ngxModels.AddRange(LocalNgxModelSearch(dlssgPath, GameAssetType.DLSS_G));
 
         return ngxModels;
     }

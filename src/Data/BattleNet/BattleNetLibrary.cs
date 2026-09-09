@@ -155,14 +155,20 @@ internal partial class BattleNetLibrary : IGameLibrary
                     continue;
                 }
 
+                var installationState = product.CachedProductState?.BaseProductState;
+                if (!DiscoveryMetadata.HasBattleNetInstallationState(installationState?.Installed, product.Settings?.InstallPath))
+                {
+                    Logger.Warning($"Skipping Battle.net entry {product.Uid}: installation state or settings are missing.");
+                    continue;
+                }
                 // Uninstalled games sometimes remain in the product.db
-                if (product.CachedProductState.BaseProductState.Installed == false)
+                if (installationState!.Installed == false)
                 {
                     continue;
                 }
 
                 var gameId = product.Uid;
-                var gamePath = product.Settings.InstallPath;
+                var gamePath = product.Settings!.InstallPath;
 
                 if (string.IsNullOrWhiteSpace(gameId))
                 {
@@ -194,15 +200,8 @@ internal partial class BattleNetLibrary : IGameLibrary
                 {
                     Logger.Error($"Battle.Net game title not found for UID ({product.Uid}) in install path ({product.Settings.InstallPath}).");
 
-                    if (string.IsNullOrWhiteSpace(product.Settings.InstallPath))
-                    {
-                        activeGame.Title = product.Uid;
-                    }
-                    else
-                    {
-                        var directoryInfo = new DirectoryInfo(product.Settings.InstallPath);
-                        activeGame.Title = directoryInfo.Name;
-                    }
+                    activeGame.Title = string.Empty;
+                    activeGame.LauncherId = string.Empty;
                 }
 
                 if (installedAggregates.TryGetValue(product.ProductCode, out var aggregate))
@@ -221,8 +220,9 @@ internal partial class BattleNetLibrary : IGameLibrary
                     Logger.Error($"Battle.Net game aggregate not found for ProductCode ({product.ProductCode}).");
                 }
 
+                activeGame.Title = DiscoveryMetadata.BattleNetTitle(activeGame.Title, null, gamePath);
                 activeGame.InstallPath = PathHelpers.NormalizePath(gamePath);
-                activeGame.StatePlayable = product.CachedProductState.BaseProductState.Playable;
+                activeGame.StatePlayable = installationState.Playable;
 
                 if (activeGame.IsInIgnoredPath())
                 {

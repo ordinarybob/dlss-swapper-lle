@@ -22,6 +22,7 @@ public partial class DLLPickerControlModel : ObservableObject
     WeakReference<GameControl> _gameControlWeakReference;
     WeakReference<EasyContentDialog> _parentDialogWeakReference;
     WeakReference<DLLPickerControl> _dllPickerControlWeakReference;
+    bool _applying;
 
     public Game Game { get; private set; }
     public GameAssetType GameAssetType { get; private set; }
@@ -60,7 +61,11 @@ public partial class DLLPickerControlModel : ObservableObject
 
         parentDialog.Closing += (ContentDialog sender, ContentDialogClosingEventArgs args) =>
         {
-            if (args.Result == ContentDialogResult.Primary)
+            if (_applying)
+            {
+                args.Cancel = true;
+            }
+            else if (args.Result == ContentDialogResult.Primary)
             {
                 if (CanCloseParentDialog == false)
                 {
@@ -203,7 +208,7 @@ public partial class DLLPickerControlModel : ObservableObject
             }
             else
             {
-                CanSwap = true;
+                CanSwap = !_applying;
             }
         }
         else if (e.PropertyName == nameof(CanSwap))
@@ -215,45 +220,6 @@ public partial class DLLPickerControlModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    async Task SwapDllAsync()
-    {
-        if (SelectedDLLRecord?.LocalRecord is null)
-        {
-            return;
-        }
-
-        if (SelectedDLLRecord.LocalRecord.FileDownloader is not null)
-        {
-            ShowTempInfoBar(string.Empty, ResourceHelper.GetString("GamePage_DllPicker_WaitToDownloadBeforeSwapping"));
-            return;
-        }
-        else if (SelectedDLLRecord.LocalRecord.IsDownloaded == false)
-        {
-            var selectedRecord = SelectedDLLRecord;
-            ShowTempInfoBar(string.Empty, ResourceHelper.GetString("GamePage_DllPicker_StartingDownload"));
-            selectedRecord.DownloadAsync().SafeFireAndForget(err =>
-                Logger.Error(err, $"Could not download {selectedRecord.DisplayName}."));
-            return;
-        }
-
-        var didUpdate = await Game.UpdateDllAsync(SelectedDLLRecord);
-
-        if (didUpdate.Success == false)
-        {
-            ShowTempInfoBar(ResourceHelper.GetString("General_Error"), didUpdate.Message, severity: InfoBarSeverity.Error);
-            return;
-        }
-
-        // Allow the dialog to close
-        CanCloseParentDialog = true;
-
-        if (_parentDialogWeakReference.TryGetTarget(out var dialog) == true)
-        {
-            // Is the dialog already closing when we call this?
-            dialog.Hide();
-        }
-    }
 
     void ShowTempInfoBar(string title, string message, double duration = 5.0, InfoBarSeverity severity = InfoBarSeverity.Informational, int gridIndex = 2)
     {
@@ -345,6 +311,7 @@ public partial class DLLPickerControlModel : ObservableObject
     [RelayCommand]
     async Task ResetDllAsync()
     {
+        if (_applying) return;
         var didReset = await Game.ResetDllAsync(GameAssetType);
 
         if (didReset.Success == true)

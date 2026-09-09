@@ -455,6 +455,7 @@ public class Settings
             if (_coverHydrationConcurrency != clampedValue)
             {
                 _coverHydrationConcurrency = clampedValue;
+                GameCoverHydrationQueue.SetConcurrency(clampedValue);
                 if (_autoSave)
                 {
                     SaveJson();
@@ -669,9 +670,9 @@ public class Settings
     public bool DontShowManualLaunchPrompt { get; set; }
     public bool SetupManualLaunchOnImport { get; set; }
 
-    internal void SaveJson()
+    internal bool SaveJson()
     {
-        Storage.SaveSettingsJson(this);
+        return Storage.SaveSettingsJson(this);
     }
 
     internal void ApplyGameLibraryStorageProfile(GameLibraryStorageProfile profile)

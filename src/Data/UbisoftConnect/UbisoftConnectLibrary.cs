@@ -196,26 +196,9 @@ internal class UbisoftConnectLibrary : IGameLibrary
                             }
 
 
-                            var remoteImage = string.Empty;
-                            if (ubisoftConnectConfigurationItem.Root.LogoImage is not null)
-                            {
-                                if (ubisoftConnectConfigurationItem.Root.ThumbImage.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase) || ubisoftConnectConfigurationItem.Root.ThumbImage.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    remoteImage = $"https://ubistatic3-a.akamaihd.net/orbit/uplay_launcher_3_0/assets/{ubisoftConnectConfigurationItem.Root.ThumbImage}";
-                                }
-                                else
-                                {
-                                    // Hopefully if we need to check localizations that it is in the default key.
-                                    // In future if we do actual localization then we need to check persons locale and apply that here.
-                                    if (ubisoftConnectConfigurationItem.Localizations?.ContainsKey("default") == true)
-                                    {
-                                        if (ubisoftConnectConfigurationItem.Localizations["default"]?.ContainsKey(ubisoftConnectConfigurationItem.Root.ThumbImage) == true)
-                                        {
-                                            remoteImage = $"https://ubistatic3-a.akamaihd.net/orbit/uplay_launcher_3_0/assets/{ubisoftConnectConfigurationItem.Localizations["default"][ubisoftConnectConfigurationItem.Root.ThumbImage]}";
-                                        }
-                                    }
-                                }
-                            }
+                            var remoteImage = DiscoveryMetadata.UbisoftThumbnail(
+                                ubisoftConnectConfigurationItem.Root.ThumbImage,
+                                ubisoftConnectConfigurationItem.Localizations);
 
                             var cachedGame = GameManager.Instance.GetGame<UbisoftConnectGame>(configurationRecord.InstallId.ToString(CultureInfo.InvariantCulture));
                             var activeGame = cachedGame ?? new UbisoftConnectGame(configurationRecord.InstallId.ToString(CultureInfo.InvariantCulture));

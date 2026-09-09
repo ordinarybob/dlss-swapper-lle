@@ -27,6 +27,17 @@ internal static class GameAssetPathIndex
         new("libxess_dx11.dll", GameAssetType.XeSS_DX11),
         new("libxell.dll", GameAssetType.XeLL),
         new("libxess_fg.dll", GameAssetType.XeSS_FG),
+        new("sl.common.dll", GameAssetType.Streamline_Common),
+        new("sl.deepdvc.dll", GameAssetType.Streamline_DeepDVC),
+        new("sl.directsr.dll", GameAssetType.Streamline_DirectSR),
+        new("sl.dlss.dll", GameAssetType.Streamline_DLSS),
+        new("sl.dlss_d.dll", GameAssetType.Streamline_DLSS_D),
+        new("sl.dlss_g.dll", GameAssetType.Streamline_DLSS_G),
+        new("sl.interposer.dll", GameAssetType.Streamline_Interposer),
+        new("sl.nis.dll", GameAssetType.Streamline_NIS),
+        new("sl.nvperf.dll", GameAssetType.Streamline_NvPerf),
+        new("sl.pcl.dll", GameAssetType.Streamline_PCL),
+        new("sl.reflex.dll", GameAssetType.Streamline_Reflex),
     ];
 
     static readonly object _sessionLock = new();

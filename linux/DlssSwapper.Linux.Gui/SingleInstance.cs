@@ -16,7 +16,13 @@ internal sealed class SingleInstance : IDisposable
     {
         identity ??= Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         _name = "LLE.GUI." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)))[..24];
-        _mutex = new Mutex(false, _name);
+        // Separate Linux terminals/WSL launches have different sessions. The
+        // existing window must still be shared by launches from the same user.
+        _mutex = new Mutex(false, _name, new NamedWaitHandleOptions
+        {
+            CurrentUserOnly = true,
+            CurrentSessionOnly = false,
+        });
         try { IsPrimary = _mutex.WaitOne(0); }
         catch (AbandonedMutexException) { IsPrimary = true; }
     }

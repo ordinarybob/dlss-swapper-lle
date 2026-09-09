@@ -44,6 +44,14 @@ internal class EAAppGame : Game
         return didChange;
     }
 
+    static unsafe Windows.Win32.UI.WindowsAndMessaging.HICON ExtractIcon(string path, int index)
+    {
+        Windows.Win32.UI.WindowsAndMessaging.HICON icon = default;
+        fixed (char* fileName = path)
+            PInvoke.ExtractIconEx(new Windows.Win32.Foundation.PCWSTR(fileName), index, &icon, null, 1);
+        return icon;
+    }
+
     protected override async Task UpdateCacheImageAsync()
     {
         var coverUrl = EAAppLibrary.Instance.SearchForCover(this);
@@ -65,8 +73,19 @@ internal class EAAppGame : Game
             return;
         }
                
-        var extension = Path.GetExtension(DisplayIconPath);
-        if (extension.Equals(".exe", StringComparison.InvariantCultureIgnoreCase))
+        DlssSwapper.Shared.WindowsIconReference iconReference;
+        try
+        {
+            iconReference = DlssSwapper.Shared.WindowsIconReference.Parse(DisplayIconPath);
+        }
+        catch (FormatException ex)
+        {
+            Logger.Warning($"Invalid icon reference for {Title}: {ex.Message}");
+            return;
+        }
+        var extension = Path.GetExtension(iconReference.Path);
+        if (extension.Equals(".exe", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".dll", StringComparison.OrdinalIgnoreCase))
         {
             using (var memoryStream = new MemoryStream())
             {
@@ -74,19 +93,12 @@ internal class EAAppGame : Game
                 {
                     unsafe
                     {
-                        var shinfo = new Windows.Win32.UI.Shell.SHFILEINFOW();
-
-                        var flags = Windows.Win32.UI.Shell.SHGFI_FLAGS.SHGFI_ICON | Windows.Win32.UI.Shell.SHGFI_FLAGS.SHGFI_LARGEICON;
-
-                        PInvoke.SHGetFileInfo(
-                            DisplayIconPath,
-                            Windows.Win32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.SECURITY_ANONYMOUS,
-                            ref shinfo, flags);
-
-                        if (shinfo.hIcon != IntPtr.Zero)
+                        var extractedIcon = ExtractIcon(iconReference.Path, iconReference.Index);
+                        if (extractedIcon != IntPtr.Zero)
                         {
-                            using (var icon = Icon.FromHandle(shinfo.hIcon))
+                            try
                             {
+                                using var icon = Icon.FromHandle(extractedIcon);
                                 if (icon is null)
                                 {
                                     return;
@@ -104,7 +116,10 @@ internal class EAAppGame : Game
 
                                 }
                             }
-                            PInvoke.DestroyIcon(shinfo.hIcon);
+                            finally
+                            {
+                                PInvoke.DestroyIcon(extractedIcon);
+                            }
                         }
                         else
                         {
@@ -132,7 +147,7 @@ internal class EAAppGame : Game
                 extension.Equals(".jpeg", StringComparison.InvariantCultureIgnoreCase) ||
                 extension.Equals(".webp", StringComparison.InvariantCultureIgnoreCase))
         {
-            using (var fileStream = File.OpenRead(DisplayIconPath))
+            using (var fileStream = File.OpenRead(iconReference.Path))
             {
                 await ResizeCoverAsync(fileStream).ConfigureAwait(false);
             }

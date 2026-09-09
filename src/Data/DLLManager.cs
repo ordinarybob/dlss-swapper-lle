@@ -173,11 +173,10 @@ internal class DLLManager
                 try
                 {
                     Storage.CreateDirectoryForFileIfNotExists(manifestPath);
-                    using (var stream = File.Create(manifestPath))
-                    {
-                        memoryStream.Position = 0;
-                        await memoryStream.CopyToAsync(stream).ConfigureAwait(false);
-                    }
+                    using var staged = new StagedOutputFile(manifestPath);
+                    memoryStream.Position = 0;
+                    await memoryStream.CopyToAsync(staged.Stream).ConfigureAwait(false);
+                    staged.Commit();
                 }
                 catch (Exception err)
                 {
@@ -763,6 +762,11 @@ internal class DLLManager
         }
 
         var versionInfo = FileVersionInfo.GetVersionInfo(filePath);
+        // A caller-assigned NGX family must agree with the payload, regardless of trust policy.
+        if (overrideFileName is not null && !NgxPayloadIdentity.Matches(filePath, versionInfo.ProductName, gameAssetType.Value))
+        {
+            return DLLImportResult.FromFail(zippedDllFullName ?? filePath, ResourceHelper.GetString("DllManager_UnknownTypeDll"));
+        }
         var isTrusted = WinTrust.VerifyEmbeddedSignature(filePath);
 
         // Don't do anything with untrusted dlls.
@@ -799,6 +803,7 @@ internal class DLLManager
                 ZipFileSize = 0,
                 ZipMD5Hash = string.Empty,
                 IsSignatureValid = isTrusted,
+                IsDevFile = versionInfo.IsDebug,
                 AssetType = gameAssetType.Value,
             };
 

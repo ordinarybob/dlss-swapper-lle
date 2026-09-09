@@ -178,7 +178,7 @@ internal class EAAppLibrary : IGameLibrary
 
                                     activeGame.Title = name;
                                     activeGame.InstallPath = installPath;
-                                    activeGame.DisplayIconPath = programUninstallSubKey.GetValue("DisplayIcon")?.ToString()?.Trim('"') ?? string.Empty;
+                                    activeGame.DisplayIconPath = programUninstallSubKey.GetValue("DisplayIcon")?.ToString() ?? string.Empty;
 
                                     if (activeGame.IsInIgnoredPath())
                                     {

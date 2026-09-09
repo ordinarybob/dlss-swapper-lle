@@ -843,24 +843,33 @@ public partial class SettingsPageModel : ObservableObject
         if (_weakPage.TryGetTarget(out var page))
         {
             var proxySettingsControl = new ProxySettingsControl();
+            var error = new TextBlock { TextWrapping = TextWrapping.Wrap };
+            var content = new StackPanel { Spacing = 8 };
+            content.Children.Add(proxySettingsControl);
+            content.Children.Add(error);
             var dialog = new EasyContentDialog(page.XamlRoot)
             {
                 Title = ResourceHelper.GetString("SettingsPage_ProxySettings"),
                 PrimaryButtonText = ResourceHelper.GetString("General_Save"),
                 CloseButtonText = ResourceHelper.GetString("General_Close"),
                 DefaultButton = ContentDialogButton.Primary,
-                Content = proxySettingsControl,
+                Content = content,
             };
 
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
+            dialog.PrimaryButtonClick += (_, e) =>
             {
                 var server = proxySettingsControl.ViewModel.UseProxySettings ? proxySettingsControl.ViewModel.Server : null;
                 var username = proxySettingsControl.ViewModel.UseProxySettings && proxySettingsControl.ViewModel.UseAuthentication ? proxySettingsControl.ViewModel.Username : null;
                 var password = proxySettingsControl.ViewModel.UseProxySettings && proxySettingsControl.ViewModel.UseAuthentication ? proxySettingsControl.ViewModel.Password : null;
-                Settings.ProxySettings.SaveIfRequired(server, username, password);
+                if (!Settings.ProxySettings.SaveIfRequired(server, username, password))
+                {
+                    error.Text = ResourceHelper.GetString("SettingsPage_ProxySaveFailed");
+                    e.Cancel = true;
+                    return;
+                }
                 App.CurrentApp.RegenerateHttpClient();
-            }
+            };
+            await dialog.ShowAsync();
         }
     }
 }

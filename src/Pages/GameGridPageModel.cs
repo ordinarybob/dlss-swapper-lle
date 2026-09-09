@@ -551,6 +551,8 @@ public partial class GameGridPageModel : ObservableObject
         ScanProgressText = $"{ResourceHelper.GetString("General_Loading")} {displayedCompleted:N0} / {enqueued:N0}";
     }
 
+    string _activeSearch = string.Empty;
+
     public void SearchForGameEvent(object sender, TextChangedEventArgs e)
     {
         if (sender is not TextBox textBox)
@@ -558,12 +560,13 @@ public partial class GameGridPageModel : ObservableObject
             throw new ArgumentException("Sender must be a TextBox");
         }
 
-        if (string.IsNullOrEmpty(textBox.Text))
+        _activeSearch = textBox.Text ?? string.Empty;
+        if (string.IsNullOrEmpty(_activeSearch))
         {
             CurrentCollectionView = GameManager.Instance.GetGameCollection();
             return;
         }
-        CurrentCollectionView = GameManager.Instance.GetGameCollection(textBox.Text);
+        CurrentCollectionView = GameManager.Instance.GetGameCollection(_activeSearch);
     }
 
     (EasyContentDialog Dialog, CheckBox DontShowAgainCheckbox) CreateManualImportNotice(
@@ -759,7 +762,8 @@ public partial class GameGridPageModel : ObservableObject
             try
             {
                 game = ManuallyAddedGame.CreateForInstallPath(installPath);
-                await game.SaveToDatabaseAsync();
+                if (!await game.SaveToDatabaseAsync(bypassBatch: true))
+                    throw new IOException(ResourceHelper.GetString("GamePage_ManualImportSaveFailed"));
                 game.ProcessGame();
                 GameManager.Instance.AddGame(game);
                 importedGames.Add(game);
@@ -768,11 +772,7 @@ public partial class GameGridPageModel : ObservableObject
             catch (Exception err)
             {
                 Logger.Error(err, $"Could not add manual game folder \"{installPath}\".");
-                if (game is not null)
-                {
-                    await game.DeleteAsync();
-                    GameManager.Instance.RemoveGame(game);
-                }
+                // A failed save must not trigger destructive cleanup of possibly existing state.
                 failed.Add($"{installPath}: {err.Message}");
             }
         }
@@ -904,7 +904,8 @@ public partial class GameGridPageModel : ObservableObject
                 if (addGameResult == ContentDialogResult.Primary)
                 {
                     var game = manuallyAddGameModel.Game;
-                    await game.SaveToDatabaseAsync();
+                    if (!await game.SaveToDatabaseAsync(bypassBatch: true))
+                        throw new IOException(ResourceHelper.GetString("GamePage_ManualImportSaveFailed"));
                     game.ProcessGame();
                     GameManager.Instance.AddGame(game, true);
                     await ManualLaunchSetup.OfferAsync(gameGridPage.XamlRoot, new[] { game });
@@ -1002,13 +1003,28 @@ public partial class GameGridPageModel : ObservableObject
                     && game.IsHidden == true)
                 .ToArray();
 
+            var failed = new List<string>();
             foreach (var game in excludedGames)
             {
+                var previous = game.IsHidden;
                 game.IsHidden = null;
-                await game.SaveToDatabaseAsync();
+                if (!await game.SaveToDatabaseAsync(bypassBatch: true))
+                {
+                    game.IsHidden = previous;
+                    failed.Add(game.Title);
+                }
             }
 
             await LoadGamesWithProgressAsync(true);
+            if (failed.Count > 0)
+            {
+                await new EasyContentDialog(gameGridPage.XamlRoot)
+                {
+                    Title = ResourceHelper.GetString("General_Error"),
+                    CloseButtonText = ResourceHelper.GetString("General_Close"),
+                    Content = ResourceHelper.GetFormattedResourceTemplate("GamePage_RestoreVisibilityFailed", string.Join("\n", failed)),
+                }.ShowAsync();
+            }
         }
         finally
         {
@@ -1032,7 +1048,7 @@ public partial class GameGridPageModel : ObservableObject
 
         //MainGridView.ItemsSource = null;
         CurrentCollectionView = null;
-        CurrentCollectionView = GameManager.Instance.GetGameCollection();
+        CurrentCollectionView = GameManager.Instance.GetGameCollection(_activeSearch);
     }
 
     [RelayCommand]

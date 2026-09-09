@@ -274,6 +274,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             return;
         }
 
+        var previouslyHadSwappableItems = HasSwappableItems;
         void MarkProcessing()
         {
             Processing = true;
@@ -382,6 +383,12 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
                 foreach (var discoveredAsset in discoveredAssets)
                 {
+                    if (Streamline.StreamlineAssetMetadata.GetDisplayName(discoveredAsset.AssetType) is not null)
+                    {
+                        // SDK state/backups belong to the Streamline workflow.
+                        newHasSwappableItems = true;
+                        continue;
+                    }
                     var gameAsset = new GameAsset()
                     {
                         Id = ID,
@@ -411,8 +418,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         await Database.Instance.Connection.InsertAllAsync(dllHistory, false).ConfigureAwait(false);
                         await Database.Instance.Connection.InsertAllAsync(replacementAssets, false).ConfigureAwait(false);
                     }
-
-
+                }
+                // Artwork loading is independent of detected DLL families.
+                {
                     var shouldUpdatedCover = true;
 
                     if (forceNeedsProcessing == true && File.Exists(ExpectedCustomCoverImage) == false)
@@ -461,9 +469,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     {
                         if (candidateArtworkQueued == false)
                         {
-                            await GameCoverHydrationQueue.Instance.EnqueueAsync(
+                            GameCoverHydrationQueue.Instance.Enqueue(
                                 this,
-                                refreshFromSource: shouldUpdatedCover).ConfigureAwait(false);
+                                refreshFromSource: shouldUpdatedCover);
                         }
                     }
                     catch
@@ -498,7 +506,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         GameAssets.Clear();
                         GameAssets.AddRange(oldGameAssets);
                         UpdateCurrentDLLsFromGameAssets();
-                        HasSwappableItems = oldGameAssets.Count > 0;
+                        HasSwappableItems = previouslyHadSwappableItems || oldGameAssets.Count > 0;
                     }
                     else
                     {
@@ -564,6 +572,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 }
 
                 var provisionalAssets = candidateAssets
+                    .Where(asset => Streamline.StreamlineAssetMetadata.GetDisplayName(asset.AssetType) is null)
                     .Select(discoveredAsset => new GameAsset()
                     {
                         Id = ID,
@@ -951,9 +960,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
         var newGameAssets = new List<GameAsset>();
 
-        if (existingBackupRecords.Count == 0)
         {
-            // Backup old dlls if no backup exists.
+            // Each installed copy needs its own original; another copy's backup
+            // does not cover this path.
             foreach (var existingRecord in existingRecords)
             {
                 var dllPath = Path.GetDirectoryName(existingRecord.Path);
@@ -965,11 +974,19 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
                 // Ensure we don't do anything if the target exists.
                 var backupDllPath = $"{existingRecord.Path}.dlsss";
-                if (File.Exists(backupDllPath) == false)
+                var recordedBackup = existingBackupRecords.FirstOrDefault(asset =>
+                    asset.Path.Equals(backupDllPath, StringComparison.OrdinalIgnoreCase));
+                if (recordedBackup is not null)
+                {
+                    if (!File.Exists(backupDllPath))
+                        return (false, ResourceHelper.GetString("GamePage_OriginalBackupMissing"), false);
+                    continue;
+                }
                 {
                     try
                     {
-                        File.Copy(existingRecord.Path, backupDllPath);
+                        if (!File.Exists(backupDllPath))
+                            StagedFile.CopyVerified(existingRecord.Path, backupDllPath, overwrite: false);
 
                         var backupGameAsset = new GameAsset()
                         {
@@ -977,10 +994,9 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                             AssetType = backupRecordType,
                             Path = backupDllPath,
                         };
-                        var existingHash = existingRecord.HasCurrentHash()
-                            ? existingRecord.Hash
-                            : string.Empty;
-                        backupGameAsset.SetKnownVersionAndHash(existingRecord.Version, existingHash);
+                        // An existing unrecorded backup may predate the installed
+                        // DLL. Read its own version rather than labeling it current.
+                        backupGameAsset.LoadVersion();
                         newGameAssets.Add(backupGameAsset);
                     }
                     catch (UnauthorizedAccessException err)
@@ -1012,7 +1028,7 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             try
             {
                 // Copy the DLL
-                File.Copy(dllRecord.LocalRecord.ExpectedPath, existingRecord.Path, true);
+                StagedFile.CopyVerified(dllRecord.LocalRecord.ExpectedPath, existingRecord.Path, dllRecord.MD5Hash);
 
                 var newGameAsset = new GameAsset()
                 {

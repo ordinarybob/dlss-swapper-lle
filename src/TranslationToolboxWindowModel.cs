@@ -353,11 +353,16 @@ public partial class TranslationToolboxWindowModel : ObservableObject
                     return;
                 }
 
-                using (var fileStream = File.Create(outputPath))
+                if (!outputPath.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+                    && !outputPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Choose a JSON or CSV filename.");
+
+                using (var staged = new StagedOutputFile(outputPath))
                 {
+                    var fileStream = staged.Stream;
                     if (outputPath.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                     {
-                        using (var streamWriter = new StreamWriter(fileStream, System.Text.Encoding.UTF8))
+                        using (var streamWriter = new StreamWriter(fileStream, System.Text.Encoding.UTF8, leaveOpen: true))
                         {
                             using (var csv = new CsvWriter(streamWriter, CultureInfo.InvariantCulture))
                             {
@@ -382,7 +387,7 @@ public partial class TranslationToolboxWindowModel : ObservableObject
                         await JsonSerializer.SerializeAsync(fileStream, outputData, SourceGenerationContext.Default.DictionaryStringString);
 
                     }
-
+                    staged.Commit();
                 }
             }
             catch (Exception ex)
@@ -570,9 +575,9 @@ public partial class TranslationToolboxWindowModel : ObservableObject
                     return;
                 }
 
-                using (var fileStream = File.Create(outputPath))
+                using (var staged = new StagedOutputFile(outputPath))
                 {
-                    using (var zipArchive = new ZipArchive(fileStream, ZipArchiveMode.Update, true))
+                    using (var zipArchive = new ZipArchive(staged.Stream, ZipArchiveMode.Create, true))
                     {
                         var entry = zipArchive.CreateEntry("Resources.resw", CompressionLevel.Optimal);
                         await using (var entryStream = await entry.OpenAsync(default))
@@ -719,6 +724,7 @@ public partial class TranslationToolboxWindowModel : ObservableObject
                             doc.Save(entryStream);
                         }
                     }
+                    staged.Commit();
                 }
 
                 var filename = Path.GetFileName(outputPath);

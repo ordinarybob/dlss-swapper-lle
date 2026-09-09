@@ -50,7 +50,7 @@ public partial class FileDownloader : ObservableObject
         _timerInterval = timerInterval;
     }
 
-    public async Task<bool> DownloadFileToStreamAsync(Stream outputStream, CancellationToken cancellationToken = default(CancellationToken), Action<HttpStatusCode>? statusCodeCallback = null, Action<long, long, double>? progressCallback = null)
+    public async Task<bool> DownloadFileToStreamAsync(Stream outputStream, CancellationToken cancellationToken = default(CancellationToken), Action<HttpStatusCode>? statusCodeCallback = null, Action<long, long, double>? progressCallback = null, string? userAgent = null)
     {
         ArgumentNullException.ThrowIfNull(outputStream);
 
@@ -114,7 +114,12 @@ public partial class FileDownloader : ObservableObject
         {
             Logger.Verbose($"{LogPrefix}Starting download of {_url}");
 
-            using (var response = await App.CurrentApp.HttpClient.GetAsync(_url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+            using var request = new HttpRequestMessage(HttpMethod.Get, _url);
+            if (userAgent == string.Empty)
+                request.Headers.TryAddWithoutValidation("User-Agent", string.Empty);
+            else if (userAgent is not null)
+                request.Headers.Add("User-Agent", userAgent);
+            using (var response = await App.CurrentApp.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
             {
                 Logger.Verbose($"{LogPrefix}Status Code: {response.StatusCode}");
                 statusCodeCallback?.Invoke(response.StatusCode);

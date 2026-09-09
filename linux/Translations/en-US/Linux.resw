@@ -246,10 +246,10 @@ Files changed successfully, but history could not be saved: {0}</value></data>
   <data name="Linux_Xaml_27" xml:space="preserve"><value>Details</value></data>
   <data name="Linux_Xaml_28" xml:space="preserve"><value>Game notes</value></data>
   <data name="Linux_Xaml_29" xml:space="preserve"><value>Add notes for this game.</value></data>
-  <data name="Linux_Xaml_30" xml:space="preserve"><value>Add&amp;#x0a;Games</value></data>
+  <data name="Linux_Xaml_30" xml:space="preserve"><value>Add&#x0a;Games</value></data>
   <data name="Linux_Xaml_31" xml:space="preserve"><value>Add separate games</value></data>
   <data name="Linux_Xaml_32" xml:space="preserve"><value>Add parent directory</value></data>
-  <data name="Linux_Xaml_33" xml:space="preserve"><value>Deep&amp;#x0a;Scan</value></data>
+  <data name="Linux_Xaml_33" xml:space="preserve"><value>Deep&#x0a;Scan</value></data>
   <data name="Linux_Xaml_34" xml:space="preserve"><value>Restore excluded Steam games</value></data>
   <data name="Linux_Xaml_35" xml:space="preserve"><value>Restore excluded launcher games</value></data>
   <data name="Linux_Xaml_36" xml:space="preserve"><value>All games</value></data>

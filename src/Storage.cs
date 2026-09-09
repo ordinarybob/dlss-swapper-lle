@@ -147,19 +147,20 @@ static class Storage
     /// </summary>
     /// <param name="settings">Settings object to be saved</param>
     /// <returns>Task</returns>
-    internal static void SaveSettingsJson(Settings settings)
+    internal static bool SaveSettingsJson(Settings settings)
     {
         var settingsFile = Path.Combine(GetDynamicJsonFolder(), "settings.json");
         try
         {
-            using (var stream = File.Open(settingsFile, FileMode.Create))
-            {
-                JsonSerializer.Serialize(stream, settings, SourceGenerationContext.Default.Settings);
-            }
+            using var staged = new Helpers.StagedOutputFile(settingsFile);
+            JsonSerializer.Serialize(staged.Stream, settings, SourceGenerationContext.Default.Settings);
+            staged.Commit();
+            return true;
         }
         catch (Exception err)
         {
             Logger.Error(err);
+            return false;
         }
     }
 

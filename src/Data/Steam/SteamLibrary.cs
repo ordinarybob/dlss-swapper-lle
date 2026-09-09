@@ -148,6 +148,8 @@ internal partial class SteamLibrary : IGameLibrary
         var discoveredAppManifestPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var enumeratedAppManifests = new List<(string AppId, string Path, string SteamAppsPath)>();
         var knownInstallPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var indexRead = false;
+        var readableSteamApps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         var kvSerializer = KVSerializer.Create(KVSerializationFormat.KeyValues1Text);
 
@@ -181,6 +183,7 @@ internal partial class SteamLibrary : IGameLibrary
                         }
                     }
                 }
+                indexRead = true;
             }
         }
         catch (Exception err)
@@ -194,6 +197,7 @@ internal partial class SteamLibrary : IGameLibrary
         foreach (var steamAppPath in steamAppsPaths)
         {
             var commonPath = Path.Combine(steamAppPath, "common");
+            var installDirectoriesRead = false;
             try
             {
                 if (Directory.Exists(commonPath))
@@ -205,6 +209,7 @@ internal partial class SteamLibrary : IGameLibrary
                     {
                         knownInstallPaths.Add(PathHelpers.NormalizePath(installedDirectory));
                     }
+                    installDirectoriesRead = true;
                 }
             }
             catch (Exception err)
@@ -212,20 +217,28 @@ internal partial class SteamLibrary : IGameLibrary
                 Logger.Error(err, $"Unable to enumerate Steam install directories in {commonPath}.");
             }
 
-            foreach (var appManifestPath in Directory.EnumerateFiles(
-                steamAppPath,
-                "appmanifest_*.acf",
-                SearchOption.TopDirectoryOnly))
+            try
             {
-                var match = AppManifestFileNameRegex.Match(Path.GetFileName(appManifestPath));
-                if (match.Success == false)
+                foreach (var appManifestPath in Directory.EnumerateFiles(
+                    steamAppPath,
+                    "appmanifest_*.acf",
+                    SearchOption.TopDirectoryOnly))
                 {
-                    continue;
-                }
+                    var match = AppManifestFileNameRegex.Match(Path.GetFileName(appManifestPath));
+                    if (match.Success == false)
+                    {
+                        continue;
+                    }
 
-                var appId = match.Groups["app_id"].Value;
-                discoveredAppManifestPaths.Add(appManifestPath);
-                enumeratedAppManifests.Add((appId, appManifestPath, steamAppPath));
+                    var appId = match.Groups["app_id"].Value;
+                    discoveredAppManifestPaths.Add(appManifestPath);
+                    enumeratedAppManifests.Add((appId, appManifestPath, steamAppPath));
+                }
+                if (installDirectoriesRead) readableSteamApps.Add(steamAppPath);
+            }
+            catch (Exception err)
+            {
+                Logger.Error(err, $"Unable to enumerate Steam manifests in {steamAppPath}.");
             }
         }
 
@@ -415,26 +428,20 @@ internal partial class SteamLibrary : IGameLibrary
             .ToHashSet(StringComparer.Ordinal);
 
 
-        if (libraryFoldersFileInfo is null)
+        foreach (var cachedGame in cachedGames)
         {
-            // Standalone discovery is additive because it cannot prove that an
-            // undiscovered library is uninstalled or currently available.
-            foreach (var cachedGame in cachedGames)
+            if (!discoveredPlatformIds.Contains(cachedGame.PlatformId))
             {
-                if (discoveredPlatformIds.Contains(cachedGame.PlatformId) == false)
+                // An index alone cannot prove absence from an unavailable library.
+                if (!DiscoveryMetadata.CanRemoveSteamCache(cachedGame.InstallPath, indexRead, readableSteamApps))
                 {
+                    Logger.Warning($"Retaining cached Steam game '{cachedGame.Title}' at '{cachedGame.InstallPath}': the Steam index or its library could not be fully read; installation status was not verified.");
                     games.Add(cachedGame);
                 }
-            }
-        }
-        else
-        {
-            // The Steam client index is authoritative for installed libraries.
-            foreach (var cachedGame in cachedGames)
-            {
-                if (discoveredPlatformIds.Contains(cachedGame.PlatformId) == false)
+                else if (!await cachedGame.DeleteAsync().ConfigureAwait(false))
                 {
-                    await cachedGame.DeleteAsync().ConfigureAwait(false);
+                    Logger.Warning($"Retaining cached Steam game '{cachedGame.Title}': removal of its stale cached record failed.");
+                    games.Add(cachedGame);
                 }
             }
         }

@@ -308,11 +308,13 @@ internal partial class GameManager : ObservableObject
         var loadStopwatch = Stopwatch.StartNew();
         Logger.Info("Game library discovery started.");
         await _loadGate.WaitAsync().ConfigureAwait(false);
-        BeginUiBatch();
-        GameDatabaseWriteBatch.Instance.Begin();
-        using var gameAssetPathIndex = GameAssetPathIndex.BeginBatch(exhaustiveScan);
         try
         {
+            BeginUiBatch();
+            GameDatabaseWriteBatch.Instance.Begin();
+            // Dispose the scan session before the finally block releases the
+            // load gate. Batch creation failures must release that gate too.
+            using var gameAssetPathIndex = GameAssetPathIndex.BeginBatch(exhaustiveScan);
             var tasks = new List<Task<List<Game>>>();
             foreach (var gameLibraryEnum in GameManager.Instance.GetGameLibraries(true))
             {
@@ -450,11 +452,8 @@ internal partial class GameManager : ObservableObject
                 _synchronisedAllGames.Add(game);
 
                 // Attach an existing local cover before the card enters the UI.
-                // Only fetch missing artwork for a game already known to belong
-                // in the visible DLSS library; fresh games are queued after their
-                // scan proves eligibility. This avoids downloading thousands of
-                // covers that the default filter will never display.
-                if (game.HasSwappableItems && game.PrimeCachedCoverImage() == false)
+                // Artwork loading is independent of detected DLL families.
+                if (game.PrimeCachedCoverImage() == false)
                 {
                     GameCoverHydrationQueue.Instance.Enqueue(game);
                 }

@@ -8,9 +8,8 @@ using Windows.ApplicationModel.Resources.Core;
 
 namespace DLSS_Swapper.Helpers;
 
-public class ResourceHelper
+public partial class ResourceHelper
 {
-    private const string error = "LangResourceError";
 
     static readonly ResourceLoader _resourceLoader = new ResourceLoader();
     static readonly ResourceContext _resourceContext = ResourceContext.GetForViewIndependentUse();
@@ -114,14 +113,14 @@ public class ResourceHelper
     }
 
     public static string GetFormattedResourceTemplate(string templateResourceName, params object[] args)
-    {
-        try
+        => FormatWithFallback(
+        () => GetString(templateResourceName),
+        () =>
         {
-            return string.Format(CultureInfo.CurrentCulture, GetString(templateResourceName), args);
-        }
-        catch
-        {
-            return error;
-        }
-    }
+            var context = ResourceContext.GetForViewIndependentUse().Clone();
+            context.Languages = new List<string> { "en-US" };
+            return _resourceMap.GetValue(templateResourceName, context)?.ValueAsString ?? string.Empty;
+        },
+        err => Logger.Error(err, $"Could not format resource {templateResourceName}."),
+        args);
 }

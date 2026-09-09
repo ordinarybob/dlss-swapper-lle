@@ -365,37 +365,6 @@ public partial class GameControlModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    async Task EditNotesAsync()
-    {
-        if (TryGetActionHost(out var actionHost))
-        {
-            var textBox = new TextBox()
-            {
-                MinHeight = 400,
-                TextWrapping = TextWrapping.Wrap,
-                AcceptsReturn = true,
-            };
-            // This needs to be set after AcceptsReturn otherwise it will strip out the \r
-            textBox.Text = Game.Notes;
-
-            var dialog = new EasyContentDialog(actionHost.XamlRoot)
-            {
-                Title = $"{ResourceHelper.GetString("GamePage_Notes")} - {Game.Title}",
-                PrimaryButtonText = ResourceHelper.GetString("General_Save"),
-                CloseButtonText = ResourceHelper.GetString("General_Cancel"),
-                DefaultButton = ContentDialogButton.Primary,
-                Content = textBox,
-            };
-            dialog.Resources["ContentDialogMinWidth"] = 700;
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
-            {
-                Game.Notes = textBox.Text ?? string.Empty;
-                await Game.SaveToDatabaseAsync();
-            }
-        }
-    }
 
     [RelayCommand]
     async Task ViewHistoryAsync()
@@ -537,51 +506,7 @@ public partial class GameControlModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    async Task RemoveAsync()
-    {
-        if (TryGetActionHost(out var actionHost))
-        {
-            // This needs to be set after AcceptsReturn otherwise it will strip out the \r
-            var dialog = new EasyContentDialog(actionHost.XamlRoot)
-            {
-                Title = $"{ResourceHelper.GetString("General_Remove")} {Game.Title}?",
-                PrimaryButtonText = ResourceHelper.GetString("General_Remove"),
-                CloseButtonText = ResourceHelper.GetString("General_Cancel"),
-                DefaultButton = ContentDialogButton.Primary,
-                Content = ResourceHelper.GetFormattedResourceTemplate(
-                    IsManuallyAdded
-                        ? "GamePage_ManuallyAdded_RemoveGameTemplate"
-                        : "GamePage_Discovered_RemoveGameTemplate",
-                    Game.Title),
-            };
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
-            {
-                if (IsManuallyAdded)
-                {
-                    await Game.DeleteAsync();
-                    GameManager.Instance.RemoveGame(Game);
-                }
-                else
-                {
-                    Game.IsHidden = true;
-                    await Game.SaveToDatabaseAsync();
-                }
-                if (TryGetGameControl(out var gameControl))
-                {
-                    gameControl.Hide();
-                }
-            }
-        }
-    }
 
-    [RelayCommand]
-    async Task FavouriteAsync()
-    {
-        Game.IsFavourite = !Game.IsFavourite;
-        await Game.SaveToDatabaseAsync();
-    }
 
     [RelayCommand]
     async Task ChangeRecordAsync(GameAssetType gameAssetType)
@@ -608,13 +533,6 @@ public partial class GameControlModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    async Task SaveTitleAsync()
-    {
-        Game.Title = GameTitle;
-        await Game.SaveToDatabaseAsync();
-        OnPropertyChanged(nameof(GameTitleHasChanged));
-    }
 
     [RelayCommand]
     async Task MultipleDLLsFoundAsync(GameAssetType gameAssetType)
@@ -661,100 +579,20 @@ public partial class GameControlModel : ObservableObject
         }
     }
 
-    TaskCompletionSource? _reloadGameTaskCompletionSource;
 
-    [RelayCommand]
-    async Task ReloadGameAsync()
+
+    async Task ShowPersistenceErrorAsync(string resourceKey)
     {
-        if (_reloadGameTaskCompletionSource is not null)
+        if (TryGetActionHost(out var actionHost))
         {
-            _reloadGameTaskCompletionSource.SetCanceled();
-        }
-
-        if (TryGetActionHost(out _))
-        {
-            _reloadGameTaskCompletionSource = new TaskCompletionSource();
-
-            Game.PropertyChanged += Game_PropertyChanged;
-            Game.NeedsProcessing = true;
-            Game.ProcessGame(forceNeedsProcessing: true);
-
-            var dialogStart = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-            var dialog = new EasyContentDialog(App.CurrentApp.MainWindow.Content.XamlRoot)
+            var dialog = new EasyContentDialog(actionHost.XamlRoot)
             {
-                Title = ResourceHelper.GetString("GamesPage_ReloadingGame"),
-                Content = new ProgressRing()
-                {
-                    IsIndeterminate = true,
-                },
-                PrimaryButtonText = ResourceHelper.GetString("General_Cancel")
+                Title = ResourceHelper.GetString("General_Error"),
+                Content = ResourceHelper.GetString(resourceKey),
+                CloseButtonText = ResourceHelper.GetString("General_Okay"),
             };
-            var dialogTask = dialog.ShowAsync().AsTask();
-
-            await Task.WhenAny(dialogTask, _reloadGameTaskCompletionSource.Task);
-
-            Game.PropertyChanged -= Game_PropertyChanged;
-
-            var reopenGameControl = TryGetGameControl(out _);
-
-            if (dialogTask.IsCompleted)
-            {
-                // User clicked cancel, close the current dialog.
-                Close();
-            }
-            else
-            {
-                var loadingDuration = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - dialogStart;
-
-                if (loadingDuration < 1000)
-                {
-                    // Force loading dialog to exist for at least 1 second
-                    await Task.Delay(1000 - (int)loadingDuration);
-                }
-
-                Close();
-
-                if (dialogTask.IsCompleted == true)
-                {
-                    return;
-                }
-
-                // Game finished reloading so re-launch the GameControl.
-                _reloadGameTaskCompletionSource = null;
-                dialog.Hide();
-                if (reopenGameControl)
-                {
-                    var gameControl = new GameControl(Game);
-                    _ = gameControl.ShowAsync();
-                }
-            }
+            await dialog.ShowAsync();
         }
-    }
-
-    private void Game_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(Game.Processing))
-        {
-            if (Game.Processing == true)
-            {
-                _reloadGameTaskCompletionSource?.SetResult();
-            }
-        }
-    }
-
-    [RelayCommand]
-    async Task ShowHideGameAsync()
-    {
-        if (Game.IsHidden is null)
-        {
-            Game.IsHidden = true;
-        }
-        else
-        {
-            Game.IsHidden = !Game.IsHidden;
-        }
-        await Game.SaveToDatabaseAsync();
     }
 
     [RelayCommand]

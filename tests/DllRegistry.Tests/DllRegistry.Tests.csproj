@@ -7,6 +7,27 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../src/UserControls/GameControlModel.Reload.cs" Link="GameControlModel.Reload.cs" />
+    <Compile Include="../../src/Data/GameAssetPathIndex.cs" Link="GameAssetPathIndex.cs" />
+    <Compile Include="../../src/Data/GameAssetCandidatePathIndex.cs" Link="GameAssetCandidatePathIndex.cs" />
+    <Compile Include="../../shared/DlssSwapper.Shared/ScanPatternRules.cs" Link="ScanPatternRules.cs" />
+    <Compile Include="../../src/UserControls/GameControlModel.Metadata.cs" Link="GameControlModel.Metadata.cs" />
+    <Compile Include="../../src/NetworkTesterWindowModel.Dns.cs" Link="NetworkTesterWindowModel.Dns.cs" />
+    <Compile Include="../../shared/DlssSwapper.Shared/WindowsIconReference.cs" Link="WindowsIconReference.cs" />
+    <Compile Include="../../src/UserControls/ManualLaunchSetup.Preference.cs" Link="ManualLaunchSetup.Preference.cs" />
+    <Compile Include="../../src/UserControls/DLLPickerControlModel.Apply.cs" Link="DLLPickerControlModel.Apply.cs" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <Compile Include="../../src/Helpers/FileDownloader.cs" Link="FileDownloader.cs" />
+    <Compile Include="../../src/ProxySettings.cs" Link="ProxySettings.cs" />
+    <Compile Include="../../src/Helpers/NgxPayloadIdentity.cs" Link="NgxPayloadIdentity.cs" />
+    <Compile Include="../../src/Data/GameCoverHydrationQueue.cs" Link="GameCoverHydrationQueue.cs" />
+    <Compile Include="../../src/Helpers/ResourceHelper.Formatting.cs" Link="ResourceHelper.Formatting.cs" />
+    <Compile Include="../../src/Data/NVIDIA/ListBucketResult.cs" Link="ListBucketResult.cs" />
+    <Compile Include="../../src/Data/NVIDIA/ListBucketResultContents.cs" Link="ListBucketResultContents.cs" />
+    <Compile Include="../../src/Data/DiscoveryMetadata.cs" Link="DiscoveryMetadata.cs" />
+    <Compile Include="../../src/Helpers/DllArchiveExport.cs" Link="DllArchiveExport.cs" />
+    <Compile Include="../../src/Helpers/StagedOutputFile.cs" Link="StagedOutputFile.cs" />
+    <Compile Include="../../src/Helpers/StagedFile.cs" Link="StagedFile.cs" />
     <Compile Include="../../src/Data/DllFamilyRegistry.cs" Link="DllFamilyRegistry.cs" />
     <Compile Include="../../src/Data/DllRecordSelection.cs" Link="DllRecordSelection.cs" />
     <Compile Include="../../src/Data/Streamline/StreamlineAssetMetadata.cs" Link="StreamlineAssetMetadata.cs" />

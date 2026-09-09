@@ -24,6 +24,7 @@ internal static class StreamlineMetadataTests
             var definition = StreamlineAssetMetadata.FindFile(Path.Combine("fixture", fileName.ToUpperInvariant()));
             if (definition is null || definition.Type != type || (int)type != id
                 || StreamlineAssetMetadata.GetDisplayName(type) != definition.DisplayName
+                || DllFamilyRegistry.Find(type) is not null
                 || !definition.DisplayName.StartsWith("Streamline ", StringComparison.Ordinal))
                 throw new Exception($"Streamline history mapping mismatch for {fileName}.");
         }

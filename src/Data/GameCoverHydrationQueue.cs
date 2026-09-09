@@ -24,11 +24,51 @@ internal sealed class GameCoverHydrationQueue
         });
 
     readonly ConcurrentDictionary<(string GameId, bool RefreshFromSource), TaskCompletionSource> _queuedWork = new();
+    readonly object _concurrencyLock = new();
+    TaskCompletionSource _capacityChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    int _active;
+    int _limit;
+
+    internal static void SetConcurrency(int limit)
+    {
+        if (!_instance.IsValueCreated) return;
+        var queue = _instance.Value;
+        lock (queue._concurrencyLock)
+        {
+            queue._limit = limit;
+            queue.SignalCapacityChanged();
+        }
+    }
+
+    void SignalCapacityChanged()
+    {
+        var previous = _capacityChanged;
+        _capacityChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        previous.TrySetResult();
+    }
+
+    async Task WaitForCapacityAsync()
+    {
+        while (true)
+        {
+            Task changed;
+            lock (_concurrencyLock)
+            {
+                if (_active < _limit)
+                {
+                    ++_active;
+                    return;
+                }
+                changed = _capacityChanged.Task;
+            }
+            await changed.ConfigureAwait(false);
+        }
+    }
 
     GameCoverHydrationQueue()
     {
-        var workerCount = Settings.Instance.CoverHydrationConcurrency;
-        for (var i = 0; i < workerCount; i++)
+        _limit = Settings.Instance.CoverHydrationConcurrency;
+        for (var i = 0; i < Settings.MaxCoverHydrationConcurrency; i++)
         {
             _ = RunWorkerAsync();
         }
@@ -76,6 +116,7 @@ internal sealed class GameCoverHydrationQueue
     {
         await foreach (var workItem in _queue.Reader.ReadAllAsync())
         {
+            await WaitForCapacityAsync().ConfigureAwait(false);
             Exception? failure = null;
             try
             {
@@ -95,6 +136,11 @@ internal sealed class GameCoverHydrationQueue
             }
             finally
             {
+                lock (_concurrencyLock)
+                {
+                    --_active;
+                    SignalCapacityChanged();
+                }
                 _queuedWork.TryRemove((workItem.Game.ID, workItem.RefreshFromSource), out _);
                 if (failure is null)
                 {
