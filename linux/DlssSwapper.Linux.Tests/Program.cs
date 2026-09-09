@@ -17,6 +17,7 @@ internal static class Program
         if (args.Length == 1 && args[0] == "--streamline-acquisition-tests")
         {
             await StreamlineAcquisitionTests.RunAsync();
+            await StreamlineReleaseHistoryTests.RunAsync();
             Console.WriteLine("PASS: Streamline release selection and acquisition");
             return 0;
         }
@@ -119,6 +120,7 @@ internal static class Program
             ("Acquisition reports new downloads and revalidates cache", TestAcquisitionReporting),
             ("Download summaries retain failures and cancellation", TestDownloadResults),
             ("Streamline shared metadata and cached acquisition", StreamlineAcquisitionTests.RunAsync),
+            ("Streamline release history and exact version selection", StreamlineReleaseHistoryTests.RunAsync),
             ("Linux selected Streamline apply/restore rejects stale snapshots", RunSync(TestSelectedStreamlineWorkflow)),
             ("Filesystem mount reporting and NTFS/FUSE warnings", RunSync(TestFilesystemInspection)),
             ("CLI persistent-state controls", TestCliPersistentStateAsync),

@@ -2,13 +2,44 @@ using System.Text.Json;
 
 namespace DLSS_Swapper.Data.Streamline;
 
-public sealed record StreamlineSdkRelease(string Tag, string DownloadUrl);
+public sealed record StreamlineSdkRelease(string Tag, string DownloadUrl)
+{
+    public override string ToString() => Tag;
+}
 public sealed record StreamlineSdkPackage(string Tag, string DirectoryPath, bool WasDownloaded);
 
 public static class StreamlineSdkAcquisition
 {
     public const string LatestReleaseApi = "https://api.github.com/repos/NVIDIA-RTX/Streamline/releases/latest";
+    public const string ReleasesApi = "https://api.github.com/repos/NVIDIA-RTX/Streamline/releases";
     private static readonly SemaphoreSlim PreparationLock = new(1, 1);
+
+    public static async Task<IReadOnlyList<StreamlineSdkRelease>> FetchReleasesAsync(HttpClient http, CancellationToken token = default)
+    {
+        var releases = new Dictionary<string, StreamlineSdkRelease>(StringComparer.OrdinalIgnoreCase);
+        for (var page = 1; ; page++)
+        {
+            using var response = await http.GetAsync($"{ReleasesApi}?per_page=100&page={page}", token).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: token).ConfigureAwait(false);
+            var count = document.RootElement.GetArrayLength();
+            foreach (var item in document.RootElement.EnumerateArray())
+            {
+                if (item.TryGetProperty("draft", out var draft) && draft.GetBoolean()
+                    || item.TryGetProperty("prerelease", out var prerelease) && prerelease.GetBoolean()) continue;
+                if (!item.TryGetProperty("tag_name", out var tag) || !StreamlinePackageCache.TryGetVersion(tag.GetString() ?? "", out _)) continue;
+                var expected = $"streamline-sdk-{tag.GetString()}.zip";
+                if (!item.GetProperty("assets").EnumerateArray().Any(asset =>
+                    string.Equals(asset.GetProperty("name").GetString(), expected, StringComparison.OrdinalIgnoreCase))) continue;
+                var release = ParseRelease(item);
+                releases.TryAdd(release.Tag, release);
+            }
+            if (count < 100) break;
+        }
+        return releases.Values.OrderByDescending(release =>
+            { StreamlinePackageCache.TryGetVersion(release.Tag, out var version); return version; }).ToArray();
+    }
 
     public static async Task<StreamlineSdkRelease> FetchLatestAsync(HttpClient http, CancellationToken token = default)
     {
@@ -82,5 +113,6 @@ public static class StreamlineSdkAcquisition
         catch (IOException) { return false; }
         catch (UnauthorizedAccessException) { return false; }
         catch (BadImageFormatException) { return false; }
+        catch (JsonException) { return false; }
     }
 }

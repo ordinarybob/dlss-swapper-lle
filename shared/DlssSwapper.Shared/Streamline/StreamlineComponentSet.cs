@@ -17,6 +17,7 @@ public static class StreamlineComponentSet
 {
     public const string BackupSuffix = ".dlsss";
     const string JournalName = ".streamline-transaction.json";
+    const string PackageInventoryName = "package-components.json";
     static readonly StringComparer PathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     public static readonly IReadOnlyList<string> FileNames =
@@ -38,7 +39,15 @@ public static class StreamlineComponentSet
 
     public static void ValidatePackage(string directory)
     {
-        foreach (var name in FileNames) ValidateSource(Path.Combine(directory, name), name);
+        var inventory = Path.Combine(directory, PackageInventoryName);
+        var names = File.Exists(inventory) ? JsonSerializer.Deserialize<string[]>(File.ReadAllText(inventory))
+            ?? throw new InvalidDataException("Invalid SDK component inventory.") : FileNames.ToArray();
+        if (names.Length == 0 || names.Distinct(StringComparer.OrdinalIgnoreCase).Count() != names.Length
+            || names.Any(name => !KnownFileNames.Contains(name))
+            || !names.Contains("sl.common.dll", StringComparer.OrdinalIgnoreCase)
+            || !names.Contains("sl.interposer.dll", StringComparer.OrdinalIgnoreCase))
+            throw new InvalidDataException("Invalid SDK component inventory.");
+        foreach (var name in names) ValidateSource(Path.Combine(directory, name), name);
     }
 
     public static bool HasPendingRecovery(string gameRoot) => RecoveryJournals(gameRoot).Any();
@@ -73,12 +82,13 @@ public static class StreamlineComponentSet
             var entries = archive.Entries.Where(entry => TryGetProductionFileName(entry.FullName, out _))
                 .GroupBy(entry => entry.FullName.Replace('\\', '/').Split('/')[2], StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.OrdinalIgnoreCase);
-            foreach (var name in FileNames)
+            foreach (var name in entries.Keys)
             {
                 if (!entries.TryGetValue(name, out var matches) || matches.Length != 1)
                     throw new InvalidDataException($"The SDK archive must contain exactly one production copy of {name}.");
                 matches[0].ExtractToFile(Path.Combine(stage, name));
             }
+            File.WriteAllText(Path.Combine(stage, PackageInventoryName), JsonSerializer.Serialize(entries.Keys.ToArray()));
             ValidatePackage(stage);
             // Keep the previous complete package until promotion succeeds. Never delete it first.
             if (Directory.Exists(destinationDirectory)) Directory.Move(destinationDirectory, previous);
@@ -89,7 +99,7 @@ public static class StreamlineComponentSet
                 throw;
             }
             if (Directory.Exists(previous)) TryDeleteDirectory(previous);
-            return FileNames.Select(name => Path.Combine(destinationDirectory, name)).ToArray();
+            return entries.Keys.Select(name => Path.Combine(destinationDirectory, name)).ToArray();
         }
         finally { TryDeleteDirectory(stage); }
     }
