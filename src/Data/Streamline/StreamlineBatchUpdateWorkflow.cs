@@ -23,7 +23,7 @@ internal static class StreamlineBatchUpdateWorkflow
             return count > 0 && count < game.Paths.Count; });
 
     internal static async Task<List<BatchSwapResult>> ApplyAsync(IReadOnlyList<StreamlineBatchGame> games,
-        IReadOnlyList<string> names, bool partialApproved)
+        IReadOnlyList<string> names, bool partialApproved, StreamlineRelease? selectedRelease = null)
     {
         var results = new List<BatchSwapResult>();
         if (names.Count == 0) return results;
@@ -37,8 +37,8 @@ internal static class StreamlineBatchUpdateWorkflow
             try
             {
                 package = Settings.Instance.OnlyShowDownloadedDlls
-                    ? await Task.Run(StreamlineReleaseManager.FindNewestCached)
-                    : await StreamlineReleaseManager.PrepareLatestAsync();
+                    ? await Task.Run(() => selectedRelease is null ? StreamlineReleaseManager.FindNewestCached() : StreamlineReleaseManager.FindCached(selectedRelease.Tag))
+                    : selectedRelease is null ? await StreamlineReleaseManager.PrepareLatestAsync() : await StreamlineReleaseManager.PrepareAsync(selectedRelease);
                 if (package is null) packageError = "No cached Streamline SDK is available. Disable downloaded-only filtering to allow a download.";
                 else
                     await Task.Run(() => sources.Prepare(package.DirectoryPath,

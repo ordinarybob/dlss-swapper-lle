@@ -34,13 +34,13 @@ public sealed partial class LibraryPage : UserControl
 
     public LibraryPage() : this((DownloadCache?)null, (HttpClient?)null) { }
 
-    private LibraryPage(DownloadCache? cache, HttpClient? sdkHttp)
+    private LibraryPage(DownloadCache? cache, HttpClient? sdkHttp, string? sdkCacheRoot = null)
     {
         _cache = cache ?? new DownloadCache();
         _sdkHttp = sdkHttp ?? new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
         AvaloniaXamlLoader.Load(this);
         _sdkHttp.DefaultRequestHeaders.UserAgent.ParseAdd("DLSS-Swapper-LLE-Linux");
-        _sdk = new StreamlineLibraryService(_sdkHttp);
+        _sdk = new StreamlineLibraryService(_sdkHttp, sdkCacheRoot);
         _sdkStatus = FindRequired<TextBlock>("StreamlineStatusText");
         _sdkDownloadButton = FindRequired<Button>("DownloadStreamlineButton");
         _familyComboBox = FindRequired<ListBox>("FamilyComboBox");
@@ -59,8 +59,8 @@ public sealed partial class LibraryPage : UserControl
         LanguageAppearance.Changed += RefreshLanguage;
     }
 
-    public LibraryPage(DllCatalog catalog, PersistentLibrary? library = null, DownloadCache? cache = null, HttpClient? sdkHttp = null)
-        : this(cache, sdkHttp)
+    public LibraryPage(DllCatalog catalog, PersistentLibrary? library = null, DownloadCache? cache = null, HttpClient? sdkHttp = null, string? sdkCacheRoot = null)
+        : this(cache, sdkHttp, sdkCacheRoot)
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _library = library;
@@ -290,6 +290,7 @@ public sealed partial class LibraryPage : UserControl
         finally
         {
             EndDownload();
+            await RefreshSdkVersionAsync();
         }
     }
 
@@ -314,13 +315,35 @@ public sealed partial class LibraryPage : UserControl
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             timeout.CancelAfter(TimeSpan.FromSeconds(30));
-            var release = await _sdk.FetchLatestAsync(timeout.Token);
-            if (!_isBusy || showWhileBusy) _sdkStatus.Text = LanguageAppearance.Format("Linux_DllLibraryWindow_30", "Streamline SDK — latest: {0}", release.Tag);
+            var releases = await _sdk.FetchReleasesAsync(timeout.Token);
+            if (!_lifetime.IsCancellationRequested && (!_isBusy || showWhileBusy))
+            {
+                RenderSdkReleases(releases);
+                _sdkStatus.Text = $"{releases.Count} SDK versions available. Downloads do not change game files.";
+            }
         }
         catch (Exception error)
         { AppLog.Write(ApplicationLogLevel.Error, error.Message);
             if (!_lifetime.IsCancellationRequested && (!_isBusy || showWhileBusy))
-                _sdkStatus.Text = LanguageAppearance.Format("Linux_DllLibraryWindow_29", "Streamline SDK — version check failed: {0}", error.Message);
+            {
+                RenderSdkReleases(_sdk.CachedReleases());
+                _sdkStatus.Text = $"Release history unavailable: {error.Message}. Showing downloaded packages.";
+            }
+        }
+    }
+
+    private void RenderSdkReleases(IReadOnlyList<DLSS_Swapper.Data.Streamline.StreamlineSdkRelease> releases)
+    {
+        var rows = FindRequired<StackPanel>("StreamlineReleaseRows");
+        rows.Children.Clear();
+        foreach (var release in releases)
+        {
+            var cached = _sdk.FindCached(release.Tag) is not null;
+            var button = new Button { Content = cached ? "Downloaded" : "Download", IsEnabled = !cached, Tag = release };
+            button.Click += DownloadStreamline_Click;
+            var row = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 16 };
+            row.Children.Add(new TextBlock { Text = release.Tag, FontSize = 20, MinWidth = 120 });
+            row.Children.Add(button); rows.Children.Add(row);
         }
     }
 
@@ -331,12 +354,14 @@ public sealed partial class LibraryPage : UserControl
         try
         {
             _sdkStatus.Text = LanguageAppearance.Get("Linux_DllLibraryWindow_28", "Streamline SDK — downloading and checking package…");
-            var package = await PrepareSdkWithProgressAsync(DownloadToken);
+            var package = sender is Button { Tag: DLSS_Swapper.Data.Streamline.StreamlineSdkRelease selected }
+                ? await WithTransferProgressAsync($"Streamline SDK {selected.Tag}", progress => _sdk.PrepareAsync(selected, DownloadToken, progress), DownloadToken)
+                : await PrepareSdkWithProgressAsync(DownloadToken);
             _sdkStatus.Text = LanguageAppearance.Format("Linux_DllLibraryWindow_27", "Streamline SDK {0} — ready", package.Tag);
             _statusText.Text = LibraryDownloadWorkflow.Describe([], package.WasDownloaded ? [$"Streamline SDK {package.Tag}"] : [], LanguageAppearance.Current);
         }
         catch (Exception error) { AppLog.Write(ApplicationLogLevel.Error, error.Message); _sdkStatus.Text = DownloadToken.IsCancellationRequested ? LanguageAppearance.Get("Linux_DllLibraryWindow_26", "Streamline SDK download cancelled.") : LanguageAppearance.Format("Linux_DllLibraryWindow_25", "Streamline SDK: {0}", error.Message); }
-        finally { EndDownload(); }
+        finally { EndDownload(); await RefreshSdkVersionAsync(); }
     }
 
 

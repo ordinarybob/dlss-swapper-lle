@@ -13,7 +13,7 @@ namespace DlssSwapper.Linux.Gui.Tests;
 internal static class Program
 {
     [STAThread]
-    private static int Main()
+    private static int Main(string[] args)
     {
         // No desktop lifetime: App cannot construct MainWindow or discover real libraries.
         // Use real text layout: the dummy renderer stalls on blank-line confirmation text.
@@ -22,6 +22,20 @@ internal static class Program
         Directory.CreateDirectory(root);
         try
         {
+            if (args.Contains("--streamline-ui-tests"))
+            {
+                var sdkOwner = new Window { Width = 1100, Height = 800 };
+                sdkOwner.Show();
+                try
+                {
+                    StreamlineDialogTests.Run(sdkOwner, root);
+                    BatchDialogTests.Run(sdkOwner, root);
+                    StreamlineLibraryHistoryTests.Run(root);
+                    Console.WriteLine("PASS: targeted Streamline version selection and batch UI regressions (headless).");
+                }
+                finally { sdkOwner.Close(); }
+                return 0;
+            }
             var library = new PersistentLibrary(new LibraryStateStore(Path.Combine(root, "state")));
             library.UpdateState(state => { });
             var gameRoot = Path.Combine(root, "Folder name"); Directory.CreateDirectory(gameRoot);
@@ -131,7 +145,8 @@ internal static class Program
                 Check(library.State.HasSelectedStorageProfile, "Saving performance settings did not mark the storage profile selected");
                 Check(new LinuxLibraryState { ScanConcurrency = -5, ArtworkConcurrency = 100 }.Performance == new PerformanceLimits(1, 64), "Concurrency bounds not enforced");
                 Console.WriteLine("PASS headless downloaded-only settings cancel/save/reload (not native Linux acceptance)");
-                StreamlineDialogTests.Run(owner, root);
+            StreamlineDialogTests.Run(owner, root);
+            StreamlineLibraryHistoryTests.Run(root);
                 BatchDialogTests.Run(owner, root);
                 DllRestoreDialogTests.Run(owner, root);
                 GameDllPickerDialogTests.Run(owner, root);

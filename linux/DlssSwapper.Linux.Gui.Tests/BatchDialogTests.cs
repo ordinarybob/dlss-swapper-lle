@@ -32,7 +32,7 @@ internal static class BatchDialogTests
         Check(components.Length == 2 && components.All(box => box.IsChecked == true), "Batch lists absent components or omits detected components");
         Check(Equals(ToolTip.GetTip(components.Single(box => Equals(box.Content, "sl.common.dll"))), "Fixture common services"),
             "Batch component tooltip ignored translation");
-        var picker = window.GetVisualDescendants().OfType<ComboBox>().Single();
+        var picker = window.GetVisualDescendants().OfType<ComboBox>().Single(box => box.PlaceholderText != "Streamline SDK version");
         Check(picker.Items.Cast<object>().Any(item => item.ToString() == "v3.1.4 (v1.0.1.41314)"), "Batch omitted public FSR version");
         foreach (var name in new[] { "Apply", "Cancel", "View / save report", "Components…" })
         {
@@ -49,7 +49,7 @@ internal static class BatchDialogTests
         window = new BatchUpdateWindow(catalog, [scan with { StreamlineFiles = [] }], new Offline(), dllCacheRoot: Path.Combine(root, "empty-cache"), downloadedOnly: true);
         closed = window.ShowDialog(owner);
         Check(!window.GetVisualDescendants().OfType<CheckBox>().Single().IsEnabled, "Empty batch enables Streamline");
-        Check(window.GetVisualDescendants().OfType<ComboBox>().Single().Items.Count == 1, "Downloaded-only batch retained an uncached release");
+        Check(window.GetVisualDescendants().OfType<ComboBox>().Single(box => box.PlaceholderText != "Streamline SDK version").Items.Count == 1, "Downloaded-only batch retained an uncached release");
         window.Close(); Check(closed.IsCompleted, "Empty batch failed to close");
         Console.WriteLine("PASS headless batch detected components/version labels/footer (not native Linux acceptance)");
         VerifyExecution(owner, root, catalog);
@@ -95,7 +95,7 @@ internal static class BatchDialogTests
         }
         window.GetVisualDescendants().OfType<CheckBox>().Single(box => box.Content?.ToString()?.StartsWith("Include Streamline") == true).IsChecked = true;
         Components(window).Single(box => Equals(box.Content, "sl.reflex.dll")).IsChecked = false;
-        window.GetVisualDescendants().OfType<ComboBox>().Single().SelectedIndex = 1;
+        window.GetVisualDescendants().OfType<ComboBox>().Single(box => box.PlaceholderText != "Streamline SDK version").SelectedIndex = 1;
         Click(window, "Apply"); var confirmation = Confirm();
         Check(network.Packages == 1, "Batch did not acquire exactly one SDK");
         Check(confirmation.FindControl<TextBlock>("WarningText")?.Text?.Contains("not recommended") == true, "Batch omitted partial-set warning");

@@ -22,6 +22,7 @@
             TextWrapping="Wrap" />
 
         <StackPanel Grid.Row="1" Spacing="4">
+            <ComboBox x:Name="VersionPicker" Header="Streamline SDK version" HorizontalAlignment="Stretch" SelectionChanged="VersionPicker_SelectionChanged"/>
             <TextBlock x:Name="DetectedText" Text="Checking this game…" FontWeight="SemiBold" />
             <TextBlock x:Name="PackageText" Text="Latest package not checked." TextWrapping="Wrap" />
             <HyperlinkButton x:Name="ReleaseNotesLink" Content="Package release notes" Padding="0" Visibility="Collapsed" />

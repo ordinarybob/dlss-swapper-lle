@@ -51,7 +51,12 @@ namespace DlssSwapper.Linux.Tests
                 var calls = StreamlineReleaseManager.Calls;
                 await StreamlineBatchUpdateWorkflow.ApplyAsync(discovered, names, false);
                 Check(StreamlineReleaseManager.Calls == calls, "Downloaded-only performed acquisition");
+                results = await StreamlineBatchUpdateWorkflow.ApplyAsync(discovered, names, false, new("v2.7.32", "https://fixture.invalid/old.zip"));
+                Check(results.Take(2).All(result => result.Status == BatchSwapStatus.Error) && StreamlineReleaseManager.Calls == calls,
+                    "Downloaded-only substituted another SDK for an uncached selected release");
                 Settings.Instance.OnlyShowDownloadedDlls = false;
+                await StreamlineBatchUpdateWorkflow.ApplyAsync(discovered, names, false, new("v2.12.0", "https://fixture.invalid/sdk.zip"));
+                Check(StreamlineReleaseManager.RequestedTag == "v2.12.0", "Batch ignored selected SDK release");
                 StreamlineReleaseManager.Fail = true;
                 results = await StreamlineBatchUpdateWorkflow.ApplyAsync(discovered, names, false);
                 Check(results.Take(2).All(result => result.Status == BatchSwapStatus.Error), "Download errors not isolated/reported");
@@ -188,12 +193,17 @@ namespace DLSS_Swapper.Helpers
 namespace DLSS_Swapper.Data.Streamline
 {
     internal sealed record StreamlinePackage(string Tag, string DirectoryPath);
+    internal sealed record StreamlineRelease(string Tag, string DownloadUrl);
     internal static class StreamlineReleaseManager
     {
         internal static StreamlinePackage? Package;
         internal static int Calls;
         internal static bool Fail;
         internal static StreamlinePackage? FindNewestCached() => Package;
+        internal static StreamlinePackage? FindCached(string tag) => Package?.Tag == tag ? Package : null;
+        internal static string? RequestedTag;
+        internal static Task<StreamlinePackage> PrepareAsync(StreamlineRelease release)
+        { RequestedTag = release.Tag; return PrepareLatestAsync(); }
         internal static Task<StreamlinePackage> PrepareLatestAsync()
         { Calls++; return Fail ? Task.FromException<StreamlinePackage>(new IOException("Download failed")) : Task.FromResult(Package!); }
     }

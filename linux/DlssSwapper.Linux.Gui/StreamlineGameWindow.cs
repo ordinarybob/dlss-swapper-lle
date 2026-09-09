@@ -30,6 +30,9 @@ public sealed class StreamlineGameWindow : Window
     private StreamlinePreviewSnapshot? _preview;
     private string? _package;
     private string? _latest;
+    private readonly ComboBox _versions = new() { PlaceholderText = "Streamline SDK version", HorizontalAlignment = HorizontalAlignment.Stretch };
+    private StreamlineSdkRelease? _selectedRelease;
+    private bool _loadingVersions;
     private string? _latestError;
     private bool _busy = true, _refreshing;
 
@@ -49,6 +52,16 @@ public sealed class StreamlineGameWindow : Window
         header.Children.Add(Text(LanguageAppearance.Get("Linux_StreamlineGameWindow_200", "Only existing components are replaced. First originals are kept for restoration. SDK release numbers and DLL versions may differ; game compatibility is not verified.")));
         header.Children.Add(new ScrollViewer { Content = _packageText, MaxHeight = 60,
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled });
+        header.Children.Add(_versions);
+        _versions.SelectionChanged += async (_, _) =>
+        {
+            if (_busy || _loadingVersions || _closed || _versions.SelectedItem is not StreamlineSdkRelease release) return;
+            _selectedRelease = release; _package = _sdk.FindCached(release.Tag);
+            _busy = true; UpdateActions();
+            try { await RefreshAsync(); }
+            catch (Exception error) { _status.Text = error.Message; }
+            finally { _busy = false; if (!_closed) UpdateActions(); }
+        };
         header.Children.Add(_all);
         layout.Children.Add(header);
         var scroll = new ScrollViewer { Content = _rows, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
@@ -56,7 +69,7 @@ public sealed class StreamlineGameWindow : Window
         var footer = new StackPanel { Spacing = 8 };
         footer.Children.Add(new ScrollViewer { Content = _status, MaxHeight = 100 });
         var packageActions = new WrapPanel();
-        packageActions.Children.Add(Action(LanguageAppearance.Get("Linux_StreamlineGameWindow_199", "Get latest package"), async () => { var p = await _sdk.PrepareLatestAsync(OperationToken); _package = p.DirectoryPath; _latest = p.Tag; _status.Text = p.WasDownloaded ? LanguageAppearance.Format("Linux_StreamlineGameWindow_198", "Downloaded SDK {0}. No game files changed.", p.Tag) : LanguageAppearance.Get("Linux_StreamlineGameWindow_197", "No new files downloaded."); await RefreshAsync(); }));
+        packageActions.Children.Add(Action("Download selected package", async () => { var p = await PrepareSelectedAsync(); _package = p.DirectoryPath; _status.Text = p.WasDownloaded ? $"Downloaded SDK {p.Tag}. No game files changed." : "No new files downloaded."; await RefreshAsync(); }));
         packageActions.Children.Add(Action(LanguageAppearance.Get("Linux_StreamlineGameWindow_196", "Use local package"), ChooseLocalAsync));
         _restoreAll = Action(LanguageAppearance.Get("Linux_StreamlineGameWindow_195", "Restore all originals"), () => ApplyAsync(true, true));
         packageActions.Children.Add(_restoreAll);
@@ -82,7 +95,7 @@ public sealed class StreamlineGameWindow : Window
             else _selected.Clear();
             RenderRows();
         };
-        Opened += async (_, _) => { _startup = Task.WhenAll(CheckVersionAsync(), LoadAsync()); await _startup; };
+        Opened += async (_, _) => { _startup = LoadAsync(); await _startup; };
         Closing += (_, e) => { if (_busy) { e.Cancel = true; RequestCancellation(); } };
         Closed += async (_, _) => { _closed = true; _lifetime.Cancel(); await _startup; _http.Dispose(); _lifetime.Dispose(); };
         UpdateActions();
@@ -106,22 +119,34 @@ public sealed class StreamlineGameWindow : Window
     }
     private async Task LoadAsync()
     {
-        try { _package = await Task.Run(_sdk.FindNewestCached); await RefreshAsync(); }
+        try { await CheckVersionAsync(); if (_closed) return; _package = _selectedRelease is null ? null : await Task.Run(() => _sdk.FindCached(_selectedRelease.Tag)); await RefreshAsync(); }
         catch (Exception error) { AppLog.Write(ApplicationLogLevel.Error, error.Message); _status.Text = error.Message; }
         finally { _busy = false; UpdateActions(); }
     }
     private async Task CheckVersionAsync()
     {
+        _loadingVersions = true;
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             timeout.CancelAfter(TimeSpan.FromSeconds(15));
-            _latest = (await _sdk.FetchLatestAsync(timeout.Token)).Tag;
+            var releases = await _sdk.FetchReleasesAsync(timeout.Token);
             if (_closed) return;
+            _latest = releases.FirstOrDefault()?.Tag;
+            _versions.ItemsSource = releases.Where(release => _library?.State.OnlyShowDownloadedDlls != true || _sdk.FindCached(release.Tag) is not null).ToArray();
+            _versions.SelectedIndex = 0; _selectedRelease = _versions.SelectedItem as StreamlineSdkRelease;
             UpdatePackageText();
             if (!_busy) RenderRows();
         }
-        catch (Exception error) { AppLog.Write(ApplicationLogLevel.Error, error.Message); if (!_closed) { _latestError = error.Message; UpdatePackageText(); } }
+        catch (Exception error) { AppLog.Write(ApplicationLogLevel.Error, error.Message); if (!_closed) { _versions.ItemsSource = _sdk.CachedReleases(); _versions.SelectedIndex = 0; _selectedRelease = _versions.SelectedItem as StreamlineSdkRelease; _latestError = error.Message; UpdatePackageText(); } }
+        finally { _loadingVersions = false; }
+    }
+    private Task<StreamlineSdkPackage> PrepareSelectedAsync()
+    {
+        var release = _selectedRelease ?? throw new InvalidOperationException("Select an SDK version first.");
+        if (_library?.State.OnlyShowDownloadedDlls == true && _sdk.FindCached(release.Tag) is null)
+            throw new InvalidOperationException("The selected SDK is not downloaded. Download it from Library first.");
+        return _sdk.PrepareAsync(release, OperationToken);
     }
     private async Task RefreshAsync()
     {
@@ -150,7 +175,7 @@ public sealed class StreamlineGameWindow : Window
             var content = new StackPanel { Spacing = 5 };
             content.Children.Add(Text(row.FileName, 16));
             content.Children.Add(Text(StreamlineDisplay.Description(row.FileName)));
-            var available = _package is not null ? StreamlineDisplay.Text(row.PackageVersion) : _latest is not null ? $"{_latest} SDK"
+            var available = _package is not null ? StreamlineDisplay.Text(row.PackageVersion) : _selectedRelease is not null ? $"{_selectedRelease.Tag} SDK"
                 : _latestError is null ? LanguageAppearance.Get("Linux_VersionPending", "Version lookup pending")
                 : LanguageAppearance.Get("Linux_VersionUnavailable", "Version unavailable");
             content.Children.Add(Text(LanguageAppearance.Format("Linux_StreamlineGameWindow_186", "Installed: {0}    Available: {1}    Original: {2}", StreamlineDisplay.Text(row.InstalledVersion), available, StreamlineDisplay.Text(row.OriginalVersion))));
@@ -169,13 +194,14 @@ public sealed class StreamlineGameWindow : Window
         _cancel.IsVisible = _operation is not null;
         _cancel.IsEnabled = _operation is { IsCancellationRequested: false };
         foreach (var button in _buttons) button.IsEnabled = !_busy;
+        _versions.IsEnabled = !_busy && !_loadingVersions;
         _rows.IsEnabled = !_busy; _all.IsEnabled = !_busy && _preview?.Components.Count > 0;
         _refreshing = true;
         _all.IsChecked = _selected.Count == 0 ? false : _selected.Count == _preview?.Components.Count ? true : null;
         _refreshing = false;
         if (_applySelected is null) return;
-        _applySelected.IsEnabled = !_busy && _selected.Count > 0 && (_package is null || _preview?.SelectTargets(_selected).CanUpdate == true);
-        _applyAll.IsEnabled = !_busy && _preview?.Components.Count > 0 && (_package is null || _preview.CanUpdate);
+        _applySelected.IsEnabled = !_busy && (_selectedRelease is not null || _package is not null) && _selected.Count > 0 && (_package is null || _preview?.SelectTargets(_selected).CanUpdate == true);
+        _applyAll.IsEnabled = !_busy && (_selectedRelease is not null || _package is not null) && _preview?.Components.Count > 0 && (_package is null || _preview.CanUpdate);
         _restoreAll.IsEnabled = !_busy && _preview?.CanRestore == true;
         _restoreSelected.IsEnabled = !_busy && _preview?.SelectTargets(_selected).CanRestore == true;
     }
@@ -187,8 +213,8 @@ public sealed class StreamlineGameWindow : Window
         if (!restore && _package is null)
         {
             _status.Text = LanguageAppearance.Get("Linux_StreamlineGameWindow_184", "Downloading SDK; game files have not changed yet…");
-            var package = await _sdk.PrepareLatestAsync(OperationToken);
-            _package = package.DirectoryPath; _latest = package.Tag;
+            var package = await PrepareSelectedAsync();
+            _package = package.DirectoryPath;
         }
         await RefreshAsync();
         OperationToken.ThrowIfCancellationRequested();

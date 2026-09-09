@@ -301,7 +301,7 @@ public partial class GameGridPageModel : ObservableObject
         {
             var results = await DllUpdateWorkflow.ApplyAsync(games, dllSelections);
             results.AddRange(await DLSS_Swapper.Data.Streamline.StreamlineBatchUpdateWorkflow.ApplyAsync(
-                picker.ViewModel.StreamlineGames, streamlineSelections, partialApproved));
+                picker.ViewModel.StreamlineGames, streamlineSelections, partialApproved, picker.ViewModel.SelectedStreamlineRelease));
             results.AddRange(await BatchPresetUpdateWorkflow.ApplyAsync(games, presetSelections));
             var summaryDialog = new EasyContentDialog(gameGridPage.XamlRoot)
             {

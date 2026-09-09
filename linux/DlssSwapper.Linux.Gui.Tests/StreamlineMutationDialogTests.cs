@@ -109,7 +109,7 @@ internal static class StreamlineMutationDialogTests
         {
             HttpContent content;
             if (request.RequestUri?.Host == "api.github.com")
-                content = new StringContent("{\"tag_name\":\"v2.12.0\",\"assets\":[{\"name\":\"streamline-sdk-test.zip\",\"browser_download_url\":\"https://fixture.invalid/sdk.zip\"}]}");
+                content = new StringContent("[{\"tag_name\":\"v2.12.0\",\"assets\":[{\"name\":\"streamline-sdk-v2.12.0.zip\",\"browser_download_url\":\"https://fixture.invalid/sdk.zip\"}]}]");
             else
             {
                 Interlocked.Increment(ref Packages);

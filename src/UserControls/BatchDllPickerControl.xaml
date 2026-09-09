@@ -66,8 +66,11 @@
         </Button>
         </Grid>
         <Border Grid.Row="2" MinHeight="36">
+        <StackPanel Spacing="6" Visibility="{x:Bind ViewModel.IncludeStreamline, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}">
+        <ComboBox Header="Streamline SDK version" ItemsSource="{x:Bind ViewModel.StreamlineVersions}" SelectedItem="{x:Bind ViewModel.SelectedStreamlineRelease, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
         <TextBlock Text="{x:Bind ViewModel.StreamlineStatus, Mode=OneWay}" TextWrapping="Wrap"
                    Visibility="{x:Bind ViewModel.IncludeStreamline, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" />
+        </StackPanel>
         </Border>
         <ScrollViewer
             Grid.Row="3"

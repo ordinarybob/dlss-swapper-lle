@@ -19,6 +19,8 @@ public sealed partial class StreamlineComponentsControl : UserControl
     StreamlinePreviewSnapshot? _preview;
     StreamlinePreviewSnapshot? _confirmedPreview;
     string? _latestTag;
+    StreamlineRelease? _selectedRelease;
+    bool _loadingVersions;
     string? _latestCheckError;
     readonly CancellationTokenSource _metadataCancellation = new();
     readonly HashSet<string> _untrustedTargets = new(StringComparer.OrdinalIgnoreCase);
@@ -80,34 +82,53 @@ public sealed partial class StreamlineComponentsControl : UserControl
         _dialog.Opened -= Dialog_Opened;
         // Native dialog templates may unload/reparent their content while opening.
         // Use the dialog lifetime, and never queue the network lookup behind disk work.
-        await Task.WhenAll(CheckLatestVersionAsync(), RefreshInstalledAsync());
+        await CheckLatestVersionAsync();
+        if (!_unloaded) await RefreshInstalledAsync();
     }
 
     async Task CheckLatestVersionAsync()
     {
+        _loadingVersions = true;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_metadataCancellation.Token);
         timeout.CancelAfter(TimeSpan.FromSeconds(15));
         try
         {
-            var release = await StreamlineReleaseManager.FetchLatestAsync(timeout.Token);
+            var releases = await StreamlineReleaseManager.FetchReleasesAsync(timeout.Token);
             if (_unloaded) return;
-            _latestTag = release.Tag;
+            VersionPicker.ItemsSource = releases.Where(release => !Settings.Instance.OnlyShowDownloadedDlls || StreamlineReleaseManager.FindCached(release.Tag) is not null).ToArray();
+            VersionPicker.SelectedIndex = 0;
+            _selectedRelease = VersionPicker.SelectedItem as StreamlineRelease;
+            _latestTag = _selectedRelease?.Tag;
             _latestCheckError = null;
         }
         catch (Exception exception)
         {
             if (_unloaded) return;
             _latestCheckError = exception is OperationCanceledException ? "request timed out" : exception.Message;
+            VersionPicker.ItemsSource = StreamlineReleaseManager.CachedReleases();
+            VersionPicker.SelectedIndex = 0;
+            _selectedRelease = VersionPicker.SelectedItem as StreamlineRelease;
+            _latestTag = _selectedRelease?.Tag;
         }
+        finally { _loadingVersions = false; }
         RefreshPackageText();
         RefreshActionButtons();
     }
 
+    async void VersionPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingVersions || _busy || _unloaded || VersionPicker.SelectedItem is not StreamlineRelease release) return;
+        _selectedRelease = release;
+        _latestTag = release.Tag;
+        _confirmedPreview = null;
+        await RefreshInstalledAsync();
+    }
+
     void RefreshPackageText()
     {
-        var latest = _latestTag is not null ? $"Latest SDK: {_latestTag}"
-            : _latestCheckError is not null ? $"Latest SDK check failed: {_latestCheckError}"
-            : "Checking latest SDK version…";
+        var latest = _latestTag is not null ? $"Selected SDK: {_latestTag}"
+            : _latestCheckError is not null ? $"Release history unavailable: {_latestCheckError}"
+            : "No SDK version selected.";
         PackageText.Text = latest + (_package is null ? string.Empty
             : $" · Comparison package: {_package.Tag} (cached).");
         var notesTag = _latestTag ?? _package?.Tag;
@@ -155,7 +176,7 @@ public sealed partial class StreamlineComponentsControl : UserControl
         {
             if (reloadPackage)
             {
-                var cached = await Task.Run(StreamlineReleaseManager.FindNewestCached);
+                var cached = await Task.Run(() => _selectedRelease is null ? null : StreamlineReleaseManager.FindCached(_selectedRelease.Tag));
                 _package = cached;
             }
             _installedFiles = await Task.Run(() =>
@@ -208,13 +229,16 @@ public sealed partial class StreamlineComponentsControl : UserControl
 
     async Task<bool> DownloadLatestPackageAsync()
     {
-        if (_busy) return false;
+        if (_busy || _selectedRelease is null) return false;
+        var release = _selectedRelease;
+        if (Settings.Instance.OnlyShowDownloadedDlls && StreamlineReleaseManager.FindCached(release.Tag) is null)
+        { StatusText.Text = "The selected SDK is not downloaded. Download it from Library first."; return false; }
         using var cancellation = new CancellationTokenSource();
         _downloadCancellation = cancellation;
-        SetBusy(true, "Checking NVIDIA's latest Streamline release…", showProgress: true);
+        SetBusy(true, $"Preparing Streamline {release.Tag}…", showProgress: true);
         try
         {
-            _package = await StreamlineReleaseManager.PrepareLatestAsync(
+            _package = await StreamlineReleaseManager.PrepareAsync(release,
                 (downloaded, total, percent) =>
                 {
                     DispatcherQueue.TryEnqueue(() =>
@@ -456,17 +480,19 @@ public sealed partial class StreamlineComponentsControl : UserControl
     {
         // Selection events may fire while InitializeComponent is constructing the control.
         if (_dialog is null || SelectionText is null) return;
-        var available = !_busy && !_confirmationOpen;
+        var available = !_busy && !_confirmationOpen && !_loadingVersions;
+        VersionPicker.IsEnabled = available;
+        PrepareButton.Content = "Download selected package";
         var selected = _preview?.SelectTargets(_selectedPaths.Intersect(
             _preview.Components.Select(item => item.TargetPath), StringComparer.OrdinalIgnoreCase));
-        PrepareButton.IsEnabled = available;
+        PrepareButton.IsEnabled = available && _selectedRelease is not null;
         ComponentList.IsEnabled = available;
         SelectAllCheckBox.IsEnabled = available && _preview?.Components.Count > 0;
         SelectAllCheckBox.IsChecked = _selectedPaths.Count == 0 ? false
             : _selectedPaths.Count == _preview?.Components.Count ? true : (bool?)null;
-        _dialog.IsPrimaryButtonEnabled = available && !_hasPendingRecovery &&
+        _dialog.IsPrimaryButtonEnabled = available && _selectedRelease is not null && !_hasPendingRecovery &&
             (NeedsPackageDownload ? selected?.Components.Count > 0 : selected?.CanUpdate == true && IsTrusted(selected));
-        _dialog.IsSecondaryButtonEnabled = available && !_hasPendingRecovery &&
+        _dialog.IsSecondaryButtonEnabled = available && _selectedRelease is not null && !_hasPendingRecovery &&
             (NeedsPackageDownload ? _preview?.Components.Count > 0 : _preview?.CanUpdate == true && IsTrusted(_preview));
         RestoreButton.IsEnabled = available && !_hasPendingRecovery && _preview?.CanRestore == true;
         RestoreSelectedButton.IsEnabled = available && !_hasPendingRecovery && selected?.CanRestore == true;

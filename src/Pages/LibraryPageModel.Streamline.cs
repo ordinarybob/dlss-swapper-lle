@@ -1,4 +1,6 @@
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,7 +16,8 @@ public partial class LibraryPageModel
     sealed record LibraryDownloadResult(string Name, bool Downloaded, string? Error = null);
     Task<LibraryDownloadResult>? _streamlineDownload;
     bool _checkingStreamline;
-    int _downloadGeneration;
+    int _activeStreamlineDownloads;
+    public ObservableCollection<StreamlineLibraryRow> StreamlineReleases { get; } = [];
 
     public Visibility StreamlineVisibility => SelectedSelectorBarItem?.Tag is string
         ? Visibility.Visible : Visibility.Collapsed;
@@ -22,47 +25,41 @@ public partial class LibraryPageModel
         ? Visibility.Collapsed : Visibility.Visible;
 
     [ObservableProperty]
-    public partial string StreamlineVersion { get; set; } = "Streamline SDK";
-
-    [ObservableProperty]
     public partial string StreamlineStatus { get; set; } = "Checking latest version…";
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(DownloadStreamlineCommand))]
     public partial bool IsStreamlineDownloading { get; set; }
 
     internal async Task RefreshStreamlineAsync()
     {
-        if (_checkingStreamline || IsStreamlineDownloading) return;
+        if (_checkingStreamline) return;
         _checkingStreamline = true;
-        var generation = _downloadGeneration;
         try
         {
-            var cached = await Task.Run(StreamlineReleaseManager.FindNewestCached);
-            if (generation != _downloadGeneration) return;
-            StreamlineVersion = cached is null ? "Streamline SDK" : $"Streamline SDK {cached.Tag}";
-            StreamlineStatus = "Checking latest version…";
+            if (StreamlineReleases.Count == 0) PopulateStreamlineReleases(await Task.Run(StreamlineReleaseManager.CachedReleases));
+            if (!IsStreamlineDownloading) StreamlineStatus = "Loading release history…";
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            var release = await StreamlineReleaseManager.FetchLatestAsync(timeout.Token);
-            if (generation != _downloadGeneration) return;
-            StreamlineVersion = $"Streamline SDK {release.Tag}";
-            StreamlineStatus = cached?.Tag == release.Tag
-                ? "Downloaded · ready for game and batch updates"
-                : cached is null ? "Available to download"
-                : $"Update available · {cached.Tag} downloaded";
+            var releases = await StreamlineReleaseManager.FetchReleasesAsync(timeout.Token);
+            PopulateStreamlineReleases(releases);
+            if (!IsStreamlineDownloading) StreamlineStatus = $"{releases.Count} SDK versions · Downloads do not change game files.";
         }
         catch (Exception ex)
         {
-            if (generation == _downloadGeneration)
-                StreamlineStatus = $"Could not check latest version: {ex.Message}";
+            if (!IsStreamlineDownloading)
+            {
+                PopulateStreamlineReleases(StreamlineReleaseManager.CachedReleases());
+                StreamlineStatus = $"Could not load release history: {ex.Message}. Showing downloaded packages.";
+            }
         }
         finally { _checkingStreamline = false; }
     }
 
-    bool CanDownloadStreamline() => !IsStreamlineDownloading;
-
-    [RelayCommand(CanExecute = nameof(CanDownloadStreamline))]
-    async Task DownloadStreamlineAsync() => await AcquireStreamlineAsync();
+    void PopulateStreamlineReleases(System.Collections.Generic.IReadOnlyList<StreamlineRelease> releases)
+    {
+        StreamlineReleases.Clear();
+        foreach (var release in releases)
+            StreamlineReleases.Add(new(release, async () => await DownloadStreamlineCoreAsync(release)));
+    }
 
     // Both entry points share one operation, including its final result.
     Task<LibraryDownloadResult> AcquireStreamlineAsync()
@@ -71,16 +68,17 @@ public partial class LibraryPageModel
         return _streamlineDownload = DownloadStreamlineCoreAsync();
     }
 
-    async Task<LibraryDownloadResult> DownloadStreamlineCoreAsync()
+    async Task<LibraryDownloadResult> DownloadStreamlineCoreAsync(StreamlineRelease? release = null)
     {
         IsStreamlineDownloading = true;
-        ++_downloadGeneration;
-        StreamlineStatus = "Downloading latest package…";
+        ++_activeStreamlineDownloads;
+        StreamlineStatus = release is null ? "Downloading latest package…" : $"Downloading Streamline {release.Tag}…";
         try
         {
-            var package = await StreamlineReleaseManager.PrepareLatestAsync();
-            StreamlineVersion = $"Streamline SDK {package.Tag}";
-            StreamlineStatus = "Downloaded · ready for game and batch updates";
+            var package = release is null ? await StreamlineReleaseManager.PrepareLatestAsync()
+                : await StreamlineReleaseManager.PrepareAsync(release);
+            StreamlineStatus = $"Streamline {package.Tag} downloaded · ready for game and batch updates";
+            foreach (var row in StreamlineReleases) row.RefreshDownloaded();
             return new($"Streamline SDK {package.Tag}", package.WasDownloaded);
         }
         catch (Exception ex)
@@ -88,6 +86,32 @@ public partial class LibraryPageModel
             StreamlineStatus = $"Download failed: {ex.Message}";
             return new("Streamline SDK", false, ex.Message);
         }
-        finally { IsStreamlineDownloading = false; }
+        finally { IsStreamlineDownloading = --_activeStreamlineDownloads > 0; }
+    }
+}
+
+public partial class StreamlineLibraryRow : ObservableObject
+{
+    readonly StreamlineRelease _release;
+    readonly Func<Task> _download;
+    public string Version => _release.Tag;
+    [ObservableProperty] public partial string Status { get; set; } = "Available to download";
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(DownloadCommand))]
+    public partial bool IsDownloaded { get; set; }
+    internal StreamlineLibraryRow(StreamlineRelease release, Func<Task> download)
+    { _release = release; _download = download; RefreshDownloaded(); }
+    internal void RefreshDownloaded()
+    {
+        IsDownloaded = StreamlineReleaseManager.FindCached(_release.Tag) is not null;
+        Status = IsDownloaded ? "Downloaded" : "Available to download";
+    }
+    bool CanDownload() => !IsDownloaded;
+    [RelayCommand(CanExecute = nameof(CanDownload))]
+    async Task DownloadAsync()
+    {
+        Status = "Downloading…";
+        await _download();
+        RefreshDownloaded();
+        if (!IsDownloaded) Status = "Download failed. See the message above; retry to download.";
     }
 }

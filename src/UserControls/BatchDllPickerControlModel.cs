@@ -20,6 +20,13 @@ public partial class BatchDllPickerControlModel : ObservableObject
     readonly WeakReference<EasyContentDialog> _parentDialogWeakReference;
     readonly IReadOnlyList<Game> _games;
     bool _streamlineLoaded;
+    internal ObservableCollection<StreamlineRelease> StreamlineVersions { get; } = [];
+    StreamlineRelease? _selectedStreamlineRelease;
+    internal StreamlineRelease? SelectedStreamlineRelease
+    {
+        get => _selectedStreamlineRelease;
+        set { if (SetProperty(ref _selectedStreamlineRelease, value)) UpdateApplyButton(); }
+    }
     readonly CancellationTokenSource _closed = new();
     internal IReadOnlyList<StreamlineBatchGame> StreamlineGames { get; private set; } = [];
     public ObservableCollection<BatchStreamlineRowModel> StreamlineRows { get; } = [];
@@ -71,8 +78,22 @@ public partial class BatchDllPickerControlModel : ObservableObject
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_closed.Token);
         timeout.CancelAfter(TimeSpan.FromSeconds(15));
-        try { return "Latest SDK: " + (await StreamlineReleaseManager.FetchLatestAsync(timeout.Token)).Tag; }
-        catch (Exception) { return "Latest SDK unavailable; Apply will retry"; }
+        try
+        {
+            var releases = await StreamlineReleaseManager.FetchReleasesAsync(timeout.Token);
+            foreach (var release in releases.Where(release => !Settings.Instance.OnlyShowDownloadedDlls || StreamlineReleaseManager.FindCached(release.Tag) is not null))
+                StreamlineVersions.Add(release);
+            SelectedStreamlineRelease = StreamlineVersions.FirstOrDefault();
+            OnPropertyChanged(nameof(SelectedStreamlineRelease));
+            return StreamlineVersions.Count > 0 ? "Select the SDK version to apply" : "No downloaded SDK versions available";
+        }
+        catch (Exception)
+        {
+            foreach (var release in StreamlineReleaseManager.CachedReleases()) StreamlineVersions.Add(release);
+            SelectedStreamlineRelease = StreamlineVersions.FirstOrDefault();
+            OnPropertyChanged(nameof(SelectedStreamlineRelease));
+            return "Release history unavailable; showing downloaded versions";
+        }
     }
 
     internal List<string> PlannedStreamlineActions => IncludeStreamline
@@ -206,9 +227,10 @@ public partial class BatchDllPickerControlModel : ObservableObject
         if (_parentDialogWeakReference.TryGetTarget(out var dialog))
         {
             dialog.IsPrimaryButtonEnabled =
-                !(IncludeStreamline && IsStreamlineLoading) && (Rows.Any(row => row.HasDllAction)
+                !(IncludeStreamline && IsStreamlineLoading)
+                && !(PlannedStreamlineActions.Count > 0 && SelectedStreamlineRelease is null) && (Rows.Any(row => row.HasDllAction)
                 || PresetRows.Any(row => row.HasPresetAction)
-                || PlannedStreamlineActions.Count > 0);
+                || PlannedStreamlineActions.Count > 0 && SelectedStreamlineRelease is not null);
         }
     }
 
@@ -216,7 +238,11 @@ public partial class BatchDllPickerControlModel : ObservableObject
     void UpdateDetectedDllsToLatest()
     {
         if (IncludeStreamline)
+        {
+            SelectedStreamlineRelease = StreamlineVersions.FirstOrDefault();
+            OnPropertyChanged(nameof(SelectedStreamlineRelease));
             foreach (var row in StreamlineRows) row.IsSelected = true;
+        }
         foreach (var row in Rows)
         {
             var latest = DllUpdateWorkflow.FindLatestRecord(

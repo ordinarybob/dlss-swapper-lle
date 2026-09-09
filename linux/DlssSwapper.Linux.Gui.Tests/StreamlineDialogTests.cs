@@ -26,9 +26,9 @@ internal static class StreamlineDialogTests
         var closed = window.ShowDialog(owner);
         Button Action(string name) => window.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, name));
         var timeout = System.Diagnostics.Stopwatch.StartNew();
-        while ((!Action("Apply all").IsEnabled || network.Requests == 0) && timeout.Elapsed < TimeSpan.FromSeconds(5))
+        while ((!Action("Close").IsEnabled || network.Requests == 0) && timeout.Elapsed < TimeSpan.FromSeconds(5))
         { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
-        Check(Action("Apply all").IsEnabled, "Component discovery did not finish");
+        Check(Action("Close").IsEnabled && !Action("Apply all").IsEnabled, "Offline dialog must not offer an unspecified SDK update");
         Check(window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Fixture common services"),
             "Streamline component description ignored translation");
         Check(window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text?.Contains("Installed: Fixture unknown version") == true) == 4
@@ -38,7 +38,7 @@ internal static class StreamlineDialogTests
         Check(!Action("Apply selected").IsEnabled, "Empty selection enabled Apply selected");
         all.IsChecked = true;
         var components = window.GetVisualDescendants().OfType<CheckBox>().Where(box => !ReferenceEquals(box, all)).ToArray();
-        Check(components.Length == 4 && components.All(box => box.IsChecked == true) && Action("Apply selected").IsEnabled, "Select all failed to enable selected operation before download");
+        Check(components.Length == 4 && components.All(box => box.IsChecked == true) && !Action("Apply selected").IsEnabled, "Selection was lost or an unspecified SDK update was enabled");
         components[0].IsChecked = false;
         Check(all.IsChecked is null, "Partial selection not shown in select-all box");
         all.IsChecked = false; // Clicking an indeterminate header selects the remaining items.
@@ -47,7 +47,7 @@ internal static class StreamlineDialogTests
         Check(!Action("Apply selected").IsEnabled, "Clear all retained selected operation");
         Check(!Action("Restore selected").IsEnabled && !Action("Restore all originals").IsEnabled, "Restore enabled without backups");
         window.Width = window.MinWidth; window.Height = window.MinHeight; Dispatcher.UIThread.RunJobs();
-        foreach (var name in new[] { "Get latest package", "Use local package", "Restore all originals", "Restore selected", "Recover interrupted operation", "Apply selected", "Apply all", "Close" })
+        foreach (var name in new[] { "Download selected package", "Use local package", "Restore all originals", "Restore selected", "Recover interrupted operation", "Apply selected", "Apply all", "Close" })
         {
             var button = Action(name); var point = button.TranslatePoint(default, window)!.Value;
             Check(point.Y >= 0 && point.Y + button.Bounds.Height <= window.ClientSize.Height + 1
@@ -79,9 +79,14 @@ internal static class StreamlineDialogTests
         Until(() => Action("Apply all").IsEnabled && window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text?.Contains("Latest SDK: v2.12.0") == true));
         Check(network.Packages == 0, "Opening dialog downloaded the SDK");
         Check(window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text?.Contains("Available: v2.12.0 SDK") == true) == 4, "Available rows did not update after version lookup");
+        var versions = window.GetVisualDescendants().OfType<ComboBox>().Single();
+        Check(versions.Items.Count == 2, "Historical SDK version missing from game picker");
+        versions.SelectedIndex = 1;
+        Until(() => Action("Apply all").IsEnabled && window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text?.Contains("Available: v2.7.32 SDK") == true) == 4);
         window.GetVisualDescendants().OfType<CheckBox>().Single(box => Equals(box.Content, "Select all components")).IsChecked = true;
         Action("Apply selected").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Until(() => network.Packages == 1 && Action("Apply selected").IsEnabled);
+        Check(network.LastPackage?.EndsWith("v2.7.32.zip") == true && versions.SelectedItem?.ToString() == "v2.7.32", "Apply or failure reset the selected historical SDK");
         Check(window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text?.Contains("503") == true), "Failed acquisition not reported");
         Check(window.GetVisualDescendants().OfType<CheckBox>().All(box => box.IsChecked == true), "Failed acquisition lost selected components");
         Check(Directory.GetFiles(root).Length == 4 && Directory.GetFiles(root).All(file => File.ReadAllBytes(file).SequenceEqual(new byte[] {1,2,3})), "Failed acquisition changed game files");
@@ -103,16 +108,18 @@ internal static class StreamlineDialogTests
     private sealed class VersionMetadata : HttpMessageHandler
     {
         internal int Packages;
+        internal string? LastPackage;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request.RequestUri?.Host == "api.github.com")
                 return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
                 {
                     RequestMessage = request,
-                    Content = new StringContent(JsonSerializer.Serialize(new { tag_name = "v2.12.0", assets = new[]
-                    { new { name = "streamline-sdk-v2.12.0.zip", browser_download_url = "https://fixture.invalid/sdk.zip" } } }))
+                    Content = new StringContent(JsonSerializer.Serialize(new[] { "v2.12.0", "v2.7.32" }.Select(tag => new { tag_name = tag, assets = new[]
+                    { new { name = $"streamline-sdk-{tag}.zip", browser_download_url = $"https://fixture.invalid/{tag}.zip" } } })))
                 });
             Interlocked.Increment(ref Packages);
+            LastPackage = request.RequestUri?.AbsoluteUri;
             return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable) { RequestMessage = request });
         }
     }

@@ -20,6 +20,7 @@ public sealed class BatchUpdateWindow : Window
     private readonly CheckBox _include = new() { Content = LanguageAppearance.Get("Linux_BatchUpdateWindow_22", "Include Streamline updates (experimental)") };
     private readonly Button _componentPicker = new() { Content = LanguageAppearance.Get("Linux_BatchUpdateWindow_21", "Components…"), IsEnabled = false };
     private readonly TextBlock _sdkStatus = Text("");
+    private readonly ComboBox _sdkVersion = new() { PlaceholderText = "Streamline SDK version", HorizontalAlignment = HorizontalAlignment.Stretch, IsVisible = false };
     private readonly TextBlock _status = Text("");
     private readonly StackPanel _settings = new() { Spacing = 12 };
     private readonly Button _apply = new() { [!ContentControl.ContentProperty] = new DynamicResourceExtension("General_Apply"), MinWidth = 120 };
@@ -53,7 +54,7 @@ public sealed class BatchUpdateWindow : Window
         var top = new StackPanel { Spacing = 8 };
         top.Children.Add(Text(Title, 21));
         var latest = new Button { Content = LanguageAppearance.Get("Linux_BatchUpdateWindow_18", "Select latest detected DLL versions") };
-        latest.Click += (_, _) => { if (!_busy) foreach (var picker in _families.Values) picker.SelectedIndex = picker.ItemCount > 1 ? 1 : 0; };
+        latest.Click += (_, _) => { if (_busy) return; foreach (var picker in _families.Values) picker.SelectedIndex = picker.ItemCount > 1 ? 1 : 0; if (_include.IsChecked == true) _sdkVersion.SelectedIndex = 0; };
         top.Children.Add(latest);
         top.Children.Add(Text(LanguageAppearance.Get("Linux_BatchUpdateWindow_17", "Only installed files are updated. First originals are kept. NVIDIA preset controls are unavailable in this Linux app.")));
         layout.Children.Add(top);
@@ -69,6 +70,7 @@ public sealed class BatchUpdateWindow : Window
         var streamlineControls = new Grid { ColumnDefinitions = new("*,Auto"), ColumnSpacing = 8 };
         streamlineControls.Children.Add(_include); Grid.SetColumn(_componentPicker, 1); streamlineControls.Children.Add(_componentPicker);
         top.Children.Add(streamlineControls);
+        top.Children.Add(_sdkVersion);
         top.Children.Add(new ScrollViewer { Content = _sdkStatus, MaxHeight = 60,
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled });
         var componentPanel = new StackPanel { Spacing = 6, Width = 300 };
@@ -86,6 +88,7 @@ public sealed class BatchUpdateWindow : Window
         _include.IsCheckedChanged += async (_, _) =>
         {
             _componentPicker.IsEnabled = !_busy && _include.IsChecked == true;
+            _sdkVersion.IsVisible = _include.IsChecked == true;
             if (_include.IsChecked != true) return;
             if (_metadataTask.IsCompleted) _metadataTask = CheckVersionAsync();
             await _metadataTask;
@@ -119,10 +122,15 @@ public sealed class BatchUpdateWindow : Window
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             timeout.CancelAfter(TimeSpan.FromSeconds(15));
-            var release = await _sdk.FetchLatestAsync(timeout.Token);
-            if (!_closed && _include.IsChecked == true) _sdkStatus.Text = LanguageAppearance.Format("Linux_BatchUpdateWindow_12", "Latest SDK: {0}. ", release.Tag) + (_downloadedOnly ? LanguageAppearance.Get("Linux_BatchUpdateWindow_11", "Downloaded-only mode: uses the cached SDK.") : LanguageAppearance.Get("Linux_BatchUpdateWindow_10", "Downloaded automatically when applying."));
+            var releases = await _sdk.FetchReleasesAsync(timeout.Token);
+            if (_closed) return;
+            var selected = (_sdkVersion.SelectedItem as StreamlineSdkRelease)?.Tag;
+            var choices = releases.Where(release => !_downloadedOnly || _sdk.FindCached(release.Tag) is not null).ToArray();
+            _sdkVersion.ItemsSource = choices;
+            _sdkVersion.SelectedItem = choices.FirstOrDefault(release => release.Tag == selected) ?? choices.FirstOrDefault();
+            _sdkStatus.Text = _downloadedOnly ? "Downloaded-only: select a cached SDK version." : "Selected SDK downloads automatically when applying.";
         }
-        catch (Exception ex) { AppLog.Write(ApplicationLogLevel.Error, ex.Message); if (!_closed && _include.IsChecked == true) _sdkStatus.Text = LanguageAppearance.Format("Linux_BatchUpdateWindow_9", "Could not check the SDK version: {0}", ex.Message); }
+        catch (Exception ex) { AppLog.Write(ApplicationLogLevel.Error, ex.Message); if (!_closed) { _sdkVersion.ItemsSource = _sdk.CachedReleases(); _sdkVersion.SelectedIndex = 0; _sdkStatus.Text = "Release history unavailable; showing downloaded packages."; } }
     }
 
     private static TextBlock Text(string text, double size = 14) => new() { Text = text, FontSize = size, TextWrapping = TextWrapping.Wrap };
@@ -133,17 +141,19 @@ public sealed class BatchUpdateWindow : Window
         var candidates = _families.Where(pair => pair.Value.SelectedItem is Choice { Entry: not null })
             .ToDictionary(pair => pair.Key, pair => ((Choice)pair.Value.SelectedItem!).Entry!);
         var components = _include.IsChecked == true ? _components.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToArray() : [];
+        var sdkRelease = _sdkVersion.SelectedItem as StreamlineSdkRelease;
+        if (components.Length > 0 && sdkRelease is null) { _status.Text = _downloadedOnly ? "No cached Streamline SDK. Download it from Library first." : "Select a Streamline SDK version first."; return; }
         if (candidates.Count == 0 && components.Length == 0) { _status.Text = LanguageAppearance.Get("Linux_BatchUpdateWindow_8", "Select a DLL version or Streamline components first."); return; }
         _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         var token = _operation.Token;
         _busy = true; _settings.IsEnabled = false; _apply.IsEnabled = false; _cancel.Content = LanguageAppearance.Get("Linux_BatchUpdateWindow_7", "Cancel operation");
-        _include.IsEnabled = false; _componentPicker.IsEnabled = false;
+        _include.IsEnabled = false; _componentPicker.IsEnabled = false; _sdkVersion.IsEnabled = false;
         try
         {
             _status.Text = LanguageAppearance.Get("Linux_BatchUpdateWindow_6", "Preparing the comparison. Any package download here does not change game files.");
             var plan = await Task.Run(() => BatchUpdateWorkflow.PrepareAsync(_scans, candidates, components,
-                async ct => _downloadedOnly ? _sdk.FindNewestCached() ?? throw new InvalidOperationException(LanguageAppearance.Get("Linux_MissingCachedSdk", "No cached Streamline SDK. Download it from the Library or turn off downloaded-only filtering in Settings."))
-                    : (await _sdk.PrepareLatestAsync(ct)).DirectoryPath, token, LanguageAppearance.Current));
+                async ct => _downloadedOnly ? _sdk.FindCached(sdkRelease!.Tag) ?? throw new InvalidOperationException("The selected Streamline SDK is not downloaded.")
+                    : (await _sdk.PrepareAsync(sdkRelease!, ct)).DirectoryPath, token, LanguageAppearance.Current));
             token.ThrowIfCancellationRequested();
             var files = plan.Games.Sum(game => game.Dlls.Where(item => item.Status == UpdatePlanStatus.Ready).Sum(item => item.Targets.Count)
                 + (game.Streamline is { CanUpdate: true } sdk ? sdk.Components.Count(item => item.UpdateChanges) : 0));
@@ -168,6 +178,6 @@ public sealed class BatchUpdateWindow : Window
         catch (OperationCanceledException) { _status.Text = LanguageAppearance.Get("Linux_BatchUpdateWindow_2", "Cancelled before applying. No game files changed; any downloaded package remains cached."); }
         catch (Exception ex) { AppLog.Write(ApplicationLogLevel.Error, ex.Message); _status.Text = LanguageAppearance.Format("Linux_BatchUpdateWindow_1", "Batch operation could not finish: {0}", ex.Message); }
         finally { _operation.Dispose(); _operation = null; _busy = false; _settings.IsEnabled = true; _apply.IsEnabled = true; _cancel.IsEnabled = true; _cancel.Content = Results.Count > 0 ? LanguageAppearance.Get("General_Close", "Close") : LanguageAppearance.Get("General_Cancel", "Cancel");
-            _include.IsEnabled = _components.Count > 0; _componentPicker.IsEnabled = _include.IsChecked == true; }
+            _include.IsEnabled = _components.Count > 0; _componentPicker.IsEnabled = _include.IsChecked == true; _sdkVersion.IsEnabled = true; }
     }
 }
