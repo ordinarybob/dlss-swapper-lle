@@ -24,14 +24,18 @@ public static class StreamlineSdkAcquisition
         var tag = root.GetProperty("tag_name").GetString();
         if (string.IsNullOrWhiteSpace(tag) || !StreamlinePackageCache.TryGetVersion(tag, out _))
             throw new InvalidDataException("NVIDIA's latest Streamline release has no supported stable version tag.");
+        // NVIDIA publishes ARM variants beside the unsuffixed x64 SDK. The
+        // game components we extract are x64, regardless of the host OS.
+        var expectedName = $"streamline-sdk-{tag}.zip";
         var assets = root.GetProperty("assets").EnumerateArray().Where(item =>
         {
             var name = item.GetProperty("name").GetString();
-            return name is not null && name.StartsWith("streamline-sdk-", StringComparison.OrdinalIgnoreCase)
-                && name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(name, expectedName, StringComparison.OrdinalIgnoreCase);
         }).ToArray();
-        if (assets.Length != 1)
-            throw new InvalidDataException("NVIDIA's latest Streamline release has no unambiguous SDK ZIP asset.");
+        if (assets.Length == 0)
+            throw new InvalidDataException($"Streamline {tag} has no x64 SDK package ({expectedName}).");
+        if (assets.Length > 1)
+            throw new InvalidDataException($"Streamline {tag} lists more than one {expectedName} package. Download was stopped to avoid selecting the wrong file.");
         var url = assets[0].GetProperty("browser_download_url").GetString();
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || uri.UserInfo.Length != 0)
             throw new InvalidDataException("The Streamline SDK download URL is invalid.");

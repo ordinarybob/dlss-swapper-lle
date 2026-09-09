@@ -10,6 +10,7 @@ internal static class StreamlineAcquisitionTests
 {
     internal static async Task RunAsync()
     {
+        TestReleaseSelection();
         var root = Path.Combine(Path.GetTempPath(), "lle-sdk-fixture-" + Guid.NewGuid().ToString("N"));
         using var archive = new MemoryStream();
         using (var zip = new ZipArchive(archive, ZipArchiveMode.Create, leaveOpen: true))
@@ -24,7 +25,7 @@ internal static class StreamlineAcquisitionTests
         var metadata = JsonSerializer.Serialize(new
         {
             tag_name = "v2.12.0",
-            assets = new[] { new { name = "streamline-sdk-test.zip", browser_download_url = "https://example.invalid/sdk.zip" } },
+            assets = new[] { new { name = "streamline-sdk-v2.12.0.zip", browser_download_url = "https://example.invalid/sdk.zip" } },
         });
         using var handler = new Handler(metadata, zipBytes);
         using var http = new HttpClient(handler);
@@ -81,6 +82,65 @@ internal static class StreamlineAcquisitionTests
             StreamlineComponentSet.ValidatePackage(retry.DirectoryPath);
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
+    private static void TestReleaseSelection()
+    {
+        const string tag = "v2.14.1";
+        const string x64 = "streamline-sdk-v2.14.1.zip";
+        const string arm = "streamline-sdk-v2.14.1-aarch64.zip";
+        const string armEc = "streamline-sdk-v2.14.1-arm64ec.zip";
+        StreamlineSdkRelease Parse(string releaseTag, params string[] names)
+        {
+            using var document = JsonDocument.Parse(JsonSerializer.Serialize(new
+            {
+                tag_name = releaseTag,
+                assets = names.Select(name => new
+                {
+                    name,
+                    browser_download_url = $"https://github.com/NVIDIA-RTX/Streamline/releases/download/{releaseTag}/{name}",
+                }),
+            }));
+            return StreamlineSdkAcquisition.ParseRelease(document.RootElement);
+        }
+        foreach (var names in new[] { new[] { arm, armEc, x64 }, new[] { x64, armEc, arm }, new[] { x64 } })
+        {
+            var selected = Parse(tag, names);
+            Check(selected.Tag == tag && selected.DownloadUrl.EndsWith("/" + x64, StringComparison.Ordinal),
+                "The current multi-architecture release did not select the x64 SDK.");
+        }
+        Check(Parse("v2.12.0", "streamline-sdk-v2.12.0.zip").Tag == "v2.12.0",
+            "The older single-package release was rejected.");
+        foreach (var names in new[]
+        {
+            new[] { arm, armEc },
+            new[] { "streamline-sdk-v2.12.0.zip" },
+            new[] { "streamline-sdk-v2.14.1-debug.zip", "source.zip" },
+            Array.Empty<string>(),
+            new[] { x64, x64 },
+        })
+        {
+            var rejected = false;
+            try { Parse(tag, names); }
+            catch (InvalidDataException ex)
+            {
+                rejected = true;
+                Check(ex.Message.Contains(x64, StringComparison.Ordinal), "Package selection failure did not identify the required file.");
+            }
+            Check(rejected, "Missing, wrong-architecture, wrong-version or duplicate SDK package was accepted.");
+        }
+        foreach (var url in new[] { "http://example.invalid/sdk.zip", "https://user@example.invalid/sdk.zip", "not-a-url" })
+        {
+            using var document = JsonDocument.Parse(JsonSerializer.Serialize(new
+            {
+                tag_name = tag,
+                assets = new[] { new { name = x64, browser_download_url = url } },
+            }));
+            var rejected = false;
+            try { StreamlineSdkAcquisition.ParseRelease(document.RootElement); }
+            catch (InvalidDataException) { rejected = true; }
+            Check(rejected, "Invalid SDK URL was accepted.");
+        }
     }
 
     private static void Check(bool condition, string message)

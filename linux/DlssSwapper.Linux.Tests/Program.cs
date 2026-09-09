@@ -14,6 +14,12 @@ internal static class Program
     {
         if (args.Length == 3 && args[0] == "--state-worker")
             return StateProcessTests.Worker(args[1], args[2]);
+        if (args.Length == 1 && args[0] == "--streamline-acquisition-tests")
+        {
+            await StreamlineAcquisitionTests.RunAsync();
+            Console.WriteLine("PASS: Streamline release selection and acquisition");
+            return 0;
+        }
         var tests = new (string Name, Func<Task> Run)[]
         {
             ("All translation bundles, fallback, RTL and saved language", TranslationsTests.RunAsync),
