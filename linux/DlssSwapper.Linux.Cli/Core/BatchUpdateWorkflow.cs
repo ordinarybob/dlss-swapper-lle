@@ -83,8 +83,7 @@ public static class BatchUpdateWorkflow
             await workers.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (game.Dlls.Count == 0) return [];
-                return await ApplySequentialAsync(new([game with { Streamline = null, StreamlineError = null }], null), Acquire, cancellation.Token, translations).ConfigureAwait(false);
+                return await ApplySequentialAsync(new([game], plan.PackageDirectory), Acquire, cancellation.Token, translations).ConfigureAwait(false);
             }
             finally { workers.Release(); }
         }
@@ -98,11 +97,7 @@ public static class BatchUpdateWorkflow
         var results = new List<OperationResult>();
         for (var index = 0; index < plan.Games.Count; index++)
         {
-            var game = plan.Games[index];
             results.AddRange(await tasks[index].ConfigureAwait(false));
-            // SDK transactions stay sequential and use the original confirmed preview.
-            if (game.Streamline is not null || game.StreamlineError is not null || game.Dlls.Count == 0)
-                results.AddRange(await ApplySequentialAsync(new([game with { Dlls = [] }], plan.PackageDirectory), Acquire, cancellation.Token, translations).ConfigureAwait(false));
         }
         return results;
     }

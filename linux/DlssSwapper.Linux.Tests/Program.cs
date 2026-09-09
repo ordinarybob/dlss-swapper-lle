@@ -25,6 +25,10 @@ internal static class Program
             await StreamlineBatchWorkflowTests.Run();
             StreamlineSafetyTests.Run();
             StreamlineDecisionPreviewTests.Run();
+            await StreamlineConcurrencyTests.RunAsync();
+            await StreamlineBatchWorkflowTests.TestConcurrencyAsync();
+            await BatchConcurrencyTests.RunAsync();
+            await LinuxBatchUpdateTests.RunAsync();
             Console.WriteLine("PASS: Streamline batch, rollback and stale-preview safety");
             return 0;
         }
@@ -130,6 +134,8 @@ internal static class Program
             ("Streamline component descriptions", RunSync(StreamlineComponentDescriptionTests.Run)),
             ("Streamline selected targets and apply all", RunSync(StreamlineSelectionTests.Run)),
             ("Windows Streamline batch orchestration", StreamlineBatchWorkflowTests.Run),
+            ("Streamline independent transactions and conflict locks", StreamlineConcurrencyTests.RunAsync),
+            ("Windows Streamline batch worker bounds and overlap ordering", StreamlineBatchWorkflowTests.TestConcurrencyAsync),
             ("Linux combined batch acquisition, selection and failure isolation", LinuxBatchUpdateTests.RunAsync),
             ("Manual launch manifest validation and suggestions", RunSync(ManualLaunchTests.Run)),
             ("Linux launch requests preserve arguments and validate runners", RunSync(LinuxManualLaunchTests.Run)),

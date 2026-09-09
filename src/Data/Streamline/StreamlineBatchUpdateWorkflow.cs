@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DLSS_Swapper.Data.Streamline;
@@ -47,16 +48,16 @@ internal static class StreamlineBatchUpdateWorkflow
             }
             catch (Exception exception) { packageError = exception.Message; }
         }
-        foreach (var entry in games)
+        async Task<BatchSwapResult> ApplyGame(StreamlineBatchGame entry)
         {
             var label = "Streamline" + (package is null ? string.Empty : $" {package.Tag}");
-            if (entry.Error is not null) { results.Add(Result(entry.Game, BatchSwapStatus.Error, label, entry.Error)); continue; }
+            if (entry.Error is not null) return Result(entry.Game, BatchSwapStatus.Error, label, entry.Error);
             if (StreamlineBatchSelection.SelectPaths(entry.Paths, names).Count == 0)
-            { results.Add(Result(entry.Game, BatchSwapStatus.Skipped, label, "No selected Streamline components installed.")); continue; }
-            if (packageError is not null) { results.Add(Result(entry.Game, BatchSwapStatus.Error, label, packageError)); continue; }
+                return Result(entry.Game, BatchSwapStatus.Skipped, label, "No selected Streamline components installed.");
+            if (packageError is not null) return Result(entry.Game, BatchSwapStatus.Error, label, packageError);
             try
             {
-                // One transaction per game: Streamline's engine serializes operations and rolls back the entire selected set.
+                // Each game's selected set retains its own locks and rollback transaction.
                 var outcome = await Task.Run(() =>
                 {
                     var installed = StreamlineComponentSet.FindInstalled(entry.Game.InstallPath);
@@ -75,13 +76,38 @@ internal static class StreamlineBatchUpdateWorkflow
                     return StreamlineComponentSet.UpdateExisting(package.DirectoryPath, targets, expectedPreview: preview);
                 });
                 var historyWarning = await StreamlineHistory.TryRecordAsync(entry.Game, outcome, false);
-                results.Add(Result(entry.Game, !outcome.Success ? BatchSwapStatus.Error
+                return Result(entry.Game, !outcome.Success ? BatchSwapStatus.Error
                     : outcome.ComponentCount == 0 ? BatchSwapStatus.AlreadyCurrent : BatchSwapStatus.Swapped,
-                    label, historyWarning is null ? outcome.Message : outcome.Message + " " + historyWarning));
+                    label, historyWarning is null ? outcome.Message : outcome.Message + " " + historyWarning);
             }
-            catch (Exception exception) { results.Add(Result(entry.Game, BatchSwapStatus.Error, label, exception.Message)); }
+            catch (Exception exception) { return Result(entry.Game, BatchSwapStatus.Error, label, exception.Message); }
         }
-        return results;
+
+        using var workers = new SemaphoreSlim(Math.Max(1, Settings.Instance.BatchSwapConcurrency));
+        var roots = games.Select(entry => entry.Error is not null || StreamlineBatchSelection.SelectPaths(entry.Paths, names).Count == 0
+            ? null : Path.GetFullPath(entry.Game.InstallPath)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar).ToArray();
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        var tasks = new List<Task<BatchSwapResult>>();
+        async Task<BatchSwapResult> RunGame(StreamlineBatchGame entry, Task[] predecessors)
+        {
+            // Wait before taking a worker slot so overlapping queued games cannot
+            // occupy the slots needed by independent games or their predecessors.
+            await Task.WhenAll(predecessors).ConfigureAwait(false);
+            await workers.WaitAsync().ConfigureAwait(false);
+            try { return await ApplyGame(entry).ConfigureAwait(false); }
+            finally { workers.Release(); }
+        }
+        for (var index = 0; index < games.Count; index++)
+        {
+            var predecessors = Enumerable.Range(0, index).Where(previous =>
+                roots[index] is { } current && roots[previous] is { } previousRoot &&
+                (current.StartsWith(previousRoot, comparison) || previousRoot.StartsWith(current, comparison)))
+                .Select(previous => (Task)tasks[previous]).ToArray();
+            var entry = games[index];
+            tasks.Add(Task.Run(() => RunGame(entry, predecessors)));
+        }
+        return (await Task.WhenAll(tasks).ConfigureAwait(false)).ToList();
     }
 
     // One signature check/snapshot per selected SDK component, not per game.

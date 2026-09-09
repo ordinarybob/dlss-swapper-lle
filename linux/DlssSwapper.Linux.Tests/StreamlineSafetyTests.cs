@@ -120,6 +120,15 @@ internal static class StreamlineSafetyTests
         var recovered = StreamlineComponentSet.RecoverInterrupted(fixture.Game);
         Check(recovered.Success && journal.Entries.All(entry => ReadLabel(entry.Target) == "interrupted-new"), "Replica journal rolled back a committed multi-directory operation.");
         Check(!StreamlineComponentSet.HasPendingRecovery(fixture.Game), "Multi-directory journal cleanup was incomplete.");
+
+        // A remaining replica without its authoritative journal is not proof
+        // of completed cleanup; preserve it rather than claim recovery succeeded.
+        var replica = Path.Combine(nested, ".streamline-transaction.json");
+        File.WriteAllText(replica, JsonSerializer.Serialize(journal));
+        var incomplete = StreamlineComponentSet.RecoverInterrupted(fixture.Game);
+        Check(!incomplete.Success && File.Exists(replica)
+            && journal.Entries.All(entry => ReadLabel(entry.Target) == "interrupted-new"),
+            "Missing canonical journal was treated as successful recovery.");
     }
 
     static void TestInterruptedPreparation(Fixture fixture)

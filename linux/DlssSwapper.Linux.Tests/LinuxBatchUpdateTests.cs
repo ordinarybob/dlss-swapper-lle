@@ -101,6 +101,47 @@ internal static class LinuxBatchUpdateTests
             var localizedSdkResult = await BatchUpdateWorkflow.ApplyAsync(localizedSdk, (_, _) => throw new Exception("unexpected acquisition"), default, translations: language);
             Check(localizedSdkResult.Single().Message == "SDK UPDATED 1" && localizedSdkResult.Single().Success, "localized SDK result lost successful count");
             Check(new UpdatePlanner().Plan([ordinaryScan], new Dictionary<DllType, DllCatalogEntry> { [type] = entry }).Single().Message == "Update to 2.0.", "default CLI plan changed");
+
+            // An SDK-only game must finish while an independent game's DLL
+            // acquisition is waiting, not queue behind a global SDK phase.
+            File.WriteAllText(dll, "old ordinary DLL");
+            foreach (var scan in scans) StreamlineSafetyTests.WriteDll(Path.Combine(scan.Game.RootPath, "sl.common.dll"), "old");
+            var concurrent = await BatchUpdateWorkflow.PrepareAsync([ordinaryScan, scans[1]],
+                new Dictionary<DllType, DllCatalogEntry> { [type] = entry }, ["sl.common.dll"], Acquire, default);
+            var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var operation = BatchUpdateWorkflow.ApplyAsync(concurrent, async (_, _) =>
+            {
+                entered.TrySetResult();
+                await release.Task;
+                return payload;
+            }, default, 2);
+            try
+            {
+                await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                var target = Path.Combine(scans[1].Game.RootPath, "sl.common.dll");
+                string ReadUpdatingLabel()
+                {
+                    using var stream = new FileStream(target, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                    stream.Position = 512;
+                    using var reader = new StreamReader(stream);
+                    return reader.ReadToEnd().TrimEnd('\0');
+                }
+                var deadline = DateTime.UtcNow.AddSeconds(10);
+                while (ReadUpdatingLabel() != "new" && DateTime.UtcNow < deadline)
+                    await Task.Delay(20);
+                Check(ReadUpdatingLabel() == "new" && !operation.IsCompleted,
+                    "Independent Streamline game waited for the ordinary DLL batch");
+            }
+            finally
+            {
+                release.TrySetResult();
+                await operation.WaitAsync(TimeSpan.FromSeconds(20));
+            }
+            var concurrentResults = await operation;
+            Check(concurrentResults.Count == 3 && concurrentResults.All(result => result.Success)
+                && concurrentResults[0].Game == scans[0].Game && concurrentResults[2].Game == scans[1].Game,
+                "Combined concurrent batch lost successful outcomes or input order");
         }
         finally { temporary.Delete(true); }
     }

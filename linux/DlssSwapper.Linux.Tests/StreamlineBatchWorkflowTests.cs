@@ -85,6 +85,71 @@ namespace DlssSwapper.Linux.Tests
                 root.Delete(true);
             }
         }
+        internal static async Task TestConcurrencyAsync()
+        {
+            foreach (var (limit, overlap, nested) in new[] { (1, false, false), (2, false, false), (2, true, false), (2, true, true) })
+            {
+                var root = Directory.CreateTempSubdirectory("lle-sdk-workers-");
+                var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                Task<List<BatchSwapResult>>? operation = null;
+                try
+                {
+                    var package = Directory.CreateDirectory(Path.Combine(root.FullName, "sdk")).FullName;
+                    const string name = "sl.common.dll";
+                    StreamlineSafetyTests.WriteDll(Path.Combine(package, name), "new");
+                    var games = Enumerable.Range(0, 3).Select(index => new Game
+                    {
+                        ID = index.ToString(), Title = $"Game {index}",
+                        InstallPath = Directory.CreateDirectory(Path.Combine(root.FullName, overlap
+                            ? Path.Combine(Enumerable.Repeat("same", nested ? index + 1 : 1).ToArray())
+                            : "game" + new string('2', index))).FullName,
+                    }).ToArray();
+                    foreach (var game in games) StreamlineSafetyTests.WriteDll(Path.Combine(game.InstallPath, name), "old");
+                    StreamlineReleaseManager.Package = new("v2.14.1", package);
+                    StreamlineReleaseManager.Fail = false;
+                    Settings.Instance.BatchSwapConcurrency = limit;
+                    var active = 0;
+                    var peak = 0;
+                    var entered = 0;
+                    var expected = overlap ? 1 : limit;
+                    StreamlineHistory.BeforeRecordAsync = async () =>
+                    {
+                        var count = Interlocked.Increment(ref active);
+                        lock (release) peak = Math.Max(peak, count);
+                        if (Interlocked.Increment(ref entered) == expected) started.TrySetResult();
+                        try { await release.Task; }
+                        finally { Interlocked.Decrement(ref active); }
+                    };
+                    var discovered = await StreamlineBatchUpdateWorkflow.DiscoverAsync(games);
+                    operation = StreamlineBatchUpdateWorkflow.ApplyAsync(discovered, [name], false);
+                    await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                    Check(entered == expected && peak == expected, "Worker limit or overlap serialization failed");
+                    release.SetResult();
+                    var results = await operation.WaitAsync(TimeSpan.FromSeconds(10));
+                    Check(results.Select(result => result.GameIdentity).SequenceEqual(new[] { "0", "1", "2" }), "Concurrent results lost input order");
+                    Check(results.All(result => result.Status is BatchSwapStatus.Swapped or BatchSwapStatus.AlreadyCurrent), "Concurrent update reported a false conflict");
+                    Check(results.Count(result => result.Status == BatchSwapStatus.Swapped) == (overlap ? 1 : 3), "Overlapping game was not rechecked after its predecessor");
+                    foreach (var game in games)
+                        Check(StreamlineSafetyTests.ReadLabel(Path.Combine(game.InstallPath, name) + ".dlsss") == "old", "Concurrent update lost original backup");
+                    var invalid = new Game { ID = "invalid", InstallPath = "\0" };
+                    var empty = new Game { ID = "empty", InstallPath = "" };
+                    var rejected = await StreamlineBatchUpdateWorkflow.ApplyAsync(
+                        [new(invalid, [], "Discovery failed"), new(empty, [])], [name], false);
+                    Check(rejected[0].Status == BatchSwapStatus.Error && rejected[1].Status == BatchSwapStatus.Skipped,
+                        "Invalid or empty discovery paths aborted the batch instead of retaining their outcomes");
+                }
+                finally
+                {
+                    release.TrySetResult();
+                    if (operation is not null) await operation.WaitAsync(TimeSpan.FromSeconds(20));
+                    StreamlineHistory.BeforeRecordAsync = null;
+                    Settings.Instance.BatchSwapConcurrency = 2;
+                    root.Delete(true);
+                }
+            }
+        }
+
         static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
     }
 }
@@ -97,6 +162,7 @@ namespace DLSS_Swapper
         internal static Settings Instance { get; } = new();
         internal bool OnlyShowDownloadedDlls { get; set; }
         internal bool AllowUntrusted { get; set; }
+        internal int BatchSwapConcurrency { get; set; } = 2;
     }
     internal static class WinTrust
     {
@@ -134,7 +200,12 @@ namespace DLSS_Swapper.Data.Streamline
     internal static class StreamlineHistory
     {
         internal static int Changed;
-        internal static Task<string?> TryRecordAsync(Game _, StreamlineComponentOperationResult result, bool restoring)
-        { if (result.Success) Changed += result.ChangedPaths?.Count ?? 0; return Task.FromResult<string?>(null); }
+        internal static Func<Task>? BeforeRecordAsync;
+        internal static async Task<string?> TryRecordAsync(Game _, StreamlineComponentOperationResult result, bool restoring)
+        {
+            if (BeforeRecordAsync is not null) await BeforeRecordAsync();
+            if (result.Success) Interlocked.Add(ref Changed, result.ChangedPaths?.Count ?? 0);
+            return null;
+        }
     }
 }

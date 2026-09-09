@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Threading;
 
 namespace DLSS_Swapper.Data.Streamline;
 
@@ -18,7 +17,6 @@ public static class StreamlineComponentSet
 {
     public const string BackupSuffix = ".dlsss";
     const string JournalName = ".streamline-transaction.json";
-    static readonly SemaphoreSlim OperationGate = new(1, 1);
     static readonly StringComparer PathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     public static readonly IReadOnlyList<string> FileNames =
@@ -107,7 +105,6 @@ public static class StreamlineComponentSet
     /// <summary>Retry retained rollback only when current bytes still match this transaction's old or new image.</summary>
     public static StreamlineComponentOperationResult RecoverInterrupted(IReadOnlyList<string> installedFiles)
     {
-        if (!OperationGate.Wait(0)) return Busy();
         var locks = new List<FileStream>();
         try
         {
@@ -119,12 +116,19 @@ public static class StreamlineComponentSet
                 AcquireLocks(Directories(journal.Entries.Select(entry => entry.Target)), locks);
                 var canonical = Path.Combine(Directories(journal.Entries.Select(entry => entry.Target))[0], JournalName);
                 // Only the canonical journal records commit. Replica journals are discovery breadcrumbs.
-                if (File.Exists(canonical))
+                if (!File.Exists(canonical))
                 {
-                    journal = ReadJournal(canonical);
-                    if (journal.Id != discovered.Id || !journal.Entries.Select(entry => entry.Target).SequenceEqual(discovered.Entries.Select(entry => entry.Target), PathComparer))
-                        throw new IOException("The recovery journal changed while acquiring its locks; retry recovery.");
+                    // Another owner may have completed cleanup after discovery.
+                    // Never act on its stale in-memory journal.
+                    if (Directories(journal.Entries.Select(entry => entry.Target))
+                        .Any(dir => File.Exists(Path.Combine(dir, JournalName))))
+                        throw new IOException("The canonical recovery journal is missing. Remaining recovery files were preserved.");
+                    DisposeLocks(locks);
+                    continue;
                 }
+                journal = ReadJournal(canonical);
+                if (journal.Id != discovered.Id || !journal.Entries.Select(entry => entry.Target).SequenceEqual(discovered.Entries.Select(entry => entry.Target), PathComparer))
+                    throw new IOException("The recovery journal changed while acquiring its locks; retry recovery.");
                 if (!journal.Committed && !Rollback(journal, out var errors))
                     return new(false, 0, $"Recovery retained for {canonical}: {errors}");
                 Cleanup(journal);
@@ -133,13 +137,12 @@ public static class StreamlineComponentSet
             return new(true, 0, journals.Length == 0 ? "No interrupted Streamline operation was found." : "Interrupted Streamline operations recovered.");
         }
         catch (Exception ex) { return new(false, 0, ex.Message); }
-        finally { DisposeLocks(locks); OperationGate.Release(); }
+        finally { DisposeLocks(locks); }
     }
 
     static StreamlineComponentOperationResult Mutate(IReadOnlyList<string> targetFiles, Func<string, string> sourceForTarget,
         bool preserveOriginal, Action<int, string>? beforeReplace, StreamlinePreviewSnapshot? expectedPreview)
     {
-        if (!OperationGate.Wait(0)) return Busy();
         var locks = new List<FileStream>();
         Journal? journal = null;
         var durable = false;
@@ -222,7 +225,7 @@ public static class StreamlineComponentSet
             }
             return new(false, 0, ex.Message);
         }
-        finally { DisposeLocks(locks); OperationGate.Release(); }
+        finally { DisposeLocks(locks); }
     }
 
     static bool Rollback(Journal journal, out string errors)
@@ -255,6 +258,9 @@ public static class StreamlineComponentSet
 
     static void AcquireLocks(IEnumerable<string> directories, List<FileStream> locks)
     {
+        // Lock the complete, sorted directory set before reading or changing any
+        // component. Disjoint games may proceed; a partial overlap is rejected.
+        // Opening is nonblocking and callers release any acquired subset on failure.
         foreach (var dir in directories)
         {
             var path = Path.Combine(dir, ".streamline-operation.lock");
@@ -264,7 +270,6 @@ public static class StreamlineComponentSet
         }
     }
     static void DisposeLocks(List<FileStream> locks) { foreach (var item in locks) item.Dispose(); locks.Clear(); }
-    static StreamlineComponentOperationResult Busy() => new(false, 0, "Another Streamline operation is already running.");
     static string RollbackPath(Journal j, Entry e) => e.Target + ".streamline-rollback-" + j.Id;
     static string IncomingPath(Journal j, Entry e) => e.Target + ".streamline-incoming-" + j.Id;
     static string BackupStagePath(Journal j, Entry e) => e.Target + ".streamline-original-" + j.Id;
