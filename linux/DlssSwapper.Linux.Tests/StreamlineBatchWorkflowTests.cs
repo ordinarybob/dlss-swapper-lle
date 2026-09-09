@@ -27,7 +27,9 @@ namespace DlssSwapper.Linux.Tests
                 Check(StreamlineReleaseManager.Calls == 0, "No eligible games acquired a package");
                 Check(StreamlineBatchUpdateWorkflow.HasPartialSets(discovered, [names[0]]), "Partial set warning missing");
                 Check(!StreamlineBatchUpdateWorkflow.HasPartialSets(discovered, names), "Full sets warned as partial");
+                WinTrust.Calls = 0;
                 var results = await StreamlineBatchUpdateWorkflow.ApplyAsync(discovered, names, false);
+                Check(WinTrust.Calls == names.Length, "SDK signatures were not validated exactly once per distinct component");
                 Check(StreamlineReleaseManager.Calls == 1, "Package acquired more than once");
                 Check(results.Count(result => result.Status == BatchSwapStatus.Swapped) == 2 && results[2].Status == BatchSwapStatus.Skipped, "Bad results");
                 Check(results[2].DisplayText.Contains("No selected"), "Skip detail lost");
@@ -57,10 +59,27 @@ namespace DlssSwapper.Linux.Tests
                 WinTrust.Valid = false;
                 results = await StreamlineBatchUpdateWorkflow.ApplyAsync(discovered, names, false);
                 Check(results.Take(2).All(result => result.Status == BatchSwapStatus.Error), "Trust gate bypassed");
+                // A failed batch must release package handles and retry validation.
+                StreamlineSafetyTests.WriteDll(Path.Combine(package, names[0]), "retry");
+                WinTrust.Valid = true;
+                results = await StreamlineBatchUpdateWorkflow.ApplyAsync(discovered.Take(1).ToArray(), names, false);
+                Check(results.Single().Status == BatchSwapStatus.Swapped, "Failed validation prevented retry");
+                var extra = StreamlineComponentSet.FileNames.Skip(2).First();
+                StreamlineSafetyTests.WriteDll(Path.Combine(package, extra), "new");
+                WinTrust.OnVerify = () =>
+                {
+                    WinTrust.OnVerify = null;
+                    StreamlineSafetyTests.WriteDll(Path.Combine(games[0].InstallPath, extra), "outside edit");
+                };
+                results = await StreamlineBatchUpdateWorkflow.ApplyAsync(discovered.Take(1).ToArray(), names.Append(extra).ToArray(), false);
+                Check(results.Single().Status == BatchSwapStatus.Error &&
+                    StreamlineSafetyTests.ReadLabel(Path.Combine(games[0].InstallPath, extra)) == "outside edit",
+                    "Newly discovered component bypassed batch signature validation");
             }
             finally
             {
                 WinTrust.Valid = true;
+                WinTrust.OnVerify = null;
                 Settings.Instance.OnlyShowDownloadedDlls = false;
                 StreamlineReleaseManager.Fail = false;
                 root.Delete(true);
@@ -79,7 +98,13 @@ namespace DLSS_Swapper
         internal bool OnlyShowDownloadedDlls { get; set; }
         internal bool AllowUntrusted { get; set; }
     }
-    internal static class WinTrust { internal static bool Valid = true; internal static bool VerifyEmbeddedSignature(string _) => Valid; }
+    internal static class WinTrust
+    {
+        internal static bool Valid = true;
+        internal static int Calls;
+        internal static Action? OnVerify;
+        internal static bool VerifyEmbeddedSignature(string _) { Calls++; OnVerify?.Invoke(); return Valid; }
+    }
 }
 namespace DLSS_Swapper.Data
 {

@@ -19,6 +19,7 @@ internal static class BatchPresetUpdateWorkflow
         foreach (var game in games)
         {
             await Task.Yield();
+            bool profileChecked = false, hasProfile = false;
             foreach (var selection in selections)
             {
                 if (HasMatchingDll(game, selection.Kind) == false)
@@ -33,7 +34,12 @@ internal static class BatchPresetUpdateWorkflow
 
                 try
                 {
-                    if (NVAPIHelper.Instance.FindGameProfile(game) is null)
+                    if (!profileChecked)
+                    {
+                        hasProfile = NVAPIHelper.Instance.FindGameProfile(game) is not null;
+                        profileChecked = true;
+                    }
+                    if (!hasProfile)
                     {
                         results.Add(CreateResult(
                             game,

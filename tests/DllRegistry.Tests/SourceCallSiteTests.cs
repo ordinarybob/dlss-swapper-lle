@@ -14,6 +14,15 @@ internal static class SourceCallSiteTests
                 throw new Exception(defect + " call-site regression.");
         }
         var library = Read("src/Pages/LibraryPageModel.cs");
+        var batch = Read("src/Data/DllUpdateWorkflow.cs");
+        Require(batch, "verifiedSources[update.Record]", "Batch source validation reuse");
+        Require(batch, "foreach (var source in verifiedSources.Values) source.Dispose();", "Batch source lease cleanup");
+        var game = Read("src/Data/Game.cs");
+        var update = game[game.IndexOf("internal async Task<(bool Success, string Message, bool PromptToRelaunchAsAdmin)> UpdateDllAsync", StringComparison.Ordinal)..];
+        Require(update, "RunInTransactionAsync(connection =>", "Atomic batch database writes");
+        var presets = Read("src/Data/BatchPresetUpdateWorkflow.cs");
+        Require(presets, "if (!profileChecked)", "Preset misses checked once per game");
+        Require(presets, "profileChecked = true;", "Preset miss retained for batch");
         Require(library, "archive.Entries.Where(x => x.Name.EndsWith(\".dll\", StringComparison.OrdinalIgnoreCase))", "WIN-003");
         var manager = Read("src/Data/DLLManager.cs");
         Require(manager, "IsDevFile = versionInfo.IsDebug,", "WIN-004");

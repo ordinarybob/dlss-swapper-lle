@@ -6,6 +6,7 @@ using DLSS_Swapper.Data;
 // the same selectors against the actual observable collections and DLLRecord.
 var manifest = new Manifest();
 StagedFileTests.Run();
+VerifiedDllSourceTests.Run();
 DllArchiveExportTests.Run();
 DiscoveryMetadataTests.Run();
 await AssetDiscoveryTests.RunAsync();

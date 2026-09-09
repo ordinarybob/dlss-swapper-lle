@@ -152,83 +152,101 @@ internal static class DllUpdateWorkflow
         IEqualityComparer<DLLRecord> recordComparer =
             ReferenceEqualityComparer.Instance;
         var downloadErrors = new Dictionary<DLLRecord, string>(recordComparer);
-        foreach (var record in plannedUpdates
-            .Select(update => update.Record)
-            .Distinct(recordComparer))
+        var verifiedSources = new Dictionary<DLLRecord, VerifiedDllSource>(recordComparer);
+        try
         {
-            var availability = await EnsureAvailableAsync(record);
-            if (availability.Success == false)
+            foreach (var record in plannedUpdates
+                .Select(update => update.Record)
+                .Distinct(recordComparer))
             {
-                downloadErrors[record] = availability.Message;
-            }
-        }
-
-        var readyUpdates = new List<PlannedUpdate>();
-        foreach (var update in plannedUpdates)
-        {
-            if (downloadErrors.TryGetValue(update.Record, out var downloadError))
-            {
-                completedResults.Add((
-                    update.Sequence,
-                    CreateResult(
-                        update.Game,
-                        BatchSwapStatus.Error,
-                        update.ActionLabel,
-                        errorMessage: downloadError)));
-            }
-            else
-            {
-                readyUpdates.Add(update);
-            }
-        }
-
-        var appliedResults = new ConcurrentBag<(int Sequence, BatchSwapResult Result)>();
-        var updatesByGame = readyUpdates.GroupBy(update => update.Game).ToList();
-        await Parallel.ForEachAsync(
-            updatesByGame,
-            new ParallelOptions
-            {
-                MaxDegreeOfParallelism = Math.Max(1, Settings.Instance.BatchSwapConcurrency),
-            },
-            async (gameUpdates, _) =>
-            {
-                foreach (var update in gameUpdates)
+                var availability = await EnsureAvailableAsync(record);
+                if (availability.Success == false)
+                {
+                    downloadErrors[record] = availability.Message;
+                }
+                else
                 {
                     try
                     {
-                        var outcome = await update.Game.UpdateDllAsync(update.Record);
-                        appliedResults.Add((
-                            update.Sequence,
-                            CreateResult(
-                                update.Game,
-                                outcome.Success
-                                    ? BatchSwapStatus.Swapped
-                                    : BatchSwapStatus.Error,
-                                update.ActionLabel,
-                                errorMessage: outcome.Message,
-                                promptToRelaunchAsAdmin: outcome.PromptToRelaunchAsAdmin)));
+                        verifiedSources[record] = await Task.Run(() => new VerifiedDllSource(
+                            record.LocalRecord!.ExpectedPath, record.MD5Hash,
+                            !Settings.Instance.AllowUntrusted, WinTrust.VerifyEmbeddedSignature));
                     }
-                    catch (Exception err)
-                    {
-                        Logger.Error(
-                            err,
-                            $"Could not update {update.Record.AssetType} for \"{update.Game.Title}\".");
-                        appliedResults.Add((
-                            update.Sequence,
-                            CreateResult(
-                                update.Game,
-                                BatchSwapStatus.Error,
-                                update.ActionLabel,
-                                errorMessage: err.Message)));
-                    }
+                    catch (Exception error) { downloadErrors[record] = error.Message; }
                 }
-            });
+            }
 
-        completedResults.AddRange(appliedResults);
-        return completedResults
-            .OrderBy(item => item.Sequence)
-            .Select(item => item.Result)
-            .ToList();
+            var readyUpdates = new List<PlannedUpdate>();
+            foreach (var update in plannedUpdates)
+            {
+                if (downloadErrors.TryGetValue(update.Record, out var downloadError))
+                {
+                    completedResults.Add((
+                        update.Sequence,
+                        CreateResult(
+                            update.Game,
+                            BatchSwapStatus.Error,
+                            update.ActionLabel,
+                            errorMessage: downloadError)));
+                }
+                else
+                {
+                    readyUpdates.Add(update);
+                }
+            }
+
+            var appliedResults = new ConcurrentBag<(int Sequence, BatchSwapResult Result)>();
+            var updatesByGame = readyUpdates.GroupBy(update => update.Game).ToList();
+            await Parallel.ForEachAsync(
+                updatesByGame,
+                new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = Math.Max(1, Settings.Instance.BatchSwapConcurrency),
+                },
+                async (gameUpdates, _) =>
+                {
+                    foreach (var update in gameUpdates)
+                    {
+                        try
+                        {
+                            var outcome = await update.Game.UpdateDllAsync(update.Record, verifiedSources[update.Record]);
+                            appliedResults.Add((
+                                update.Sequence,
+                                CreateResult(
+                                    update.Game,
+                                    outcome.Success
+                                        ? BatchSwapStatus.Swapped
+                                        : BatchSwapStatus.Error,
+                                    update.ActionLabel,
+                                    errorMessage: outcome.Message,
+                                    promptToRelaunchAsAdmin: outcome.PromptToRelaunchAsAdmin)));
+                        }
+                        catch (Exception err)
+                        {
+                            Logger.Error(
+                                err,
+                                $"Could not update {update.Record.AssetType} for \"{update.Game.Title}\".");
+                            appliedResults.Add((
+                                update.Sequence,
+                                CreateResult(
+                                    update.Game,
+                                    BatchSwapStatus.Error,
+                                    update.ActionLabel,
+                                    errorMessage: err.Message)));
+                        }
+                    }
+                });
+
+            completedResults.AddRange(appliedResults);
+            return completedResults
+                .OrderBy(item => item.Sequence)
+                .Select(item => item.Result)
+                .ToList();
+        }
+        finally
+        {
+            foreach (var source in verifiedSources.Values) source.Dispose();
+        }
     }
 
     static async Task<(bool Success, string Message)> EnsureAvailableAsync(DLLRecord record)

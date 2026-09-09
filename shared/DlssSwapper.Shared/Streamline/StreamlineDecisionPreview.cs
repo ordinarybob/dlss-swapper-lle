@@ -65,7 +65,8 @@ public sealed class StreamlinePreviewSnapshot
 /// <summary>Explicit, read-only inspection. SDK release labels are never substituted for DLL file versions.</summary>
 public static class StreamlineDecisionPreview
 {
-    public static StreamlinePreviewSnapshot Create(string gameRoot, IEnumerable<string> installedPaths, string? packageDirectory)
+    public static StreamlinePreviewSnapshot Create(string gameRoot, IEnumerable<string> installedPaths, string? packageDirectory,
+        IReadOnlyDictionary<string, StreamlineFileSnapshot>? packageSnapshot = null)
     {
         var comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         var packageFiles = new Dictionary<string, StreamlineFileSnapshot>(StringComparer.OrdinalIgnoreCase);
@@ -75,7 +76,8 @@ public static class StreamlineDecisionPreview
             var installed = ReadFile(path);
             if (!packageFiles.TryGetValue(name, out var package))
             {
-                package = packageDirectory is null
+                package = packageSnapshot is not null && packageSnapshot.TryGetValue(name, out var cached)
+                    ? cached : packageDirectory is null
                     ? new("", "Not downloaded", null, null, StreamlineFileState.NotSelected)
                     : ReadFile(Path.Combine(packageDirectory, StreamlineComponentSet.FileNames.FirstOrDefault(
                         known => string.Equals(known, name, StringComparison.OrdinalIgnoreCase)) ?? name));

@@ -913,7 +913,8 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     /// </summary>
     /// <param name="dlssRecord"></param>
     /// <returns>Tuple containing a boolean of Success, if this is false there will be an error message in the Message response.</returns>
-    internal async Task<(bool Success, string Message, bool PromptToRelaunchAsAdmin)> UpdateDllAsync(DLLRecord dllRecord)
+    internal async Task<(bool Success, string Message, bool PromptToRelaunchAsAdmin)> UpdateDllAsync(DLLRecord dllRecord,
+        VerifiedDllSource? verifiedSource = null)
     {
         if (dllRecord is null)
         {
@@ -939,24 +940,19 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         var backupRecordType = DLLManager.Instance.GetAssetBackupType(dllRecord.AssetType);
         var existingBackupRecords = this.GameAssets.Where(x => x.AssetType == backupRecordType).ToList();
 
+        VerifiedDllSource? ownedSource = null;
+        try
+        {
+            if (verifiedSource is null)
+                verifiedSource = ownedSource = new VerifiedDllSource(dllRecord.LocalRecord.ExpectedPath,
+                    dllRecord.MD5Hash, !Settings.Instance.AllowUntrusted, WinTrust.VerifyEmbeddedSignature);
+        }
+        catch (Exception error) { return (false, error.Message, false); }
+        using var sourceLease = ownedSource;
+        if (!verifiedSource.Matches(dllRecord.LocalRecord.ExpectedPath, dllRecord.MD5Hash, !Settings.Instance.AllowUntrusted))
+            return (false, "The validated source DLL no longer matches this update.", false);
         var versionInfo = FileVersionInfo.GetVersionInfo(dllRecord.LocalRecord.ExpectedPath);
         var dllVersion = versionInfo.GetFormattedFileVersion();
-        var md5Hash = versionInfo.GetMD5Hash();
-        if (dllRecord.MD5Hash != md5Hash)
-        {
-            return (false, "Unable to swap dll because dll hash was invalid.", false);
-        }
-
-
-        // Validate new DLL
-        if (Settings.Instance.AllowUntrusted == false)
-        {
-            var isTrusted = WinTrust.VerifyEmbeddedSignature(dllRecord.LocalRecord.ExpectedPath);
-            if (isTrusted == false)
-            {
-                return (false, "Unable to swap dll as we are unable to verify the signature of the version you are trying to use.\nIf you wish to override this decision please enable 'Allow Untrusted' in settings.", false);
-            }
-        }
 
         var newGameAssets = new List<GameAsset>();
 
@@ -1091,9 +1087,12 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         // Update game assets list by deleting and re-adding.
         using (await Database.Instance.Mutex.LockAsync())
         {
-            await Database.Instance.Connection.InsertAllAsync(dllHistory, false);
-            await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
-            await Database.Instance.Connection.InsertAllAsync(GameAssets, false).ConfigureAwait(false);
+            await Database.Instance.Connection.RunInTransactionAsync(connection =>
+            {
+                connection.InsertAll(dllHistory, false);
+                connection.Execute("DELETE FROM game_asset WHERE id = ?", ID);
+                connection.InsertAll(GameAssets, false);
+            }).ConfigureAwait(false);
         }
 
         return (true, string.Empty, false);

@@ -75,11 +75,19 @@ internal static class StreamlineDecisionPreviewTests
             StreamlineSafetyTests.WriteDll(guardedTarget, "old");
             StreamlineSafetyTests.WriteDll(guardedSource, "new");
             var confirmed = StreamlineDecisionPreview.Create(guardedGame, [guardedTarget], guardedPackage);
+            var sourceSnapshots = new Dictionary<string, StreamlineFileSnapshot>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["sl.common.dll"] = StreamlineDecisionPreview.ReadFile(guardedSource),
+            };
+            var cachedPreview = StreamlineDecisionPreview.Create(guardedGame, [guardedTarget], guardedPackage, sourceSnapshots);
+            Require(confirmed.IsEquivalentTo(cachedPreview, false), "Cached package snapshot changed preview semantics.");
             StreamlineSafetyTests.WriteDll(guardedTarget, "outside edit");
             Require(!StreamlineComponentSet.UpdateExisting(guardedPackage, [guardedTarget], expectedPreview: confirmed).Success &&
                 StreamlineSafetyTests.ReadLabel(guardedTarget) == "outside edit", "Engine must reject stale installed bytes before staging.");
             StreamlineSafetyTests.WriteDll(guardedTarget, "old");
             StreamlineSafetyTests.WriteDll(guardedSource, "changed package");
+            Require(!StreamlineComponentSet.UpdateExisting(guardedPackage, [guardedTarget], expectedPreview: cachedPreview).Success,
+                "Cached package snapshot allowed changed source bytes.");
             Require(!StreamlineComponentSet.UpdateExisting(guardedPackage, [guardedTarget], expectedPreview: confirmed).Success &&
                 !System.IO.File.Exists(guardedTarget + StreamlineComponentSet.BackupSuffix), "Engine must reject stale package bytes before creating backups.");
             StreamlineSafetyTests.WriteDll(guardedSource, "new");

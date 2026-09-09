@@ -28,6 +28,7 @@
     <Compile Include="../../src/Helpers/DllArchiveExport.cs" Link="DllArchiveExport.cs" />
     <Compile Include="../../src/Helpers/StagedOutputFile.cs" Link="StagedOutputFile.cs" />
     <Compile Include="../../src/Helpers/StagedFile.cs" Link="StagedFile.cs" />
+    <Compile Include="../../src/Helpers/VerifiedDllSource.cs" Link="VerifiedDllSource.cs" />
     <Compile Include="../../src/Data/DllFamilyRegistry.cs" Link="DllFamilyRegistry.cs" />
     <Compile Include="../../src/Data/DllRecordSelection.cs" Link="DllRecordSelection.cs" />
     <Compile Include="../../src/Data/Streamline/StreamlineAssetMetadata.cs" Link="StreamlineAssetMetadata.cs" />
