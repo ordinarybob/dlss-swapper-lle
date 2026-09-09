@@ -50,12 +50,3 @@ internal static class ReloadTests
         Console.WriteLine("Reload command: waits for completion, handles failure/dismissal/no-start/exception and removes subscriptions (scan/dialog doubles).");
     }
 }
-
-// The native dialog returns IAsyncOperation; the fixture returns its Task directly.
-namespace DLSS_Swapper.Helpers
-{
-    internal static class DialogTaskAdapter
-    {
-        internal static Task<T> AsTask<T>(this Task<T> task) => task;
-    }
-}

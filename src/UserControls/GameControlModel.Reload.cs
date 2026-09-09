@@ -38,7 +38,7 @@ public partial class GameControlModel
                 // ProcessGame sets Processing synchronously on this UI thread;
                 // missing/unavailable install paths return without starting.
                 if (!Game.Processing) completion.TrySetResult(false);
-                var dialogTask = dialog.ShowAsync().AsTask();
+                var dialogTask = dialog.ShowAsync();
                 await Task.WhenAny(dialogTask, completion.Task);
                 if (dialogTask.IsCompleted)
                 {
@@ -80,4 +80,3 @@ public partial class GameControlModel
         }
     }
 }
-
