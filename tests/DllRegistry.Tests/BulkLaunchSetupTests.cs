@@ -54,6 +54,51 @@ internal static class BulkLaunchSetupTests
             }, token: cancel.Token);
             Check(result.Cancelled && cancelledGame.SaveCalls == 0 && cancelledGame.LaunchExecutable is null,
                 "Cancellation during scan must prevent saving.");
+            var batch = Enumerable.Range(0, 8).Select(i => new ManuallyAddedGame { Title = $"Batch {i}", InstallPath = root }).ToArray();
+            var scanCalls = new System.Collections.Concurrent.ConcurrentDictionary<ManuallyAddedGame, int>();
+            var firstWave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseScans = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var active = 0;
+            var peak = 0;
+            var preparation = ManualLaunchSetup.ScanAllDefaultsAsync(batch, async item =>
+            {
+                scanCalls.AddOrUpdate(item, 1, (_, count) => count + 1);
+                lock (scanCalls)
+                {
+                    active++;
+                    peak = Math.Max(peak, active);
+                    if (active == 4) firstWave.TrySetResult();
+                }
+                try
+                {
+                    await releaseScans.Task;
+                    if (item == batch[2]) throw new IOException("Unreadable folder");
+                    return [new ManualLaunchManifest.Candidate(alan, "AlanWake2.exe")];
+                }
+                finally { lock (scanCalls) active--; }
+            });
+            try
+            {
+                await firstWave.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                Check(!preparation.IsCompleted && batch.All(item => item.SaveCalls == 0), "Review/save must wait for the complete scan.");
+            }
+            finally { releaseScans.TrySetResult(); }
+            var prepared = await preparation;
+            Check(peak == 4 && prepared.Count == batch.Length && prepared.Select(item => item.Game).SequenceEqual(batch),
+                "Bulk scans must be bounded and retain review order.");
+            Check(scanCalls.Count == batch.Length && scanCalls.Values.All(count => count == 1), "Every game must be scanned once.");
+            result = await ManualLaunchSetup.SavePreparedDefaultsAsync(prepared);
+            Check(result.Saved == 7 && result.Skipped.Count == 1 && result.Skipped[0].Contains("Unreadable folder")
+                && scanCalls.Values.All(count => count == 1), "Bulk acceptance must reuse all results, including failures, without rescanning.");
+            using var stopScan = new CancellationTokenSource();
+            stopScan.Cancel();
+            try
+            {
+                await ManualLaunchSetup.ScanAllDefaultsAsync(batch, Scan, token: stopScan.Token);
+                throw new Exception("Cancelled preparation was allowed to continue.");
+            }
+            catch (OperationCanceledException) { }
+            Console.WriteLine("Bulk pre-scan: full-set barrier, four-worker bound, ordered results, isolated errors, cached acceptance and cancellation passed.");
             Console.WriteLine("Bulk launch defaults: ranking/exclusions, saved-choice preservation, missing candidates, failed-save rollback, continuation and cancellation passed.");
         }
         finally { Directory.Delete(root, recursive: true); }

@@ -8,6 +8,18 @@ static void Check(bool condition, string message)
 }
 
 var root = new XamlRoot();
+var footer = new Grid();
+for (var i = 0; i < 5; i++) footer.ColumnDefinitions.Add(new object());
+for (var i = 0; i < 3; i++) footer.Children.Add(new Button());
+var bulk = new Button();
+var launch = new ManualLaunchSetupDialog(root, bulk);
+launch.TemplateParts["CommandSpace"] = footer;
+launch.ApplyTemplate();
+Check(footer.Children.Count == 4 && footer.RowDefinitions.Count == 2 && bulk.Row == 1 && bulk.ColumnSpan == 5,
+    "Bulk action must occupy a separate row below the three native footer buttons.");
+launch.ApplyTemplate();
+Check(footer.Children.Count == 4 && footer.RowDefinitions.Count == 2, "Reapplying the template duplicated the footer.");
+Console.WriteLine("PASS: bulk launch button stays below the native buttons across template reapplication (layout objects doubled).");
 var batch = new EasyContentDialog(root);
 var download = new EasyContentDialog(root);
 var summary = new EasyContentDialog(root);
@@ -86,6 +98,10 @@ namespace Microsoft.UI.Xaml.Controls
     public enum ContentDialogResult { None, Primary }
     public class ContentDialog
     {
+        public Dictionary<string, object> TemplateParts { get; } = [];
+        protected object? GetTemplateChild(string name) => TemplateParts.GetValueOrDefault(name);
+        protected virtual void OnApplyTemplate() { }
+        public void ApplyTemplate() => OnApplyTemplate();
         static int active;
         public static int Peak;
         public XamlRoot? XamlRoot { get; set; }

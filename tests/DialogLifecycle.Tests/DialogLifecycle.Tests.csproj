@@ -8,5 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../src/UserControls/EasyContentDialog.cs" Link="EasyContentDialog.cs" />
+    <Compile Include="../../src/UserControls/ManualLaunchSetupDialog.cs" Link="ManualLaunchSetupDialog.cs" />
   </ItemGroup>
 </Project>

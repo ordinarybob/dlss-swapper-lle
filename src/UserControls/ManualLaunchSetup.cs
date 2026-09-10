@@ -21,7 +21,7 @@ internal static partial class ManualLaunchSetup
         {
             var remember = new CheckBox { Content = "Don't show this again" };
             var content = new StackPanel { Spacing = 12 };
-            content.Children.Add(new TextBlock { Text = "Do you want a manifest for launching these games?\n\nThe app will suggest an executable for each game. Review them individually, or accept defaults for all games in one click. Suggestions are best-effort and may need correcting.\n\nLaunch details are saved in this app's library; no game files are changed. No skips setup. Remembering Yes opens setup automatically on future imports.", TextWrapping = TextWrapping.Wrap });
+            content.Children.Add(new TextBlock { Text = "Do you want a manifest for launching these games?\n\nThe app will scan all selected games first. Then review suggestions individually, or accept defaults for all games in one click. Suggestions are best-effort and may need correcting.\n\nLaunch details are saved in this app's library; no game files are changed. No skips setup. Remembering Yes opens setup automatically on future imports.", TextWrapping = TextWrapping.Wrap });
             content.Children.Add(remember);
             var error = new TextBlock { TextWrapping = TextWrapping.Wrap };
             content.Children.Add(error);
@@ -41,6 +41,9 @@ internal static partial class ManualLaunchSetup
 
     internal static async Task ConfigureAsync(XamlRoot root, IReadOnlyList<ManuallyAddedGame> games)
     {
+        if (games.Count == 0) return;
+        var scans = await ScanAllAsync(root, games);
+        if (scans is null) return;
         for (var index = 0; index < games.Count; index++)
         {
             var game = games[index];
@@ -55,9 +58,7 @@ internal static partial class ManualLaunchSetup
             content.Children.Add(new TextBlock { Text = "Confirm the executable used to start this game—not an installer, uninstaller or crash reporter. Saving does not launch it.", TextWrapping = TextWrapping.Wrap });
             var acceptDefaults = new Button { Content = "Accept default for all games", HorizontalAlignment = HorizontalAlignment.Stretch,
                 Visibility = games.Count > 1 ? Visibility.Visible : Visibility.Collapsed };
-            content.Children.Add(acceptDefaults);
-            if (games.Count > 1)
-                content.Children.Add(new TextBlock { Text = "Uses the suggested executables for this setup. Keeps saved choices; skips games without a valid suggestion.", TextWrapping = TextWrapping.Wrap });
+            ToolTipService.SetToolTip(acceptDefaults, "Uses the scanned suggestions. Keeps saved choices; skips games without a valid suggestion.");
             content.Children.Add(status);
             content.Children.Add(candidates);
             content.Children.Add(executable);
@@ -66,7 +67,7 @@ internal static partial class ManualLaunchSetup
             advanced.Children.Add(arguments);
             advanced.Children.Add(working);
             content.Children.Add(new Expander { Header = "Launch options", Content = advanced, HorizontalAlignment = HorizontalAlignment.Stretch });
-            var dialog = new EasyContentDialog(root) { Title = $"Launch setup ({index + 1}/{games.Count}) — {game.Title}", PrimaryButtonText = index + 1 == games.Count ? "Save" : "Save and next", SecondaryButtonText = "Skip game", CloseButtonText = "Finish later", DefaultButton = ContentDialogButton.Primary, Content = new ScrollViewer { MaxHeight = 440, Content = content } };
+            var dialog = new ManualLaunchSetupDialog(root, acceptDefaults) { Title = $"Launch setup ({index + 1}/{games.Count}) — {game.Title}", PrimaryButtonText = index + 1 == games.Count ? "Save" : "Save and next", SecondaryButtonText = "Skip game", CloseButtonText = "Finish later", DefaultButton = ContentDialogButton.Primary, Content = new ScrollViewer { MaxHeight = 440, Content = content } };
             var useDefaults = false;
             var saving = false;
             acceptDefaults.Click += (_, _) =>
@@ -93,7 +94,8 @@ internal static partial class ManualLaunchSetup
             // Populate before displaying this step; never replace a saved choice.
             try
             {
-                var found = await FindCandidatesAsync(game);
+                if (scans[index].Error is { } scanError) throw new IOException(scanError);
+                var found = scans[index].Candidates;
                 candidates.ItemsSource = found;
                 var saved = found.FindIndex(item => string.Equals(item.Path, executable.Text, StringComparison.OrdinalIgnoreCase));
                 if (saved >= 0) candidates.SelectedIndex = saved;
@@ -135,7 +137,7 @@ internal static partial class ManualLaunchSetup
             var result = await dialog.ShowAsync();
             if (useDefaults)
             {
-                await AcceptDefaultsAsync(root, games);
+                await AcceptDefaultsAsync(root, scans);
                 return;
             }
             if (result == ContentDialogResult.None) return;
@@ -147,10 +149,40 @@ internal static partial class ManualLaunchSetup
             Data.GameAssetCandidatePathIndex.EnumerateCandidateDirectories(game.InstallPath),
             Data.Steam.SteamArtworkLookup.NormalizeTitle));
 
-    static async Task AcceptDefaultsAsync(XamlRoot root, IReadOnlyList<ManuallyAddedGame> games)
+    static async Task<IReadOnlyList<LaunchScanEntry>?> ScanAllAsync(XamlRoot root, IReadOnlyList<ManuallyAddedGame> games)
     {
         using var cancellation = new CancellationTokenSource();
-        var progress = new ProgressBar { Minimum = 0, Maximum = games.Count };
+        var bar = new ProgressBar { Minimum = 0, Maximum = games.Count };
+        var status = new TextBlock { Text = $"0/{games.Count} games scanned", TextWrapping = TextWrapping.Wrap };
+        var content = new StackPanel { Spacing = 12 };
+        content.Children.Add(status);
+        content.Children.Add(bar);
+        var dialog = new EasyContentDialog(root) { Title = "Scanning game executables", Content = content, CloseButtonText = "Cancel" };
+        dialog.CloseButtonClick += (_, _) => cancellation.Cancel();
+        var shown = dialog.ShowAsync();
+        var progress = new Progress<int>(completed =>
+        {
+            // Parallel completions can be posted out of order.
+            bar.Value = Math.Max(bar.Value, completed);
+            status.Text = $"{bar.Value:0}/{games.Count} games scanned";
+        });
+        try
+        {
+            var scans = await ScanAllDefaultsAsync(games, FindCandidatesAsync, progress, cancellation.Token);
+            return cancellation.IsCancellationRequested ? null : scans;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { return null; }
+        finally
+        {
+            dialog.Hide();
+            await shown;
+        }
+    }
+
+    static async Task AcceptDefaultsAsync(XamlRoot root, IReadOnlyList<LaunchScanEntry> scans)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var progress = new ProgressBar { Minimum = 0, Maximum = scans.Count };
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap };
         var content = new StackPanel { Spacing = 12 };
         content.Children.Add(status);
@@ -161,12 +193,12 @@ internal static partial class ManualLaunchSetup
         BulkLaunchResult result;
         try
         {
-            result = await SaveDefaultsAsync(games, FindCandidatesAsync, (index, title) =>
+            result = await SavePreparedDefaultsAsync(scans, (index, title) =>
             {
                 progress.Value = index;
-                status.Text = $"{index + 1}/{games.Count} — {title}";
+                status.Text = $"{index + 1}/{scans.Count} — {title}";
             }, cancellation.Token);
-            progress.Value = games.Count;
+            if (!result.Cancelled) progress.Value = scans.Count;
         }
         finally
         {
