@@ -24,6 +24,40 @@ internal static class ExecutableRankingTests
         First("Unrelated game", "citron.exe", "citron-cmd.exe", "citron.exe");
         First("Crash Bandicoot", "CrashBandicoot.exe", "CrashReport.exe", "CrashBandicoot.exe", "other.exe");
         First("Example Remastered", "example.exe", "other.exe", "example.exe");
+        First("Unrelated adventure", "emu.exe", "QtWebEngineProcess.exe", "shader_tool.exe",
+            "emu-room.exe", "emu-cmd.exe", "emu.exe", "netImguiServer.exe", "crs-uploader.exe");
+        First("Unrelated adventure", "emu_ea.exe", "emu-room_ea.exe", "emu-cmd_ea.exe", "emu_ea.exe");
+        First("Unrelated adventure", "emu.exe", "emu-server.exe", "emu-dedicated.exe", "emu-console.exe", "emu.exe");
+        First("Silent Hill 2 Enhanced Edition", "sh2pc.exe", "SH2Config.exe", "sh2pc.exe");
+        First("Test game", "Game.exe", "gamelaunchhelper.exe", "CefSharp.BrowserSubprocess.exe",
+            "GamingRepairTool.exe", "UnityCrashHandler64.exe", "Game.exe");
+        foreach (var helper in new[] { "QtWebEngineProcess.exe", "CefSharp.BrowserSubprocess.exe",
+            "shader_tool.exe", "ShaderCompiler.exe", "GamingRepairTool.exe", "SH2Config.exe",
+            "netImguiServer.exe", "crs-uploader.exe", "gamelaunchhelper.exe", "UnityCrashHandler64.exe" })
+        {
+            var helperOnly = ManualLaunchManifest.RankCandidates([new(helper, helper)],
+                Path.GetFileNameWithoutExtension(helper), _ => empty);
+            Check(helperOnly.Count == 0, $"Helper must not become the fallback default: {helper}");
+        }
+        var companions = ManualLaunchManifest.RankCandidates(new[] { "emu.exe", "emu-room.exe",
+            "emu-server.exe", "emu-dedicated.exe", "emu-console.exe", "emu-cmd.exe" }
+            .Select(name => new ManualLaunchManifest.Candidate(name, name)), "Unrelated adventure", _ => empty);
+        Check(companions.Select(c => c.Path).ToHashSet().SetEquals(["emu.exe", "emu-console.exe", "emu-cmd.exe"]),
+            "Server companions must be excluded while command alternatives remain available.");
+        // Counterexamples: generic words and framework branding are not negative proof.
+        foreach (var title in new[] { "The Room", "Process", "Shader", "Tool", "Server", "Console", "Repair", "Control" })
+            First(title, title + ".exe", title + ".exe");
+        First("App", "app.exe", "backup/app.exe", "app.exe");
+        var qtGame = ManualLaunchManifest.RankCandidates([new("MyGame.exe", "MyGame.exe")], "My Game",
+            _ => new("Qt5", "C++ Application Development Framework", ""));
+        Check(qtGame.Count == 1, "Qt branding alone must not exclude an application.");
+        var unrelatedRoom = ManualLaunchManifest.RankCandidates(
+            [new("other/emu.exe", "other/emu.exe"), new("emu-room.exe", "emu-room.exe")],
+            "Emu Room", _ => empty);
+        Check(unrelatedRoom.Any(c => c.Path == "emu-room.exe"), "Companion matching must not cross directories.");
+        var renamedHelper = ManualLaunchManifest.RankCandidates([new("renamed.exe", "renamed.exe"), new("game.exe", "game.exe")],
+            "Game", path => path == "renamed.exe" ? new("Game", "Game", "QtWebEngineProcess.exe") : empty);
+        Check(renamedHelper.Count == 1 && renamedHelper[0].Path == "game.exe", "Original filename must identify a renamed helper.");
         var metadataCandidates = new[] { "random.exe", "bh7.exe", "BeyondHorizonHelper.exe", "tool.exe" }
             .Select(name => new ManualLaunchManifest.Candidate(name, name));
         var metadataRank = ManualLaunchManifest.RankCandidates(metadataCandidates, "Beyond Horizon",
@@ -50,7 +84,7 @@ internal static class ExecutableRankingTests
             Check(found.Count == 1006 && found[0].Path == target, "Support directories must not leak through preferred paths.");
         }
         finally { Directory.Delete(root, recursive: true); }
-        Console.WriteLine("Executable ranking: general acronyms/numbers, metadata, tools, launchers, command variants, deep/large trees and exclusions passed.");
+        Console.WriteLine("Executable ranking: acronyms/numbers, metadata, helper patterns, sibling roles, backup demotion, false-positive counterexamples and exhaustive discovery passed.");
     }
 
     static void Check(bool condition, string message)

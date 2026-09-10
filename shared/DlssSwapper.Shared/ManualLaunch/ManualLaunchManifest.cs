@@ -84,23 +84,34 @@ public sealed record ManualLaunchManifest(string Executable, string Arguments, s
         readMetadata ??= ReadMetadata;
         var eligible = candidates.Where(item => IsSuggestedExecutable(item.Path)
             && !HasSupportDirectory(Path.GetDirectoryName(item.Label) ?? "")).ToList();
-        // Only demote a command-line variant when its standard counterpart exists.
-        var standardNames = eligible.Select(item => Path.GetFileNameWithoutExtension(item.Path))
+        // Companion roles are meaningful only beside the corresponding application.
+        // Handle both "app-room.exe" and "app-room_ea.exe", without banning games
+        // merely because their title contains "room", "server", or "console".
+        static string Key(string path, string stem) => (Path.GetDirectoryName(path) ?? "") + "\0" + stem;
+        var standardNames = eligible.Select(item => Key(item.Path, Path.GetFileNameWithoutExtension(item.Path)))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        bool IsCommandVariant(Candidate item)
+        (string? Base, string? Role) Companion(Candidate item)
         {
             var name = Path.GetFileNameWithoutExtension(item.Path);
-            return name.EndsWith("-cmd", StringComparison.OrdinalIgnoreCase)
-                && standardNames.Contains(name[..^4]);
+            var match = Regex.Match(name, @"[-_.](cmd|console|room|server|dedicated)(?=[-_.]|$)", RegexOptions.IgnoreCase);
+            if (!match.Success) return (null, null);
+            var stem = name.Remove(match.Index, match.Length);
+            return standardNames.Contains(Key(item.Path, stem))
+                ? (stem, match.Groups[1].Value.ToLowerInvariant()) : (null, null);
         }
+        var related = eligible.Select(item => (Item: item, Companion: Companion(item))).ToArray();
+        var frontends = related.Where(item => item.Companion.Base is not null)
+            .Select(item => Key(item.Item.Path, item.Companion.Base!)).ToHashSet(StringComparer.OrdinalIgnoreCase);
         // Read each candidate's small version resource once. Metadata is evidence
         // for ranking, not proof that the file is safe or compatible.
-        return eligible.Select(item =>
+        return related.Where(item => item.Companion.Role is not ("room" or "server" or "dedicated"))
+            .Select(relatedItem =>
             {
+                var item = relatedItem.Item;
                 var metadata = readMetadata(item.Path);
                 var name = Path.GetFileNameWithoutExtension(item.Path);
-                var commandVariant = IsCommandVariant(item);
-                if (commandVariant) name = name[..^4];
+                var commandVariant = relatedItem.Companion.Role is "cmd" or "console";
+                if (commandVariant) name = relatedItem.Companion.Base!;
                 var identity = Math.Max(TitleMatch(name, title, normalizeTitle),
                     Math.Max(TitleMatch(metadata.ProductName, title, normalizeTitle),
                         Math.Max(TitleMatch(metadata.Description, title, normalizeTitle),
@@ -109,6 +120,8 @@ public sealed record ManualLaunchManifest(string Executable, string Arguments, s
                 var depth = item.Label.Count(c => c is '/' or '\\');
                 var score = identity * 10 - (launcher ? 200 : 0) - (commandVariant ? 100 : 0)
                     + (preferred.Contains(item.Path) ? 10 : 0)
+                    + (frontends.Contains(Key(item.Path, Path.GetFileNameWithoutExtension(item.Path))) ? 20 : 0)
+                    - (HasBackupDirectory(Path.GetDirectoryName(item.Label) ?? "") ? 1100 : 0)
                     + (Words(name).Contains("shipping") ? 5 : 0) - Math.Min(depth, 20);
                 return (Item: item, Score: score, Utility: IsUtility(metadata.Description)
                     || IsUtility(Path.GetFileNameWithoutExtension(metadata.OriginalFileName)));
@@ -132,6 +145,14 @@ public sealed record ManualLaunchManifest(string Executable, string Arguments, s
     static bool IsUtility(string value)
     {
         var words = Words(value);
+        var compact = Normalize(value);
+        // Component fingerprints, not game titles or broad "process"/"tool" bans.
+        if (Regex.IsMatch(compact, @"^(qtwebengineprocess|cefsharpbrowsersubprocess|cefsubprocess|unitycrashhandler)(32|64)?$"))
+            return true;
+        if (compact is "gamelaunchhelper" or "crsuploader" or "netimguiserver") return true;
+        if (words.Contains("shader") && words.Any(word => word is "tool" or "compiler" or "compile")) return true;
+        if (words.Contains("repair") && words.Contains("tool")) return true;
+        if (words.Length > 1 && (words[^1] is "config" or "configurator")) return true;
         return words.Any(word => word is "installer" or "uninstaller" or "uninstall" or "unins"
             or "setup" or "redist" or "redistributable" or "redistributables"
             or "helper" or "updater" or "diagnostic" or "diagnostics" or "editor"
@@ -143,6 +164,8 @@ public sealed record ManualLaunchManifest(string Executable, string Arguments, s
     static bool IsSupportDirectory(string name) => name.Contains("Artbook", StringComparison.OrdinalIgnoreCase)
         || name.TrimStart('_').ToLowerInvariant() is "redist" or "redistributables" or "prerequisites" or "installers";
     static bool HasSupportDirectory(string path) => path.Split('/', '\\').Any(IsSupportDirectory);
+    static bool HasBackupDirectory(string path) => path.Split('/', '\\')
+        .Any(part => part.ToLowerInvariant() is "backup" or "backups" or "old" or ".backup");
 
     static string CanonicalNumber(string word) => word switch
     {
