@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DLSS_Swapper.Data.ManuallyAdded;
 using DLSS_Swapper.Helpers;
@@ -20,7 +21,7 @@ internal static partial class ManualLaunchSetup
         {
             var remember = new CheckBox { Content = "Don't show this again" };
             var content = new StackPanel { Spacing = 12 };
-            content.Children.Add(new TextBlock { Text = "Do you want a manifest for launching these games?\n\nThe app will scan each game folder and make a best-effort selection of the correct executable. You must verify each suggestion before saving; the app cannot guarantee it is the right one. You can change the selection or browse for another file.\n\nLaunch details are saved in this app's library; no game files are changed. No skips setup. Remembering Yes opens setup automatically on future imports.", TextWrapping = TextWrapping.Wrap });
+            content.Children.Add(new TextBlock { Text = "Do you want a manifest for launching these games?\n\nThe app will suggest an executable for each game. Review them individually, or accept defaults for all games in one click. Suggestions are best-effort and may need correcting.\n\nLaunch details are saved in this app's library; no game files are changed. No skips setup. Remembering Yes opens setup automatically on future imports.", TextWrapping = TextWrapping.Wrap });
             content.Children.Add(remember);
             var error = new TextBlock { TextWrapping = TextWrapping.Wrap };
             content.Children.Add(error);
@@ -52,6 +53,11 @@ internal static partial class ManualLaunchSetup
             var working = new TextBox { Header = "Working folder (optional)", Text = game.LaunchWorkingDirectory ?? "", PlaceholderText = "Defaults to the executable's folder" };
             var browse = new Button { Content = "Browse…" };
             content.Children.Add(new TextBlock { Text = "Confirm the executable used to start this game—not an installer, uninstaller or crash reporter. Saving does not launch it.", TextWrapping = TextWrapping.Wrap });
+            var acceptDefaults = new Button { Content = "Accept default for all games", HorizontalAlignment = HorizontalAlignment.Stretch,
+                Visibility = games.Count > 1 ? Visibility.Visible : Visibility.Collapsed };
+            content.Children.Add(acceptDefaults);
+            if (games.Count > 1)
+                content.Children.Add(new TextBlock { Text = "Uses the suggested executables for this setup. Keeps saved choices; skips games without a valid suggestion.", TextWrapping = TextWrapping.Wrap });
             content.Children.Add(status);
             content.Children.Add(candidates);
             content.Children.Add(executable);
@@ -61,6 +67,14 @@ internal static partial class ManualLaunchSetup
             advanced.Children.Add(working);
             content.Children.Add(new Expander { Header = "Launch options", Content = advanced, HorizontalAlignment = HorizontalAlignment.Stretch });
             var dialog = new EasyContentDialog(root) { Title = $"Launch setup ({index + 1}/{games.Count}) — {game.Title}", PrimaryButtonText = index + 1 == games.Count ? "Save" : "Save and next", SecondaryButtonText = "Skip game", CloseButtonText = "Finish later", DefaultButton = ContentDialogButton.Primary, Content = new ScrollViewer { MaxHeight = 440, Content = content } };
+            var useDefaults = false;
+            var saving = false;
+            acceptDefaults.Click += (_, _) =>
+            {
+                if (saving) return;
+                useDefaults = true;
+                dialog.Hide();
+            };
             candidates.SelectionChanged += (_, _) => { if (candidates.SelectedItem is ManualLaunchManifest.Candidate selected) executable.Text = selected.Path; };
             browse.Click += (_, _) =>
             {
@@ -79,10 +93,7 @@ internal static partial class ManualLaunchSetup
             // Populate before displaying this step; never replace a saved choice.
             try
             {
-                var found = await Task.Run(() => ManualLaunchManifest.FindCandidates(
-                    game.InstallPath, game.Title,
-                    Data.GameAssetCandidatePathIndex.EnumerateCandidateDirectories(game.InstallPath),
-                    Data.Steam.SteamArtworkLookup.NormalizeTitle));
+                var found = await FindCandidatesAsync(game);
                 candidates.ItemsSource = found;
                 var saved = found.FindIndex(item => string.Equals(item.Path, executable.Text, StringComparison.OrdinalIgnoreCase));
                 if (saved >= 0) candidates.SelectedIndex = saved;
@@ -95,6 +106,8 @@ internal static partial class ManualLaunchSetup
             catch (Exception ex) { status.Text = $"Could not scan this folder. Use Browse. {ex.Message}"; }
             dialog.PrimaryButtonClick += async (_, e) =>
             {
+                saving = true;
+                acceptDefaults.IsEnabled = false;
                 var deferral = e.GetDeferral();
                 var old = (game.LaunchExecutable, game.LaunchArguments, game.LaunchWorkingDirectory);
                 try
@@ -112,10 +125,61 @@ internal static partial class ManualLaunchSetup
                     status.Text = ex.Message;
                     e.Cancel = true;
                 }
-                finally { deferral.Complete(); }
+                finally
+                {
+                    saving = false;
+                    acceptDefaults.IsEnabled = true;
+                    deferral.Complete();
+                }
             };
-            if (await dialog.ShowAsync() == ContentDialogResult.None) return;
+            var result = await dialog.ShowAsync();
+            if (useDefaults)
+            {
+                await AcceptDefaultsAsync(root, games);
+                return;
+            }
+            if (result == ContentDialogResult.None) return;
         }
     }
 
+    static Task<List<ManualLaunchManifest.Candidate>> FindCandidatesAsync(ManuallyAddedGame game) =>
+        Task.Run(() => ManualLaunchManifest.FindCandidates(game.InstallPath, game.Title,
+            Data.GameAssetCandidatePathIndex.EnumerateCandidateDirectories(game.InstallPath),
+            Data.Steam.SteamArtworkLookup.NormalizeTitle));
+
+    static async Task AcceptDefaultsAsync(XamlRoot root, IReadOnlyList<ManuallyAddedGame> games)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var progress = new ProgressBar { Minimum = 0, Maximum = games.Count };
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        var content = new StackPanel { Spacing = 12 };
+        content.Children.Add(status);
+        content.Children.Add(progress);
+        var dialog = new EasyContentDialog(root) { Title = "Saving launch defaults", Content = content, CloseButtonText = "Cancel" };
+        dialog.CloseButtonClick += (_, _) => cancellation.Cancel();
+        var shown = dialog.ShowAsync();
+        BulkLaunchResult result;
+        try
+        {
+            result = await SaveDefaultsAsync(games, FindCandidatesAsync, (index, title) =>
+            {
+                progress.Value = index;
+                status.Text = $"{index + 1}/{games.Count} — {title}";
+            }, cancellation.Token);
+            progress.Value = games.Count;
+        }
+        finally
+        {
+            dialog.Hide();
+            await shown;
+        }
+        var text = $"Saved: {result.Saved}\nKept existing choices: {result.Kept}\nSkipped: {result.Skipped.Count}";
+        if (result.Cancelled) text += "\nStopped. Remaining games were not changed.";
+        if (result.Skipped.Count > 0) text += "\n\n" + string.Join("\n", result.Skipped);
+        await new EasyContentDialog(root)
+        {
+            Title = "Launch setup", CloseButtonText = "Okay",
+            Content = new ScrollViewer { MaxHeight = 440, Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap } },
+        }.ShowAsync();
+    }
 }

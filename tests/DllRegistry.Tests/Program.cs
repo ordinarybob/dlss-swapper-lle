@@ -19,6 +19,7 @@ await DownloaderHeaderTests.RunAsync();
 LibraryDownloadProgressTests.Run();
 await DllApplyTests.RunAsync();
 LaunchPreferenceTests.Run();
+await BulkLaunchSetupTests.RunAsync();
 SourceCallSiteTests.Run();
 await DnsAndIconTests.RunAsync();
 await GameMetadataTests.RunAsync();
