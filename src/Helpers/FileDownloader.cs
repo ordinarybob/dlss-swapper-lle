@@ -58,6 +58,7 @@ public partial class FileDownloader : ObservableObject
         var lastReportedPercent = 0.0;
         var lastReportedBytes = 0L;
         var contentLength = -1L;
+        var transferCompleted = 0;
 
         System.Timers.Timer? uiUpdateTimer = null;
 
@@ -99,6 +100,7 @@ public partial class FileDownloader : ObservableObject
                 {
                     App.CurrentApp.RunOnUIThread(() =>
                     {
+                        if (Volatile.Read(ref transferCompleted) != 0) return;
                         DownloadedBytes = totalBytesRead;
                         Percent = newPercent;
 
@@ -178,9 +180,14 @@ public partial class FileDownloader : ObservableObject
                 }
             }
 
+            Volatile.Write(ref transferCompleted, 1);
             App.CurrentApp.RunOnUIThread(() =>
             {
+                DownloadedBytes = totalBytesRead;
+                TotalBytesToDownload = contentLength > 0 ? contentLength : totalBytesRead;
+                IsIndeterminate = false;
                 Percent = 100.0;
+                progressCallback?.Invoke(DownloadedBytes, TotalBytesToDownload, Percent);
             });
 
             Logger.Verbose($"{LogPrefix}Complete. Read {totalBytesRead} bytes from {_url}");

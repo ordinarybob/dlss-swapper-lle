@@ -18,6 +18,7 @@
     <Compile Include="../../src/UserControls/DLLPickerControlModel.Apply.cs" Link="DLLPickerControlModel.Apply.cs" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <Compile Include="../../src/Helpers/FileDownloader.cs" Link="FileDownloader.cs" />
+    <Compile Include="../../src/Helpers/LibraryDownloadProgress.cs" Link="LibraryDownloadProgress.cs" />
     <Compile Include="../../src/ProxySettings.cs" Link="ProxySettings.cs" />
     <Compile Include="../../src/Helpers/NgxPayloadIdentity.cs" Link="NgxPayloadIdentity.cs" />
     <Compile Include="../../src/Data/GameCoverHydrationQueue.cs" Link="GameCoverHydrationQueue.cs" />

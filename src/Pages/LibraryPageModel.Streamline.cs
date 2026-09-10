@@ -70,13 +70,24 @@ public partial class LibraryPageModel
 
     async Task<LibraryDownloadResult> DownloadStreamlineCoreAsync(StreamlineRelease? release = null)
     {
+        var transferId = Guid.NewGuid();
+        _streamlineTransfers[transferId] = new(transferId, 0, 0);
+        RefreshDownloadProgress();
+        void Progress(long downloaded, long total, double percent)
+        {
+            // FileDownloader dispatches onto the UI thread. Ignore late timer callbacks.
+            if (!_streamlineTransfers.ContainsKey(transferId)) return;
+            _streamlineTransfers[transferId] = new(transferId, downloaded, total, percent >= 100);
+            if (percent >= 100) StreamlineStatus = "Preparing Streamline files…";
+            RefreshDownloadProgress();
+        }
         IsStreamlineDownloading = true;
         ++_activeStreamlineDownloads;
         StreamlineStatus = release is null ? "Downloading latest package…" : $"Downloading Streamline {release.Tag}…";
         try
         {
-            var package = release is null ? await StreamlineReleaseManager.PrepareLatestAsync()
-                : await StreamlineReleaseManager.PrepareAsync(release);
+            var package = release is null ? await StreamlineReleaseManager.PrepareLatestAsync(Progress)
+                : await StreamlineReleaseManager.PrepareAsync(release, Progress);
             StreamlineStatus = $"Streamline {package.Tag} downloaded · ready for game and batch updates";
             foreach (var row in StreamlineReleases) row.RefreshDownloaded();
             return new($"Streamline SDK {package.Tag}", package.WasDownloaded);
@@ -86,7 +97,12 @@ public partial class LibraryPageModel
             StreamlineStatus = $"Download failed: {ex.Message}";
             return new("Streamline SDK", false, ex.Message);
         }
-        finally { IsStreamlineDownloading = --_activeStreamlineDownloads > 0; }
+        finally
+        {
+            _streamlineTransfers.Remove(transferId);
+            IsStreamlineDownloading = --_activeStreamlineDownloads > 0;
+            RefreshDownloadProgress();
+        }
     }
 }
 

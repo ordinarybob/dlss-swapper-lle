@@ -16,6 +16,7 @@ await ArtworkQueueTests.RunAsync();
 NgxIdentityTests.Run();
 ProxySettingsTests.Run();
 await DownloaderHeaderTests.RunAsync();
+LibraryDownloadProgressTests.Run();
 await DllApplyTests.RunAsync();
 LaunchPreferenceTests.Run();
 SourceCallSiteTests.Run();

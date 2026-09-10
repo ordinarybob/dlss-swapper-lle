@@ -15,9 +15,12 @@ internal static class DownloaderHeaderTests
         async Task Download(string? userAgent)
         {
             using var output = new MemoryStream();
+            (long Bytes, long Total, double Percent) final = default;
             await new FileDownloader("https://example.invalid/file", 0)
-                .DownloadFileToStreamAsync(output, userAgent: userAgent);
+                .DownloadFileToStreamAsync(output, userAgent: userAgent,
+                    progressCallback: (bytes, total, percent) => final = (bytes, total, percent));
             if (output.Length != 3) throw new Exception("Download payload changed.");
+            if (final != (3L, 3L, 100.0)) throw new Exception("Final byte progress was not delivered.");
         }
         await Task.WhenAll(Download("Custom/3.0 (test)"), Download(null), Download(""));
         if (!handler.Headers.Contains("Custom/3.0 (test)") || !handler.Headers.Contains(defaults)
