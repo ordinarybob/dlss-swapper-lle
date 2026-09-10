@@ -17,6 +17,7 @@
     <Compile Include="../../src/UserControls/ManualLaunchSetup.Preference.cs" Link="ManualLaunchSetup.Preference.cs" />
     <Compile Include="../../src/UserControls/ManualLaunchSetup.Bulk.cs" Link="ManualLaunchSetup.Bulk.cs" />
     <Compile Include="../../shared/DlssSwapper.Shared/ManualLaunch/ManualLaunchManifest.cs" Link="ManualLaunchManifest.cs" />
+    <Compile Include="../../linux/DlssSwapper.Linux.Tests/ManualLaunchTests.cs" Link="ExistingManualLaunchTests.cs" />
     <Compile Include="../../src/UserControls/DLLPickerControlModel.Apply.cs" Link="DLLPickerControlModel.Apply.cs" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <Compile Include="../../src/Helpers/FileDownloader.cs" Link="FileDownloader.cs" />

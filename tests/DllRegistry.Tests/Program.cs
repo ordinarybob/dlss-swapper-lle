@@ -2,6 +2,13 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using DLSS_Swapper.Data;
 
+if (args.Length == 3 && args[0] == "--inspect-launch-candidates")
+{
+    foreach (var candidate in DLSS_Swapper.Data.ManuallyAdded.ManualLaunchManifest.FindCandidates(args[1], args[2]))
+        Console.WriteLine(candidate.Label);
+    return;
+}
+
 // UI-free contract tests use small record/manager doubles. Windows build validates
 // the same selectors against the actual observable collections and DLLRecord.
 var manifest = new Manifest();
@@ -20,6 +27,8 @@ LibraryDownloadProgressTests.Run();
 await DllApplyTests.RunAsync();
 LaunchPreferenceTests.Run();
 await BulkLaunchSetupTests.RunAsync();
+ExecutableRankingTests.Run();
+DlssSwapper.Linux.Tests.ManualLaunchTests.Run();
 SourceCallSiteTests.Run();
 await DnsAndIconTests.RunAsync();
 await GameMetadataTests.RunAsync();
