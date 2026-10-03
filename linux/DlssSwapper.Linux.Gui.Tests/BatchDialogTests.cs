@@ -60,6 +60,8 @@ internal static class BatchDialogTests
         var dllHash = Convert.ToHexString(System.Security.Cryptography.MD5.HashData(dllBytes)).ToLowerInvariant();
         var dllEntry = new DllCatalogEntry(DllType.Dlss, "2.0", 2, dllHash, "", null, dllBytes.Length, 0, true, false, IsImported: true);
         catalog.AddImported(dllEntry);
+        // The catalog normalizes hash casing; Linux cache paths must use that same record.
+        dllEntry = catalog.GetEntries(DllType.Dlss).Single();
         var dllCacheRoot = Path.Combine(root, "batch-dll-cache");
         using (var cache = new DownloadCache(cacheRoot: dllCacheRoot))
         {

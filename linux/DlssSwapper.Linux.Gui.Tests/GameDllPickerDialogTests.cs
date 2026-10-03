@@ -20,6 +20,8 @@ internal static class GameDllPickerDialogTests
         var hash = Convert.ToHexString(System.Security.Cryptography.MD5.HashData(updated)).ToLowerInvariant();
         var entry = new DllCatalogEntry(DllType.Fsr31Dx12, "1.0.1.41314", 1, hash, "", null, updated.Length, 0, true, false, InternalName: "3.1.4", IsImported: true);
         var catalog = DllCatalog.Empty(); catalog.AddImported(entry);
+        // Populate the case-sensitive cache with the same canonical record the picker uses.
+        entry = catalog.GetEntries(DllType.Fsr31Dx12).Single();
         var details = new DllRecordDetailsWindow(entry with { FileDescription = new string('x', 20000) });
         try
         {
