@@ -62,6 +62,7 @@ internal static class StreamlineDialogTests
         Console.WriteLine("PASS headless Streamline selection/footer (not native Linux acceptance)");
         VerifyVersionAndFailedApply(owner, root, fixtureRoot);
         StreamlineMutationDialogTests.Run(owner, fixtureRoot);
+        StreamlineDownloadProgressTests.Run(owner, fixtureRoot);
     }
     private static void VerifyVersionAndFailedApply(Window owner, string root, string fixtureRoot)
     {

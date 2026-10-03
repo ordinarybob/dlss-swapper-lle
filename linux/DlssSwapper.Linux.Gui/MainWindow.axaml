@@ -17,33 +17,35 @@
             Margin="0,2,8,0"
             ColumnDefinitions="*,Auto"
             RowDefinitions="32,36,Auto">
-        <StackPanel Grid.Row="0"
+        <Grid x:Name="GameHeaderStatus" Grid.Row="0"
                     Grid.Column="0"
                     MinWidth="0"
-                    Orientation="Horizontal"
-                    Spacing="8">
+                    Margin="0,0,8,0"
+                    ClipToBounds="True"
+                    ColumnDefinitions="Auto,Auto,Auto,*"
+                    ColumnSpacing="8">
           <TextBlock Text="{DynamicResource GamesPage_Title}"
                      VerticalAlignment="Center"
                      FontSize="24"
                      FontWeight="SemiBold" />
-          <TextBlock Text="{Binding VisibleGameCountText}"
+          <TextBlock Grid.Column="1" Text="{Binding VisibleGameCountText}"
                      VerticalAlignment="Center"
                      FontSize="16"
                      FontWeight="SemiBold"
                      Foreground="{DynamicResource LleMutedBrush}" />
-          <ProgressBar Width="20"
+          <ProgressBar x:Name="GameHeaderProgress" Grid.Column="2" Width="20" MinWidth="0"
                        Height="3"
                        IsIndeterminate="True"
                        IsVisible="{Binding IsBusy}"
                        VerticalAlignment="Center" />
-          <TextBlock Text="{Binding HeaderStatusText}"
-                     MaxWidth="210"
+          <TextBlock x:Name="GameHeaderStatusText" Grid.Column="3" Text="{Binding HeaderStatusText}"
+                     MinWidth="0" ToolTip.Tip="{Binding HeaderStatusText}"
                      VerticalAlignment="Center"
                      FontSize="12"
                      Foreground="{DynamicResource LleMutedBrush}"
                      TextTrimming="CharacterEllipsis"
                      TextWrapping="NoWrap" />
-        </StackPanel>
+        </Grid>
 
         <Grid Grid.Row="1"
               Grid.Column="0"
@@ -59,7 +61,7 @@
                    TextChanged="SearchTextBox_TextChanged" />
         </Grid>
 
-        <StackPanel Grid.Row="0"
+        <StackPanel x:Name="GameToolbar" Grid.Row="0"
                     Grid.RowSpan="2"
                     Grid.Column="1"
                     Height="64"

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using DlssSwapper.Linux.Cli.Core;
@@ -32,6 +33,19 @@ internal static class MainWindowBatchingTests
             window.Show();
             var vm = (MainWindowViewModel)window.DataContext!;
             Pump(() => vm.IsBusy && !vm.IsPublishingView);
+            vm.StatusText = new string('W', 200);
+            foreach (var width in new[] { 720, 800, 1100 })
+            {
+                window.Width = width; Dispatcher.UIThread.RunJobs();
+                var header = window.FindControl<Grid>("GameHeaderStatus")!;
+                var toolbar = window.FindControl<StackPanel>("GameToolbar")!;
+                var progress = window.FindControl<ProgressBar>("GameHeaderProgress")!;
+                var status = window.FindControl<TextBlock>("GameHeaderStatusText")!;
+                var right = header.TranslatePoint(default, window)!.Value.X + header.Bounds.Width;
+                Check(right <= toolbar.TranslatePoint(default, window)!.Value.X && header.ClipToBounds
+                    && progress.Bounds.Width <= 20 && status.Bounds.Right <= header.Bounds.Width + 1,
+                    "Busy header overlaps toolbar at width " + width);
+            }
             Check(vm.Games.Count == 200 && vm.GameGroups.Sum(group => group.Items.Count) == 201,
                 "Batched startup lost rows or favourite duplication");
             var selected = vm.Games.Single(row => row.Name == "Game 001"); selected.IsSelected = true;

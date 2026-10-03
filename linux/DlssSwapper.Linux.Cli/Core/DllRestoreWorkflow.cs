@@ -59,7 +59,7 @@ public static class DllRestoreWorkflow
     {
         if (!File.Exists(path)) return translations?.Get("Linux_Streamline_Missing", "Missing") ?? "Missing";
         var unknown = translations?.Get("Linux_Streamline_Unknown", "Unknown") ?? "Unknown";
-        try { return FileVersionInfo.GetVersionInfo(path).FileVersion ?? unknown; }
+        try { return DlssSwapper.Shared.PeVersionInfo.Read(path).FileVersion ?? unknown; }
         catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception) { return unknown; }
     }
 }

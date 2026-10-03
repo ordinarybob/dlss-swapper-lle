@@ -39,7 +39,7 @@ public sealed class DllImportWorkflow(DllCatalog catalog, DownloadCache cache, P
             if (expectedMd5 is not null && !hash.Equals(expectedMd5, StringComparison.OrdinalIgnoreCase))
                 throw new IOException(T("Linux_ImportModelChanged", "The selected model changed after inspection. Scan again before importing it."));
             if (model)
-                family = NgxModelIdentity.Identify(System.Diagnostics.FileVersionInfo.GetVersionInfo(temporary).ProductName);
+                family = NgxModelIdentity.Identify(DlssSwapper.Shared.PeVersionInfo.Read(temporary).ProductName);
             if (family is null) throw new IOException(T("Linux_ImportModelUnrecognized", "This is not a recognized NVIDIA DLSS model. Signature settings do not override model identity."));
             var known = catalog.FindByHash(family.Type, hash);
             var signature = known is { IsSignatureValid: true, IsImported: false }
@@ -51,7 +51,12 @@ public sealed class DllImportWorkflow(DllCatalog catalog, DownloadCache cache, P
             var entry = known ?? new DllCatalogEntry(family.Type, metadata.Version, metadata.VersionNumber,
                 hash, "", null, contents.Length, 0, signature.IsValid, metadata.IsDebug, InternalName: metadata.InternalName,
                 FileDescription: metadata.Description, IsImported: true);
-            if (entry.IsImported) entry = entry with { IsSignatureValid = signature.IsValid };
+            if (entry.IsImported) entry = entry with
+            {
+                IsSignatureValid = signature.IsValid,
+                Version = metadata.Version, VersionNumber = metadata.VersionNumber,
+                IsDevFile = metadata.IsDebug, InternalName = metadata.InternalName, FileDescription = metadata.Description
+            };
             token.ThrowIfCancellationRequested();
             if (entry.IsImported)
             {

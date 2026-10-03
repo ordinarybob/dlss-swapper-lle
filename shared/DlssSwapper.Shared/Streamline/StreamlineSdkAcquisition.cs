@@ -75,7 +75,8 @@ public static class StreamlineSdkAcquisition
 
     public static async Task<StreamlineSdkPackage> PrepareAsync(
         StreamlineSdkRelease release, string cacheRoot, string temporaryRoot,
-        Func<string, Stream, CancellationToken, Task> download, CancellationToken token = default)
+        Func<string, Stream, CancellationToken, Task> download, CancellationToken token = default,
+        Action? extracting = null)
     {
         if (!StreamlinePackageCache.TryGetVersion(release.Tag, out _))
             throw new InvalidDataException("Unsupported Streamline package version.");
@@ -94,6 +95,7 @@ public static class StreamlineSdkAcquisition
                     await download(release.DownloadUrl, output, token).ConfigureAwait(false);
                 }
                 token.ThrowIfCancellationRequested();
+                extracting?.Invoke();
                 StreamlineComponentSet.ExtractProductionFiles(archive, destination);
                 return new(release.Tag, destination, true);
             }

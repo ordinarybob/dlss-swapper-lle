@@ -240,7 +240,7 @@ public sealed class DllScanner
     {
         try
         {
-            return FileVersionInfo.GetVersionInfo(path).FileVersion ?? "unknown";
+            return DlssSwapper.Shared.PeVersionInfo.Read(path).FileVersion ?? "unknown";
         }
         catch (Exception exception) when (exception is FileNotFoundException
             or IOException

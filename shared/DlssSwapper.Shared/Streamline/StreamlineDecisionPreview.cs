@@ -130,7 +130,7 @@ public static class StreamlineDecisionPreview
             var text = "Unknown";
             try
             {
-                var info = FileVersionInfo.GetVersionInfo(path);
+                var info = DlssSwapper.Shared.PeVersionInfo.Read(path);
                 if (!string.IsNullOrWhiteSpace(info.FileVersion))
                 {
                     text = info.FileVersion;

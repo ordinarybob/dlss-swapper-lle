@@ -12,6 +12,18 @@ internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args.Length > 1 && args[0] == "--pe-metadata")
+        {
+            PeVersionInfoTests.Run();
+            foreach (var path in args.Skip(1))
+            {
+                using var stream = File.OpenRead(path);
+                var info = DlssSwapper.Shared.PeVersionInfo.Read(stream);
+                if (info != DlssSwapper.Shared.PeVersionInfo.Read(path)) throw new Exception("Native/portable metadata differs: " + path);
+                Console.WriteLine(JsonSerializer.Serialize(new { Path = path, Metadata = info }));
+            }
+            return 0;
+        }
         if (args.Length == 3 && args[0] == "--state-worker")
             return StateProcessTests.Worker(args[1], args[2]);
         if (args.Length == 1 && args[0] == "--streamline-acquisition-tests")
@@ -107,6 +119,7 @@ internal static class Program
             ("EA local artwork fallback and content cache", TestEaLocalArtworkAsync),
             ("Windows icon reference parsing", RunSync(TestIconReference)),
             ("PE icon resource extraction and bounds", RunSync(TestPeIcons)),
+            ("Native PE version resources, strings and malformed input", RunSync(PeVersionInfoTests.Run)),
             ("PE32/PE32+ named PNG/DIB icon decoding", RunSync(TestIconDecoding)),
             ("DLL catalog browsing and cache management", RunSync(TestDllLibraryCache)),
             ("DLL information retains optional metadata and full identities", RunSync(TestDllRecordDetails)),

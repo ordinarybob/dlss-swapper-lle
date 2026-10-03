@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using DLSS_Swapper.Data.Streamline;
 using DlssSwapper.Linux.Cli.Core;
 
@@ -24,6 +25,7 @@ public sealed class StreamlineGameWindow : Window
     private readonly StackPanel _rows = new() { Spacing = 12 };
     private readonly TextBlock _packageText = Text(LanguageAppearance.Get("Linux_BatchUpdateWindow_13", "Checking latest SDK version…"));
     private readonly TextBlock _status = Text("");
+    private readonly ProgressBar _downloadProgress = new() { Name = "SdkDownloadProgress", MinWidth = 0, Height = 4, IsVisible = false, Maximum = 100 };
     private readonly CheckBox _all = new() { Content = LanguageAppearance.Get("Linux_StreamlineGameWindow_202", "Select all components"), IsThreeState = true };
     private readonly List<Button> _buttons = [];
     private readonly Button _applySelected, _applyAll, _restoreSelected, _restoreAll;
@@ -67,6 +69,7 @@ public sealed class StreamlineGameWindow : Window
         var scroll = new ScrollViewer { Content = _rows, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
         Grid.SetRow(scroll, 1); layout.Children.Add(scroll);
         var footer = new StackPanel { Spacing = 8 };
+        footer.Children.Add(_downloadProgress);
         footer.Children.Add(new ScrollViewer { Content = _status, MaxHeight = 100 });
         var packageActions = new WrapPanel();
         packageActions.Children.Add(Action("Download selected package", async () => { var p = await PrepareSelectedAsync(); _package = p.DirectoryPath; _status.Text = p.WasDownloaded ? $"Downloaded SDK {p.Tag}. No game files changed." : "No new files downloaded."; await RefreshAsync(); }));
@@ -141,12 +144,49 @@ public sealed class StreamlineGameWindow : Window
         catch (Exception error) { AppLog.Write(ApplicationLogLevel.Error, error.Message); if (!_closed) { _versions.ItemsSource = _sdk.CachedReleases(); _versions.SelectedIndex = 0; _selectedRelease = _versions.SelectedItem as StreamlineSdkRelease; _latestError = error.Message; UpdatePackageText(); } }
         finally { _loadingVersions = false; }
     }
-    private Task<StreamlineSdkPackage> PrepareSelectedAsync()
+    private async Task<StreamlineSdkPackage> PrepareSelectedAsync()
     {
         var release = _selectedRelease ?? throw new InvalidOperationException("Select an SDK version first.");
         if (_library?.State.OnlyShowDownloadedDlls == true && _sdk.FindCached(release.Tag) is null)
             throw new InvalidOperationException("The selected SDK is not downloaded. Download it from Library first.");
-        return _sdk.PrepareAsync(release, OperationToken);
+        var token = OperationToken;
+        var active = 1;
+        long lastStep = -1;
+        _status.Text = LanguageAppearance.Format("Linux_SdkPreparing", "Preparing Streamline SDK {0}…", release.Tag);
+        _downloadProgress.Value = 0;
+        _downloadProgress.IsIndeterminate = true;
+        _downloadProgress.IsVisible = true;
+        void Post(Action update) => Dispatcher.UIThread.Post(() =>
+        {
+            if (Volatile.Read(ref active) != 0 && !_closed && !token.IsCancellationRequested) update();
+        });
+        try
+        {
+            return await _sdk.PrepareAsync(release, token, (received, total) =>
+            {
+                var step = total is > 0 ? (long)(received * 100.0 / total.Value) : received / 1_048_576;
+                if (step == lastStep) return;
+                lastStep = step;
+                Post(() =>
+                {
+                    _downloadProgress.IsIndeterminate = total is not > 0;
+                    _downloadProgress.Value = total is > 0 ? Math.Clamp(received * 100.0 / total.Value, 0, 100) : 0;
+                    var amount = total is > 0
+                        ? LanguageAppearance.Format("Linux_LibraryTransferKnown", "{0:N0} / {1:N0} bytes ({2}%)", received, total.Value, step)
+                        : LanguageAppearance.Format("Linux_LibraryTransferUnknown", "{0:N0} bytes (total size unknown)", received);
+                    _status.Text = LanguageAppearance.Format("Linux_SdkDownloading", "Downloading Streamline SDK {0}: {1}", release.Tag, amount);
+                });
+            }, () => Post(() =>
+            {
+                _downloadProgress.IsIndeterminate = true;
+                _status.Text = LanguageAppearance.Get("Linux_SdkExtracting", "Extracting and checking Streamline SDK…");
+            }));
+        }
+        finally
+        {
+            Interlocked.Exchange(ref active, 0);
+            _downloadProgress.IsVisible = false;
+        }
     }
     private async Task RefreshAsync()
     {

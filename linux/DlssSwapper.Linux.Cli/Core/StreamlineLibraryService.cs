@@ -36,11 +36,11 @@ public sealed class StreamlineLibraryService(HttpClient http, string? cacheRoot 
     }
 
     public async Task<StreamlineSdkPackage> PrepareAsync(StreamlineSdkRelease release, CancellationToken token,
-        Action<long, long?>? transferProgress = null)
+        Action<long, long?>? transferProgress = null, Action? extracting = null)
     {
         return await StreamlineSdkAcquisition.PrepareAsync(release, CacheRoot,
             Path.Combine(CacheRoot, "temporary"), (url, destination, cancellation) =>
-                DownloadAsync(url, destination, cancellation, transferProgress), token).ConfigureAwait(false);
+                DownloadAsync(url, destination, cancellation, transferProgress), token, extracting).ConfigureAwait(false);
     }
 
     public string? FindNewestCached() => StreamlinePackageCache.FindNewest(

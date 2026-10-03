@@ -82,7 +82,7 @@ public static class NgxModelDiscovery
                         if (pe.PEHeaders.CoffHeader.Machine != Machine.Amd64
                             || (pe.PEHeaders.CoffHeader.Characteristics & Characteristics.Dll) == 0
                             || pe.PEHeaders.PEHeader?.Magic != PEMagic.PE32Plus) continue;
-                        var info = FileVersionInfo.GetVersionInfo(path);
+                        var info = DlssSwapper.Shared.PeVersionInfo.Read(path);
                         var family = NgxModelIdentity.Identify(info.ProductName);
                         if (family is not null) models.Add(new(path, family.Type, info.FileVersion ?? T("Linux_Streamline_Unknown", "Unknown"), input.Length));
                     }

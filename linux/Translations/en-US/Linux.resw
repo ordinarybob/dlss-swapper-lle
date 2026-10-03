@@ -730,4 +730,7 @@ Files changed successfully, but history could not be saved: {0}</value></data>
   <data name="Linux_NgxScanFailed" xml:space="preserve"><value>Could not scan {0}: {1}</value></data>
   <data name="Linux_StreamlineNoRecovery" xml:space="preserve"><value>No interrupted Streamline operation was found.</value></data>
   <data name="Linux_StreamlineRecovered" xml:space="preserve"><value>Interrupted Streamline operations recovered.</value></data>
+  <data name="Linux_SdkPreparing" xml:space="preserve"><value>Preparing Streamline SDK {0}…</value></data>
+  <data name="Linux_SdkDownloading" xml:space="preserve"><value>Downloading Streamline SDK {0}: {1}</value></data>
+  <data name="Linux_SdkExtracting" xml:space="preserve"><value>Extracting and checking Streamline SDK…</value></data>
 </root>
