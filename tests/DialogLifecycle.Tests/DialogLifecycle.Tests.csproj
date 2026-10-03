@@ -7,6 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../src/Pages/GameGridPageModel.InitialLoad.cs" Link="GameGridPageModel.InitialLoad.cs" />
     <Compile Include="../../src/UserControls/EasyContentDialog.cs" Link="EasyContentDialog.cs" />
     <Compile Include="../../src/UserControls/ManualLaunchSetupDialog.cs" Link="ManualLaunchSetupDialog.cs" />
   </ItemGroup>

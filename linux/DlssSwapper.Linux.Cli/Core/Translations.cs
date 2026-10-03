@@ -7,7 +7,7 @@ namespace DlssSwapper.Linux.Cli.Core;
 public sealed class Translations
 {
     public static IReadOnlyList<string> Languages { get; } = new[]
-    { "ar-SA", "ar-SY", "ca-ES", "cs-CZ", "de-DE", "en-AU", "en-GB", "en-US", "es-ES", "fa-IR", "fi-FI", "fr-FR", "it-IT", "ja-JP", "ko-KR", "pl-PL", "pt-BR", "ru-RU", "th-TH", "tr-TR", "uk-UA", "vi-VN", "zh-CN", "zh-TW" };
+    { "ar-SA", "ar-SY", "ca-ES", "cs-CZ", "de-DE", "en-AU", "en-GB", "en-US", "es-ES", "fa-IR", "fi-FI", "fr-FR", "he-IL", "it-IT", "ja-JP", "ko-KR", "pl-PL", "pt-BR", "ru-RU", "th-TH", "tr-TR", "uk-UA", "vi-VN", "zh-CN", "zh-TW" };
     public string Language { get; }
     public bool RightToLeft => CultureInfo.GetCultureInfo(Language).TextInfo.IsRightToLeft;
     public IReadOnlyDictionary<string, string> Values { get; }

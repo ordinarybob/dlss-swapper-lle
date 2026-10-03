@@ -8,6 +8,7 @@ static void Check(bool condition, string message)
 }
 
 var root = new XamlRoot();
+await InitialLoadTests.RunAsync();
 var footer = new Grid();
 for (var i = 0; i < 5; i++) footer.ColumnDefinitions.Add(new object());
 for (var i = 0; i < 3; i++) footer.Children.Add(new Button());
@@ -88,6 +89,7 @@ namespace DLSS_Swapper
     {
         internal static Settings Instance { get; } = new();
         internal int AppTheme => 0;
+        internal bool HasCompletedInitialDeepScan { get; set; }
     }
 }
 

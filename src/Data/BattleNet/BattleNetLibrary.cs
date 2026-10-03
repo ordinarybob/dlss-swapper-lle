@@ -191,38 +191,43 @@ internal partial class BattleNetLibrary : IGameLibrary
                 var cachedGame = GameManager.Instance.GetGame<BattleNetGame>(gameId);
                 var activeGame = cachedGame ?? new BattleNetGame(gameId);
 
-                if (_knownGames.TryGetValue(product.Uid, out var battleNetLauncherGame))
+                // Cached games may already be bound to the visible game list.
+                await App.CurrentApp.RunOnUIThreadAsync(() =>
                 {
-                    activeGame.Title = battleNetLauncherGame.Name;
-                    activeGame.LauncherId = battleNetLauncherGame.LauncherId;
-                }
-                else
-                {
-                    Logger.Error($"Battle.Net game title not found for UID ({product.Uid}) in install path ({product.Settings.InstallPath}).");
-
-                    activeGame.Title = string.Empty;
-                    activeGame.LauncherId = string.Empty;
-                }
-
-                if (installedAggregates.TryGetValue(product.ProductCode, out var aggregate))
-                {
-                    // If title isn't set, try use it from the aggregates.
-                    if (string.IsNullOrWhiteSpace(activeGame.Title))
+                    if (_knownGames.TryGetValue(product.Uid, out var battleNetLauncherGame))
                     {
-                        activeGame.Title = aggregate.Name;
+                        activeGame.Title = battleNetLauncherGame.Name;
+                        activeGame.LauncherId = battleNetLauncherGame.LauncherId;
+                    }
+                    else
+                    {
+                        Logger.Error($"Battle.Net game title not found for UID ({product.Uid}) in install path ({product.Settings.InstallPath}).");
+
+                        activeGame.Title = string.Empty;
+                        activeGame.LauncherId = string.Empty;
                     }
 
-                    // Set the cover photo.
-                    activeGame.RemoteCoverImage = aggregate.LogoArtUri;
-                }
-                else
-                {
-                    Logger.Error($"Battle.Net game aggregate not found for ProductCode ({product.ProductCode}).");
-                }
+                    if (installedAggregates.TryGetValue(product.ProductCode, out var aggregate))
+                    {
+                        // If title isn't set, try use it from the aggregates.
+                        if (string.IsNullOrWhiteSpace(activeGame.Title))
+                        {
+                            activeGame.Title = aggregate.Name;
+                        }
 
-                activeGame.Title = DiscoveryMetadata.BattleNetTitle(activeGame.Title, null, gamePath);
-                activeGame.InstallPath = PathHelpers.NormalizePath(gamePath);
-                activeGame.StatePlayable = installationState.Playable;
+                        // Set the cover photo.
+                        activeGame.RemoteCoverImage = aggregate.LogoArtUri;
+                    }
+                    else
+                    {
+                        Logger.Error($"Battle.Net game aggregate not found for ProductCode ({product.ProductCode}).");
+                    }
+
+                    activeGame.Title = DiscoveryMetadata.BattleNetTitle(activeGame.Title, null, gamePath);
+                    activeGame.InstallPath = PathHelpers.NormalizePath(gamePath);
+                    activeGame.StatePlayable = installationState.Playable;
+                    return Task.CompletedTask;
+                }).ConfigureAwait(false);
 
                 if (activeGame.IsInIgnoredPath())
                 {

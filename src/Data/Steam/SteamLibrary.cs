@@ -390,14 +390,19 @@ internal partial class SteamLibrary : IGameLibrary
             cachedGamesByPlatformId.TryGetValue(game.PlatformId, out var cachedGame);
             var activeGame = cachedGame ?? game;
 
-            if (activeGame.IsHidden is null && _defaultHiddenGames.Contains(activeGame.PlatformId))
+            // Cached games may already be bound to the visible game list.
+            await App.CurrentApp.RunOnUIThreadAsync(() =>
             {
-                activeGame.IsHidden = true;
-            }
+                if (activeGame.IsHidden is null && _defaultHiddenGames.Contains(activeGame.PlatformId))
+                {
+                    activeGame.IsHidden = true;
+                }
 
-            activeGame.Title = game.Title;
-            activeGame.InstallPath = game.InstallPath;
-            activeGame.StateFlags = game.StateFlags;
+                activeGame.Title = game.Title;
+                activeGame.InstallPath = game.InstallPath;
+                activeGame.StateFlags = game.StateFlags;
+                return Task.CompletedTask;
+            }).ConfigureAwait(false);
 
             if (activeGame.IsInIgnoredPath())
             {

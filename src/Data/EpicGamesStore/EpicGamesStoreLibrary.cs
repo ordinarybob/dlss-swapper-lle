@@ -144,9 +144,14 @@ internal class EpicGamesStoreLibrary : IGameLibrary
 
                 var cachedGame = GameManager.Instance.GetGame<EpicGamesStoreGame>(manifest.CatalogItemId);
                 var activeGame = cachedGame ?? new EpicGamesStoreGame(manifest.CatalogItemId);
-                activeGame.RemoteHeaderImage = remoteHeaderUrl;
-                activeGame.Title = manifest.DisplayName; // TODO: Will this be a problem if the game is already loaded
-                activeGame.InstallPath = PathHelpers.NormalizePath(manifest.InstallLocation);
+                // Cached games may already be bound to the visible game list.
+                await App.CurrentApp.RunOnUIThreadAsync(() =>
+                {
+                    activeGame.RemoteHeaderImage = remoteHeaderUrl;
+                    activeGame.Title = manifest.DisplayName; // TODO: Will this be a problem if the game is already loaded
+                    activeGame.InstallPath = PathHelpers.NormalizePath(manifest.InstallLocation);
+                    return Task.CompletedTask;
+                }).ConfigureAwait(false);
 
                 if (activeGame.IsInIgnoredPath())
                 {

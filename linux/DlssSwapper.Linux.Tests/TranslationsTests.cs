@@ -6,14 +6,14 @@ internal static class TranslationsTests
 {
     public static Task RunAsync()
     {
-        if (Translations.Languages.Count != 24) throw new Exception("Translation bundle count changed.");
+        if (Translations.Languages.Count != 25) throw new Exception("Translation bundle count changed.");
         foreach (var language in Translations.Languages)
         {
             var text = new Translations(language);
             if (text.Get("General_Cancel", "missing") == "missing" || text.Values.Count == 0)
                 throw new Exception($"Missing packaged translation: {language}");
             if (!text.Values.Keys.Any(key => key.StartsWith("Linux_"))) throw new Exception("Linux message fallbacks were not packaged.");
-            if (text.RightToLeft != (language is "ar-SA" or "ar-SY" or "fa-IR")) throw new Exception("Wrong layout direction.");
+            if (text.RightToLeft != (language is "ar-SA" or "ar-SY" or "fa-IR" or "he-IL")) throw new Exception("Wrong layout direction.");
         }
         var fallback = new Translations("unsupported");
         var hostCulture = System.Globalization.CultureInfo.CurrentCulture;
@@ -49,9 +49,12 @@ internal static class TranslationsTests
         try
         {
             var library = new PersistentLibrary(new LibraryStateStore(root.FullName));
-            library.UpdateState(state => state.Language = "ar-SA");
-            if (new PersistentLibrary(new LibraryStateStore(root.FullName)).State.Language != "ar-SA")
-                throw new Exception("Language did not survive reopening.");
+            foreach (var language in new[] { "ar-SA", "he-IL" })
+            {
+                library.UpdateState(state => state.Language = language);
+                if (new PersistentLibrary(new LibraryStateStore(root.FullName)).State.Language != language)
+                    throw new Exception("Language did not survive reopening.");
+            }
         }
         finally { root.Delete(true); }
         return Task.CompletedTask;

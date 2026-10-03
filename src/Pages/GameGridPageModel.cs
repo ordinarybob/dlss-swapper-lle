@@ -463,45 +463,6 @@ public partial class GameGridPageModel : ObservableObject
             await failureDialog.ShowAsync();
         }
     }
-
-    public async Task InitialLoadAsync()
-    {
-        IsGameListLoading = true;
-        IsDLSSLoading = true;
-        ScanProgressText = ResourceHelper.GetString("General_Loading");
-
-        await GameManager.Instance.LoadGamesFromCacheAsync();
-
-        IsGameListLoading = false;
-        gameGridPage.PrepareVisibleCoverWait();
-        var runInitialDeepScan = Settings.Instance.HasCompletedInitialDeepScan == false;
-
-        try
-        {
-            await LoadGamesWithProgressAsync(
-                forceNeedsProcessing: runInitialDeepScan,
-                exhaustiveScan: runInitialDeepScan,
-                candidateLibraryReady: async () =>
-                {
-                    IsBackgroundScanRunning = true;
-                    IsDLSSLoading = false;
-                    await gameGridPage.WaitForVisibleCoverAsync();
-                });
-
-            if (runInitialDeepScan)
-            {
-                Settings.Instance.HasCompletedInitialDeepScan = true;
-            }
-        }
-        finally
-        {
-            PublishVisibleGameCount();
-            IsBackgroundScanRunning = false;
-            IsDLSSLoading = false;
-        }
-
-    }
-
     async Task LoadGamesWithProgressAsync(
         bool forceNeedsProcessing,
         bool exhaustiveScan = false,

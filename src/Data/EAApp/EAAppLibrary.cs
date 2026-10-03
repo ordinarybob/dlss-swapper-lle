@@ -176,9 +176,14 @@ internal class EAAppLibrary : IGameLibrary
                                     var cachedGame = GameManager.Instance.GetGame<EAAppGame>(contentId);
                                     var activeGame = cachedGame ?? new EAAppGame(contentId);
 
-                                    activeGame.Title = name;
-                                    activeGame.InstallPath = installPath;
-                                    activeGame.DisplayIconPath = programUninstallSubKey.GetValue("DisplayIcon")?.ToString() ?? string.Empty;
+                                    // Cached games may already be bound to the visible game list.
+                                    await App.CurrentApp.RunOnUIThreadAsync(() =>
+                                    {
+                                        activeGame.Title = name;
+                                        activeGame.InstallPath = installPath;
+                                        activeGame.DisplayIconPath = programUninstallSubKey.GetValue("DisplayIcon")?.ToString() ?? string.Empty;
+                                        return Task.CompletedTask;
+                                    }).ConfigureAwait(false);
 
                                     if (activeGame.IsInIgnoredPath())
                                     {

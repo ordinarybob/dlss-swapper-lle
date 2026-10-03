@@ -55,6 +55,18 @@ internal static class LanguageDialogTests
             if (!Equals(close.Content, arabic.Get("General_Close", "")) || !Equals(cancel.Content, arabic.Get("General_Cancel", ""))
                 || report.FlowDirection != FlowDirection.RightToLeft || settings.FlowDirection != FlowDirection.RightToLeft)
                 throw new Exception("Open XAML/generated controls did not update language and RTL.");
+            LanguageAppearance.Apply("he-IL"); Dispatcher.UIThread.RunJobs();
+            var hebrew = new Translations("he-IL");
+            if (hebrew.Language != "he-IL" || !hebrew.RightToLeft
+                || !Equals(close.Content, hebrew.Get("General_Close", ""))
+                || !Equals(cancel.Content, hebrew.Get("General_Cancel", ""))
+                || report.FlowDirection != FlowDirection.RightToLeft || settings.FlowDirection != FlowDirection.RightToLeft)
+                throw new Exception("Hebrew language selection, live controls or RTL layout failed.");
+            CheckActions(settings, hebrew.Get("General_Cancel", "Cancel"));
+            CheckActions(report, hebrew.Get("General_Close", "Close"));
+            if (hebrew.Get("Linux_LibraryDownloadCancelled", "missing") != "Download cancelled"
+                || hebrew.Get("ApplicationTitle", "missing") != "DLSS Swapper LLE")
+                throw new Exception("Hebrew lost LLE branding or the English fallback.");
             LanguageAppearance.Apply("en-US"); Dispatcher.UIThread.RunJobs();
             if (!Equals(close.Content, "Close") || !Equals(cancel.Content, "Cancel") || settings.FlowDirection != FlowDirection.LeftToRight)
                 throw new Exception("Returning to English did not restore open controls.");
