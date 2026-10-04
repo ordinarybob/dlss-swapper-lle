@@ -1,6 +1,7 @@
 param(
     [string]$Dotnet,
-    [string]$OutputPath
+    [string]$OutputPath,
+    [string]$SourceRevisionId
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
@@ -19,7 +20,8 @@ if (Test-Path -LiteralPath $temporary) { throw "Existing package operation or un
 try {
     foreach ($app in @(@('Cli', 'cli'), @('Gui', 'app'))) {
         $project = Join-Path $PSScriptRoot "DlssSwapper.Linux.$($app[0])/DlssSwapper.Linux.$($app[0]).csproj"
-        & $Dotnet publish $project -c Release -r linux-x64 --self-contained true --no-restore '-p:LlePackageFormat=tar.gz' -o (Join-Path $stage $app[1]) -v minimal
+        $revisionArguments = if ($SourceRevisionId) { @("-p:SourceRevisionId=$SourceRevisionId") } else { @() }
+        & $Dotnet publish $project -c Release -r linux-x64 --self-contained true --no-restore '-p:LlePackageFormat=tar.gz' @revisionArguments -o (Join-Path $stage $app[1]) -v minimal
         if ($LASTEXITCODE -ne 0) { throw "Publish failed: $($app[0])" }
     }
     $package = Join-Path $stage 'app'
