@@ -10,7 +10,6 @@ namespace DLSS_Swapper.UserControls;
 
 internal static partial class ManualLaunchSetup
 {
-    internal sealed record BulkLaunchResult(int Saved, int Kept, IReadOnlyList<string> Skipped, bool Cancelled);
     internal sealed record LaunchScanEntry(ManuallyAddedGame Game,
         List<ManualLaunchManifest.Candidate> Candidates, string? Error = null);
 
@@ -39,64 +38,55 @@ internal static partial class ManualLaunchSetup
         return results;
     }
 
-    internal static Task<BulkLaunchResult> SavePreparedDefaultsAsync(IReadOnlyList<LaunchScanEntry> entries,
-        Action<int, string>? progress = null, CancellationToken token = default)
+    internal sealed class LaunchDraft
     {
-        var prepared = entries.ToDictionary(entry => entry.Game);
-        return SaveDefaultsAsync(entries.Select(entry => entry.Game).ToArray(), game =>
+        internal ManuallyAddedGame Game { get; }
+        internal List<ManualLaunchManifest.Candidate> Candidates { get; }
+        internal string Executable { get; set; }
+        internal string Arguments { get; set; }
+        internal string WorkingDirectory { get; set; }
+        internal string Error { get; set; }
+
+        internal LaunchDraft(LaunchScanEntry scan)
         {
-            var entry = prepared[game];
-            return entry.Error is null ? Task.FromResult(entry.Candidates)
-                : Task.FromException<List<ManualLaunchManifest.Candidate>>(new IOException(entry.Error));
-        }, progress, token);
+            Game = scan.Game;
+            Candidates = new(scan.Candidates);
+            Executable = !string.IsNullOrWhiteSpace(Game.LaunchExecutable) && !ManualLaunchManifest.IsExcluded(Game.LaunchExecutable)
+                ? Game.LaunchExecutable : Candidates.FirstOrDefault()?.Path ?? "";
+            Arguments = Game.LaunchArguments ?? "";
+            WorkingDirectory = Game.LaunchWorkingDirectory ?? "";
+            Error = string.IsNullOrEmpty(Executable)
+                ? scan.Error ?? "No suggested executable. Use Browse." : "";
+        }
     }
 
-    internal static async Task<BulkLaunchResult> SaveDefaultsAsync(
-        IReadOnlyList<ManuallyAddedGame> games,
-        Func<ManuallyAddedGame, Task<List<ManualLaunchManifest.Candidate>>> findCandidates,
-        Action<int, string>? progress = null, CancellationToken token = default)
+    internal static async Task<int> SaveDraftsAsync(IReadOnlyList<LaunchDraft> drafts)
     {
-        var saved = 0;
-        var kept = 0;
-        var skipped = new List<string>();
-        for (var index = 0; index < games.Count; index++)
+        var failures = 0;
+        foreach (var draft in drafts)
         {
-            if (token.IsCancellationRequested) return new(saved, kept, skipped, true);
-            var game = games[index];
-            progress?.Invoke(index, game.Title);
+            var game = draft.Game;
             var old = (game.LaunchExecutable, game.LaunchArguments, game.LaunchWorkingDirectory);
             try
             {
-                if (!string.IsNullOrWhiteSpace(game.LaunchExecutable)
-                    && !ManualLaunchManifest.IsExcluded(game.LaunchExecutable))
+                var manifest = ManualLaunchManifest.Validate(draft.Executable, draft.Arguments, draft.WorkingDirectory);
+                if (old != (manifest.Executable, manifest.Arguments, manifest.WorkingDirectory))
                 {
-                    ManualLaunchManifest.Validate(game.LaunchExecutable,
-                        game.LaunchArguments ?? "", game.LaunchWorkingDirectory ?? "");
-                    kept++;
-                    continue;
+                    game.LaunchExecutable = manifest.Executable;
+                    game.LaunchArguments = manifest.Arguments;
+                    game.LaunchWorkingDirectory = manifest.WorkingDirectory;
+                    if (!await game.SaveToDatabaseAsync(bypassBatch: true))
+                        throw new IOException("Launch details could not be saved. Try again.");
                 }
-                var candidates = await findCandidates(game);
-                if (token.IsCancellationRequested) return new(saved, kept, skipped, true);
-                if (candidates.Count == 0)
-                {
-                    skipped.Add($"{game.Title}: no suggested executable.");
-                    continue;
-                }
-                var manifest = ManualLaunchManifest.Validate(candidates[0].Path,
-                    game.LaunchArguments ?? "", game.LaunchWorkingDirectory ?? "");
-                game.LaunchExecutable = manifest.Executable;
-                game.LaunchArguments = manifest.Arguments;
-                game.LaunchWorkingDirectory = manifest.WorkingDirectory;
-                if (!await game.SaveToDatabaseAsync(bypassBatch: true))
-                    throw new IOException("Launch details could not be saved.");
-                saved++;
+                draft.Error = "";
             }
             catch (Exception ex)
             {
                 (game.LaunchExecutable, game.LaunchArguments, game.LaunchWorkingDirectory) = old;
-                skipped.Add($"{game.Title}: {ex.Message}");
+                draft.Error = ex.Message;
+                failures++;
             }
         }
-        return new(saved, kept, skipped, false);
+        return failures;
     }
 }

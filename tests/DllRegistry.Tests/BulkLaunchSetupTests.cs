@@ -33,27 +33,33 @@ internal static class BulkLaunchSetupTests
             var next = new ManuallyAddedGame { Title = "citron", InstallPath = Path.GetDirectoryName(citron)! };
             Task<List<ManualLaunchManifest.Candidate>> Scan(ManuallyAddedGame item) =>
                 Task.FromResult(ManualLaunchManifest.FindCandidates(item.InstallPath, item.Title));
-            var result = await ManualLaunchSetup.SaveDefaultsAsync([game, kept, failed, missing, next], Scan);
-            Check(result.Saved == 2 && result.Kept == 1 && result.Skipped.Count == 2 && !result.Cancelled,
-                "Bulk outcome counts or continue-after-failure failed.");
-            Check(game.LaunchExecutable == alan && next.LaunchExecutable == citron, "Defaults must use existing ranking.");
-            Check(kept.SaveCalls == 0 && kept.LaunchExecutable == savedPath && kept.LaunchArguments == "--custom"
-                && kept.LaunchWorkingDirectory == root, "Saved choices must remain unchanged.");
-            Check(failed.LaunchExecutable is null && failed.LaunchArguments is null
-                && failed.LaunchWorkingDirectory is null, "Failed saves must restore in-memory state.");
-            Check(missing.SaveCalls == 0, "No candidate must not save.");
+            var drafts = new[] { game, kept, failed, missing, next }
+                .Select(item => new ManualLaunchSetup.LaunchDraft(new(item, Scan(item).GetAwaiter().GetResult()))).ToArray();
+            Check(drafts[0].Executable == alan && drafts[1].Executable == savedPath,
+                "Review must retain saved choices and rank new suggestions.");
+            Check(game.LaunchExecutable is null, "Preparing the list must not save.");
+            var failures = await ManualLaunchSetup.SaveDraftsAsync(drafts);
+            Check(failures == 2 && game.LaunchExecutable == alan && next.LaunchExecutable == citron,
+                "Valid rows must save despite independent row failures.");
+            Check(kept.SaveCalls == 0 && kept.LaunchArguments == "--custom" && kept.LaunchWorkingDirectory == root,
+                "Unchanged saved settings must be preserved without redundant writes.");
+            Check(failed.LaunchExecutable is null && failed.LaunchArguments is null && failed.LaunchWorkingDirectory is null,
+                "Failed saves must restore in-memory state.");
+            Check(missing.SaveCalls == 0 && drafts[2].Error.Length > 0 && drafts[3].Error.Length > 0,
+                "Invalid rows need individual errors and no writes.");
+            failed.SaveResult = true;
+            drafts[3].Executable = savedPath;
+            failures = await ManualLaunchSetup.SaveDraftsAsync(drafts);
+            Check(failures == 0 && drafts.All(item => item.Error.Length == 0) && game.SaveCalls == 1,
+                "Retry must save corrected rows, clear errors and not rewrite successful rows.");
+            drafts[0].Executable = savedPath;
+            Check(game.LaunchExecutable == alan, "Editing after Apply must remain a draft until saving again.");
+            drafts[0].Arguments = "--changed";
+            failures = await ManualLaunchSetup.SaveDraftsAsync(drafts);
+            Check(failures == 0 && game.LaunchExecutable == savedPath && game.LaunchArguments == "--changed",
+                "A second Apply must save changed draft settings.");
             var choices = await Scan(game);
             Check(choices.All(c => !ManualLaunchManifest.IsExcluded(c.Path)), "Excluded executables must never be offered.");
-            using var cancel = new CancellationTokenSource();
-            var cancelledGame = new ManuallyAddedGame { Title = "cancelled", InstallPath = game.InstallPath };
-            result = await ManualLaunchSetup.SaveDefaultsAsync([cancelledGame], async item =>
-            {
-                var found = await Scan(item);
-                cancel.Cancel();
-                return found;
-            }, token: cancel.Token);
-            Check(result.Cancelled && cancelledGame.SaveCalls == 0 && cancelledGame.LaunchExecutable is null,
-                "Cancellation during scan must prevent saving.");
             var batch = Enumerable.Range(0, 8).Select(i => new ManuallyAddedGame { Title = $"Batch {i}", InstallPath = root }).ToArray();
             var scanCalls = new System.Collections.Concurrent.ConcurrentDictionary<ManuallyAddedGame, int>();
             var firstWave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -87,9 +93,8 @@ internal static class BulkLaunchSetupTests
             Check(peak == 4 && prepared.Count == batch.Length && prepared.Select(item => item.Game).SequenceEqual(batch),
                 "Bulk scans must be bounded and retain review order.");
             Check(scanCalls.Count == batch.Length && scanCalls.Values.All(count => count == 1), "Every game must be scanned once.");
-            result = await ManualLaunchSetup.SavePreparedDefaultsAsync(prepared);
-            Check(result.Saved == 7 && result.Skipped.Count == 1 && result.Skipped[0].Contains("Unreadable folder")
-                && scanCalls.Values.All(count => count == 1), "Bulk acceptance must reuse all results, including failures, without rescanning.");
+            Check(prepared[2].Error == "Unreadable folder" && scanCalls.Values.All(count => count == 1),
+                "Review must retain scan failures and reuse candidates without rescanning.");
             using var stopScan = new CancellationTokenSource();
             stopScan.Cancel();
             try
@@ -99,7 +104,7 @@ internal static class BulkLaunchSetupTests
             }
             catch (OperationCanceledException) { }
             Console.WriteLine("Bulk pre-scan: full-set barrier, four-worker bound, ordered results, isolated errors, cached acceptance and cancellation passed.");
-            Console.WriteLine("Bulk launch defaults: ranking/exclusions, saved-choice preservation, missing candidates, failed-save rollback, continuation and cancellation passed.");
+            Console.WriteLine("Launch list: staged edits, saved-choice preservation, per-row errors, partial success, retry and repeated Apply passed.");
         }
         finally { Directory.Delete(root, recursive: true); }
     }

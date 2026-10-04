@@ -22,6 +22,14 @@ internal static class Program
         Directory.CreateDirectory(root);
         try
         {
+            if (args.Contains("--manual-launch-ui-tests"))
+            {
+                var launchOwner = new Window { Width = 1100, Height = 800 };
+                launchOwner.Show();
+                try { ManualLaunchDialogTests.Run(launchOwner, root, args.Length > 1 ? args[1] : null); }
+                finally { launchOwner.Close(); }
+                return 0;
+            }
             if (args.Contains("--streamline-ui-tests"))
             {
                 var sdkOwner = new Window { Width = 1100, Height = 800 };
