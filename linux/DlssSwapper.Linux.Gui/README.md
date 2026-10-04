@@ -1,9 +1,12 @@
 # DLSS Swapper LLE Linux desktop
 
-LLE's native Linux desktop application brings DLSS Swapper to Linux with library
-scanning, batch game import, automatic launch-executable detection, DLL updates
-and restores, and Streamline management. Built with Avalonia, it shares saved
-games, settings and component operations with LLE's Linux CLI.
+The native Linux desktop scans game libraries, imports several games at once,
+automatically suggests launch executables and applies DLL updates across selected
+games. Streamline controls download SDK releases, compare component versions,
+upgrade or downgrade game-local DLLs, and restore original files.
+
+The Avalonia application shares saved games, settings and history with the
+Linux command-line tool.
 
 See the [Linux guide](../README.md) for installation, launcher discovery,
 game import, updates and platform requirements. The [feature list](../../docs/FEATURE_CLUSTERS.md)

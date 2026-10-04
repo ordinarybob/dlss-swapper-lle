@@ -1,10 +1,10 @@
 # DLSS Swapper LLE for Linux
 
-LLE adds native Linux support to DLSS Swapper: a desktop application and
-command-line interface for library scanning, batch game import, automatic
-launch-executable detection, DLL updates and restores, and Streamline management.
-Both share one saved game library, including launcher settings, scan patterns,
-artwork and history.
+Scan game libraries, import games in batches, choose their launch executables,
+and update or restore DLLs from a native Linux desktop application. Terminal
+commands also provide game discovery, scanning, updates and restoration.
+The desktop and command-line tool share saved games, launcher settings, scan
+patterns, artwork and history.
 
 ## Install and start
 
@@ -40,17 +40,27 @@ Run LLE as your normal user, not with `sudo`.
 - Configured Wine prefixes support Epic, GOG, Ubisoft Connect, EA App and Battle.net discovery.
 - Manual import accepts individual folders, multiple folders or the immediate game folders inside a parent directory.
 
-Choose HDD or standard storage settings on first launch. The initial Deep Scan
-learns paths for later Fast Scans. Settings also provides launcher locations and
-performance controls. Batch launch setup automatically scans imported games and
-preselects suggested executables. Save the whole batch together, or adjust native
-or Wine executables, arguments and working folders individually.
+On first launch, enable the HDD option for games on a mechanical hard drive;
+leave it off for SSD or NVMe storage. The initial Deep Scan searches game folders
+and remembers DLL locations for later Fast Scans.
+
+When importing games, choose launch setup to scan the whole imported batch and
+preselect suggested executables. Review and save every selection in one window,
+or adjust native/Wine executables, arguments and working folders individually.
+
+Settings lets you set launcher locations, simultaneous game scans, cover loads
+and game updates, and the number of game entries added to the screen together.
+New scan and cover-loading limits take effect when the next operation starts.
 
 ## Updates and restoration
 
-Open a game or select several games to choose the latest or a specific DLL
-version. The Library manages downloaded packages. Streamline provides historical
-SDK selection, component comparison, updates, restore and recovery.
+Open a game or select several games, choose DLL versions, then update the selected
+games simultaneously. The Library lists versions available to download and
+packages already downloaded.
+
+For Streamline, choose an SDK release and compare its DLLs with the game's
+installed components before upgrading or downgrading. Restore returns to the
+original backed-up files; recovery handles interrupted component updates.
 
 Close affected games before writing and keep the adjacent `.dlsss` backups.
 For command-line use, start with an update or restore `--dry-run`, then repeat the

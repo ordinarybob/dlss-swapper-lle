@@ -1,8 +1,9 @@
 # DLSS Swapper LLE Linux CLI
 
-LLE adds a native Linux command-line application for library discovery, scanning,
-DLL updates and restoration, and Streamline operations. It shares saved games and
-settings with LLE's Linux desktop application.
+Discover and scan games, select DLL versions, update game files and restore
+originals from the Linux terminal. Streamline commands inspect, replace, restore
+and recover game-local components. The command-line tool shares saved games and
+settings with the Linux desktop application.
 Use `--help` to see the available commands; starting without arguments also
 shows help. See the [Linux guide](../README.md) for installation and requirements.
 
@@ -51,8 +52,8 @@ Options may be repeated:
 - `--all` selects the saved library, including Steam, manual games and supported
   launcher sources, while respecting exclusions. It cannot be mixed
   with other game selectors.
-- `--family KEY` limits update or restore to a manifest family.
-- `--version KEY=VERSION` chooses an exact manifest version. If that version
+- `--family KEY` limits update or restore to a DLL type, such as `dlss`.
+- `--version KEY=VERSION` chooses an exact catalog version. If that version
   has multiple builds, use `KEY=VERSION@MD5PREFIX`.
 - `--manifest PATH` overrides the bundled `Assets/static_manifest.json`.
 
@@ -60,14 +61,14 @@ Options may be repeated:
 commands require an explicit selector or `--all`, and require `--yes` unless
 they are run with `--dry-run`. Filesystem roots such as `/` are rejected.
 
-## Update and restore semantics
+## How updates and restoration work
 
-- Only families actually detected in each game are planned.
+- Only DLL types actually detected in each game are selected for changes.
 - Latest selection uses manifest `version_number` and excludes development or
   signature-invalid records.
 - DLSS 1.x cannot be replaced with a 2.x-or-newer DLL, or vice versa.
 - Files that already match the selected version are not downloaded or rewritten.
-- A family/version payload is downloaded at most once per run and reused from
+- Each DLL type/version is downloaded at most once per run and reused from
   `${XDG_CACHE_HOME:-~/.cache}/dlss-swapper-lle`.
 - The ZIP size and MD5 and extracted DLL size and MD5 are checked against the
   manifest.
@@ -96,7 +97,7 @@ launcher exclusions.
 ## Streamline components
 
 The CLI can inspect, update, restore, and recover installed Streamline components.
-Its `--package` option accepts a **locally staged NVIDIA production folder**
+Its `--package` option accepts an **extracted NVIDIA production DLL folder**
 (the SDK's `bin/x64` directory), not development binaries or a ZIP. The Linux
 GUI also provides SDK downloads and version selection.
 

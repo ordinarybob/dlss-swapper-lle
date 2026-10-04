@@ -4,16 +4,18 @@
 
 ### Ultra fast library scanning and parsing
 
-- Parallel library parsing and game scanning: first library scan takes ~15 seconds for a 4,000-game Steam library, with cached reloads instantaneous.
-- Adaptive Fast Scan learns reusable paths; Deep Scan searches complete game folders.
-- Storage profiles and adjustable scan, artwork, update and interface workloads.
-- Resilient launcher discovery, reusable artwork and automatic covers for manual games.
+- Reads launcher records and scans game folders in parallel: first library scan takes ~15 seconds for a 4,000-game Steam library, with cached reloads instantaneous.
+- Adaptive Fast Scan checks known DLL locations; Deep Scan searches complete game folders and learns new locations.
+- Adjustable numbers of simultaneous game scans, cover loads and game updates, plus the number of entries added to the screen together. HDD mode reduces simultaneous scans and cover loads for mechanical drives.
+- Finds installed games when Steam library indexes are missing or outdated and retains cached entries when a launcher is unavailable.
+- Finds covers for manually added games and reuses images already cached by Steam or LLE.
 
 ### Native Linux support
 
-- LLE adds native x64 desktop and command-line applications sharing one saved library.
-- Native/Flatpak Steam, Legendary/Heroic and configured Wine-prefix discovery.
-- Library scanning, batch game import, automatic launch-executable detection, artwork, DLL and Streamline updates/restores, and performance controls.
+- Native x64 desktop application for scanning libraries, importing games in batches, configuring launch executables, updating DLLs and restoring originals.
+- Command-line discovery, scanning, DLL updates and restoration using the same saved library as the desktop.
+- Finds games in native/Flatpak Steam, Legendary/Heroic and supported launchers in configured Wine prefixes.
+- Desktop selection and download of Streamline SDK releases; desktop and terminal operations to inspect, replace, restore and recover game-local Streamline components.
 
 ### Batch game import and automatic executable detection
 
@@ -23,17 +25,18 @@
 
 ### Interface and batch updates
 
-- Redesigned Windows navigation, toolbars, responsive cover grids, sorting and dialogs.
-- One-click update-all, specific DLL-version selection and parallel updates across games.
-- Per-game preset applicability checks on Windows, with copyable and exportable batch reports.
-- Bulk removal and persistent launcher exclusions.
-- Combined Library download progress and application-data reset.
+- Vertical navigation, grouped Games commands and scrollable dialogs that fit smaller windows. Cover cards resize to fill the window; games can be sorted by name or DLSS version.
+- One-click latest-version selection for all detected DLL types and simultaneous updates across selected games. Files already current are skipped; per-game results can be copied or saved.
+- Windows batch preset changes check for the matching DLSS component and NVIDIA driver profile, then report changed, already-selected, skipped or failed settings.
+- Remove several games from the library at once; excluded launcher games stay hidden after a rescan.
+- One Windows Library progress bar combines simultaneous downloads, with percentage and received/total size.
+- Reset saved library data, settings and application caches.
 
 ### Streamline
 
-- Historical SDK browsing, package downloads and version selection in Library, game and batch workflows.
-- Installed, available and original component comparison, including upgrade and downgrade previews.
-- Coordinated component replacement, original-file restore and interrupted-update recovery.
+- Download a selected NVIDIA Streamline SDK release and apply its component DLLs to one or several games.
+- Compare installed, replacement and original versions before upgrading or downgrading.
+- Preserve original files across version changes, roll back a failed update and retain recovery files for interrupted updates.
 
 See the [complete feature list](docs/FEATURE_CLUSTERS.md) for platform details and
 source files, and [upstream contributions](docs/COMMITS.md#upstream-imports-and-adaptations) for imported changes and credits.

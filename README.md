@@ -17,32 +17,37 @@ DLL catalog updates and translations from later upstream releases.
 ## LLE features
 
 - **Ultra fast library scanning.** First library scan takes ~15 seconds for a
-  4,000-game Steam library, with cached reloads instantaneous. LLE parallelizes
-  library parsing and game scanning. Adaptive Fast Scan reuses learned paths;
-  Deep Scan searches complete game folders.
-- **Native Linux support — desktop and command line.** LLE adds native Linux
-  applications for game discovery, scanning, batch import, launch setup, DLL
-  updates and restoration, and Streamline management. The desktop and CLI share
-  one saved library, with native/Flatpak Steam, Legendary/Heroic and Wine-prefix
-  integration. [Linux guide](linux/README.md).
-- **Batch game import with automatic executable detection.** Add a whole folder
-  of games or select multiple game folders in one operation. LLE scans the entire
-  batch, finds and preselects suggested launch executables, then lets you save all
-  selections together in one window. Individual choices remain editable.
-- **Performance controls for different systems.** HDD and standard storage
-  profiles, with adjustable scanning, artwork, game-update and interface
-  workloads. Scan and artwork limits can be changed while work is running.
-- **Redesigned interface.** Responsive navigation and toolbars, adjustable cover
-  grids, sorting, compact dialogs and direct game actions from context menus.
-- **One-click update-all and parallel batch updates.** Choose the latest or a
-  specific version for each DLL family across selected games, with per-game
-  preset applicability checks on Windows and copyable or exportable results.
-- **Streamline version management.** Browse historical SDK releases, compare
-  installed, available and original components, and switch versions for one or
-  many games. Restore saved originals or recover interrupted updates.
-- **Automatic artwork and shared caching.** Resolve covers for manually added
-  games and reuse cached artwork. Windows portable instances can share the
-  artwork cache beside a game library.
+  4,000-game Steam library, with cached reloads instantaneous. LLE reads launcher
+  records and scans game folders in parallel. Adaptive Fast Scan reuses known DLL
+  locations; Deep Scan searches complete game folders and learns new locations.
+- **Native Linux support — desktop and command line.** Scan game libraries,
+  import games in batches, configure launch executables, and update or restore
+  DLLs from a native Linux desktop application. Terminal commands support
+  discovery, scanning, updates and restoration using the same saved library.
+  Supports native/Flatpak Steam, Legendary/Heroic and launchers in configured
+  Wine prefixes. [Linux guide](linux/README.md).
+- **Batch game import with automatic executable detection.** Select several
+  game folders or a parent folder containing them. Launch setup scans all imported
+  games together and preselects suggested executables. Review, change and save
+  every selection in one window.
+- **Adjustable scan, cover-loading and update limits.** Set how many games scan
+  or update at once, how many covers load at once, and how many game entries are
+  added to the screen together. HDD mode lowers scan and cover-loading limits
+  for mechanical drives.
+- **Redesigned interface.** Vertical navigation, grouped toolbars and dialogs
+  that fit smaller windows. Resize cover cards to fill the window, sort games by
+  name or DLSS version, and access update-all from a game's right-click menu.
+- **One-click update-all and parallel batch updates.** Select the latest versions
+  for all detected DLL types at once, or choose versions separately. Update several
+  games simultaneously, skip files already current, and copy or save per-game
+  results.
+- **Streamline version switching.** Download a chosen NVIDIA Streamline SDK
+  release and use it to replace existing component DLLs in one or several games.
+  Compare current and replacement versions before upgrading or downgrading;
+  restore original files or recover interrupted updates.
+- **Automatic game covers and shared caching.** Find cover images for manually
+  added games and reuse covers already downloaded by Steam or LLE. Windows
+  portable copies can reuse a shared cover cache on the game-library drive.
 
 ![DLSS Swapper LLE on Windows: default list view on the left and grid view on the right](docs/images/windows-main.png)
 
@@ -59,9 +64,9 @@ Both packages include the .NET runtime. Extract the Windows ZIP and run
 
 ## Using LLE's workflows
 
-1. Start LLE. Choose **HDD** if your games are on a mechanical hard drive, or
-   **Standard** for SSD storage. LLE discovers installed games from enabled
-   launchers and scans their folders for supported DLLs.
+1. Start LLE. Enable the **HDD** option if your games are on a mechanical hard
+   drive; leave it off for SSD or NVMe storage. LLE discovers installed games
+   from enabled launchers and scans their folders for supported DLLs.
 2. Use **Add Games → Add multiple game folders** or **Add a multi-game directory**
    to import games in a batch. Choose **Yes** for launch setup: LLE automatically
    scans the imported games and preselects suggested executables. Review or change
