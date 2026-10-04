@@ -54,8 +54,8 @@ chosen operation with `--yes`. See the [CLI reference](DlssSwapper.Linux.Cli/REA
 
 ## Platform details
 
-Tested on Ubuntu 24.04 under WSL. NVIDIA driver-profile presets, DLSS indicators
-and driver logging controls are Windows-only.
+NVIDIA driver-profile presets, DLSS indicators and driver logging controls
+are Windows-only.
 
 The app reports backing filesystems and warns about NTFS/FUSE game libraries.
 

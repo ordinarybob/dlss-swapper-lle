@@ -1,11 +1,9 @@
 # LLE workflows
 
-Four workflows in the Windows V1 release.
-
 ## Large game libraries
 
-LLE's redesigned Games page brings Deep Scan, batch actions, sorting and
-per-library card density into the toolbar above the game library.
+Deep Scan, batch actions, sorting and adjustable card sizes are available
+directly from the redesigned Games page.
 
 ![LLE Games page with Deep Scan, batch actions and the Steam Card size selector](images/workflow-game-library.png)
 
@@ -20,14 +18,13 @@ selector and Browse button; Apply and Save and close handle the list together.
 ## One-click update-all and Streamline batch selection
 
 Select the latest eligible DLL versions together and include a specific Streamline
-SDK across the selected games. LLE adds parallel execution and Streamline selection
-to the batch foundation from [upstream PR #913](https://github.com/beeradmoore/dlss-swapper/pull/913).
+SDK across the selected games, then apply the updates in parallel.
 
 ![LLE batch picker with latest DLL versions and Streamline v2.14.1 selected for 41 games](images/workflow-game-updates.png)
 
 ## Streamline package library
 
-LLE adds historical Streamline SDK packages to the Library. Download a chosen
+Browse historical Streamline SDK packages and download a chosen
 release for use in individual-game or batch component updates.
 
 ![Streamline Library showing eight SDK releases available to download](images/workflow-streamline-library.png)

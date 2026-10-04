@@ -14,7 +14,7 @@ DLL catalog updates and translations from later upstream releases.
 [Screenshots](docs/SCREENSHOTS.md) ·
 [Linux guide](linux/README.md) · [Build from source](docs/BUILDING.md)
 
-## What LLE changes
+## LLE features
 
 - **Ultra fast library loading.** Cached games become usable while scanning, artwork
   and metadata continue loading in the background. Adaptive Fast Scan reuses
@@ -29,8 +29,8 @@ DLL catalog updates and translations from later upstream releases.
   inside one parent folder. Scan launch executables together, then review every
   game in one scrollable window with a selector and Browse button on each row.
 - **One-click update-all and parallel batch updates.** Choose the latest or a
-  specific version for each DLL family across selected games. Apply NVIDIA
-  presets in batches on Windows and copy or save the results.
+  specific version for each DLL family across selected games, with per-game
+  preset applicability checks on Windows and copyable or exportable results.
 - **Streamline version management.** Browse historical SDK releases, compare
   installed, available and original components, and switch versions for one or
   many games. Restore saved originals or recover interrupted updates.
@@ -43,7 +43,7 @@ DLL catalog updates and translations from later upstream releases.
 
 ![DLSS Swapper LLE on Windows: default list view on the left and grid view on the right](docs/images/windows-main.png)
 
-*LLE's redesigned Games page: Deep Scan and batch controls, sorting and responsive card density. Default list view (left), grid view (right). [Workflow screenshots](docs/SCREENSHOTS.md).*
+[Workflow screenshots](docs/SCREENSHOTS.md)
 
 ## Downloads
 

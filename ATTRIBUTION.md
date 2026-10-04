@@ -11,7 +11,7 @@ LLE extends that contribution with its shared update workflows and interface.
 
 Later upstream contributions include the adapted scan-loading/UI-thread fix,
 Japanese and Hebrew translations, DLL catalog updates and Ray Reconstruction
-Preset F. Their commits are identified in the [feature list](docs/FEATURE_CLUSTERS.md).
+Preset F. Their sources are listed in [upstream imports and adaptations](docs/COMMITS.md#upstream-imports-and-adaptations).
 
 The project retains the [GNU GPL version 3 license](LICENSE), upstream copyright
 notices and contributor credit. Third-party licenses and acknowledgements are

@@ -4,7 +4,7 @@
 [Commit inventory](docs/COMMITS.md) · [Attribution](ATTRIBUTION.md)
 
 The comparison baseline is upstream `v1.2.5.0`
-(`4c58e1969ea39b35f21754e4f81e4e3baed5f8ca`). From the release source checkout:
+(`4c58e1969ea39b35f21754e4f81e4e3baed5f8ca`).
 
 ```sh
 git fetch https://github.com/beeradmoore/dlss-swapper.git tag v1.2.5.0

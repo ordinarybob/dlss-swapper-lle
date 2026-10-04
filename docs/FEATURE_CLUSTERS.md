@@ -1,10 +1,8 @@
-# DLSS Swapper LLE feature clusters
+# DLSS Swapper LLE features
 
-LLE additions and changes compared with upstream `v1.2.5.0` (`4c58e19`), with platform details and supporting commits. Selective upstream imports are recorded separately in the [commit inventory](COMMITS.md) and [attribution](../ATTRIBUTION.md).
+LLE features grouped with their source files and commits, relative to upstream `v1.2.5.0`. See [upstream contributions](COMMITS.md#upstream-imports-and-adaptations) for imported changes.
 
-## Feature groups
-
-### F01 Resilient game discovery and Linux launcher integration
+## F01 Resilient game discovery and Linux launcher integration
 
 Windows and Linux.
 
@@ -16,7 +14,7 @@ Finds installed games despite stale or missing Steam library indexes, preserves 
 
 **Implementation references:** [src/Data/Steam/SteamLibrary.cs](../src/Data/Steam/SteamLibrary.cs); [linux/DlssSwapper.Linux.Cli/Platform/SteamDiscovery.cs](../linux/DlssSwapper.Linux.Cli/Platform/SteamDiscovery.cs); [linux/DlssSwapper.Linux.Cli/Platform/ProviderDiscovery.cs](../linux/DlssSwapper.Linux.Cli/Platform/ProviderDiscovery.cs).
 
-### F02 Adaptive Fast Scan and Deep Scan
+## F02 Adaptive Fast Scan and Deep Scan
 
 Windows and Linux.
 
@@ -28,11 +26,11 @@ Adds built-in scan-pattern display and editing for learned and custom Fast Scan 
 
 **Implementation references:** [src/Data/GameAssetPathIndex.cs](../src/Data/GameAssetPathIndex.cs); [src/Data/GameAssetCandidatePathIndex.cs](../src/Data/GameAssetCandidatePathIndex.cs); [linux/DlssSwapper.Linux.Cli/Core/LibraryScanService.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryScanService.cs).
 
-### F03 Fast large-library startup and responsive background loading
+## F03 Fast large-library startup and responsive background loading
 
 Windows and Linux.
 
-Makes cached games usable before the full scan, artwork and metadata loading finish. Shows completed results progressively, reduces repeated status updates and clears loading state after errors. Includes the UI-thread/loading fix from upstream #933, adapted in [8abfd44](https://github.com/ordinarybob/dlss-swapper-lle/commit/8abfd44ed8b58cfa14745ad4bb08ac5ca7e28f68).
+Cached games are usable before scanning, artwork and metadata loading finish. Completed results appear progressively without waiting for the slowest game or library.
 
 Artwork loads independently. Screen updates are applied in short, size-limited batches that yield between updates, keeping the interface responsive as the library fills.
 
@@ -42,7 +40,7 @@ On Windows, repeated database updates are combined into batched transactions. DL
 
 **Implementation references:** [src/Pages/GameGridPageModel.InitialLoad.cs](../src/Pages/GameGridPageModel.InitialLoad.cs); [src/Data/GameManager.cs](../src/Data/GameManager.cs); [src/Data/GameDatabaseWriteBatch.cs](../src/Data/GameDatabaseWriteBatch.cs); [src/Data/GameAsset.cs](../src/Data/GameAsset.cs); [linux/DlssSwapper.Linux.Cli/Core/LibraryStartup.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryStartup.cs); [linux/DlssSwapper.Linux.Gui/MainWindow.Publication.cs](../linux/DlssSwapper.Linux.Gui/MainWindow.Publication.cs).
 
-### F04 Performance profiles and live tuning for different systems
+## F04 Performance profiles and live tuning for different systems
 
 Windows and Linux.
 
@@ -56,13 +54,11 @@ HDD and standard profiles provide starting settings; individual controls let use
 - Number of entries added to the interface per batch.
 - Number of database writes per batch on Windows.
 
-Adds performance-settings reset.
-
 **Commits:** [19352e4](https://github.com/ordinarybob/dlss-swapper-lle/commit/19352e42a7d3f826738d9ac207b65dab7a2f2579), [7a26524](https://github.com/ordinarybob/dlss-swapper-lle/commit/7a26524163d1b25dd9545789ae957c9d0f9cad90), [159e230](https://github.com/ordinarybob/dlss-swapper-lle/commit/159e23075cda300a3cfcd7235b274e3d686d2c72), [40f3bf1](https://github.com/ordinarybob/dlss-swapper-lle/commit/40f3bf1b23867c2c4113df6fff50922cd5a4a794), [5c6780a](https://github.com/ordinarybob/dlss-swapper-lle/commit/5c6780a6aa9e24955cb85c3d770c72e62f249f29), [ba90b23](https://github.com/ordinarybob/dlss-swapper-lle/commit/ba90b23a98f975d444ca37c8eb48241581909297), [001fd5b](https://github.com/ordinarybob/dlss-swapper-lle/commit/001fd5b573cb0748c14cc060d69edc0174de3312), [23af5da](https://github.com/ordinarybob/dlss-swapper-lle/commit/23af5da8d47761e1c37022f0ae1ce4979be3df64), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa).
 
 **Implementation references:** [src/Settings.cs](../src/Settings.cs); [src/UserControls/PerformanceNumberEditor.xaml](../src/UserControls/PerformanceNumberEditor.xaml); [linux/DlssSwapper.Linux.Cli/Core/LibraryState.Performance.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryState.Performance.cs).
 
-### F05 Manual multi-folder and parent-folder batch game import
+## F05 Manual multi-folder and parent-folder batch game import
 
 Windows and Linux.
 
@@ -79,17 +75,17 @@ The Windows batch summary records added, already-present and failed imports, wit
 
 **Implementation references:** [src/Pages/GameGridPageModel.cs](../src/Pages/GameGridPageModel.cs); [linux/DlssSwapper.Linux.Cli/Core/ManualGameImportWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/ManualGameImportWorkflow.cs); [linux/DlssSwapper.Linux.Cli/Core/LibraryState.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryState.cs); [linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs](../linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs).
 
-### F06 Bulk removal with persistent launcher exclusions
+## F06 Bulk removal with persistent launcher exclusions
 
 Windows and Linux.
 
-Removes selected manual library entries or excludes launcher-discovered games. Exclusions survive rescans and can be restored. Failed saves preserve the affected entry and report the error.
+Removes selected manual library entries or excludes launcher-discovered games. Exclusions survive rescans and can be restored.
 
 **Commits:** [32e4e1f](https://github.com/ordinarybob/dlss-swapper-lle/commit/32e4e1f71403552d44a926c23ae6eb8e4247a2bf), [4238177](https://github.com/ordinarybob/dlss-swapper-lle/commit/4238177934f4a53f302b382ecdec708e45efd0f2), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa).
 
 **Implementation references:** [src/Pages/GameGridPageModel.cs](../src/Pages/GameGridPageModel.cs); [src/UserControls/GameControlModel.Metadata.cs](../src/UserControls/GameControlModel.Metadata.cs); [linux/DlssSwapper.Linux.Cli/Core/LibraryRemovalWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryRemovalWorkflow.cs).
 
-### F07 Bulk executable scanning and selection for manually added games
+## F07 Bulk executable scanning and selection for manually added games
 
 Windows and Linux.
 
@@ -98,7 +94,7 @@ Adds launching for manually imported games using saved executables, arguments an
 - **Bulk executable scan:** scans the entire imported set before selection begins, with parallel scanning, progress and cancellation. Searches nested game directories and preserves saved executable choices.
 - **Ranked suggestions:** matches game titles, abbreviations, sequel numbers and executable metadata; filters helper processes and ranks the main application ahead of companion utilities.
 - **Shared selection window:** one bounded, scrollable list with a game name, executable selector and Browse button on each row. Selectors show filenames when closed and full paths when open. Per-game launch arguments and working folders remain editable.
-- **Batch save controls:** Apply, Save and close, and Skip and close handle the whole list. Suggested and edited selections are saved together; unselected rows are highlighted, and partial saving can skip blank rows. Failed saves retain edits and identify the affected games.
+- **Batch save controls:** Apply saves selections without closing; Save and close saves and exits; Skip and close exits without saving pending changes. Unselected rows are highlighted but do not block saving the other games.
 
 Saved launch settings can also be reopened for an individual manually added game.
 
@@ -106,7 +102,7 @@ Saved launch settings can also be reopened for an individual manually added game
 
 **Implementation references:** [src/UserControls/ManualLaunchSetup.cs](../src/UserControls/ManualLaunchSetup.cs); [src/UserControls/ManualLaunchSetup.Bulk.cs](../src/UserControls/ManualLaunchSetup.Bulk.cs); [src/UserControls/ManualLaunchSetupDialog.cs](../src/UserControls/ManualLaunchSetupDialog.cs); [src/Data/GameManager.cs](../src/Data/GameManager.cs); [shared/DlssSwapper.Shared/ManualLaunch/ManualLaunchManifest.cs](../shared/DlssSwapper.Shared/ManualLaunch/ManualLaunchManifest.cs); [linux/DlssSwapper.Linux.Gui/ManualLaunchSetupWindow.cs](../linux/DlssSwapper.Linux.Gui/ManualLaunchSetupWindow.cs); [linux/DlssSwapper.Linux.Cli/Core/ManualGameLaunch.cs](../linux/DlssSwapper.Linux.Cli/Core/ManualGameLaunch.cs).
 
-### F08 Automatic artwork for manual games and shared cover caching
+## F08 Automatic artwork for manual games and shared cover caching
 
 Windows and Linux.
 
@@ -118,7 +114,7 @@ Cached covers are reused without another download. On Windows, a shared artwork 
 
 **Implementation references:** [src/Data/Steam/SteamArtworkLookup.cs](../src/Data/Steam/SteamArtworkLookup.cs); [src/Data/ManuallyAdded/WikipediaArtworkLookup.cs](../src/Data/ManuallyAdded/WikipediaArtworkLookup.cs); [linux/DlssSwapper.Linux.Cli/Core/ArtworkService.cs](../linux/DlssSwapper.Linux.Cli/Core/ArtworkService.cs).
 
-### F09 Sort the game library
+## F09 Sort the game library
 
 Windows and Linux.
 
@@ -128,7 +124,7 @@ Sorts the library by game name or detected DLSS version and preserves the select
 
 **Implementation references:** [src/Data/GameSortMode.cs](../src/Data/GameSortMode.cs); [src/Pages/GameGridPageModel.cs](../src/Pages/GameGridPageModel.cs); [linux/DlssSwapper.Linux.Cli/Core/GameViewPolicy.cs](../linux/DlssSwapper.Linux.Cli/Core/GameViewPolicy.cs).
 
-### F10 Adjustable cover grid that fills the window
+## F10 Adjustable cover grid that fills the window
 
 Windows and Linux.
 
@@ -138,7 +134,7 @@ Replaces fixed-width cover sizing with a responsive grid that fills the availabl
 
 **Implementation references:** [src/Pages/ResponsiveGameGridLayout.cs](../src/Pages/ResponsiveGameGridLayout.cs); [shared/DlssSwapper.Shared/ResponsiveGridLayout.cs](../shared/DlssSwapper.Shared/ResponsiveGridLayout.cs).
 
-### F11 Redesigned Windows and Linux interface
+## F11 Redesigned Windows and Linux interface
 
 Windows and Linux.
 
@@ -155,7 +151,7 @@ Reworks the application's navigation, page layouts and dialogs:
 
 **Implementation references:** [src/MainWindow.xaml](../src/MainWindow.xaml); [src/MainWindow.xaml.cs](../src/MainWindow.xaml.cs); [src/Pages/GameGridPage.xaml](../src/Pages/GameGridPage.xaml); [src/Pages/LibraryPage.xaml](../src/Pages/LibraryPage.xaml); [src/UserControls/GameControl.xaml](../src/UserControls/GameControl.xaml); [src/UserControls/GameControlModel.cs](../src/UserControls/GameControlModel.cs); [linux/DlssSwapper.Linux.Gui/MainWindow.axaml](../linux/DlssSwapper.Linux.Gui/MainWindow.axaml).
 
-### F12 Direct game actions through text context menus
+## F12 Direct game actions through text context menus
 
 Windows and Linux.
 
@@ -165,7 +161,7 @@ Adds a right-click text menu for direct access to game actions, including LLE's 
 
 **Implementation references:** [src/UserControls/GameControlModel.Metadata.cs](../src/UserControls/GameControlModel.Metadata.cs); [src/Pages/GameGridPage.xaml](../src/Pages/GameGridPage.xaml); [linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs](../linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs).
 
-### F13 Staged DLL replacement and backup validation
+## F13 Staged DLL replacement and backup validation
 
 Windows and Linux.
 
@@ -175,7 +171,7 @@ Adds staged writes, file-identity and backup checks, and duplicate-Apply protect
 
 **Implementation references:** [src/UserControls/DLLPickerControlModel.Apply.cs](../src/UserControls/DLLPickerControlModel.Apply.cs); [src/UserControls/GameControl.xaml](../src/UserControls/GameControl.xaml); [src/Helpers/StagedFile.cs](../src/Helpers/StagedFile.cs); [linux/DlssSwapper.Linux.Cli/Core/DllRestoreWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/DllRestoreWorkflow.cs).
 
-### F14 One-click update-all and parallel batch DLL updates
+## F14 One-click update-all and parallel batch DLL updates
 
 LLE extension of upstream PR #913; Windows and Linux.
 
@@ -183,15 +179,15 @@ Adds a per-game action to update all detected DLL families and parallel updates 
 
 Adds one-click latest-version selection and individual version selection for each DLL family. Missing selected packages are downloaded before use. Results distinguish changed files, already-current files, skipped items and errors.
 
-Adds clipboard copying and text-file export of batch reports. Fixes Windows crashes caused by download-completion dialogs opening over batch setup.
+Batch reports can be copied to the clipboard or saved as text files.
 
 **Commits:** [aa7ec4b](https://github.com/ordinarybob/dlss-swapper-lle/commit/aa7ec4b0a2427fe79bf99a7d7642cd201844ffff), [2a6b54b](https://github.com/ordinarybob/dlss-swapper-lle/commit/2a6b54bda9aa3bf7f63cd92f0673ed5eab6edfbe), [b637dcb](https://github.com/ordinarybob/dlss-swapper-lle/commit/b637dcbe63cfd66c8e6b61f05488eb10519c22a6), [aa5f1bb](https://github.com/ordinarybob/dlss-swapper-lle/commit/aa5f1bb4a77cc76dd5734711359e68b6cdebb912), [ed6a2e7](https://github.com/ordinarybob/dlss-swapper-lle/commit/ed6a2e77df0f818b58734bc08ee5452d612cffd7), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [5595e31](https://github.com/ordinarybob/dlss-swapper-lle/commit/5595e317a4ecd4f75c2ef8e1d876d143e934954f), [8069d8b](https://github.com/ordinarybob/dlss-swapper-lle/commit/8069d8b9d25db0016769659ba0934f8d84840bdc).
 
 **Implementation references:** [src/Data/DllUpdateWorkflow.cs](../src/Data/DllUpdateWorkflow.cs); [src/Helpers/VerifiedDllSource.cs](../src/Helpers/VerifiedDllSource.cs); [src/UserControls/BatchSwapSummaryControl.xaml.cs](../src/UserControls/BatchSwapSummaryControl.xaml.cs); [src/UserControls/EasyContentDialog.cs](../src/UserControls/EasyContentDialog.cs); [linux/DlssSwapper.Linux.Cli/Core/BatchUpdateWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/BatchUpdateWorkflow.cs); [linux/DlssSwapper.Linux.Gui/OperationReportWindow.cs](../linux/DlssSwapper.Linux.Gui/OperationReportWindow.cs).
 
-### F15 Batch preset applicability and per-game results
+## F15 Batch preset applicability and per-game results
 
-LLE restoration and extension of PR #913's preset foundation; Windows only.
+Extends PR #913; Windows only.
 
 Extends the imported batch preset workflow with matching-profile checks and per-game results that distinguish inapplicable, already-current, successful and failed changes.
 
@@ -199,7 +195,7 @@ Extends the imported batch preset workflow with matching-profile checks and per-
 
 **Implementation references:** [src/Data/BatchPresetUpdateWorkflow.cs](../src/Data/BatchPresetUpdateWorkflow.cs); [src/UserControls/BatchPresetRowModel.cs](../src/UserControls/BatchPresetRowModel.cs).
 
-### F16 Streamline version switching, rollback and interrupted-update recovery
+## F16 Streamline version switching, rollback and interrupted-update recovery
 
 Windows and Linux.
 
@@ -213,11 +209,11 @@ Previews upgrades, downgrades and same-version file differences before applying 
 
 **Implementation references:** [shared/DlssSwapper.Shared/Streamline/StreamlineSdkAcquisition.cs](../shared/DlssSwapper.Shared/Streamline/StreamlineSdkAcquisition.cs); [shared/DlssSwapper.Shared/Streamline/StreamlineComponentSet.cs](../shared/DlssSwapper.Shared/Streamline/StreamlineComponentSet.cs); [shared/DlssSwapper.Shared/Streamline/StreamlineDecisionPreview.cs](../shared/DlssSwapper.Shared/Streamline/StreamlineDecisionPreview.cs); [src/UserControls/StreamlineComponentsControl.xaml](../src/UserControls/StreamlineComponentsControl.xaml); [linux/DlssSwapper.Linux.Gui/StreamlineGameWindow.cs](../linux/DlssSwapper.Linux.Gui/StreamlineGameWindow.cs).
 
-### F17 Combined Library and Streamline download progress
+## F17 Combined Library and Streamline download progress
 
 Windows and Linux.
 
-Shows download and preparation progress, clears stale errors and supports retries. Includes aggregate Library progress on Windows and Streamline download progress on both platforms.
+Shows aggregate Library progress on Windows and Streamline download progress on both platforms.
 
 The Windows Library header combines simultaneous transfers into one progress bar, including Download Latest, with percentage and received/total size. File preparation has its own status after transfer completes.
 
@@ -225,7 +221,7 @@ The Windows Library header combines simultaneous transfers into one progress bar
 
 **Implementation references:** [src/Pages/LibraryPageModel.DownloadProgress.cs](../src/Pages/LibraryPageModel.DownloadProgress.cs); [src/Helpers/LibraryDownloadProgress.cs](../src/Helpers/LibraryDownloadProgress.cs); [linux/DlssSwapper.Linux.Gui/LibraryPage.Downloads.cs](../linux/DlssSwapper.Linux.Gui/LibraryPage.Downloads.cs).
 
-### F18 DLL archive validation and safe destination replacement
+## F18 DLL archive validation and safe destination replacement
 
 Windows and Linux.
 
@@ -235,7 +231,7 @@ Improves existing DLL import/export with case-insensitive ZIP discovery, importe
 
 **Implementation references:** [src/Helpers/DllArchiveExport.cs](../src/Helpers/DllArchiveExport.cs); [src/Pages/LibraryPageModel.cs](../src/Pages/LibraryPageModel.cs); [linux/DlssSwapper.Linux.Cli/Core/DllImportWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/DllImportWorkflow.cs); [linux/DlssSwapper.Linux.Cli/Core/DllExportWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/DllExportWorkflow.cs).
 
-### F19 Reset all LLE local application data
+## F19 Reset all LLE local application data
 
 Windows and Linux.
 
@@ -245,7 +241,7 @@ Adds a full reset of saved library data, settings and application caches.
 
 **Implementation references:** [src/AppDataReset.cs](../src/AppDataReset.cs); [linux/DlssSwapper.Linux.Cli/Core/LocalDataResetService.cs](../linux/DlssSwapper.Linux.Cli/Core/LocalDataResetService.cs).
 
-### F20 Native Linux command line interface
+## F20 Native Linux command line interface
 
 Linux x64.
 
@@ -257,7 +253,7 @@ Supports exact DLL-version selection, Streamline inspection, updates, restores a
 
 **Implementation references:** [linux/DlssSwapper.Linux.Cli/Program.cs](../linux/DlssSwapper.Linux.Cli/Program.cs); [linux/DlssSwapper.Linux.Cli/Cli.cs](../linux/DlssSwapper.Linux.Cli/Cli.cs).
 
-### F21 Native Linux desktop interface
+## F21 Native Linux desktop interface
 
 Linux x64.
 

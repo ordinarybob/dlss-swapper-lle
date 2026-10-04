@@ -15,7 +15,7 @@
 - Multi-folder and parent-folder manual game import, with duplicate detection and results.
 - Bulk executable scanning and one-window launch setup with per-game selectors and Browse controls.
 - One-click update-all, specific DLL-version selection and parallel updates across games.
-- Batch NVIDIA preset controls on Windows, with copyable and exportable operation reports.
+- Per-game preset applicability checks on Windows, with copyable and exportable batch reports.
 - Bulk removal and persistent launcher exclusions.
 - Combined Library download progress and application-data reset.
 
@@ -31,12 +31,5 @@
 - Native/Flatpak Steam, Legendary/Heroic and configured Wine-prefix discovery.
 - Manual import, launch setup, artwork, scanning, DLL and Streamline update/restore workflows.
 
-### Upstream contributions
-
-- Batch-selection foundation from RafaelHGOliveira's [PR #913](https://github.com/beeradmoore/dlss-swapper/pull/913), extended for LLE's update workflows.
-- Adapted scan-loading/UI-thread correction from upstream #933.
-- Japanese translation improvements and Hebrew translation with right-to-left layout.
-- Updated built-in DLL catalog through DLSS 310.9.1 and Ray Reconstruction Preset F.
-
 See the [complete feature list](docs/FEATURE_CLUSTERS.md) for platform details and
-implementation references, and [attribution](ATTRIBUTION.md) for source credits.
+source files, and [upstream contributions](docs/COMMITS.md#upstream-imports-and-adaptations) for imported changes and credits.

@@ -63,17 +63,15 @@ they are run with `--dry-run`. Filesystem roots such as `/` are rejected.
 - Only families actually detected in each game are planned.
 - Latest selection uses manifest `version_number` and excludes development or
   signature-invalid records.
-- DLSS 1.x and 2.x-or-newer compatibility follows the Windows batch safeguard.
-- Matching target MD5 values are true no-ops: they are not downloaded or
-  written.
+- DLSS 1.x cannot be replaced with a 2.x-or-newer DLL, or vice versa.
+- Files that already match the selected version are not downloaded or rewritten.
 - A family/version payload is downloaded at most once per run and reused from
   `${XDG_CACHE_HOME:-~/.cache}/dlss-swapper-lle`.
 - The ZIP size and MD5 and extracted DLL size and MD5 are checked against the
   manifest.
 - Before replacing a DLL, the original is copied beside it as
   `<filename>.dlsss` only when that backup does not already exist.
-- Restore moves the adjacent `.dlsss` file over the live DLL, consuming the
-  backup in the same manner as the upstream Windows restore path.
+- Restore moves the adjacent `.dlsss` file over the live DLL, consuming the backup.
 - `--dry-run` uses the normal selection, scan, eligibility, compatibility, and
   planning logic, but performs no downloads, cache writes, backups, updates, or
   restores.
