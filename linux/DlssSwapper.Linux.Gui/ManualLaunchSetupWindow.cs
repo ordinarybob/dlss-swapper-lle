@@ -113,8 +113,16 @@ public sealed class ManualLaunchSetupWindow : Window
         var name = new TextBlock { Text = row.Game.Name, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
         ToolTip.SetTip(name, row.Game.Name);
         row.Choice.PlaceholderText = "Scanning…";
+        row.Choice.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        row.Choice.SelectionBoxItemTemplate = new FuncDataTemplate<ManualLaunchManifest.Candidate>((item, _) =>
+            new TextBlock { Text = item?.FileName, TextWrapping = TextWrapping.Wrap, FlowDirection = FlowDirection.LeftToRight });
         row.Choice.ItemTemplate = new FuncDataTemplate<ManualLaunchManifest.Candidate>((item, _) =>
-            new TextBlock { Text = item?.Label, TextTrimming = TextTrimming.CharacterEllipsis });
+        {
+            var path = new TextBlock { Text = item?.Path, TextWrapping = TextWrapping.Wrap,
+                MaxWidth = Math.Clamp(ClientSize.Width - 80, 200, 640), FlowDirection = FlowDirection.LeftToRight };
+            ToolTip.SetTip(path, item?.Path);
+            return path;
+        });
         row.Choice.SelectionChanged += (_, _) =>
         {
             if (row.Choice.SelectedItem is not ManualLaunchManifest.Candidate selected) return;

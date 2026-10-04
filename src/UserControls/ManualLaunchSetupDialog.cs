@@ -9,6 +9,7 @@ using DLSS_Swapper.Helpers;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Markup;
 
 namespace DLSS_Swapper.UserControls;
 
@@ -19,11 +20,13 @@ internal sealed class ManualLaunchSetupDialog : EasyContentDialog
     readonly StackPanel _list = new() { Spacing = 8 };
     readonly ScrollViewer _scroll = new();
     readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
+    readonly ExecutableTemplates _executableTemplates;
     bool _saving;
 
     internal ManualLaunchSetupDialog(XamlRoot root, IReadOnlyList<ManualLaunchSetup.LaunchScanEntry> scans) : base(root)
     {
         _drafts = scans.Select(scan => new ManualLaunchSetup.LaunchDraft(scan)).ToList();
+        _executableTemplates = new ExecutableTemplates(Math.Clamp(root.Size.Width - 96, 200, 640));
         Title = $"Game launch setup ({_drafts.Count} games)";
         PrimaryButtonText = "Apply";
         SecondaryButtonText = "Save and close";
@@ -88,7 +91,8 @@ internal sealed class ManualLaunchSetupDialog : EasyContentDialog
         var name = new TextBlock { Text = draft.Game.Title, TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center };
         ToolTipService.SetToolTip(name, draft.Game.Title);
-        var choice = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, DisplayMemberPath = "Label",
+        var choice = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            ItemTemplateSelector = _executableTemplates,
             PlaceholderText = "Not found — Browse", MinWidth = 0 };
         AutomationProperties.SetName(choice, $"{draft.Game.Title} launch executable");
         void SelectPath(string path)
@@ -148,6 +152,33 @@ internal sealed class ManualLaunchSetupDialog : EasyContentDialog
         var content = new StackPanel { Spacing = 12, Width = 360 };
         content.Children.Add(arguments); content.Children.Add(working);
         new Flyout { Content = content }.ShowAt(target);
+    }
+
+    // WinUI requests the dropdown template with a ComboBoxItem container and
+    // the collapsed selection template with its presenter (or no container).
+    sealed class ExecutableTemplates : DataTemplateSelector
+    {
+        readonly DataTemplate _fileName;
+        readonly DataTemplate _fullPath;
+
+        internal ExecutableTemplates(double pathWidth)
+        {
+            _fileName = (DataTemplate)XamlReader.Load("""
+                <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                    <TextBlock Text="{Binding FileName}" TextWrapping="Wrap" FlowDirection="LeftToRight" />
+                </DataTemplate>
+                """);
+            _fullPath = (DataTemplate)XamlReader.Load(FormattableString.Invariant($$"""
+                <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                    <TextBlock Text="{Binding Path}" TextWrapping="Wrap" MaxWidth="{{pathWidth}}"
+                               FlowDirection="LeftToRight" ToolTipService.ToolTip="{Binding Path}" />
+                </DataTemplate>
+                """));
+        }
+
+        protected override DataTemplate SelectTemplateCore(object item) => _fileName;
+        protected override DataTemplate SelectTemplateCore(object item, DependencyObject container) =>
+            container is ComboBoxItem ? _fullPath : _fileName;
     }
 
     async Task<bool> SaveAsync()

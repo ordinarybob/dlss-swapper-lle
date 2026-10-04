@@ -23,13 +23,13 @@ public sealed record ManualLaunchManifest(string Executable, string Arguments, s
         return new(path, arguments, folder);
     }
 
-    public sealed record Candidate(string Path, string Label);
-    public static bool IsExcluded(string path)
+    public sealed record Candidate(string Path, string Label)
     {
-        var name = Path.GetFileNameWithoutExtension(path);
-        return (Path.GetDirectoryName(path) ?? "").Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                .Any(part => part.Contains("Artbook", StringComparison.OrdinalIgnoreCase));
+        public string FileName => System.IO.Path.GetFileName(Path);
     }
+    public static bool IsExcluded(string path) =>
+        (Path.GetDirectoryName(path) ?? "").Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            .Any(part => part.Contains("Artbook", StringComparison.OrdinalIgnoreCase));
     public static List<Candidate> FindCandidates(string root, string? title = null,
         IEnumerable<string>? preferredDirectories = null, Func<string, string>? normalizeTitle = null)
     {

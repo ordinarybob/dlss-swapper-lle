@@ -17,6 +17,10 @@ internal static class ManualLaunchDialogTests
             File.WriteAllBytes(Path.Combine(root, name), [1,2,3]);
         Directory.CreateDirectory(Path.Combine(root, "Artbook"));
         File.WriteAllBytes(Path.Combine(root, "Artbook", "citron.exe"), [1,2,3]);
+        var nestedFolder = Path.Combine(root, "Engine", "Binaries", "Win64");
+        Directory.CreateDirectory(nestedFolder);
+        var nestedExecutable = Path.Combine(nestedFolder, "citron.exe");
+        File.WriteAllBytes(nestedExecutable, [1,2,3]);
         var library = new PersistentLibrary(new LibraryStateStore(Path.Combine(fixtureRoot, "launch-state")));
         library.AddManualGames([root]);
         var games = library.State.ManualGames.ToArray();
@@ -46,9 +50,27 @@ internal static class ManualLaunchDialogTests
         Until(() => Button(setup, "Apply").IsEnabled);
         var choice = Choice(setup, root);
         Check(((DLSS_Swapper.Data.ManuallyAdded.ManualLaunchManifest.Candidate)choice.SelectedItem!).Path == Path.Combine(root, "citron.exe"), "Wrong suggestion");
+        var nested = choice.Items.Cast<DLSS_Swapper.Data.ManuallyAdded.ManualLaunchManifest.Candidate>().Single(item => item.Path == nestedExecutable);
+        var selected = choice.SelectedItem;
+        choice.SelectedItem = nested; Dispatcher.UIThread.RunJobs();
+        Check(choice.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "citron.exe"), "Collapsed selection did not show the complete filename");
+        choice.IsDropDownOpen = true; Dispatcher.UIThread.RunJobs();
+        var popup = choice.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.Popup>().Single();
+        var popupContent = popup.Child ?? throw new Exception("Dropdown has no content");
+        Check(popupContent.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == nestedExecutable && text.TextWrapping == Avalonia.Media.TextWrapping.Wrap),
+            "Expanded choices must show full paths and wrap long paths");
+        if (screenshot is not null)
+        {
+            using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                new PixelSize((int)Math.Ceiling(popupContent.Bounds.Width), (int)Math.Ceiling(popupContent.Bounds.Height)), new Vector(96, 96));
+            bitmap.Render(popupContent); bitmap.Save(screenshot + ".dropdown.png", Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+        }
+        choice.IsDropDownOpen = false; Dispatcher.UIThread.RunJobs();
+        Check(ReferenceEquals(choice.SelectedItem, nested), "Opening the dropdown changed the selected path");
+        choice.SelectedItem = selected;
         CheckActionsAtMinimum(setup, "Apply", "Save and close", "Skip and close");
         Check(choice.Items.Cast<DLSS_Swapper.Data.ManuallyAdded.ManualLaunchManifest.Candidate>().All(item =>
-            !item.Path.Contains("Artbook")), "Excluded executable suggested");
+            !item.Path.Contains("Artbook") && item.FileName != "GameHelper.exe" && item.FileName != "setup.exe"), "Excluded executable suggested");
         var row = choice.GetVisualAncestors().OfType<Grid>().First();
         ((MenuItem)row.ContextMenu!.Items.Single()!).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         var options = setup.OwnedWindows.Single();
