@@ -31,8 +31,7 @@ public sealed partial class MainWindow : Window
         Timeout = TimeSpan.FromMinutes(2),
     };
     private readonly TextBox _searchTextBox;
-    private readonly ComboBox _filterComboBox;
-    private readonly ComboBox _sortComboBox;
+    private int _sortMode;
     private readonly ComboBox _gridCardSizeInput;
     private readonly ScrollViewer _gameGridViewport;
 
@@ -61,10 +60,6 @@ public sealed partial class MainWindow : Window
         DataContext = _viewModel;
 
         _searchTextBox = FindRequiredTextBox("SearchTextBox");
-        _filterComboBox = this.FindControl<ComboBox>("FilterComboBox")
-            ?? throw new InvalidOperationException("Required filter control is missing.");
-        _sortComboBox = this.FindControl<ComboBox>("SortComboBox")
-            ?? throw new InvalidOperationException("Required sort control is missing.");
         _gridCardSizeInput = this.FindControl<ComboBox>("GridCardSizeInput")
             ?? throw new InvalidOperationException("Required grid-card-size control is missing.");
         _gameGridViewport = this.FindControl<ScrollViewer>("GameGridViewport")
@@ -83,6 +78,7 @@ public sealed partial class MainWindow : Window
             if (e.Property == WindowStateProperty && WindowState != WindowState.Minimized)
                 StateBeforeMinimizing = WindowState;
         };
+        SizeChanged += (_, _) => UpdateHeaderLayout();
         LanguageAppearance.Changed += RefreshLanguage;
         Opened += MainWindow_Opened;
         Closing += MainWindow_Closing;
@@ -127,6 +123,8 @@ public sealed partial class MainWindow : Window
             _artworkService = _services is not null ? _services.CreateArtwork() : new ArtworkService(
                 _artworkHttpClient,
                 new AvaloniaArtworkImageProcessor());
+            _includeHidden = _library.State.ShowHiddenGames;
+            _sortMode = Math.Clamp(_library.State.GameSortMode, 0, 2);
             _viewModel.IsGridView = _library.State.GridView;
             _viewModel.GridCardSize = _library.State.CardSize;
             _gridCardSizeInput.SelectedItem = _library.State.CardSize;
@@ -260,7 +258,7 @@ public sealed partial class MainWindow : Window
             }
             if (_library is { } library && !library.State.HasSelectedStorageProfile)
             {
-                var hddMode = await new StorageProfileDialog().ShowDialog<bool?>(this);
+                var hddMode = await new StorageProfileDialog().ShowDialog<bool?>(GameDialogOwner);
                 if (_lifetime.IsCancellationRequested) return;
                 if (hddMode.HasValue) library.UpdateState(state =>
                 {
@@ -342,7 +340,7 @@ public sealed partial class MainWindow : Window
         if (!suppressed)
         {
             var notice = await new ImportNoticeDialog(body, action)
-                .ShowDialog<ImportNoticeResult>(this);
+                .ShowDialog<ImportNoticeResult>(GameDialogOwner);
             if (notice is not { Proceed: true })
             {
                 return;
@@ -406,7 +404,7 @@ public sealed partial class MainWindow : Window
         var confirmed = await new ConfirmationDialog(
             LanguageAppearance.Get("GamesPage_DeepScan", "Deep Scan"),
             LanguageAppearance.Get("Linux_DeepScanPrompt", "Deep Scan runs automatically the first time you launch DLSS Swapper LLE and learns path patterns for Fast Scan. Run it again only after your library changes and a game is missing. If you know which game is missing, add that game directly instead."))
-            .ShowDialog<bool>(this);
+            .ShowDialog<bool>(GameDialogOwner);
         if (!confirmed)
         {
             return;
@@ -446,7 +444,7 @@ public sealed partial class MainWindow : Window
         var confirmed = await new ConfirmationDialog(
             LanguageAppearance.Get("Linux_RemoveGamesTitle", "Remove games"),
             LanguageAppearance.Format("Linux_RemoveGamesPrompt", "Remove {0} selected game{1} from this library?", rows.Length, Plural(rows.Length)) + "\n\n" + RemovalNotice)
-            .ShowDialog<bool>(this);
+            .ShowDialog<bool>(GameDialogOwner);
         if (!confirmed)
         {
             return;
@@ -509,6 +507,15 @@ public sealed partial class MainWindow : Window
         if (_settingsPage is null)
         {
             var page = new SettingsPage(library, () => DiagnosticsReport.Capture(library, _allRows.Select(row => row.Game).ToArray()));
+            page.EnableImmediateSettings();
+            page.Changed += () =>
+            {
+                if (_catalog is not null) _catalog.Policy = new(library.State.AllowDebugDlls, library.State.AllowUntrustedDlls);
+                _viewModel.GridCardSize = library.State.CardSize;
+                _gridCardSizeInput.SelectedItem = library.State.CardSize;
+                UpdateGridGeometry();
+                ApplyGameView();
+            };
             page.Finished += async saved =>
             {
                 _settingsPage = null;
@@ -553,7 +560,6 @@ public sealed partial class MainWindow : Window
         if (_libraryPage is null)
         {
             var page = new LibraryPage(catalog, _library);
-            page.UseRequested += async entry => { ShowGamesPage(); await ApplyLibraryEntryAsync(entry); };
             page.CatalogChanged += refreshed => { _catalog = refreshed; _scanService = new LibraryScanService(refreshed, _scanner); };
             _libraryPage = page;
             this.FindControl<ContentControl>("LibraryPageHost")!.Content = page;
@@ -568,124 +574,9 @@ public sealed partial class MainWindow : Window
         this.FindControl<Button>("SettingsNavigationButton")!.Classes.Set("navSelected", false);
     }
 
-    private async Task ApplyLibraryEntryAsync(DllCatalogEntry selectedEntry)
-    {
-        if (!TryGetCatalog(out var catalog)) return;
+    private async void GameLaunch_Click(object? sender, RoutedEventArgs e) => await GameLaunchAsync(sender);
 
-        if (!TryGetSelectedRows(out var rows))
-        {
-            _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesOperation5", "{0} {1} is downloaded. Select games before applying it.", DllTypes.Get(selectedEntry.Type).DisplayName, selectedEntry.Version);
-            return;
-        }
-
-        var unscanned = rows.Where(row => row.ScanResult is null || row.ScanResult.CachedAtUtc is not null).ToArray();
-        if (unscanned.Length > 0)
-        {
-            foreach (var (row, scan) in await ScanRowsAsync(unscanned, catalog))
-            {
-                row.SetScanResult(scan);
-            }
-        }
-
-        var identityResolved = false;
-        await RunBusyAsync(
-            LanguageAppearance.Format("Linux_GamesOperation6", "Resolving the exact {0} build identity…", DllTypes.Get(selectedEntry.Type).DisplayName),
-            async () =>
-            {
-                var resolved = await Task.Run(() => rows
-                    .Where(row => row.ScanResult is not null)
-                    .Select(row =>
-                    {
-                        var scan = row.ScanResult!;
-                        var dlls = scan.Dlls.Select(dll =>
-                            dll.Type == selectedEntry.Type
-                            && !dll.HasHash
-                            && dll.Version.Equals(
-                                selectedEntry.Version,
-                                StringComparison.OrdinalIgnoreCase)
-                                ? _scanner.ResolveIdentity(dll, catalog)
-                                : dll).ToArray();
-                        return (Row: row, Scan: scan with { Dlls = dlls });
-                    })
-                    .ToArray());
-                foreach (var (row, scan) in resolved)
-                {
-                    row.SetScanResult(scan);
-                }
-
-                identityResolved = true;
-            });
-        if (!identityResolved)
-        {
-            return;
-        }
-
-        var plan = _planner.Plan(
-            rows.Where(row => row.ScanResult is not null)
-                .Select(row => row.ScanResult!)
-                .ToArray(),
-            new Dictionary<DllType, DllCatalogEntry>
-            {
-                [selectedEntry.Type] = selectedEntry,
-            }, LanguageAppearance.Current);
-        var ready = plan.Where(item => item.Status == UpdatePlanStatus.Ready).ToArray();
-        var targetCount = ready.Sum(item => item.Targets.Count);
-        if (targetCount == 0)
-        {
-            var currentCount = plan.Count(item => item.Status == UpdatePlanStatus.AlreadyCurrent);
-            var skippedCount = plan.Count(item => item.Status == UpdatePlanStatus.Skipped);
-            _viewModel.StatusText =
-                LanguageAppearance.Format("Linux_GamesOperation7", "Exact-version plan is a no-op: {0} current, {1} incompatible or indeterminate.", currentCount, skippedCount);
-            return;
-        }
-
-        var family = DllTypes.Get(selectedEntry.Type).DisplayName;
-        var gameCount = ready.Select(item => item.Game.RootPath)
-            .Distinct(PathComparer)
-            .Count();
-        var confirmed = await new ConfirmationDialog(
-            LanguageAppearance.Get("Linux_ConfirmExactTitle", "Confirm exact DLL version"),
-            LanguageAppearance.Format("Linux_ConfirmExactPrompt", "Apply {0} {1} ({2}) to {3} detected DLL file{4} in {5} selected game{6}?", family, selectedEntry.Version, selectedEntry.Md5[..8], targetCount, Plural(targetCount), gameCount, Plural(gameCount)),
-            ConfirmationDialog.GameFileWriteWarning)
-            .ShowDialog<bool>(this);
-        if (!confirmed)
-        {
-            return;
-        }
-
-        await RunBusyAsync(LanguageAppearance.Format("Linux_GamesOperation8", "Applying exact {0} {1}…", family, selectedEntry.Version), async () =>
-        {
-            using var cache = new DownloadCache();
-            var results = await Task.Run(() => DllOperations.ApplyUpdatesAsync(
-                plan,
-                cache,
-                _lifetime.Token, LanguageAppearance.Current));
-            ShowOperationFailures(results);
-            foreach (var result in results.Where(result => result.Success))
-            {
-                _library?.RecordHistory(
-                    result.Game.RootPath,
-                    "DLL updated",
-                    family,
-                    selectedEntry.Version,
-                    result.Target);
-            }
-
-            var affectedRows = rows.Where(row => ready.Any(item =>
-                PathComparer.Equals(item.Game.RootPath, row.RootPath))).ToArray();
-            foreach (var (row, scan) in await ScanRowsAsync(affectedRows, catalog))
-            {
-                row.SetScanResult(scan);
-            }
-
-            var succeeded = results.Count(result => result.Success);
-            var failed = results.Count - succeeded;
-            _viewModel.StatusText =
-                LanguageAppearance.Format("Linux_GamesOperation9", "Exact-version update finished: {0} succeeded, {1} failed.", succeeded, failed);
-        });
-    }
-
-    private async void GameLaunch_Click(object? sender, RoutedEventArgs e)
+    private async Task GameLaunchAsync(object? sender)
     {
         if (_viewModel.IsBusy) return;
         if (!TryGetMenuGame(sender, out var row))
@@ -718,7 +609,7 @@ public sealed partial class MainWindow : Window
                     if (setupError is not null)
                     {
                         wineRunner = await new ProviderWineLaunchDialog(row.Name, providerLaunch, wineRunner,
-                            error: setupError).ShowDialog<string?>(this);
+                            error: setupError).ShowDialog<string?>(GameDialogOwner);
                         if (wineRunner is null) return;
                         _library.UpdateState(state => state.ProviderWineRunners[providerLaunch.ConfigurationDirectory] = wineRunner);
                     }
@@ -745,7 +636,9 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void GameNotes_Click(object? sender, RoutedEventArgs e)
+    private async void GameNotes_Click(object? sender, RoutedEventArgs e) => await GameNotesAsync(sender);
+
+    private async Task GameNotesAsync(object? sender)
     {
         if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
         {
@@ -756,7 +649,7 @@ public sealed partial class MainWindow : Window
             row.Name,
             library.FindGamePreference(row.RootPath)?.Notes,
             draft => library.UpdateGamePreference(row.RootPath, preference => preference.Notes = draft))
-            .ShowDialog<string?>(this);
+            .ShowDialog<string?>(GameDialogOwner);
         if (notes is null)
         {
             return;
@@ -765,7 +658,9 @@ public sealed partial class MainWindow : Window
         _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage12", "Saved notes for {0}.", row.Name);
     }
 
-    private async void GameHistory_Click(object? sender, RoutedEventArgs e)
+    private async void GameHistory_Click(object? sender, RoutedEventArgs e) => await GameHistoryAsync(sender);
+
+    private async Task GameHistoryAsync(object? sender)
     {
         if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
         {
@@ -779,7 +674,7 @@ public sealed partial class MainWindow : Window
             Width = Math.Clamp(ClientSize.Width * 0.82, 520, 1100),
             Height = Math.Clamp(ClientSize.Height * 0.78, 320, 760),
         };
-        await historyWindow.ShowDialog(this);
+        await historyWindow.ShowDialog(GameDialogOwner);
     }
 
     private void GameFavorite_Click(object? sender, RoutedEventArgs e)
@@ -799,7 +694,9 @@ public sealed partial class MainWindow : Window
             : LanguageAppearance.Format("Linux_FavoriteRemoved", "Removed {0} from favorites.", row.Name);
     }
 
-    private async void GameReload_Click(object? sender, RoutedEventArgs e)
+    private async void GameReload_Click(object? sender, RoutedEventArgs e) => await GameReloadAsync(sender);
+
+    private async Task GameReloadAsync(object? sender)
     {
         if (!TryGetMenuGame(sender, out var row) || !TryGetCatalog(out var catalog))
         {
@@ -826,7 +723,9 @@ public sealed partial class MainWindow : Window
             : LanguageAppearance.Format("Linux_GameUnhidden", "Restored {0} to the library view.", row.Name);
     }
 
-    private async void GameCustomCover_Click(object? sender, RoutedEventArgs e)
+    private async void GameCustomCover_Click(object? sender, RoutedEventArgs e) => await GameCustomCoverAsync(sender);
+
+    private async Task GameCustomCoverAsync(object? sender)
     {
         if (_viewModel.IsBusy || _lifetime.IsCancellationRequested) return;
         if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
@@ -837,7 +736,7 @@ public sealed partial class MainWindow : Window
         if (library.FindGamePreference(row.RootPath)?.CustomArtworkPath is { } confirmedPath)
         {
             if (!await new ConfirmationDialog(LanguageAppearance.Get("Linux_RemoveCoverTitle", "Remove custom cover"),
-                LanguageAppearance.Format("Linux_RemoveCoverPrompt", "Remove the custom cover for {0} and return to ordinary artwork? Your source image will not be deleted.", row.Name)).ShowDialog<bool>(this)) return;
+                LanguageAppearance.Format("Linux_RemoveCoverPrompt", "Remove the custom cover for {0} and return to ordinary artwork? Your source image will not be deleted.", row.Name)).ShowDialog<bool>(GameDialogOwner)) return;
             if (_viewModel.IsBusy || _lifetime.IsCancellationRequested) return;
             try
             {
@@ -915,7 +814,9 @@ public sealed partial class MainWindow : Window
         _viewModel.StatusText = LanguageAppearance.Format("Linux_GamesMessage21", "Applied custom cover art to {0}.", row.Name);
     }
 
-    private async void GameUpdateLatest_Click(object? sender, RoutedEventArgs e)
+    private async void GameUpdateLatest_Click(object? sender, RoutedEventArgs e) => await GameUpdateLatestAsync(sender);
+
+    private async Task GameUpdateLatestAsync(object? sender)
     {
         if (!TryGetMenuGame(sender, out var row) || !TryGetCatalog(out var catalog))
         {
@@ -949,7 +850,7 @@ public sealed partial class MainWindow : Window
             LanguageAppearance.Get("Linux_ConfirmUpdateTitle", "Confirm DLL update"),
             LanguageAppearance.Format("Linux_ConfirmUpdatePrompt", "Update {0} detected DLL file{1} in {2}? An adjacent .dlsss backup is created when needed.", targetCount, Plural(targetCount), row.Name),
             ConfirmationDialog.GameFileWriteWarning)
-            .ShowDialog<bool>(this);
+            .ShowDialog<bool>(GameDialogOwner);
         if (!confirmed)
         {
             return;
@@ -982,7 +883,9 @@ public sealed partial class MainWindow : Window
         });
     }
 
-    private async void GameRemove_Click(object? sender, RoutedEventArgs e)
+    private async void GameRemove_Click(object? sender, RoutedEventArgs e) => await GameRemoveAsync(sender);
+
+    private async Task GameRemoveAsync(object? sender)
     {
         if (!TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library))
         {
@@ -992,13 +895,14 @@ public sealed partial class MainWindow : Window
         var confirmed = await new ConfirmationDialog(
             LanguageAppearance.Get("Linux_RemoveGameTitle", "Remove game"),
             LanguageAppearance.Format("Linux_RemoveGamePrompt", "Remove {0} from this library?", row.Name) + "\n\n" + RemovalNotice)
-            .ShowDialog<bool>(this);
+            .ShowDialog<bool>(GameDialogOwner);
         if (!confirmed)
         {
             return;
         }
 
         RemoveGameFromLibrary(row, library);
+        _gameDetails?.CloseAfterRemoval();
         await RefreshLibraryAsync(runInitialDeepScan: false);
     }
 
@@ -1010,35 +914,23 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void LibraryView_Changed(object? sender, SelectionChangedEventArgs e)
-    {
-        if (_opened)
-        {
-            ApplyGameView();
-        }
-    }
-
-    private void FilterMenu_Click(object? sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem { Tag: string value }
-            && int.TryParse(value, out var index))
-        {
-            _filterComboBox.SelectedIndex = index;
-        }
-    }
-
     private void SortMenu_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is MenuItem { Tag: string value }
             && int.TryParse(value, out var index))
         {
-            _sortComboBox.SelectedIndex = index;
+            _sortMode = index;
+            ApplyGameView();
+            try { _library?.UpdateState(state => state.GameSortMode = index); }
+            catch (Exception error) { _viewModel.StatusText = error.Message; }
         }
     }
 
     private void Batch_Click(object? sender, RoutedEventArgs e)
     {
+        if (_viewModel.IsBusy) return;
         _viewModel.IsBatchMode = !_viewModel.IsBatchMode;
+        if (!_viewModel.IsBatchMode) foreach (var row in _allRows) row.IsSelected = false;
     }
 
     private void DismissAlert_Click(object? sender, RoutedEventArgs e) =>
@@ -1324,54 +1216,28 @@ public sealed partial class MainWindow : Window
             .Select(game => game.RootPath)
             .ToHashSet(PathComparer)
             ?? new HashSet<string>(PathComparer);
-        rows = rows.Where(row => GameViewPolicy.MatchesHidden(row.IsHidden, _filterComboBox.SelectedIndex == 8, _includeHidden));
-        rows = _filterComboBox.SelectedIndex switch
-        {
-            1 => rows.Where(row => GameViewPolicy.IsSteam(row.Game, manualPaths.Contains(row.RootPath))),
-            2 => rows.Where(row => manualPaths.Contains(row.RootPath)),
-            3 => rows.Where(row => HasFamily(row, DllType.Dlss)),
-            4 => rows.Where(row => HasFamily(
-                row,
-                DllType.DlssFrameGeneration,
-                DllType.XeSsFrameGeneration)),
-            5 => rows.Where(row => HasFamily(row, DllType.DlssRayReconstruction)),
-            6 => rows.Where(row => HasFamily(
-                row,
-                DllType.XeSs,
-                DllType.XeLl,
-                DllType.XeSsFrameGeneration,
-                DllType.XeSsDx11)),
-            7 => rows.Where(row => HasFamily(
-                row,
-                DllType.Fsr31Dx12,
-                DllType.Fsr31Vulkan)),
-            _ => rows,
-        };
+        rows = rows.Where(row => GameViewPolicy.MatchesHidden(row.IsHidden, false, _includeHidden));
 
-        rows = _sortComboBox.SelectedIndex switch
+        rows = _sortMode switch
         {
-            1 => rows.OrderBy(row => row.Source, StringComparer.OrdinalIgnoreCase)
+            1 => rows.OrderByDescending(GetHighestVersion, DlssSwapper.Shared.VersionTextComparer.Instance)
                 .ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
-            2 => rows.OrderByDescending(GetHighestVersion, DlssSwapper.Shared.VersionTextComparer.Instance)
+            2 => rows.OrderBy(GetHighestVersion, DlssSwapper.Shared.VersionTextComparer.Instance)
                 .ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
             _ => rows.OrderBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
         };
 
         var visible = rows.ToArray();
         var grouped = _library?.State.GroupGameLibrariesTogether ?? true;
-        if (this.FindControl<MenuItem>("GroupLibrariesMenu") is { } grouping)
-            grouping.Header = grouped ? LanguageAppearance.Get("Linux_MainWindow_93", "Ungroup game libraries") : LanguageAppearance.Get("Linux_MainWindow_92", "Group game libraries");
         var groups = DlssSwapper.Shared.GameGrouping.Build(visible, row => row.IsFavorite,
             row => GameViewPolicy.LibraryName(row.Game,
                 manualPaths.Contains(row.RootPath)), grouped, _library is null ? null : LibrarySelection.Read(_library.State).Select(entry => entry.Id).ToArray());
         _viewPublication = PublishViewAsync(visible, groups);
     }
 
-    private static bool HasFamily(GameRowViewModel row, params DllType[] families) =>
-        row.ScanResult?.Dlls.Any(dll => families.Contains(dll.Type)) == true;
-
     private static string GetHighestVersion(GameRowViewModel row) =>
         row.ScanResult?.Dlls
+            .Where(dll => dll.Type == DllType.Dlss)
             .Select(dll => dll.Version)
             .OrderByDescending(version => version, DlssSwapper.Shared.VersionTextComparer.Instance)
             .FirstOrDefault()
@@ -1639,7 +1505,7 @@ public sealed partial class MainWindow : Window
     private static bool TryGetMenuGame(object? sender, out GameRowViewModel row)
     {
         row = null!;
-        if (sender is MenuItem { Tag: GameRowViewModel taggedRow })
+        if (sender is Control { Tag: GameRowViewModel taggedRow })
         {
             row = taggedRow;
             return true;

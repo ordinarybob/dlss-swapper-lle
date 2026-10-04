@@ -17,7 +17,7 @@ internal static class LibraryPageLifecycleTests
         var page = new LibraryPage(DllCatalog.Empty(), null, new DownloadCache(cacheRoot: Path.Combine(root, "page-cache")), http);
         var host = new Window { Content = page, Width = 664, Height = 620 }; host.Show();
         Dispatcher.UIThread.RunJobs();
-        foreach (var name in new[] { "ImportButton", "ExportAllButton", "DownloadLatestButton", "RefreshButton", "UseButton", "CancelDownloadButton" })
+        foreach (var name in new[] { "ImportButton", "ExportAllButton", "DownloadLatestButton", "RefreshButton" })
         {
             var button = page.FindControl<Button>(name) ?? throw new Exception($"Missing Library action: {name}");
             var position = button.TranslatePoint(default, page) ?? throw new Exception($"Unattached Library action: {name}");
@@ -25,6 +25,8 @@ internal static class LibraryPageLifecycleTests
                 || position.Y + button.Bounds.Height > page.Bounds.Height || button.Bounds.Height <= 0)
                 throw new Exception($"Library action is clipped at the minimum window size: {name}");
         }
+        if (page.FindControl<Grid>("LibraryDownloadProgressHost")!.IsVisible)
+            throw new Exception("Idle Library shows an empty progress bar.");
         var row = new DllLibraryEntryViewModel(new DllCatalogEntry(DllType.Dlss, "310.9", 1, new string('a', 32), "", null, 1024, 0, true, false), false);
         page.FindControl<ListBox>("EntryListBox")!.ItemsSource = new[] { row };
         Dispatcher.UIThread.RunJobs();

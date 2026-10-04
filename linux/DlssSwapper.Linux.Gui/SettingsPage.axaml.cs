@@ -11,6 +11,9 @@ namespace DlssSwapper.Linux.Gui;
 public sealed partial class SettingsPage : UserControl
 {
     public event Action<bool>? Finished;
+    public event Action? Changed;
+    private bool _liveSettings;
+    private bool _savingLive;
     private Window DialogOwner => TopLevel.GetTopLevel(this) as Window
         ?? throw new InvalidOperationException("Settings must be attached to a window.");
     private IStorageProvider StorageProvider => DialogOwner.StorageProvider;
@@ -45,6 +48,7 @@ public sealed partial class SettingsPage : UserControl
     {
         _library = library ?? throw new ArgumentNullException(nameof(library));
         _diagnostics = diagnostics;
+        FindRequired<TextBlock>("BuildIdentityText").Text = DiagnosticsReport.BuildIdentity();
         LoadLibrarySelection();
         LoadThemeSelection();
         var languages = FindRequired<ComboBox>("LanguageComboBox");
@@ -213,9 +217,11 @@ public sealed partial class SettingsPage : UserControl
             state.HeroicConfigDirectories = heroicDirectories.ToList();
             state.HeroicExecutable = string.IsNullOrEmpty(heroicExecutable) ? null : heroicExecutable;
         });
-        LanguageAppearance.Apply(_library.State.Language);
+        if (!string.Equals(LanguageAppearance.Current?.Language, _library.State.Language, StringComparison.OrdinalIgnoreCase))
+            LanguageAppearance.Apply(_library.State.Language);
         AppLog.ChangeLevel(_library.State.ApplicationLoggingLevel);
-        Finished?.Invoke(true);
+        _validation.Text = string.Empty;
+        if (_liveSettings) Changed?.Invoke(); else Finished?.Invoke(true);
         }
         catch (Exception ex) { AppLog.Write(ApplicationLogLevel.Error, ex.Message); _validation.Text = LanguageAppearance.Format("Linux_SettingsWindow_170", "Could not save settings: {0}", ex.Message); }
     }

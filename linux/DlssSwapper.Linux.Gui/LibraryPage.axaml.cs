@@ -13,7 +13,6 @@ public sealed partial class LibraryPage : UserControl
     private readonly TextBox _searchTextBox;
     private readonly ListBox _entryListBox;
     private readonly TextBlock _statusText;
-    private readonly Button[] _selectionButtons;
     private readonly Button _downloadLatestButton;
     private readonly DownloadCache _cache;
     private readonly CancellationTokenSource _lifetime = new();
@@ -47,10 +46,6 @@ public sealed partial class LibraryPage : UserControl
         _searchTextBox = FindRequired<TextBox>("SearchTextBox");
         _entryListBox = FindRequired<ListBox>("EntryListBox");
         _statusText = FindRequired<TextBlock>("StatusText");
-        _selectionButtons =
-        [
-            FindRequired<Button>("UseButton"),
-        ];
         _downloadLatestButton = FindRequired<Button>("DownloadLatestButton");
         _importButton = FindRequired<Button>("ImportButton");
         _exportAllButton = FindRequired<Button>("ExportAllButton");
@@ -69,7 +64,7 @@ public sealed partial class LibraryPage : UserControl
             .Prepend(LanguageAppearance.Get("Linux_LibraryAllFamilies", "All families"))
             .Append("Streamline SDK")
             .ToArray();
-        _familyComboBox.SelectedIndex = 0;
+        _familyComboBox.SelectedIndex = 1;
         _allEntries = catalog.GetEntries()
             .Select(entry => new DllLibraryEntryViewModel(entry, _cache.IsCached(entry)))
             .ToArray();
@@ -294,21 +289,6 @@ public sealed partial class LibraryPage : UserControl
         }
     }
 
-    private async void Use_Click(object? sender, RoutedEventArgs e)
-    {
-        if (_isBusy || !TryGetSelected(out var row))
-        {
-            return;
-        }
-
-        if (!row.IsCached && !await DownloadAsync(row))
-        {
-            return;
-        }
-
-        UseRequested?.Invoke(row.Entry);
-    }
-
     private async Task RefreshSdkVersionAsync(bool showWhileBusy = false)
     {
         try
@@ -419,12 +399,6 @@ public sealed partial class LibraryPage : UserControl
     private void UpdateActionState()
     {
         _entryListBox.IsEnabled = !_isBusy;
-        foreach (var button in _selectionButtons)
-        {
-            button.IsEnabled = !_isBusy && _entryListBox.SelectedItem is not null
-                && !HasRecordDownloads;
-        }
-
         _downloadLatestButton.IsEnabled = !_isBusy && !HasRecordDownloads;
         _sdkDownloadButton.IsEnabled = !_isBusy && !HasRecordDownloads;
         _importButton.IsEnabled = !_isBusy && !HasRecordDownloads && _library is not null;

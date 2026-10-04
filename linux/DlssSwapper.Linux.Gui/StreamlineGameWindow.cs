@@ -65,6 +65,13 @@ public sealed class StreamlineGameWindow : Window
             finally { _busy = false; if (!_closed) UpdateActions(); }
         };
         header.Children.Add(_all);
+        var columns = new Grid { ColumnDefinitions = new("1.6*,*,*,*"), ColumnSpacing = 10, Margin = new Thickness(46, 0, 16, 0) };
+        foreach (var (label, index) in new[] { ("Component (hover for details)", 0), ("Installed", 1), ("Available", 2), ("Original", 3) })
+        {
+            var title = Text(label); title.FontWeight = FontWeight.SemiBold;
+            Grid.SetColumn(title, index); columns.Children.Add(title);
+        }
+        header.Children.Add(columns);
         layout.Children.Add(header);
         var scroll = new ScrollViewer { Content = _rows, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
         Grid.SetRow(scroll, 1); layout.Children.Add(scroll);
@@ -210,20 +217,29 @@ public sealed class StreamlineGameWindow : Window
         {
             var box = new CheckBox { IsChecked = _selected.Contains(row.TargetPath), VerticalAlignment = VerticalAlignment.Top };
             AutomationProperties.SetName(box, row.FileName);
-            var grid = new Grid { ColumnDefinitions = new("36,*"), ColumnSpacing = 10 };
+            var grid = new Grid { ColumnDefinitions = new("36,1.6*,*,*,*"), RowDefinitions = new("Auto,Auto,Auto"), ColumnSpacing = 10, RowSpacing = 4, Margin = new Thickness(0, 4, 16, 8) };
+            Grid.SetRowSpan(box, 3);
             grid.Children.Add(box);
-            var content = new StackPanel { Spacing = 5 };
-            content.Children.Add(Text(row.FileName, 16));
-            content.Children.Add(Text(StreamlineDisplay.Description(row.FileName)));
+            var filename = Text(row.FileName, 16); filename.FontWeight = FontWeight.SemiBold;
+            ToolTip.SetTip(filename, StreamlineDisplay.Description(row.FileName));
+            Grid.SetColumn(filename, 1); grid.Children.Add(filename);
             var available = _package is not null ? StreamlineDisplay.Text(row.PackageVersion) : _selectedRelease is not null ? $"{_selectedRelease.Tag} SDK"
                 : _latestError is null ? LanguageAppearance.Get("Linux_VersionPending", "Version lookup pending")
                 : LanguageAppearance.Get("Linux_VersionUnavailable", "Version unavailable");
-            content.Children.Add(Text(LanguageAppearance.Format("Linux_StreamlineGameWindow_186", "Installed: {0}    Available: {1}    Original: {2}", StreamlineDisplay.Text(row.InstalledVersion), available, StreamlineDisplay.Text(row.OriginalVersion))));
-            if (_package is not null) content.Children.Add(Text(StreamlineDisplay.Text(row.UpdateText)));
+            foreach (var (value, column) in new[] { (StreamlineDisplay.Text(row.InstalledVersion), 2), (available, 3), (StreamlineDisplay.Text(row.OriginalVersion), 4) })
+            {
+                var version = Text(value); Grid.SetColumn(version, column); grid.Children.Add(version);
+            }
             var directory = string.IsNullOrEmpty(Path.GetDirectoryName(Path.GetRelativePath(_root, row.TargetPath)))
                 ? StreamlineDisplay.Text("(game folder)") : row.RelativeDirectory;
-            content.Children.Add(Text(LanguageAppearance.Format("Linux_StreamlineGameWindow_185", "Restore: {0}\n{1}", StreamlineDisplay.Text(row.RestoreText), directory)));
-            Grid.SetColumn(content, 1); grid.Children.Add(content); _rows.Children.Add(grid);
+            var restoreText = Text(LanguageAppearance.Format("Linux_StreamlineGameWindow_185", "Restore: {0}\n{1}", StreamlineDisplay.Text(row.RestoreText), directory), 12);
+            Grid.SetRow(restoreText, 1); Grid.SetColumn(restoreText, 1); Grid.SetColumnSpan(restoreText, 4); grid.Children.Add(restoreText);
+            if (_package is not null)
+            {
+                var update = Text(StreamlineDisplay.Text(row.UpdateText), 12);
+                Grid.SetRow(update, 2); Grid.SetColumn(update, 1); Grid.SetColumnSpan(update, 4); grid.Children.Add(update);
+            }
+            _rows.Children.Add(grid);
             box.IsCheckedChanged += (_, _) => { if (box.IsChecked == true) _selected.Add(row.TargetPath); else _selected.Remove(row.TargetPath); UpdateActions(); };
         }
         _refreshing = false;

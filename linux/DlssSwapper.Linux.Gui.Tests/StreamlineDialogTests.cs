@@ -29,9 +29,9 @@ internal static class StreamlineDialogTests
         while ((!Action("Close").IsEnabled || network.Requests == 0) && timeout.Elapsed < TimeSpan.FromSeconds(5))
         { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
         Check(Action("Close").IsEnabled && !Action("Apply all").IsEnabled, "Offline dialog must not offer an unspecified SDK update");
-        Check(window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Fixture common services"),
+        Check(window.GetVisualDescendants().OfType<TextBlock>().Any(text => Equals(ToolTip.GetTip(text), "Fixture common services")),
             "Streamline component description ignored translation");
-        Check(window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text?.Contains("Installed: Fixture unknown version") == true) == 4
+        Check(window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text == "Fixture unknown version") >= 4
             && window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text?.StartsWith("Restore: Fixture no backup") == true) == 4,
             "Streamline component rows ignored translated version/backup labels");
         var all = window.GetVisualDescendants().OfType<CheckBox>().Single(box => Equals(box.Content, "Select all components"));
@@ -79,11 +79,11 @@ internal static class StreamlineDialogTests
         }
         Until(() => Action("Apply all").IsEnabled && window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text?.Contains("Latest SDK: v2.12.0") == true));
         Check(network.Packages == 0, "Opening dialog downloaded the SDK");
-        Check(window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text?.Contains("Available: v2.12.0 SDK") == true) == 4, "Available rows did not update after version lookup");
+        Check(window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text == "v2.12.0 SDK") == 4, "Available rows did not update after version lookup");
         var versions = window.GetVisualDescendants().OfType<ComboBox>().Single();
         Check(versions.Items.Count == 2, "Historical SDK version missing from game picker");
         versions.SelectedIndex = 1;
-        Until(() => Action("Apply all").IsEnabled && window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text?.Contains("Available: v2.7.32 SDK") == true) == 4);
+        Until(() => Action("Apply all").IsEnabled && window.GetVisualDescendants().OfType<TextBlock>().Count(text => text.Text == "v2.7.32 SDK") == 4);
         window.GetVisualDescendants().OfType<CheckBox>().Single(box => Equals(box.Content, "Select all components")).IsChecked = true;
         Action("Apply selected").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Until(() => network.Packages == 1 && Action("Apply selected").IsEnabled);

@@ -5,7 +5,7 @@
         Icon="/Assets/icon_256.png"
         Width="800"
         Height="1040"
-        MinWidth="720"
+        MinWidth="620"
         MinHeight="620"
         WindowStartupLocation="CenterScreen">
   <Grid Background="{DynamicResource LleWindowBrush}">
@@ -13,10 +13,10 @@
     <!-- The page begins 56 DIPs from the window edge, matching the Windows
          shell's content padding and leaving the navigation card overlaid. -->
     <Grid Margin="56,0,0,0" RowDefinitions="Auto,Auto,*">
-      <Grid Grid.Row="0"
+      <Grid x:Name="GamesHeader" Grid.Row="0"
             Margin="0,2,8,0"
             ColumnDefinitions="*,Auto"
-            RowDefinitions="32,36,Auto">
+            RowDefinitions="32,36,Auto,Auto">
         <Grid x:Name="GameHeaderStatus" Grid.Row="0"
                     Grid.Column="0"
                     MinWidth="0"
@@ -47,11 +47,10 @@
                      TextWrapping="NoWrap" />
         </Grid>
 
-        <Grid Grid.Row="1"
+        <Grid x:Name="GameSearchHost" Grid.Row="1"
               Grid.Column="0"
               Margin="0,3,8,1"
               MinWidth="0"
-              MaxWidth="360"
               HorizontalAlignment="Stretch">
           <TextBox x:Name="SearchTextBox"
                    Classes="headerSearch"
@@ -101,8 +100,7 @@
 
           <Button Classes="command"
                   AutomationProperties.Name="{DynamicResource General_Refresh}"
-                  IsEnabled="{Binding CanInteract}"
-                  Click="Refresh_Click">
+                  IsEnabled="{Binding CanInteract}">
             <Grid RowDefinitions="22,24,10">
               <Path Grid.Row="0" Data="M20,7 V12 H15 M20,12 A8,8 0 1 0 18.2,17.1"
                     Classes="commandIcon" />
@@ -112,9 +110,8 @@
             </Grid>
             <Button.Flyout>
               <MenuFlyout>
-                <MenuItem Header="{DynamicResource General_Refresh}" Click="Refresh_Click" />
-                <MenuItem Header="{DynamicResource Linux_Xaml_34}" Click="RestoreExcluded_Click" />
-                <MenuItem Header="{DynamicResource Linux_Xaml_35}" Click="RestoreExcludedProviders_Click" />
+                <MenuItem Header="{DynamicResource GamesPage_Refresh_PreserveExcluded}" Click="Refresh_Click" />
+                <MenuItem Header="{DynamicResource GamesPage_Refresh_RestoreExcluded}" Click="RestoreAllExcluded_Click" />
               </MenuFlyout>
             </Button.Flyout>
           </Button>
@@ -140,20 +137,15 @@
               </Grid>
             </Button.Content>
             <Button.Flyout>
-              <MenuFlyout>
-                <MenuItem Header="{DynamicResource Linux_Xaml_36}" Tag="0" Click="FilterMenu_Click" />
-                <MenuItem Header="{DynamicResource Linux_Xaml_37}" Tag="1" Click="FilterMenu_Click" />
-                <MenuItem Header="{DynamicResource Linux_Xaml_38}" Tag="2" Click="FilterMenu_Click" />
-                <MenuItem Header="{DynamicResource General_Name_DLSS}" Tag="3" Click="FilterMenu_Click" />
-                <MenuItem Header="{DynamicResource Linux_Xaml_39}" Tag="4" Click="FilterMenu_Click" />
-                <MenuItem Header="{DynamicResource Linux_Xaml_40}" Tag="5" Click="FilterMenu_Click" />
-                <MenuItem Header="{DynamicResource General_Name_XeSS}" Tag="6" Click="FilterMenu_Click" />
-                <MenuItem Header="{DynamicResource Linux_Xaml_41}" Tag="7" Click="FilterMenu_Click" />
-                <MenuItem Header="{DynamicResource General_Hidden}" Tag="8" Click="FilterMenu_Click" />
-                <MenuItem x:Name="SwappableFilterMenu" Header="{DynamicResource Linux_MainWindow_95}" Click="SwappableFilter_Click" />
-                <MenuItem Header="{DynamicResource Linux_MainWindow_ScanFilters_98}" Click="IncludeHidden_Click" />
-                <MenuItem x:Name="GroupLibrariesMenu" Header="{DynamicResource Linux_MainWindow_93}" Click="GroupLibraries_Click" />
-              </MenuFlyout>
+              <Flyout Opening="FilterFlyout_Opening">
+                <StackPanel Width="320" Spacing="4">
+                  <TextBlock Text="{DynamicResource General_Options}" FontWeight="SemiBold" />
+                  <CheckBox x:Name="HideNonSwappableCheckBox" Content="{DynamicResource GamesPage_HideGamesWithNoSwappableItems}" IsCheckedChanged="FilterOptions_Changed" />
+                  <CheckBox x:Name="ShowHiddenCheckBox" Content="{DynamicResource GamesPage_ShowHiddenGamesText}" IsCheckedChanged="FilterOptions_Changed" />
+                  <TextBlock Text="{DynamicResource GamesPage_Grouping}" FontWeight="SemiBold" Margin="0,10,0,0" />
+                  <CheckBox x:Name="GroupLibrariesCheckBox" Content="{DynamicResource GamesPage_GroupGamesFromTheSameLibraryTogether}" IsCheckedChanged="FilterOptions_Changed" />
+                </StackPanel>
+              </Flyout>
             </Button.Flyout>
           </Button>
 
@@ -188,16 +180,17 @@
             </Button.Content>
             <Button.Flyout>
               <MenuFlyout>
-                <MenuItem Header="{DynamicResource General_Name}" Tag="0" Click="SortMenu_Click" />
-                <MenuItem Header="{DynamicResource Linux_Xaml_44}" Tag="1" Click="SortMenu_Click" />
-                <MenuItem Header="{DynamicResource Linux_Xaml_45}" Tag="2" Click="SortMenu_Click" />
+                <MenuItem Header="{DynamicResource GamesPage_Sort_DLSSNewestFirst}" Tag="1" Click="SortMenu_Click" />
+                <MenuItem Header="{DynamicResource GamesPage_Sort_DLSSOldestFirst}" Tag="2" Click="SortMenu_Click" />
+                <Separator />
+                <MenuItem Header="{DynamicResource GamesPage_Sort_NameAscending}" Tag="0" Click="SortMenu_Click" />
               </MenuFlyout>
             </Button.Flyout>
           </Button>
         </StackPanel>
 
-        <Border Grid.Row="2"
-                Grid.Column="0"
+        <Border Grid.Row="3"
+                Grid.ColumnSpan="2"
                 IsVisible="{Binding HasAlert}"
                 Background="{DynamicResource LleWarningSurfaceBrush}"
                 BorderBrush="{DynamicResource LleWarningBorderBrush}"
@@ -234,51 +227,47 @@
                 IsEnabled="{Binding CanInteract}" HorizontalAlignment="Left" />
         <Button Content="{DynamicResource DiagnosticsPage_WindowTitle}" Click="Diagnostics_Click" HorizontalAlignment="Left" />
       </StackPanel>
-      <Grid Grid.Row="2" RowDefinitions="32,*">
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <Grid Grid.Row="2" RowDefinitions="Auto,*">
+        <Grid x:Name="SelectionStrip" Grid.Row="0" ColumnDefinitions="*,Auto" MinHeight="32">
         <Grid Grid.Column="0"
-              Width="360"
-              HorizontalAlignment="Left"
+              MinWidth="0"
+              HorizontalAlignment="Stretch"
               ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-          <TextBlock Grid.Column="0"
-                     Text="{DynamicResource GamesPage_Title}"
-                     FontSize="17"
-                     FontWeight="SemiBold"
-                     VerticalAlignment="Center" />
-          <Border Grid.Column="1" Width="1" Height="18" Background="{DynamicResource LleSeparatorBrush}"
-                  Margin="7,0,7,0" VerticalAlignment="Center" />
-          <TextBlock Grid.Column="3" Text="{DynamicResource SettingsPage_CardSize}" FontSize="10" Foreground="{DynamicResource LleMutedBrush}"
+          <TextBlock Grid.Column="3" IsVisible="{Binding IsGridView}" Text="{DynamicResource SettingsPage_CardSize}" FontSize="10" Foreground="{DynamicResource LleMutedBrush}"
                      VerticalAlignment="Center" Margin="0,0,3,0" />
-          <ComboBox x:Name="GridCardSizeInput"
+          <ComboBox x:Name="GridCardSizeInput" IsVisible="{Binding IsGridView}"
                     Grid.Column="4"
                     AutomationProperties.Name="{DynamicResource Linux_Xaml_49}"
                     Width="62" Height="28" MinHeight="28"
                     Padding="7,0,2,0"
                     SelectionChanged="GridCardSize_Changed" />
 
-          <ComboBox x:Name="FilterComboBox" Grid.Column="2" IsVisible="False"
-                    SelectedIndex="0" SelectionChanged="LibraryView_Changed">
-            <ComboBoxItem Content="{DynamicResource Linux_Xaml_36}" />
-            <ComboBoxItem Content="{DynamicResource Linux_Xaml_37}" />
-            <ComboBoxItem Content="{DynamicResource Linux_Xaml_38}" />
-            <ComboBoxItem Content="{DynamicResource General_Name_DLSS}" />
-            <ComboBoxItem Content="{DynamicResource Linux_Xaml_39}" />
-            <ComboBoxItem Content="{DynamicResource Linux_Xaml_40}" />
-            <ComboBoxItem Content="{DynamicResource General_Name_XeSS}" />
-            <ComboBoxItem Content="{DynamicResource Linux_Xaml_41}" />
-            <ComboBoxItem Content="{DynamicResource General_Hidden}" />
-          </ComboBox>
-          <ComboBox x:Name="SortComboBox" Grid.Column="4" IsVisible="False"
-                    SelectedIndex="0" SelectionChanged="LibraryView_Changed">
-            <ComboBoxItem Content="{DynamicResource General_Name}" />
-            <ComboBoxItem Content="{DynamicResource Linux_Xaml_44}" />
-            <ComboBoxItem Content="{DynamicResource Linux_Xaml_45}" />
-          </ComboBox>
         </Grid>
-        <Border Grid.Column="1"
-                Width="324"
-                IsVisible="{Binding IsBatchMode}"
-                Opacity="0" />
+    <Border Grid.Column="1" x:Name="SelectionCommandsHost" IsVisible="{Binding IsBatchMode}"
+            Background="{DynamicResource LleCardBrush}"
+            BorderBrush="{DynamicResource LlePanelBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="2"
+            Margin="8,0,8,0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            ZIndex="30">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="4">
+        <TextBlock Grid.Column="0"
+                   Text="{Binding SelectionHeading}"
+                   Margin="3,0"
+                   VerticalAlignment="Center" />
+        <Button x:Name="SelectAllButton" Grid.Column="1" Content="{DynamicResource GamesPage_SelectionMode_SelectAll}" Height="26" MinHeight="26"
+                Padding="8,0" Click="SelectAll_Click" />
+        <Button Grid.Column="2" Content="{DynamicResource Linux_Xaml_59}" Height="26" MinHeight="26"
+                Padding="8,0" Classes="primary" IsEnabled="{Binding CanActOnSelection}"
+                Click="BatchUpdate_Click" />
+        <Button Grid.Column="3" Content="{DynamicResource General_Remove}" Height="26" MinHeight="26"
+                Padding="8,0" IsEnabled="{Binding CanActOnSelection}"
+                Click="RemoveSelected_Click" />
+      </Grid>
+    </Border>
         </Grid>
 
         <Border Grid.Row="0" BorderBrush="{DynamicResource LleCommandBorderBrush}" BorderThickness="0,0,0,1" />
@@ -293,38 +282,29 @@
           <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,8,2">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Border Classes="row" Height="42">
+                <Border Classes="row" Height="42" Focusable="True" PointerReleased="GameItem_PointerReleased" KeyDown="GameItem_KeyDown">
                   <Border.ContextMenu>
                     <ContextMenu>
                       <MenuItem Header="{DynamicResource GamePage_Launch}" Tag="{Binding}" Click="GameLaunch_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_50}" Tag="{Binding}" Click="GameLaunchSetup_Click" />
                       <MenuItem Header="{DynamicResource GamePage_Notes}" Tag="{Binding}" Click="GameNotes_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_51}" Tag="{Binding}" Click="GameTitle_Click" />
                       <MenuItem Header="{DynamicResource GamePage_History}" Tag="{Binding}" Click="GameHistory_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_52}" Tag="{Binding}" Click="ScanDetails_Click" />
                       <MenuItem Header="{Binding FavoriteActionText}" Tag="{Binding}" Click="GameFavorite_Click" />
                       <MenuItem Header="{DynamicResource General_Reload}" Tag="{Binding}" Click="GameReload_Click" />
                       <MenuItem Header="{Binding HideActionText}" Tag="{Binding}" Click="GameHide_Click" />
                       <MenuItem Header="{Binding CustomCoverActionText}" Tag="{Binding}" Click="GameCustomCover_Click" />
+                      <Separator />
                       <MenuItem Header="{DynamicResource GamesPage_Batch_UpdateDetectedDllsToLatest}" Tag="{Binding}" Click="GameUpdateLatest_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_53}" Tag="{Binding}" Click="GameRestoreDlls_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_54}" Tag="{Binding}" Click="GameDllVersions_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_55}">
-                        <MenuItem Header="{DynamicResource Linux_Xaml_56}" Tag="{Binding}" Click="StreamlineInspect_Click" />
-                        <MenuItem Header="{DynamicResource Linux_Xaml_57}" Tag="{Binding}" Click="StreamlineUpdate_Click" />
-                        <MenuItem Header="{DynamicResource Linux_Xaml_58}" Tag="{Binding}" Click="StreamlineRestore_Click" />
-                        <MenuItem Header="{DynamicResource Linux_StreamlineGameWindow_193}" Tag="{Binding}" Click="StreamlineRecover_Click" />
-                      </MenuItem>
+                      <Separator />
                       <MenuItem Header="{DynamicResource General_Remove}" Tag="{Binding}" Click="GameRemove_Click" />
                     </ContextMenu>
                   </Border.ContextMenu>
-                  <Grid ColumnDefinitions="30,*,Auto" ColumnSpacing="6">
-                    <Border Grid.Column="0" Width="30" Height="40"
+                  <Grid ColumnDefinitions="Auto,30,*,Auto" ColumnSpacing="6">
+                    <Border Grid.Column="1" Width="30" Height="40"
                             Background="{DynamicResource LleArtworkPlaceholderBrush}" BorderBrush="{DynamicResource LleCommandBorderBrush}"
                             BorderThickness="1" CornerRadius="3" ClipToBounds="True">
                       <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
                     </Border>
-                    <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                    <Grid Grid.Column="2" ColumnDefinitions="Auto,*" ColumnSpacing="5">
                       <TextBlock Text="{Binding FavoriteMarker}" Foreground="{DynamicResource LleFavoriteBrush}"
                                  VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding Name}"
@@ -332,16 +312,16 @@
                                  TextTrimming="CharacterEllipsis"
                                  TextWrapping="NoWrap" />
                     </Grid>
-                    <TextBlock Grid.Column="2" Margin="0,0,8,0"
+                    <TextBlock Grid.Column="3" Margin="0,0,8,0" MaxWidth="180" TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center" Foreground="{DynamicResource LleMutedBrush}">
                       <Run Text="{Binding CardDllLabel}" /><Run Text=":  " />
                       <Run Text="{Binding CardDllVersion}" />
                     </TextBlock>
-                    <CheckBox Grid.Column="0" Grid.ColumnSpan="3"
+                    <CheckBox Grid.Column="0"
                               IsChecked="{Binding IsSelected}"
                               IsVisible="{Binding $parent[Window].DataContext.IsBatchMode}"
-                              HorizontalAlignment="Right" VerticalAlignment="Center"
-                              Margin="0,0,8,0" />
+                              HorizontalAlignment="Left" VerticalAlignment="Center"
+                              Margin="0,0,4,0" />
                   </Grid>
                 </Border>
               </DataTemplate>
@@ -369,30 +349,21 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Border Classes="gameCard"
+                <Border Classes="gameCard" Focusable="True" PointerReleased="GameItem_PointerReleased" KeyDown="GameItem_KeyDown"
                         Width="{Binding CardWidth}"
                         Height="{Binding CardHeight}">
                   <Border.ContextMenu>
                     <ContextMenu>
                       <MenuItem Header="{DynamicResource GamePage_Launch}" Tag="{Binding}" Click="GameLaunch_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_50}" Tag="{Binding}" Click="GameLaunchSetup_Click" />
                       <MenuItem Header="{DynamicResource GamePage_Notes}" Tag="{Binding}" Click="GameNotes_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_51}" Tag="{Binding}" Click="GameTitle_Click" />
                       <MenuItem Header="{DynamicResource GamePage_History}" Tag="{Binding}" Click="GameHistory_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_52}" Tag="{Binding}" Click="ScanDetails_Click" />
                       <MenuItem Header="{Binding FavoriteActionText}" Tag="{Binding}" Click="GameFavorite_Click" />
                       <MenuItem Header="{DynamicResource General_Reload}" Tag="{Binding}" Click="GameReload_Click" />
                       <MenuItem Header="{Binding HideActionText}" Tag="{Binding}" Click="GameHide_Click" />
                       <MenuItem Header="{Binding CustomCoverActionText}" Tag="{Binding}" Click="GameCustomCover_Click" />
+                      <Separator />
                       <MenuItem Header="{DynamicResource GamesPage_Batch_UpdateDetectedDllsToLatest}" Tag="{Binding}" Click="GameUpdateLatest_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_53}" Tag="{Binding}" Click="GameRestoreDlls_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_54}" Tag="{Binding}" Click="GameDllVersions_Click" />
-                      <MenuItem Header="{DynamicResource Linux_Xaml_55}">
-                        <MenuItem Header="{DynamicResource Linux_Xaml_56}" Tag="{Binding}" Click="StreamlineInspect_Click" />
-                        <MenuItem Header="{DynamicResource Linux_Xaml_57}" Tag="{Binding}" Click="StreamlineUpdate_Click" />
-                        <MenuItem Header="{DynamicResource Linux_Xaml_58}" Tag="{Binding}" Click="StreamlineRestore_Click" />
-                        <MenuItem Header="{DynamicResource Linux_StreamlineGameWindow_193}" Tag="{Binding}" Click="StreamlineRecover_Click" />
-                      </MenuItem>
+                      <Separator />
                       <MenuItem Header="{DynamicResource General_Remove}" Tag="{Binding}" Click="GameRemove_Click" />
                     </ContextMenu>
                   </Border.ContextMenu>
@@ -446,34 +417,7 @@
       </Grid>
     </Grid>
 
-    <!-- Selection controls occupy the otherwise unused strip beneath the
-         fixed right-side commands. They overlay rather than reflow the Steam
-         heading, matching the approved Windows behavior. -->
-    <Border IsVisible="{Binding IsBatchMode}"
-            Background="{DynamicResource LleCardBrush}"
-            BorderBrush="{DynamicResource LlePanelBorderBrush}"
-            BorderThickness="1"
-            CornerRadius="4"
-            Padding="2"
-            Margin="0,70,8,0"
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            ZIndex="30">
-      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="4">
-        <TextBlock Grid.Column="0"
-                   Text="{Binding SelectionHeading}"
-                   Margin="3,0"
-                   VerticalAlignment="Center" />
-        <Button x:Name="SelectAllButton" Grid.Column="1" Content="{DynamicResource GamesPage_SelectionMode_SelectAll}" Height="26" MinHeight="26"
-                Padding="8,0" Click="SelectAll_Click" />
-        <Button Grid.Column="2" Content="{DynamicResource Linux_Xaml_59}" Height="26" MinHeight="26"
-                Padding="8,0" Classes="primary" IsEnabled="{Binding CanActOnSelection}"
-                Click="BatchUpdate_Click" />
-        <Button Grid.Column="3" Content="{DynamicResource General_Remove}" Height="26" MinHeight="26"
-                Padding="8,0" IsEnabled="{Binding CanActOnSelection}"
-                Click="RemoveSelected_Click" />
-      </Grid>
-    </Border>
+
 
     </Grid>
     <ContentControl x:Name="SettingsPageHost" Margin="56,0,0,0" IsVisible="False" />

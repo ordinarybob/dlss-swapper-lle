@@ -27,8 +27,9 @@
           <SolidColorBrush x:Key="LleHoverBrush" Color="#383838" />
           <SolidColorBrush x:Key="LleHoverBorderBrush" Color="#616161" />
           <SolidColorBrush x:Key="LlePressedBrush" Color="#242424" />
-          <SolidColorBrush x:Key="LleAccentBrush" Color="#B15BE7" />
-          <SolidColorBrush x:Key="LleAccentHoverBrush" Color="#C778F2" />
+          <SolidColorBrush x:Key="LleAccentBrush" Color="#9DAAAF" />
+          <SolidColorBrush x:Key="LleAccentTextBrush" Color="#101010" />
+          <SolidColorBrush x:Key="LleAccentHoverBrush" Color="#B0BEC3" />
           <SolidColorBrush x:Key="LleDangerBrush" Color="#8F3440" />
           <SolidColorBrush x:Key="LleDangerBorderBrush" Color="#A94A56" />
           <SolidColorBrush x:Key="LleCardBorderBrush" Color="#3E3E3E" />
@@ -63,8 +64,9 @@
           <SolidColorBrush x:Key="LleHoverBrush" Color="#E8E8E8" />
           <SolidColorBrush x:Key="LleHoverBorderBrush" Color="#707070" />
           <SolidColorBrush x:Key="LlePressedBrush" Color="#DCDCDC" />
-          <SolidColorBrush x:Key="LleAccentBrush" Color="#7133A0" />
-          <SolidColorBrush x:Key="LleAccentHoverBrush" Color="#60258B" />
+          <SolidColorBrush x:Key="LleAccentBrush" Color="#53666D" />
+          <SolidColorBrush x:Key="LleAccentTextBrush" Color="White" />
+          <SolidColorBrush x:Key="LleAccentHoverBrush" Color="#43565D" />
           <SolidColorBrush x:Key="LleDangerBrush" Color="#8F3440" />
           <SolidColorBrush x:Key="LleDangerBorderBrush" Color="#A94A56" />
           <SolidColorBrush x:Key="LleCardBorderBrush" Color="#C8C8C8" />
@@ -86,7 +88,7 @@
       <Setter Property="FlowDirection" Value="{DynamicResource LleFlowDirection}" />
       <Setter Property="Background" Value="{DynamicResource LleWindowBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource LleTextBrush}" />
-      <Setter Property="FontFamily" Value="Ubuntu Sans, DejaVu Sans" />
+      <Setter Property="FontFamily" Value="Segoe UI, Noto Sans, Ubuntu Sans, DejaVu Sans" />
       <Setter Property="FontSize" Value="14" />
     </Style>
     <Style Selector="Button">
@@ -114,7 +116,7 @@
     </Style>
     <Style Selector="Button.primary">
       <Setter Property="Background" Value="{DynamicResource LleAccentBrush}" />
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Foreground" Value="{DynamicResource LleAccentTextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LleAccentBrush}" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
@@ -135,9 +137,10 @@
       <Setter Property="Padding" Value="14" />
     </Style>
     <Style Selector="Border.row">
-      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Background" Value="{DynamicResource LleCardBrush}" />
       <Setter Property="Padding" Value="0" />
-      <Setter Property="Margin" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,3" />
+      <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="TextBlock.sectionTitle">
       <Setter Property="FontSize" Value="17" />
@@ -147,8 +150,8 @@
       <Setter Property="Foreground" Value="{DynamicResource LleMutedBrush}" />
     </Style>
     <Style Selector="Button.command">
-      <Setter Property="Width" Value="60" />
-      <Setter Property="Height" Value="64" />
+      <Setter Property="Width" Value="50" />
+      <Setter Property="Height" Value="60" />
       <Setter Property="MinWidth" Value="0" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="Padding" Value="3,2" />
@@ -206,7 +209,7 @@
       <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="TextBlock.commandLabel">
-      <Setter Property="Width" Value="52" />
+      <Setter Property="Width" Value="42" />
       <Setter Property="FontSize" Value="10" />
       <Setter Property="LineHeight" Value="11" />
       <Setter Property="MaxLines" Value="2" />

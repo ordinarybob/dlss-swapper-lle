@@ -5,14 +5,16 @@ namespace DlssSwapper.Linux.Gui;
 
 public sealed partial class MainWindow
 {
-    private async void GameDllVersions_Click(object? sender, RoutedEventArgs e)
+    private async void GameDllVersions_Click(object? sender, RoutedEventArgs e) => await GameDllVersionsAsync(sender);
+
+    private async Task GameDllVersionsAsync(object? sender)
     {
         if (_viewModel.IsBusy || !TryGetMenuGame(sender, out var row) || !TryGetCatalog(out var catalog)) return;
         await RunBusyAsync(LanguageAppearance.Format("Linux_InspectDllVersions", "Inspecting DLL versions for {0}…", row.Name), async () =>
         {
-            var dialog = new GameDllPickerWindow(row.Game, catalog, downloadedOnly: _library?.State.OnlyShowDownloadedDlls == true);
+            var dialog = new GameDllPickerWindow(row.Game, catalog, downloadedOnly: _library?.State.OnlyShowDownloadedDlls == true, family: _detailsFamily);
             _streamlineMutationActive = true;
-            try { await dialog.ShowDialog(this); }
+            try { await dialog.ShowDialog(GameDialogOwner); }
             finally { _streamlineMutationActive = false; }
             string? historyError = null;
             foreach (var result in dialog.Results)
@@ -26,7 +28,9 @@ public sealed partial class MainWindow
         });
     }
 
-    private async void GameRestoreDlls_Click(object? sender, RoutedEventArgs e)
+    private async void GameRestoreDlls_Click(object? sender, RoutedEventArgs e) => await GameRestoreDllsAsync(sender);
+
+    private async Task GameRestoreDllsAsync(object? sender)
     {
         if (_viewModel.IsBusy || !TryGetMenuGame(sender, out var row)) return;
         var catalog = _catalog ?? DllCatalog.Empty();
@@ -34,7 +38,7 @@ public sealed partial class MainWindow
         {
             var dialog = new DllRestoreWindow(row.Game);
             _streamlineMutationActive = true;
-            try { await dialog.ShowDialog(this); }
+            try { await dialog.ShowDialog(GameDialogOwner); }
             finally { _streamlineMutationActive = false; }
             string? historyError = null;
             foreach (var result in dialog.Results)

@@ -135,6 +135,8 @@ public sealed partial class LinuxLibraryState
     public bool GridView { get; set; } = true;
     public bool HideNonSwappableGames { get; set; } = true;
     public bool GroupGameLibrariesTogether { get; set; } = true;
+    public bool ShowHiddenGames { get; set; }
+    public int GameSortMode { get; set; }
     public List<LibrarySelectionEntry> LibrarySelection { get; set; } = [];
 
     public bool SuppressSingleFolderNotice { get; set; }

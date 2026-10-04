@@ -75,6 +75,7 @@ public sealed partial class SettingsPage
                 state.LibrarySelection = entries;
             });
             LibrarySelectionChanged = true;
+            if (_liveSettings) Changed?.Invoke();
             _validation.Text = LanguageAppearance.Get("Linux_SettingsWindow_Libraries_175", "Library selection saved. Disabling a library does not remove its saved data.");
         }
         catch (Exception ex) { AppLog.Write(ApplicationLogLevel.Error, ex.Message); _validation.Text = LanguageAppearance.Format("Linux_SettingsWindow_Libraries_174", "Could not save library selection: {0}", ex.Message); }

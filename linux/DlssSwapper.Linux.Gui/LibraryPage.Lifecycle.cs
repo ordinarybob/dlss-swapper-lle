@@ -6,7 +6,6 @@ namespace DlssSwapper.Linux.Gui;
 
 public sealed partial class LibraryPage
 {
-    public event Action<DllCatalogEntry>? UseRequested;
     public event Action<DllCatalog>? CatalogChanged;
     private Window DialogOwner => TopLevel.GetTopLevel(this) as Window
         ?? throw new InvalidOperationException("Library must be attached to a window.");

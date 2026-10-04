@@ -19,7 +19,7 @@ public sealed partial class MainWindow
         {
             var window = new StreamlineGameWindow(row.RootPath, row.Name, _library);
             _streamlineMutationActive = true;
-            try { await window.ShowDialog(this); }
+            try { await window.ShowDialog(GameDialogOwner); }
             finally { _streamlineMutationActive = false; }
             foreach (var (updatedRow, scan) in await ScanRowsAsync([row], _catalog ?? DllCatalog.Empty()))
                 updatedRow.SetScanResult(scan);

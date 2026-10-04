@@ -41,17 +41,16 @@ internal static class MainWindowStartupTests
             var page = window.FindControl<ContentControl>("SettingsPageHost")!.Content as SettingsPage
                 ?? throw new Exception("Settings navigation did not show its page.");
             Check(window.OwnedWindows.Count == 0, "Settings navigation opened a modal.");
-            page!.FindControl<TextBox>("IgnoredPathsTextBox")!.Text = "unsaved draft";
+            Check(!page.FindControl<StackPanel>("SettingsSaveActions")!.IsVisible, "Production settings still require a separate Save step.");
+            page.FindControl<NumericUpDown>("BatchConcurrencyInput")!.Value = 4;
+            Dispatcher.UIThread.RunJobs();
+            Check(new PersistentLibrary(new LibraryStateStore(stateRoot)).State.BatchSwapConcurrency == 4,
+                "Changing a performance setting did not persist immediately.");
             window.FindControl<Button>("GamesNavigationButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(ReferenceEquals(originalRow, vm.Games.Single()), "Navigation rebuilt the Games state.");
             window.FindControl<Button>("SettingsNavigationButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(ReferenceEquals(page, window.FindControl<ContentControl>("SettingsPageHost")!.Content)
-                && page.FindControl<TextBox>("IgnoredPathsTextBox")!.Text == "unsaved draft", "Navigation lost the Settings draft.");
-            Dispatcher.UIThread.RunJobs();
-            page.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "Cancel"))
-                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Check(window.FindControl<Control>("GamesPageHost")!.IsVisible && library.State.IgnoredPaths.Count == 0,
-                "Cancel did not return to Games without saving.");
+                && page.FindControl<NumericUpDown>("BatchConcurrencyInput")!.Value == 4, "Navigation lost the Settings state.");
             window.FindControl<Button>("LibraryNavigationButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             var libraryPage = window.FindControl<ContentControl>("LibraryPageHost")!.Content as LibraryPage
                 ?? throw new Exception("Library navigation did not show its page.");
@@ -64,16 +63,15 @@ internal static class MainWindowStartupTests
                 && ReferenceEquals(originalRow, vm.Games.Single()), "Library navigation lost filters or Games state.");
             window.FindControl<Button>("GamesNavigationButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Dispatcher.UIThread.RunJobs();
-            var rowBorder = window.GetVisualDescendants().OfType<Border>()
-                .First(border => border.IsVisible && border.DataContext is GameRowViewModel && border.ContextMenu is not null);
-            var menu = rowBorder.ContextMenu!;
-            menu.Open(rowBorder);
-            Dispatcher.UIThread.RunJobs();
-            menu.Items.OfType<MenuItem>().Single(item => Equals(item.Header, "Restore original DLLs…"))
-                .RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-            menu.Close();
-            PumpUntil(() => window.OwnedWindows.OfType<DllRestoreWindow>().Any());
-            var restore = window.OwnedWindows.OfType<DllRestoreWindow>().Single();
+            MainWindowParityChecks.Run(window, vm);
+            var card = window.GetVisualDescendants().OfType<Border>().First(control => control.Classes.Contains("row") && control.IsEffectivelyVisible);
+            card.RaiseEvent(new Avalonia.Input.KeyEventArgs { RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Enter });
+            PumpUntil(() => window.OwnedWindows.OfType<GameDetailsWindow>().Any());
+            var details = window.OwnedWindows.OfType<GameDetailsWindow>().Single();
+            details.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Tag, GameDetailsAction.Restore))
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            PumpUntil(() => details.OwnedWindows.OfType<DllRestoreWindow>().Any());
+            var restore = details.OwnedWindows.OfType<DllRestoreWindow>().Single();
             PumpUntil(() => restore.GetVisualDescendants().OfType<CheckBox>().Any());
             restore.GetVisualDescendants().OfType<CheckBox>().Single().IsChecked = true;
             Click(restore, "Restore selected families");
@@ -91,6 +89,8 @@ internal static class MainWindowStartupTests
                 "Main-window row retained pre-restore file metadata");
             Check(DiscoverySnapshot.ReadScans(new PersistentLibrary(new LibraryStateStore(stateRoot)))
                 .Single().Dlls.Single().FileLength == original.Length, "Post-restore cache was not persisted");
+            details.Close();
+            PumpUntil(() => !details.IsVisible);
         });
         Directory.Move(gameRoot, gameRoot + "-unavailable");
         RunWindow(new([game], []) { Sources = [complete] }, (_, vm) =>

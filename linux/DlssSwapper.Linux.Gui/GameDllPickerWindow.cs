@@ -15,6 +15,7 @@ public sealed class GameDllPickerWindow : Window
         + (Current ? LanguageAppearance.Get("Linux_InstalledSuffix", " — installed") : "")
         + (Original ? LanguageAppearance.Get("Linux_OriginalSuffix", " — original") : ""); }
     private readonly SelectedGame _game;
+    private readonly DllType? _initialFamily;
     private readonly DllCatalog _catalog;
     private readonly DownloadCache _cache;
     private readonly ComboBox _family = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -33,9 +34,9 @@ public sealed class GameDllPickerWindow : Window
     private bool _busy = true;
     public IReadOnlyList<OperationResult> Results { get; private set; } = [];
 
-    public GameDllPickerWindow(SelectedGame game, DllCatalog catalog, string? cacheRoot = null, bool downloadedOnly = false)
+    public GameDllPickerWindow(SelectedGame game, DllCatalog catalog, string? cacheRoot = null, bool downloadedOnly = false, DllType? family = null)
     {
-        _game = game; _catalog = catalog; Title = LanguageAppearance.Format("Linux_GameDllPickerWindow_80", "DLL versions — {0}", game.Name);
+        _game = game; _catalog = catalog; _initialFamily = family; Title = LanguageAppearance.Format("Linux_GameDllPickerWindow_80", "DLL versions — {0}", game.Name);
         _cache = new DownloadCache(cacheRoot: cacheRoot);
         _downloaded.IsChecked = downloadedOnly;
         Width = 820; Height = 700; MinWidth = 560; MinHeight = 520; WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -72,7 +73,7 @@ public sealed class GameDllPickerWindow : Window
     {
         try
         {
-            var oldFamily = (_family.SelectedItem as Family)?.Type;
+            var oldFamily = (_family.SelectedItem as Family)?.Type ?? _initialFamily;
             _scan = await Task.Run(() => new DllScanner().Scan(_game, _catalog));
             _originals = await Task.Run(() => DllRestoreWorkflow.Inspect(_game, LanguageAppearance.Current));
             var families = _scan.Dlls.Select(dll => dll.Type).Concat(_originals.Files.Select(file => file.Item.Family.Type)).Distinct().Select(type => new Family(type)).ToArray();

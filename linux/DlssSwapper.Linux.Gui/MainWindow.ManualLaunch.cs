@@ -5,7 +5,9 @@ namespace DlssSwapper.Linux.Gui;
 
 public sealed partial class MainWindow
 {
-    private async void GameLaunchSetup_Click(object? sender, RoutedEventArgs e)
+    private async void GameLaunchSetup_Click(object? sender, RoutedEventArgs e) => await GameLaunchSetupAsync(sender);
+
+    private async Task GameLaunchSetupAsync(object? sender)
     {
         if (_viewModel.IsBusy || !TryGetMenuGame(sender, out var row) || !TryGetLibrary(out var library)) return;
         var game = library.State.ManualGames.FirstOrDefault(item => PathComparer.Equals(item.RootPath, row.RootPath));
@@ -16,10 +18,10 @@ public sealed partial class MainWindow
             if (choices.Length == 0)
             { _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage26", "This game's launch settings are managed by its launcher."); return; }
             var launch = choices.Length == 1 ? choices[0]
-                : await new ProviderLaunchDialog(row.Name, choices, forSetup: true).ShowDialog<ProviderLaunch?>(this);
+                : await new ProviderLaunchDialog(row.Name, choices, forSetup: true).ShowDialog<ProviderLaunch?>(GameDialogOwner);
             if (launch is null) return;
             var runner = await new ProviderWineLaunchDialog(row.Name, launch,
-                library.State.ProviderWineRunners.GetValueOrDefault(launch.ConfigurationDirectory), launchOnSave: false).ShowDialog<string?>(this);
+                library.State.ProviderWineRunners.GetValueOrDefault(launch.ConfigurationDirectory), launchOnSave: false).ShowDialog<string?>(GameDialogOwner);
             if (runner is null) return;
             library.UpdateState(state => state.ProviderWineRunners[launch.ConfigurationDirectory] = runner);
             _viewModel.StatusText = LanguageAppearance.Get("Linux_GamesMessage27", "Saved the Wine runner for this prefix. Nothing was launched.");

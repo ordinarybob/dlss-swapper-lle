@@ -22,6 +22,15 @@ internal static class Program
         Directory.CreateDirectory(root);
         try
         {
+            if (args.Contains("--parity-ui-tests"))
+            {
+                MainWindowStartupTests.Run(root);
+                LibraryPageLifecycleTests.Run(root);
+                var parityOwner = new Window(); parityOwner.Show();
+                try { LanguageDialogTests.Run(parityOwner, new PersistentLibrary(new LibraryStateStore(Path.Combine(root, "language-state")))) ; }
+                finally { parityOwner.Close(); }
+                return 0;
+            }
             if (args.Contains("--manual-launch-ui-tests"))
             {
                 var launchOwner = new Window { Width = 1100, Height = 800 };

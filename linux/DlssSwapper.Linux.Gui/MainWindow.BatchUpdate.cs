@@ -14,6 +14,7 @@ public sealed partial class MainWindow
             var scans = await Task.Run(() => rows.Select(row => _scanner.Scan(
                 row.Game, catalog)).ToArray());
             var dialog = new BatchUpdateWindow(catalog, scans, downloadedOnly: _library?.State.OnlyShowDownloadedDlls == true, concurrency: _library?.State.BatchSwapConcurrency ?? 15);
+            dialog.Applied += dialog.Close;
             _streamlineMutationActive = true;
             try { await dialog.ShowDialog(this); }
             finally { _streamlineMutationActive = false; }
@@ -24,6 +25,8 @@ public sealed partial class MainWindow
             _viewModel.StatusText = dialog.Results.Count == 0 ? LanguageAppearance.Get("Linux_BatchClosed", "Batch closed without applying updates.")
                 : LanguageAppearance.Format("Linux_BatchFinished", "Batch finished: {0} results, {1} failed or skipped.", dialog.Results.Count, dialog.Results.Count(result => !result.Success))
                     + (historyError is not null ? " " + LanguageAppearance.Format("Linux_OperationHistoryFailed", "Game operation results could not be saved to history: {0}", historyError) : "");
+            if (dialog.Results.Count > 0)
+                await new OperationReportWindow(LanguageAppearance.Get("GamesPage_Batch_Summary_Title", "Batch update summary"), dialog.Results).ShowDialog(this);
         });
     }
 }

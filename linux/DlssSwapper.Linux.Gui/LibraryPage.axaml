@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DlssSwapper.Linux.Gui.LibraryPage"
         >
-  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="18" RowSpacing="12">
-    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="0,2,8,0" RowSpacing="12">
+    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
       <TextBlock Text="{DynamicResource LibraryPage_Title}" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3">
         <Button x:Name="ImportButton" Classes="command" AutomationProperties.Name="{DynamicResource General_Import}">
@@ -36,6 +36,11 @@
           </Grid>
         </Button>
       </StackPanel>
+      <Grid x:Name="LibraryDownloadProgressHost" Grid.Row="1" Grid.ColumnSpan="2" IsVisible="False" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+        <TextBlock x:Name="LibraryDownloadProgressText" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+        <ProgressBar x:Name="LibraryDownloadProgress" Grid.Row="1" Height="4" MinWidth="0" Margin="0,6,0,0" Minimum="0" Maximum="100" />
+        <Button x:Name="CancelDownloadButton" Grid.Column="1" Grid.RowSpan="2" Content="{DynamicResource General_Cancel}" IsEnabled="False" Click="CancelDownload_Click" />
+      </Grid>
     </Grid>
     <Grid Grid.Row="1" RowDefinitions="Auto,Auto" RowSpacing="10">
       <ListBox x:Name="FamilyComboBox" AutomationProperties.Name="{DynamicResource Linux_Xaml_5}"
@@ -96,12 +101,6 @@
     <ScrollViewer Grid.Row="3" MaxHeight="180" HorizontalScrollBarVisibility="Disabled">
       <TextBlock x:Name="StatusText" Text="{DynamicResource Linux_Xaml_13}" TextWrapping="Wrap" />
     </ScrollViewer>
-    <Grid Grid.Row="4">
-      <WrapPanel>
-        <Button x:Name="UseButton" Content="{DynamicResource Linux_Xaml_22}" Classes="primary" Margin="0,0,8,8" Click="Use_Click" />
-        <Button x:Name="CancelDownloadButton" Content="{DynamicResource Linux_Xaml_21}" Margin="0,0,8,8" IsEnabled="False" Click="CancelDownload_Click" />
-      </WrapPanel>
-    </Grid>
   </Grid>
   <UserControl.Resources>
     <ItemsPanelTemplate x:Key="ReleaseItemsPanel">

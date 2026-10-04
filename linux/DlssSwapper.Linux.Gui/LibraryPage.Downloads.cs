@@ -52,6 +52,7 @@ public sealed partial class LibraryPage
                     var amount = total is > 0
                         ? LanguageAppearance.Format("Linux_LibraryTransferKnown", "{0:N0} / {1:N0} bytes ({2}%)", received, total.Value, percent)
                         : LanguageAppearance.Format("Linux_LibraryTransferUnknown", "{0:N0} bytes (total size unknown)", received);
+                    ShowTransferProgress(label, received, total);
                     var text = LanguageAppearance.Format("Linux_LibraryTransfer", "Downloading {0}: {1}. Verification must finish before it is ready.", label, amount);
                     if (report is null) _statusText.Text = text; else report(text);
                 });
@@ -64,6 +65,7 @@ public sealed partial class LibraryPage
     {
         _downloadCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         FindRequired<Button>("CancelDownloadButton").IsEnabled = true;
+        ShowTransferProgress(LanguageAppearance.Get("Linux_LibraryCheckingDownload", "Checking/downloading…"), 0, null);
         SetBusy(true);
     }
 
@@ -73,6 +75,7 @@ public sealed partial class LibraryPage
         _downloadCancellation?.Dispose();
         _downloadCancellation = null;
         SetBusy(false);
+        FinishTransferProgress();
     }
 
     private void CancelDownload_Click(object? sender, RoutedEventArgs e)

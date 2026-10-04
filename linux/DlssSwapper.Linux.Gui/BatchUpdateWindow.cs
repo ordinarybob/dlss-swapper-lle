@@ -37,6 +37,7 @@ public sealed class BatchUpdateWindow : Window
     private bool _closed;
     private bool _busy;
     public IReadOnlyList<OperationResult> Results { get; private set; } = [];
+    public event Action? Applied;
 
     public BatchUpdateWindow(DllCatalog catalog, IReadOnlyList<ScanResult> scans, HttpMessageHandler? httpHandler = null, string? sdkCacheRoot = null, string? dllCacheRoot = null, bool downloadedOnly = false, int concurrency = 15)
     {
@@ -179,5 +180,6 @@ public sealed class BatchUpdateWindow : Window
         catch (Exception ex) { AppLog.Write(ApplicationLogLevel.Error, ex.Message); _status.Text = LanguageAppearance.Format("Linux_BatchUpdateWindow_1", "Batch operation could not finish: {0}", ex.Message); }
         finally { _operation.Dispose(); _operation = null; _busy = false; _settings.IsEnabled = true; _apply.IsEnabled = true; _cancel.IsEnabled = true; _cancel.Content = Results.Count > 0 ? LanguageAppearance.Get("General_Close", "Close") : LanguageAppearance.Get("General_Cancel", "Cancel");
             _include.IsEnabled = _components.Count > 0; _componentPicker.IsEnabled = _include.IsChecked == true; _sdkVersion.IsEnabled = true; }
+        if (Results.Count > 0) Applied?.Invoke();
     }
 }

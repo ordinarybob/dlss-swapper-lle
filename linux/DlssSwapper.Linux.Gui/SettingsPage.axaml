@@ -4,13 +4,8 @@
         >
   <Grid RowDefinitions="*,Auto" Margin="20">
     <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="18">
+      <StackPanel x:Name="SettingsSections" Spacing="18">
         <TextBlock Text="{DynamicResource SettingsPage_Title}" FontSize="27" FontWeight="SemiBold" />
-        <TextBlock Text="{DynamicResource SettingsPage_Language}" />
-        <ComboBox x:Name="LanguageComboBox" HorizontalAlignment="Stretch" />
-        <TextBlock Text="{DynamicResource Linux_ApplicationLogLevel}" />
-        <ComboBox x:Name="ApplicationLogLevelComboBox" HorizontalAlignment="Stretch" />
-        <TextBlock Text="{DynamicResource Linux_NvidiaControlsUnavailable}" TextWrapping="Wrap" Classes="muted" />
         <Border Classes="card">
           <StackPanel Spacing="8">
             <TextBlock Text="{DynamicResource Linux_Xaml_68}" Classes="sectionTitle" />
@@ -44,13 +39,13 @@
             <TextBlock Text="{DynamicResource Linux_Xaml_79}"
                        Classes="muted"
                        TextWrapping="Wrap" />
+            <TextBlock Text="{DynamicResource SettingsPage_ConcurrentGameScans}" FontWeight="SemiBold" />
             <NumericUpDown x:Name="ScanConcurrencyInput" Minimum="1" Maximum="26" Increment="1" Width="112" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource SettingsPage_ConcurrentGameScans}" />
-            <TextBlock Text="{DynamicResource Linux_Xaml_80}" />
+            <TextBlock Text="{DynamicResource SettingsPage_ConcurrentArtworkLoading}" FontWeight="SemiBold" />
             <NumericUpDown x:Name="ArtworkConcurrencyInput" Minimum="1" Maximum="64" Increment="1" Width="112" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource SettingsPage_ConcurrentArtworkLoading}" />
-            <TextBlock Text="{DynamicResource Linux_Xaml_81}" />
             <TextBlock Text="{DynamicResource Linux_Xaml_82}" TextWrapping="Wrap" />
             <NumericUpDown x:Name="UiBatchInput" Minimum="10" Maximum="1000" Increment="10" Width="112" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource Linux_Xaml_83}" />
-            <TextBlock Text="{DynamicResource Linux_Xaml_84}" />
+            <TextBlock Text="{DynamicResource SettingsPage_ConcurrentGameUpdates}" FontWeight="SemiBold" />
             <NumericUpDown x:Name="BatchConcurrencyInput" Minimum="1" Maximum="26" Increment="1" Width="112" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource SettingsPage_ConcurrentGameUpdates}" />
             <Button Content="{DynamicResource Linux_Xaml_85}" Click="ResetPerformanceDefaults_Click" HorizontalAlignment="Left" />
             <TextBlock Text="{DynamicResource SettingsPage_GamesGridInfo}"
@@ -149,25 +144,54 @@
             <TextBox x:Name="HeroicExecutableTextBox" PlaceholderText="{DynamicResource Linux_Xaml_103}" />
           </StackPanel>
         </Expander>
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource SettingsPage_Language}" Classes="sectionTitle" />
+            <ComboBox x:Name="LanguageComboBox" HorizontalAlignment="Stretch" />
+            <Button Content="{DynamicResource SettingsPage_OpenTranslationToolbox}" Click="TranslationToolbox_Click" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource SettingsPage_Networking}" Classes="sectionTitle" />
+            <Button Content="{DynamicResource Linux_Xaml_104}" Click="Proxy_Click" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource Linux_ApplicationLogLevel}" Classes="sectionTitle" />
+            <ComboBox x:Name="ApplicationLogLevelComboBox" HorizontalAlignment="Stretch" />
+            <Button Content="{DynamicResource Linux_OpenApplicationLog}" Click="OpenApplicationLog_Click" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource SettingsPage_About}" Classes="sectionTitle" />
+            <TextBlock x:Name="BuildIdentityText" TextWrapping="Wrap" />
+            <WrapPanel>
+              <Button Content="{DynamicResource Linux_Acknowledgements}" Click="Acknowledgements_Click" Margin="0,0,8,8" />
+              <Button Content="{DynamicResource Linux_CopyBuildIdentity}" Click="CopyBuildIdentity_Click" Margin="0,0,8,8" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource SettingsPage_Troubleshooting}" Classes="sectionTitle" />
+            <WrapPanel>
+              <Button Content="{DynamicResource DiagnosticsPage_WindowTitle}" Click="Diagnostics_Click" Margin="0,0,8,8" />
+              <Button Content="{DynamicResource Linux_NetworkTestsWindow_131}" Click="NetworkTests_Click" Margin="0,0,8,8" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
         <TextBlock x:Name="ValidationTextBlock"
                    Foreground="{DynamicResource LleErrorTextBrush}"
                    TextWrapping="Wrap" />
       </StackPanel>
     </ScrollViewer>
 
-    <WrapPanel Grid.Row="1"
-                Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                Margin="0,16,0,0">
-      <Button Content="{DynamicResource DiagnosticsPage_WindowTitle}" Click="Diagnostics_Click" />
-      <Button Content="{DynamicResource Linux_Acknowledgements}" Click="Acknowledgements_Click" />
-      <Button Content="{DynamicResource Linux_OpenApplicationLog}" Click="OpenApplicationLog_Click" />
-      <Button Content="{DynamicResource Linux_CopyBuildIdentity}" Click="CopyBuildIdentity_Click" />
-      <Button Content="{DynamicResource Linux_NetworkTestsWindow_131}" Click="NetworkTests_Click" />
-      <Button Content="{DynamicResource SettingsPage_OpenTranslationToolbox}" Click="TranslationToolbox_Click" />
-      <Button Content="{DynamicResource Linux_Xaml_104}" Click="Proxy_Click" />
+    <StackPanel Grid.Row="1" x:Name="SettingsSaveActions" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
       <Button Content="{DynamicResource General_Cancel}" Click="Cancel_Click" MinWidth="110" />
       <Button Content="{DynamicResource General_Save}" Classes="primary" Click="Save_Click" MinWidth="110" />
-    </WrapPanel>
+    </StackPanel>
   </Grid>
 </UserControl>

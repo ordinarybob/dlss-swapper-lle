@@ -19,6 +19,7 @@ public sealed partial class LibraryPage
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         _recordDownloads.Add(row, cancellation);
         row.IsDownloading = true;
+        ShowTransferProgress(row.Version, 0, null);
         row.TransferStatus = LanguageAppearance.Get("Linux_LibraryCheckingDownload", "Checking/downloading…");
         UpdateActionState();
         try
@@ -45,6 +46,7 @@ public sealed partial class LibraryPage
             _recordDownloads.Remove(row);
             ApplyPendingCatalog();
             row.IsDownloading = false;
+            FinishTransferProgress();
             UpdateActionState();
             if (_closeRequested && !HasRecordDownloads && !_isBusy) FinishStopping();
         }
