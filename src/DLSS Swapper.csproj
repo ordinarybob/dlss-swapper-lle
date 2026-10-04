@@ -130,7 +130,7 @@
     <EmbeddedResource Include="Acknowledgements\**\notes.md" />
     <EmbeddedResource Include="Acknowledgements\**\license.txt" />
     <EmbeddedResource Include="Assets\static_manifest.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
 
@@ -379,7 +379,6 @@
 
   <ItemGroup>
     <PackageReference Include="AsyncAwaitBestPractices" Version="10.0.0" />
-    <PackageReference Include="AsyncAwaitBestPractices.MVVM" Version="10.0.0" />
     <PackageReference Include="ByteSize" Version="2.1.2" />
     <PackageReference Include="CommunityToolkit.Labs.WinUI.Controls.MarkdownTextBlock" Version="0.1.260416-build.2580" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
@@ -397,7 +396,14 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <!-- Keep WinUI; suppress the meta-package's unused AI/ML runtime payloads,
+         including when the meta-package arrives transitively through DataGrid. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="1.8.260528001" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260529003" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="1.8.260529003" ExcludeAssets="all" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="1.8.76" ExcludeAssets="all" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.ML" Version="1.8.2197" ExcludeAssets="all" />
+    <PackageReference Include="System.Numerics.Tensors" Version="9.0.0" ExcludeAssets="all" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2270" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />

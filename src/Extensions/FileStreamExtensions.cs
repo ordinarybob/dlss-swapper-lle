@@ -13,10 +13,4 @@ internal static class FileStreamExtensions
         return Convert.ToHexString(MD5.HashData(fileStream));
     }
 
-    internal static string GetSha256Hash(this Stream fileStream)
-    {
-        fileStream.Position = 0;
-
-        return Convert.ToHexString(SHA256.HashData(fileStream));
-    }
 }

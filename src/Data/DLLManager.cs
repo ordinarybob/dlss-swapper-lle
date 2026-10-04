@@ -633,11 +633,6 @@ internal class DLLManager
         return Manifest is not null;
     }
 
-    internal bool HasLoadedImportedManifest()
-    {
-        return ImportedManifest is not null;
-    }
-
     internal async Task<bool> SaveImportedManifestJsonAsync()
     {
         if (ImportedManifest is null)

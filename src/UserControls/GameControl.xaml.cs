@@ -207,8 +207,4 @@ public sealed partial class GameControl : FakeContentDialog
         }
     }
 
-    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        DebuggerHelper.BreakIfAttached();
-    }
 }

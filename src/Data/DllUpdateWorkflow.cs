@@ -65,12 +65,6 @@ internal static class DllUpdateWorkflow
         return selections;
     }
 
-    internal static Task<List<BatchSwapResult>> UpdateDetectedToLatestAsync(
-        IReadOnlyList<Game> games)
-    {
-        return ApplyAsync(games, GetLatestSelections(games));
-    }
-
     internal static async Task<List<BatchSwapResult>> ApplyAsync(
         IReadOnlyList<Game> games,
         IReadOnlyList<DllUpdateSelection> selections)
