@@ -67,12 +67,9 @@ internal class GOGLibrary : IGameLibrary
             {
                 if (registryKey is null)
                 {
-                    // Something bad happened.
-                    // TODO: Clear cache?
                     return new List<Game>();
                 }
 
-                // For each of the installed games, setup an initial GOG
                 foreach (var subkey in registryKey.GetSubKeyNames())
                 {
                     using (var gameKey = registryKey.OpenSubKey(subkey))
@@ -92,20 +89,17 @@ internal class GOGLibrary : IGameLibrary
                             continue;
                         }
 
-
                         if (string.IsNullOrEmpty(gameName))
                         {
                             Logger.Error("Issue loading GOG Game, no gameName found.");
                             continue;
                         }
 
-
                         if (string.IsNullOrEmpty(gamePath))
                         {
                             Logger.Error("Issue loading GOG Game, no gamePath found.");
                             continue;
                         }
-
 
                         // If the entry is DLC we don't need to show it as an individual item.
                         var dependsOn = gameKey.GetValue("dependsOn") as string;
@@ -142,25 +136,18 @@ internal class GOGLibrary : IGameLibrary
             }
         }
 
-        // No installed games found.
         if (gogGames.Count == 0)
         {
-            // TODO: Flush cache?
             return new List<Game>();
         }
-
-
-        // Now that we have games we attempt to load covers for them.
-
 
         // If GOG Galaxy is installed we can get images from it.
         var storageFileLocation = GetStorageFileLocation();
         if (string.IsNullOrWhiteSpace(storageFileLocation) == false && File.Exists(storageFileLocation) == true)
         {
-            //await Task.Delay(1);
             var db = new SQLiteAsyncConnection(storageFileLocation, SQLiteOpenFlags.ReadOnly);
 
-            // Default resource type for verticalCover images is 3. We default to this, but we also add try load it in case it changes.
+            // Use the legacy resource ID only when the database has no named mapping.
             var webCacheResourceTypeId = 3;
             var webCacheResourceType = (await db.QueryAsync<WebCacheResourceType>("SELECT * FROM WebCacheResourceTypes WHERE type=?", "verticalCover").ConfigureAwait(false)).FirstOrDefault();
             if (webCacheResourceType is not null)
@@ -168,7 +155,6 @@ internal class GOGLibrary : IGameLibrary
                 webCacheResourceTypeId = webCacheResourceType.Id;
             }
 
-            // Default resource type for originalImages is 378. We default to this, but we also add try load it in case it changes.
             var gamePieceTypeId = 378;
             var gamePieceType = (await db.QueryAsync<GamePieceType>("SELECT * FROM GamePieceTypes WHERE type=?", "originalImages").ConfigureAwait(false)).FirstOrDefault();
             if (gamePieceType is not null)
@@ -299,7 +285,6 @@ internal class GOGLibrary : IGameLibrary
         // Delete games that are no longer loaded, they are likely uninstalled
         foreach (var cachedGame in cachedGames)
         {
-            // Game is to be deleted.
             if (gogGames.Contains(cachedGame) == false)
             {
                 await cachedGame.DeleteAsync();

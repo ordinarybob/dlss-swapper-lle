@@ -78,7 +78,6 @@ public partial class DLLPickerControlModel : ObservableObject
         parentDialog.PrimaryButtonCommand = SwapDllCommand;
         parentDialog.SecondaryButtonCommand = ResetDllCommand;
 
-        // NOTE: DLL type
         switch (GameAssetType)
         {
             case GameAssetType.DLSS:
@@ -203,7 +202,6 @@ public partial class DLLPickerControlModel : ObservableObject
             }
             else if (SelectedDLLRecord.LocalRecord is null)
             {
-                // This should never happen
                 CanSwap = false;
             }
             else
@@ -219,7 +217,6 @@ public partial class DLLPickerControlModel : ObservableObject
             }
         }
     }
-
 
     void ShowTempInfoBar(string title, string message, double duration = 5.0, InfoBarSeverity severity = InfoBarSeverity.Informational, int gridIndex = 2)
     {
@@ -329,12 +326,10 @@ public partial class DLLPickerControlModel : ObservableObject
 
     void ResetSelection()
     {
-        // If there are backup records it means we can reset.
         var backupRecordType = DLLManager.Instance.GetAssetBackupType(GameAssetType);
         var existingBackupRecords = Game.GameAssets.Where(x => x.AssetType == backupRecordType).ToList();
         BackupGameAsset = existingBackupRecords.FirstOrDefault();
 
-        // Select the default record
         var existingRecords = Game.GameAssets.Where(x => x.AssetType == GameAssetType).ToList();
         CurrentGameAsset = existingRecords.FirstOrDefault();
 

@@ -62,8 +62,7 @@ public partial class TranslationToolboxWindowModel : ObservableObject
         // Select this language based on the users language.
         SelectedSourceLanguage = SourceLanguages.FirstOrDefault(x => x.Key == "en-US");
 
-        // Load the comments from the en-US resw file. That is the only thing this file does.
-        // Maybe in future comments should be translated? But not today.
+        // Translator guidance is stored in the en-US resource comments.
         var defaultResxFile = Path.Combine(AppContext.BaseDirectory, "Translations", "en-US", "Resources.resw");
         if (File.Exists(defaultResxFile))
         {
@@ -106,7 +105,6 @@ public partial class TranslationToolboxWindowModel : ObservableObject
 
     internal void RecalculateTranslationProgress()
     {
-        // This should never happen, but will prevent problems if it does.
         if (TranslationRows.Count == 0)
         {
             TranslationProgressString = string.Empty;
@@ -205,7 +203,6 @@ public partial class TranslationToolboxWindowModel : ObservableObject
                 }
             }
 
-
             try
             {
                 var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
@@ -287,7 +284,6 @@ public partial class TranslationToolboxWindowModel : ObservableObject
                         }
                     }
 
-                    
                     RecalculateTranslationProgress();
                 }
             }
@@ -433,7 +429,6 @@ public partial class TranslationToolboxWindowModel : ObservableObject
 
             var sourceLangauges = new List<KeyValuePair<string, string>>(SourceLanguages);
 
-
 #if DEBUG
             // Remove LANG_HUNT
             var indexToRemove = -1;
@@ -496,12 +491,10 @@ public partial class TranslationToolboxWindowModel : ObservableObject
 
                         translationRow.NewTranslation = string.Empty;
 
-                        // Make sure there is a value before we start caring about it.
                         if (string.IsNullOrWhiteSpace(resourceCandidate?.ValueAsString) == false)
                         {
                             if (resourceCandidate.Qualifiers.Count == 0)
                             {
-                                // this should never happen
                             }
                             else
                             {
@@ -512,7 +505,6 @@ public partial class TranslationToolboxWindowModel : ObservableObject
                                 }
                                 else
                                 {
-                                    // This should always just be 1 item, not more than 1, maybe?
                                     var qualifier = resourceCandidate.Qualifiers.First();
 
                                     // If the qualifier has a value of en-US, then we don't want to use it.

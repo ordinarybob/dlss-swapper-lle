@@ -98,10 +98,8 @@ public partial class GameControlModel : ObservableObject
         GameTitle = game.Title;
 
 
-        // Make sure NVAPIHelper is supported and the game has DLSS.
         if (NVAPIHelper.Instance.IsSupported && game.CurrentDLSS is not null)
         {
-            // Try load the DriverSettingProfile for the given game. If it is not found the game is not supported.
 
             var gameProfile = NVAPIHelper.Instance.FindGameProfile(game);
             if (gameProfile is not null)
@@ -114,7 +112,6 @@ public partial class GameControlModel : ObservableObject
                     DlssPresetOptions.AddRange(NVAPIHelper.Instance.DlssPresetOptions);
                     if (game.DlssPreset is null)
                     {
-                        // If it was never set, ensure it goes to default.
                         SelectedDlssPreset = DlssPresetOptions.FirstOrDefault(x => x.Value == 0);
                     }
                     else
@@ -134,7 +131,6 @@ public partial class GameControlModel : ObservableObject
                             DlssDPresetOptions.AddRange(NVAPIHelper.Instance.DlssDPresetOptions);
                             if (game.DlssDPreset is null)
                             {
-                                // If it was never set, ensure it goes to default.
                                 SelectedDlssDPreset = DlssDPresetOptions.FirstOrDefault(x => x.Value == 0);
                             }
                             else
@@ -156,7 +152,6 @@ public partial class GameControlModel : ObservableObject
                             DlssGPresetOptions.AddRange(NVAPIHelper.Instance.DlssGPresetOptions);
                             if (game.DlssGPreset is null)
                             {
-                                // If it was never set, ensure it goes to default.
                                 SelectedDlssGPreset = DlssGPresetOptions.FirstOrDefault(x => x.Value == 0);
                             }
                             else

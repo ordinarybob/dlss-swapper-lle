@@ -349,9 +349,7 @@ public class FakeContentDialog : Control
 
         if (Title is string title && TitleTemplate is null)
         {
-            // For some reason this doesn't just work. Removing the ContentControl.Template XAML works but I
-            // can't replicate it here. Nor can I set a blank ControlTemplate to override it.
-            // Replacing the title with a TextBlock avoids the template conflict.
+            // A TextBlock title avoids the default ContentControl template conflict.
             var titleTextBlock = new TextBlock() { Text = title };
             Title = titleTextBlock;
         }

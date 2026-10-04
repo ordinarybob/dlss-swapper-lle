@@ -36,35 +36,12 @@ public class GameSearchResultsOffsetPage
 
 public class GameSearchResult
 {
-    //[JsonPropertyName("id")]
-    //public string Id { get; set; } = string.Empty;
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
 
     [JsonPropertyName("slug")]
     public string Slug { get; set; } = string.Empty;
-
-    //[JsonPropertyName("baseGameSlug")]
-    //public string? BaseGameSlug { get; set; }
-
-    //[JsonPropertyName("gameType")]
-    //public string GameType { get; set; } = string.Empty;
-
-    //[JsonPropertyName("prereleaseGameType")]
-    //public object? PrereleaseGameType { get; set; }
-
-    //[JsonPropertyName("subscriptionAvailabilities")]
-    //public string[] SubscriptionAvailabilities { get; set; } = [];
-
-    //[JsonPropertyName("isFreeToPlay")]
-    //public bool IsFreeToPlay { get; set; }
-
-    //[JsonPropertyName("playFirstTrialAvailable")]
-    //public bool PlayFirstTrialAvailable { get; set; }
-
-    //[JsonPropertyName("releaseDate")]
-    //public object? ReleaseDate { get; set; }
 
     [JsonPropertyName("logoImage")]
     public Image? LogoImage { get; set; }
@@ -75,8 +52,6 @@ public class GameSearchResult
     [JsonPropertyName("packArtImage")]
     public Image? PackArtImage { get; set; }
 
-    //[JsonPropertyName("__typename")]
-    //public string Typename { get; set; } = string.Empty;
 }
 
 public class Image
@@ -84,6 +59,4 @@ public class Image
     [JsonPropertyName("path")]
     public string Path { get; set; } = string.Empty;
 
-    //[JsonPropertyName("__typename")]
-    //public string Typename { get; set; } = string.Empty; // Image
 }

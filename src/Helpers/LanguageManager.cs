@@ -40,7 +40,6 @@ public class LanguageManager
 
     public string[] GetKnownLanguages()
     {
-        // For now this is a hardcoded list. It would be nice to dynamically discover from resource class or something.
         return [
             "ar-SA",
             "ar-SY",
@@ -75,7 +74,6 @@ public class LanguageManager
 
     public string GetLanguageName(string languageKey)
     {
-        // For now this is a hardcoded list. It would be nice to dynamically discover from resource class or something.
         return languageKey switch
         {
             "ar-SA" => "اللغة العربية (المملكة العربية السعودية)", // Arabic (Saudi Arabia)
@@ -113,11 +111,6 @@ public class LanguageManager
         return classType.GetProperties().Where(p => p.GetCustomAttribute<TranslationPropertyAttribute>() != null).Select(p => p.Name).ToList();
     }
 
-    /// <summary>
-    /// Determines if the specified language requires Right-to-Left (RTL) text direction.
-    /// </summary>
-    /// <param name="languageKey">The language key (e.g., "ar-SY", "he-IL")</param>
-    /// <returns>True if the language requires RTL layout, false otherwise</returns>
     public static bool IsRightToLeftLanguage(string languageKey)
     {
         if (string.IsNullOrWhiteSpace(languageKey))
@@ -125,7 +118,6 @@ public class LanguageManager
             return false;
         }
 
-        // List of RTL language codes (Semitic and other RTL languages)
         var rtlLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "ar",      // Arabic
@@ -154,7 +146,6 @@ public class LanguageManager
             "yi"       // Yiddish
         };
 
-        // Check exact match first
         if (rtlLanguages.Contains(languageKey))
         {
             return true;
@@ -165,4 +156,3 @@ public class LanguageManager
         return rtlLanguages.Contains(languagePart);
     }
 }
-

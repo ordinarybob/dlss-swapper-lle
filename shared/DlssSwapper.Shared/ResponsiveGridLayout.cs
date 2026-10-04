@@ -2,14 +2,7 @@ using System;
 
 namespace DlssSwapper.Shared;
 
-/// <summary>
-/// Divides the grid viewport into equal physical-pixel cells and sizes cards to
-/// fill those cells at a fixed 2:3 cover aspect ratio. Equal cells keep every
-/// row balanced and avoid a persistent trailing strip at fractional Windows
-/// scale factors. A single 1-10 card-size setting chooses an approximate target
-/// size; the viewport chooses the responsive column count and remains the sole
-/// authority for the final cell width.
-/// </summary>
+/// <summary>Fills the viewport with 2:3 cards, distributing fractional pixels across each row.</summary>
 public static class ResponsiveGridLayout
 {
     // GridViewItem uses three DIPs of margin and two DIPs of padding per side.
@@ -19,13 +12,9 @@ public static class ResponsiveGridLayout
     // Cover cards keep a 2:3 width-to-height ratio.
     public const double CardAspectRatio = 1.5;
 
-    // Six 122-DIP cells reproduce the validated default-window geometry at
-    // card size 5. The other size levels target ten through one columns across
-    // that same reference width, while arbitrary window sizes remain fluid.
+    // Card-size levels 1-10 target ten through one columns at this reference width.
     public const double ReferenceUsableWidth = 732;
 
-    // Hard floor so extreme preferences or tiny windows cannot produce
-    // unusable slivers of cards.
     public const double MinCardWidth = 44;
 
     public static ResponsiveGridMetrics Calculate(

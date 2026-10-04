@@ -21,7 +21,7 @@
                 <Run Text="{x:Bind ViewModel.TranslationProperties.OptionalText, Mode=OneWay}" />
             </TextBlock>
 
-            <!-- Weird, but allows image to strecth centered rather than left align -->
+            <!-- Keep stretched cover images centered. -->
             <Border BorderThickness="0" Width="200" Height="300" FlowDirection="LeftToRight">
                 <Border.RenderTransform>
                     <CompositeTransform ScaleX="1" />

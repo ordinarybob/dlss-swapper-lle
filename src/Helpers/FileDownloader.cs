@@ -18,20 +18,14 @@ public partial class FileDownloader : ObservableObject
     public partial double Percent { get; set; } = 0.0;
 
     /// <summary>
-    /// Used to indicate there is download progress or that download progress can be tracked
+    /// True while the total download size is unknown.
     /// </summary>
     [ObservableProperty]
     public partial bool IsIndeterminate { get; set; } = true;
 
-    /// <summary>
-    /// Used to report the current bytes downloaded.
-    /// </summary>
     [ObservableProperty]
     public partial long DownloadedBytes { get; set; } = 0L;
 
-    /// <summary>
-    /// Used to report the total bytes to download. 
-    /// </summary>
     [ObservableProperty]
     public partial long TotalBytesToDownload { get; set; } = 0L;
 
@@ -110,7 +104,6 @@ public partial class FileDownloader : ObservableObject
             };
         }
 
-        // 64kb buffer
         var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
         try
         {
@@ -174,7 +167,6 @@ public partial class FileDownloader : ObservableObject
                     while ((bytesRead = await responseStream.ReadAsync(buffer.AsMemory(0, BufferSize), cancellationToken).ConfigureAwait(false)) > 0)
                     {
                         await outputStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
-                        //Interlocked.Add(ref totalBytesRead, bytesRead);
                         totalBytesRead += bytesRead;
                     }
                 }

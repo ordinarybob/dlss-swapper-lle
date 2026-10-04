@@ -93,7 +93,6 @@ public partial class GameGridPageModel : ObservableObject
     [ObservableProperty]
     public partial double GridViewCardSize { get; set; } = Settings.Instance.GridViewCardSize;
 
-
     // Placeholder card size used until the first layout pass measures the real
     // grid viewport; UpdateResponsiveGridLayout keeps both in sync at 2:3.
     [ObservableProperty]
@@ -587,7 +586,6 @@ public partial class GameGridPageModel : ObservableObject
                 return;
             }
 
-
             if (result == ContentDialogResult.Primary)
             {
                 // Only dismiss the notice for good once the user has proceeded to add games.
@@ -817,7 +815,6 @@ public partial class GameGridPageModel : ObservableObject
             // Associate the HWND with the folder picker
             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.CurrentApp.MainWindow);
 
-
             var folder = FileSystemHelper.OpenFolder(hWnd, okButtonLabel: ResourceHelper.GetString("GamesPage_ManuallyAdding_SelectGameFolder"));
 
             if (string.IsNullOrWhiteSpace(folder))
@@ -833,7 +830,6 @@ public partial class GameGridPageModel : ObservableObject
                 await ShowTopLevelDirectoryNotSupportedAsync();
                 return;
             }
-
 
             var gameFolderAlreadyExists = GameManager.Instance.CheckIfGameIsAdded(installPath);
             if (gameFolderAlreadyExists == true)
@@ -1004,10 +1000,7 @@ public partial class GameGridPageModel : ObservableObject
 
     void ApplyGameGroupFilter()
     {
-        // TODO: Remove weird hack which otherwise causes MainGridView_SelectionChanged to fire when changing MainGridView.ItemsSource.
-        //gameGridPage.MainGridView.SelectionChanged -= MainGridView_SelectionChanged;
-
-        //MainGridView.ItemsSource = null;
+        // Clear the old view before rebinding to reset selection.
         CurrentCollectionView = null;
         CurrentCollectionView = GameManager.Instance.GetGameCollection(_activeSearch);
     }

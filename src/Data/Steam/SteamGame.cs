@@ -388,7 +388,6 @@ internal partial class SteamGame : Game
                         SourceGenerationContext.Default.SteamAPIResponseGetItemsResponse).ConfigureAwait(false);
                     if (response?.Response?.StoreItems.Count > 0)
                     {
-                        // We are only doing one search, so we likely only care for the first item.
                         var storeItem = response.Response.StoreItems[0];
 
                         if (storeItem.Assets is null)
@@ -403,10 +402,9 @@ internal partial class SteamGame : Game
                             return false;
                         }
 
-                        // We are only checking LibraryCapsule2x, hopefully it exists for all games
                         if (string.IsNullOrWhiteSpace(storeItem.Assets.LibraryCapsule2x) == false)
                         {
-                            // There are 3 different CDNs, I don't lknow what one they will use, so lets try all of them?
+                            // Fall back across Steam's artwork CDNs.
                             var cdns = new[]
                             {
                                     "https://shared.fastly.steamstatic.com",

@@ -8,9 +8,6 @@ using Microsoft.UI.Xaml.Input;
 
 namespace DLSS_Swapper;
 
-/// <summary>
-/// An empty window that can be used on its own or navigated to within a Frame.
-/// </summary>
 public sealed partial class TranslationToolboxWindow : Window
 {
     public TranslationToolboxWindowModel ViewModel { get; private set; }
@@ -53,7 +50,6 @@ public sealed partial class TranslationToolboxWindow : Window
         Close();
     }
 
-
     void TextBox_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == Windows.System.VirtualKey.Enter)
@@ -91,16 +87,8 @@ public sealed partial class TranslationToolboxWindow : Window
                     }
                     else
                     {
-                        // We are at the end, remove focus.
-                        //BottomStackPanel.Focus(FocusState.Programmatic);
                     }
 
-                    //textBox.Focus(FocusState.Unfocused);
-                    //FocusManager.TryMoveFocus(FocusNavigationDirection.Next, );
-                    // (FocusState.Unfocused);
-                    //control.Focus(FocusState.Unfocused); // Optionally, you can use FocusManager.TryMoveFocus
-                    //OtherTextBox.Focus(FocusState.Programmatic); // Move focus to another TextBox
-                    //FocusManager.TryMoveFocus(FocusNavigationDirection.Next);
                     e.Handled = true;
                 }
             }
@@ -111,6 +99,5 @@ public sealed partial class TranslationToolboxWindow : Window
     {
         ViewModel.RecalculateTranslationProgress();
     }
-
 
 }

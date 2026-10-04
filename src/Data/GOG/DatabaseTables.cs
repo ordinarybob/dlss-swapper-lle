@@ -57,7 +57,6 @@ internal class LimitedDetail
         }
     }
 
-
     internal class LimitedDetailImages
     {
         [JsonPropertyName("background")]
@@ -119,7 +118,6 @@ internal class WebCacheResourceType
     public string Type { get; set; } = string.Empty;
 }
 
-
 internal class GamePieceType
 {
     [Column("id")]
@@ -128,7 +126,6 @@ internal class GamePieceType
     [Column("type")]
     public string Type { get; set; } = string.Empty;
 }
-
 
 internal class GamePiece
 {
@@ -188,32 +185,3 @@ internal class ResourceImages
     [JsonPropertyName("images\\\\menuNotificationAv2")]
     public string MenuNotificationAv2 { get; set; } = string.Empty;
 }
-
-
-
-//originalImages
-
-
-/*
-GamePieces
-releaseKey,gamePieceTypeId,userId,value
-gog_1207658927,378,46988767830580582,"{""background"":""https:\/\/images.gog.com\/2c40bb032307ae1c58fccca9075bec260b844b868175d5c80047e5e6e6e60313_glx_bg_top_padding_7.webp?namespace=gamesdb"",""squareIcon"":""https:\/\/images.gog.com\/3870137e89407386f33fd4c136cc3e4d09dc60c900704220f40fb72baa01b577_glx_square_icon_v2.webp?namespace=gamesdb"",""verticalCover"":""https:\/\/images.gog.com\/3870137e89407386f33fd4c136cc3e4d09dc60c900704220f40fb72baa01b577_glx_vertical_cover.webp?namespace=gamesdb""}"
-
-
-WebCache
-id,releaseKey,userId
-141,gog_1207658927,46988767830580582
-
-
-WebCacheResources
-webCacheId,webCacheResourceTypeId,filename
-141,2,3870137e89407386f33fd4c136cc3e4d09dc60c900704220f40fb72baa01b577_glx_square_icon_v2.webp
-141,3,3870137e89407386f33fd4c136cc3e4d09dc60c900704220f40fb72baa01b577_glx_vertical_cover.webp
-
-
-WebCacheResourceTypes
-id,type
-1,background
-2,squareIcon
-3,verticalCover
-*/

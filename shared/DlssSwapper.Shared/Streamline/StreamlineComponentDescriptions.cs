@@ -1,6 +1,6 @@
 namespace DLSS_Swapper.Data.Streamline;
 
-/// <summary>Plain-language roles, verified against NVIDIA sources listed in docs/STREAMLINE_COMPONENTS.md.</summary>
+// SDK component roles; reference sources are in docs/STREAMLINE_COMPONENTS.md.
 public static class StreamlineComponentDescriptions
 {
     public static string GetDescription(string fileName) => fileName.ToLowerInvariant() switch

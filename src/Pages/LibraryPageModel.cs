@@ -48,7 +48,6 @@ public partial class LibraryPageModel : ObservableObject
         var upscalerSelectorBar = _libraryPage.FindChild("UpscalerSelectorBar") as SelectorBar;
         if (upscalerSelectorBar is not null)
         {
-            // NOTE: DLL type
             // TODO: Change order based on preferred upscaler.
             upscalerSelectorBar.Items.Add(new SelectorBarItem() { Text = DLLManager.Instance.GetAssetTypeName(GameAssetType.DLSS), Tag = GameAssetType.DLSS });
             upscalerSelectorBar.Items.Add(new SelectorBarItem() { Text = DLLManager.Instance.GetAssetTypeName(GameAssetType.DLSS_G), Tag = GameAssetType.DLSS_G });
@@ -112,7 +111,6 @@ public partial class LibraryPageModel : ObservableObject
 
         if (didUpdate)
         {
-            // Reload selected library.
             if (SelectedSelectorBarItem?.Tag is GameAssetType gameAssetType)
             {
                 SelectLibrary(gameAssetType);
@@ -137,8 +135,6 @@ public partial class LibraryPageModel : ObservableObject
     [RelayCommand]
     async Task ExportAllAsync()
     {
-        // NOTE: DLL type
-        // Check that there are records to export first.
         var allDllRecords = DllFamilyRegistry.All
             .SelectMany(family => family.Records(DLLManager.Instance))
             .Where(record => record.LocalRecord?.IsDownloaded == true)
@@ -156,8 +152,6 @@ public partial class LibraryPageModel : ObservableObject
             await dialog.ShowAsync();
             return;
         }
-
-
 
         var filesProgressBar = new ProgressBar()
         {
@@ -227,7 +221,6 @@ public partial class LibraryPageModel : ObservableObject
                     continue;
                 }
 
-                // TODO: When fixing imported system, make sure to update this to use full path
                 var internalZipDir = DLLManager.Instance.GetAssetTypeName(dllRecord.AssetType);
                 if (dllRecord.LocalRecord.IsImported == true)
                 {
@@ -239,7 +232,6 @@ public partial class LibraryPageModel : ObservableObject
 
                 toExport.Add((dllRecord.LocalRecord.ExpectedPath, Path.Combine(internalZipDir, Path.GetFileName(dllRecord.LocalRecord.ExpectedPath))));
             }
-
 
             Exception? exportError = null;
 
@@ -299,7 +291,6 @@ public partial class LibraryPageModel : ObservableObject
 
             Logger.Error(err);
 
-            // If the fullExpectedPath does not exist, or there was an error writing it.
             var dialog = new EasyContentDialog(_libraryPage.XamlRoot)
             {
                 Title = ResourceHelper.GetString("General_Error"),
@@ -325,7 +316,6 @@ public partial class LibraryPageModel : ObservableObject
             return err;
         }
     }
-
 
     [RelayCommand]
     async Task ImportAsync()
@@ -356,7 +346,6 @@ public partial class LibraryPageModel : ObservableObject
 
             Settings.Instance.HasShownWarning = true;
         }
-
 
         var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.CurrentApp.MainWindow);
 
@@ -406,7 +395,6 @@ public partial class LibraryPageModel : ObservableObject
         var loadingDialog = new EasyContentDialog(_libraryPage.XamlRoot)
         {
             Title = ResourceHelper.GetString("LibraryPage_Importing"),
-            // I would like this to be a progress ring but for some reason the ring will not show.
             Content = progressStackPanel,
         };
         _ = loadingDialog.ShowAsync();
@@ -460,7 +448,6 @@ public partial class LibraryPageModel : ObservableObject
             }
             else
             {
-                // This should never happen.
                 Logger.Error("dllRecord.LocalRecord is null");
                 DebuggerHelper.BreakIfAttached();
                 importResults.Add(DLLImportResult.FromFail(importedPath, "dllRecord.LocalRecord is null"));
@@ -487,10 +474,8 @@ public partial class LibraryPageModel : ObservableObject
         {
             var importResults = new List<DLLImportResult>();
 
-            // Used only if we import a zip
             var tempExtractPath = Path.Combine(Storage.GetTemp(), "import", Guid.NewGuid().ToString("D"));
             Storage.CreateDirectoryIfNotExists(tempExtractPath);
-
 
             foreach (var importFile in openFileList)
             {
@@ -510,8 +495,7 @@ public partial class LibraryPageModel : ObservableObject
                 {
                     if (importFile.EndsWith(".zip", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        // If we are importing a zip, first check if its hash is one
-                        // that we expect.Then we can just bypass everything.
+                        // A catalog-matched archive can reuse its existing DLL record.
                         var newZipHash = string.Empty;
                         using (var fileStream = File.OpenRead(importFile))
                         {
@@ -520,7 +504,6 @@ public partial class LibraryPageModel : ObservableObject
 
                         if (string.IsNullOrWhiteSpace(newZipHash) == false)
                         {
-                            // NOTE: DLL type
                             var dlssRecord = DLLManager.Instance.DLSSRecords.FirstOrDefault(x => string.Equals(x.ZipMD5Hash, newZipHash, StringComparison.InvariantCultureIgnoreCase));
                             if (dlssRecord is not null)
                             {
@@ -648,8 +631,6 @@ public partial class LibraryPageModel : ObservableObject
                             }
                         }
 
-
-                        // Now that we know the zip itself is not a known zip we will extract each DLL and import them.
                         using (var archive = ZipFile.OpenRead(importFile))
                         {
                             var zippedDlls = archive.Entries.Where(x => x.Name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)).ToArray();
@@ -683,10 +664,8 @@ public partial class LibraryPageModel : ObservableObject
                                     progressRun.Text = totalDllsProcessed.ToString(CultureInfo.CurrentCulture);
                                 });
 
-
                                 try
                                 {
-                                    // In future when DLLs will have multiple per bundle we will have to extract them all and pass them as a list.
                                     importResults.Add(DLLManager.Instance.ImportDll(tempFile, zippedDll.FullName));
                                 }
                                 catch (Exception err)
@@ -695,7 +674,6 @@ public partial class LibraryPageModel : ObservableObject
                                     importResults.Add(DLLImportResult.FromFail(zippedDll.FullName, err.Message));
                                 }
 
-                                // Clean up temp file.
                                 File.Delete(tempFile);
                             }
                         }
@@ -726,7 +704,6 @@ public partial class LibraryPageModel : ObservableObject
                 }
             }
 
-            // Clean up tempExtractPath if it exists
             if (Directory.Exists(tempExtractPath))
             {
                 try
@@ -885,7 +862,6 @@ public partial class LibraryPageModel : ObservableObject
                 return;
             }
 
-
             var filesProgressBar = new ProgressBar()
             {
                 IsIndeterminate = true
@@ -908,7 +884,6 @@ public partial class LibraryPageModel : ObservableObject
                     progressTextBlock,
                 }
             };
-
 
             var importingDialog = new EasyContentDialog(_libraryPage.XamlRoot)
             {
@@ -972,7 +947,6 @@ public partial class LibraryPageModel : ObservableObject
         }
     }
 
-
     [GeneratedRegex(@"^d6e9b45e-d4f6-4a84-a460-bf61decae3e8\/(?<asset_type>dlss|dlssg|dlssd)\/versions\/(?<version_packed>\d*)\/files\/160_E658700\.bin$", RegexOptions.IgnoreCase)]
     private static partial Regex IsNGXModelWeCanUse();
 
@@ -1017,9 +991,7 @@ public partial class LibraryPageModel : ObservableObject
                         continue;
                     }
 
-                    // We only give the option of 160_E658700.bin. Other files do exist.
-                    // 160 is from NV_GPU_ARCHITECTURE_ID of Turing GPUs. But it appears everyone has this for DLSS files.
-                    // As for what E658700, no idea.
+                    // This import path reads the DLSS model container 160_E658700.bin.
                     // https://github.com/SimonMacer/AnWave/issues/52#issuecomment-3025720063
                     // https://docs.nvidia.com/nvapi/group__gpu.html
                     if (content.Key.EndsWith("files/160_E658700.bin") == false)
@@ -1040,7 +1012,6 @@ public partial class LibraryPageModel : ObservableObject
                         "dlssg" => GameAssetType.DLSS_G,
                         _ => null,
                     };
-
 
                     if (gameAssetType == null)
                     {
@@ -1083,7 +1054,6 @@ public partial class LibraryPageModel : ObservableObject
                 return;
             }
         }
-
 
         if (availableModels.Count == 0)
         {
@@ -1171,7 +1141,6 @@ public partial class LibraryPageModel : ObservableObject
             return;
         }
 
-
         var totalFilesProgressBar = new ProgressBar()
         {
             IsIndeterminate = false,
@@ -1186,7 +1155,6 @@ public partial class LibraryPageModel : ObservableObject
         totalFilesTextBlock.Inlines.Add(new Run() { Text = ResourceHelper.GetString("LibraryPage_DownloadedCount"), FontWeight = FontWeights.Bold });
         var totalFilesProgressRun = new Run() { Text = "0" };
         totalFilesTextBlock.Inlines.Add(totalFilesProgressRun);
-
 
         var currentFileProgressBar = new ProgressBar()
         {
@@ -1316,7 +1284,6 @@ public partial class LibraryPageModel : ObservableObject
             }
         });
 
-
         if (cancellationTokenSource.IsCancellationRequested == false)
         {
             await DLLManager.Instance.SaveImportedManifestJsonAsync();
@@ -1366,7 +1333,6 @@ public partial class LibraryPageModel : ObservableObject
             {
                 if (record.LocalRecord.IsImported)
                 {
-                    // TODO: What to do here?
                     DLLManager.Instance.DeleteImportedDllRecord(record);
                     await DLLManager.Instance.SaveImportedManifestJsonAsync();
                 }
@@ -1425,7 +1391,6 @@ public partial class LibraryPageModel : ObservableObject
         var exportingDialog = new EasyContentDialog(_libraryPage.XamlRoot)
         {
             Title = ResourceHelper.GetString("LibraryPage_Exporting"),
-            // I would like this to be a progress ring but for some reason the ring will not show.
             Content = new ProgressRing()
             {
                 IsIndeterminate = true,
@@ -1458,7 +1423,6 @@ public partial class LibraryPageModel : ObservableObject
                 return;
             }
 
-           
             // This will likely not be seen, but keep it in case export is very slow (for example, over a network).
             _ = exportingDialog.ShowAsync();
 
@@ -1495,7 +1459,6 @@ public partial class LibraryPageModel : ObservableObject
             exportingDialog.Hide();
             Logger.Error(err);
 
-            // If the fullExpectedPath does not exist, or there was an error writing it.
             var dialog = new EasyContentDialog(_libraryPage.XamlRoot)
             {
                 Title = ResourceHelper.GetString("General_Error"),

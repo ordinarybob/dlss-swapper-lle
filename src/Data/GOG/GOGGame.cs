@@ -20,7 +20,6 @@ internal class GOGGame : Game
     [Ignore]
     public List<string> PotentialLocalHeaders { get; } = new List<string>();
 
-
     [Column("fallback_header_url")]
     public string FallbackHeaderUrl { get; set; } = string.Empty;
 
@@ -55,13 +54,7 @@ internal class GOGGame : Game
             return;
         }
 
-
-        // If we don't have a cover to download we can try get it from various search APIs.
-        // Some games are not found here (eg. Warecraft III) and instead will fallback
-        // to using the direct product loading below. Unfortuantly using the product
-        // endpoint does not contain boxart image urls so the images are not really
-        // what we want, but at least there is images.
-
+        // Prefer catalog box art; the product endpoint provides fallback images.
 
         try
         {
@@ -103,66 +96,8 @@ internal class GOGGame : Game
         catch (Exception err)
         {
             Logger.Error(err);
-            //DebuggerHelper.BreakIfAttached();
         }
 
-
-        // If catalog failed fall back to embeded search.
-        /*
-        try
-        {
-            var url = "https://embed.gog.com/games/ajax/filtered?mediaType=game&search=" + Uri.EscapeDataString(Title);
-
-            var fileDownloader = new FileDownloader(url);
-            using (var memoryStream = new MemoryStream())
-            {
-                await fileDownloader.DownloadFileToStreamAsync(memoryStream);
-                memoryStream.Position = 0;
-
-                var embedFilteredResponse = await JsonSerializer.DeserializeAsync(
-                    memoryStream,
-                    SourceGenerationContext.Default.GOGEmbedFilteredResponse).ConfigureAwait(false);
-                if (embedFilteredResponse is null)
-                {
-                    throw new Exception($"Could not deserialize GOGEmbedFilteredResponse for url, {url}");
-                }
-
-                if (embedFilteredResponse.Products.Length == 0)
-                {
-                    throw new Exception($"Could not find any GOGEmbedFilteredProducts for url, {url}");
-                }
-
-                foreach (var product in embedFilteredResponse.Products)
-                {
-                    if (product.Id.ToString().Equals(PlatformId, StringComparison.OrdinalIgnoreCase) == false)
-                    {
-                        continue;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(product.BoxImage) == false)
-                    {
-                        await DownloadCoverAsync($"https:{product.BoxImage}_glx_vertical_cover.webp").ConfigureAwait(false);
-                        return;
-                    }
-                    else if (string.IsNullOrWhiteSpace(product.Image) == false)
-                    {
-                        await DownloadCoverAsync($"https:{product.Image}_glx_vertical_cover.webp").ConfigureAwait(false);
-                        return;
-                    }
-                }
-            }
-
-        }
-        catch (Exception err)
-        {
-            Logger.Error(err);
-            //DebuggerHelper.BreakIfAttached();
-        }
-        */
-
-
-        // If we got here then we did not find the game in search. We can load from the product endpoint
-        // But doing this the cover image is likely not what we want.
         try
         {
             var url = "https://api.gog.com/products/" + PlatformId;

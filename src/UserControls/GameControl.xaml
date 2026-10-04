@@ -34,7 +34,6 @@
         <converters:NullableBoolToObjectConverter x:Key="HideGameGlyphConverter" NullValue="&#xE7B3;" FalseValue="&#xE7B3;" TrueValue="&#xED1A;"  />
         <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         <converters:NullToInverseVisibilityConverter x:Key="NullToInverseVisibilityConverter" />
-        
 
         <Style x:Key="CompactFooterIconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
             <Setter Property="Width" Value="40" />
@@ -112,14 +111,6 @@
                             <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xE81C;"/>
                         </Button.Content>
                     </Button>
-
-                    <!--
-                    <Button ToolTipService.ToolTip="{Binding TranslationProperties.ResetAllText, Mode=OneWay}" Command="{Binding ResetAllCommand}">
-                        <Button.Content>
-                            <FontIcon Style="{StaticResource SagoeFluentIconsFontIcon}" Glyph="&#xED62;"/>
-                        </Button.Content>
-                    </Button>
-                    -->
 
                     <Button
                         Style="{StaticResource CompactFooterIconButtonStyle}"
@@ -256,9 +247,7 @@
                 Visibility="Collapsed">
                 <Grid Width="200" Height="300" CornerRadius="8"  BorderThickness="1" ColumnSpacing="0" RowSpacing="0" Margin="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
 
-                    <!-- Padding="{ThemeResource ContentDialogPadding}" -->
-
-                    <!-- Weird, but allows image to strecth centered rather than left align -->
+            <!-- Keep stretched cover images centered. -->
                     <Border BorderThickness="0" Width="200" Height="300" FlowDirection="LeftToRight">
                         <Border.RenderTransform>
                             <CompositeTransform ScaleX="1" />
@@ -336,7 +325,6 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <!-- // NOTE: DLL type -->
                         <StackPanel Orientation="Horizontal" Padding="0" Spacing="6" Grid.Column="0" Grid.Row="0">
                             <TextBlock Text="{x:Bind data:DLLManager.Instance.GetAssetTypeName(data:GameAssetType.DLSS)}" FontWeight="Bold" VerticalAlignment="Center" Margin="0" Padding="0" />
                             <Button Style="{StaticResource TextBlockButtonStyle}" Visibility="{x:Bind ViewModel.Game.MultipleDLSSFound, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" Command="{Binding MultipleDLLsFoundCommand}" CommandParameter="{x:Bind data:GameAssetType.DLSS}" Padding="0" ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.MultipleDllsFoundText, Mode=OneWay}">
@@ -385,7 +373,6 @@
                             </Button>
                         </Grid>
 
-
                         <StackPanel Orientation="Horizontal" Padding="0" Spacing="6" Grid.Column="0" Grid.Row="3">
                             <TextBlock Text="{x:Bind data:DLLManager.Instance.GetAssetTypeName(data:GameAssetType.DLSS_D)}" FontWeight="Bold" />
                             <Button Style="{StaticResource TextBlockButtonStyle}" Visibility="{x:Bind ViewModel.Game.MultipleDLSSDFound, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" Command="{Binding MultipleDLLsFoundCommand}" CommandParameter="{x:Bind data:GameAssetType.DLSS_D}" Padding="0" ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.MultipleDllsFoundText, Mode=OneWay}">
@@ -413,8 +400,6 @@
                             </Button>
                         </StackPanel>
 
-
-
                         <Grid Grid.Column="1" Grid.Row="4" HorizontalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -435,9 +420,6 @@
                             </Button>
                         </Grid>
 
-
-
-
                         <StackPanel Orientation="Horizontal" Padding="0" Spacing="6" Grid.Column="0" Grid.Row="6" >
                             <TextBlock Text="{x:Bind data:DLLManager.Instance.GetAssetTypeName(data:GameAssetType.DLSS_G)}" FontWeight="Bold" />
                             <Button Style="{StaticResource TextBlockButtonStyle}" Visibility="{x:Bind ViewModel.Game.MultipleDLSSGFound, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" Command="{Binding MultipleDLLsFoundCommand}" CommandParameter="{x:Bind data:GameAssetType.DLSS_G}" Padding="0" ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.MultipleDllsFoundText, Mode=OneWay}">
@@ -456,7 +438,6 @@
                             </DropDownButton.Content>
                         </DropDownButton>
 
-
                         <StackPanel Grid.Column="1" Grid.Row="6" Spacing="6" Orientation="Horizontal">
                             <TextBlock Text="{x:Bind ViewModel.TranslationProperties.DLSSGPresetText, Mode=OneWay}" FontWeight="Bold"/>
                             <Button Style="{StaticResource TextBlockButtonStyle}" Visibility="{x:Bind ViewModel.CanSelectDlssGPreset, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" Command="{Binding DLSSPresetInfoCommand}" Padding="0" ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.DLSSPresetInfoTooltipText, Mode=OneWay}">
@@ -465,7 +446,6 @@
                                 </Button.Content>
                             </Button>
                         </StackPanel>
-
 
                         <Grid Grid.Column="1" Grid.Row="7" HorizontalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
@@ -487,11 +467,7 @@
                             </Button>
                         </Grid>
 
-
-
-
                     </Grid>
-
 
                     <Grid HorizontalAlignment="Stretch" ColumnSpacing="16" RowSpacing="4" Padding="0,20,0,0">
                         <Grid.ColumnDefinitions>
@@ -522,7 +498,6 @@
                             </DropDownButton.Content>
                         </DropDownButton>
 
-
                         <StackPanel Orientation="Horizontal" Padding="0" Spacing="6" Grid.Column="1" Grid.Row="0">
                             <TextBlock Text="{x:Bind data:DLLManager.Instance.GetAssetTypeName(data:GameAssetType.FSR_31_VK)}" FontWeight="Bold" />
                             <Button Style="{StaticResource TextBlockButtonStyle}" Visibility="{x:Bind ViewModel.Game.MultipleFSR31VKFound, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" Command="{Binding MultipleDLLsFoundCommand}" CommandParameter="{x:Bind data:GameAssetType.FSR_31_VK}" Padding="0" ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.MultipleDllsFoundText, Mode=OneWay}">
@@ -542,7 +517,6 @@
                         </DropDownButton>
 
                     </Grid>
-
 
                     <Grid HorizontalAlignment="Stretch" ColumnSpacing="16" RowSpacing="4" Padding="0,20,0,0">
                         <Grid.ColumnDefinitions>
@@ -576,7 +550,6 @@
                             </DropDownButton.Content>
                         </DropDownButton>
 
-
                         <StackPanel Orientation="Horizontal" Padding="0" Spacing="6" Grid.Column="1" Grid.Row="0">
                             <TextBlock Text="{x:Bind data:DLLManager.Instance.GetAssetTypeName(data:GameAssetType.XeSS_FG)}" FontWeight="Bold" />
                             <Button Style="{StaticResource TextBlockButtonStyle}" Visibility="{x:Bind ViewModel.Game.MultipleXeSSFGFound, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" Command="{Binding MultipleDLLsFoundCommand}" CommandParameter="{x:Bind data:GameAssetType.XeSS_FG}" Padding="0" ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.MultipleDllsFoundText, Mode=OneWay}">
@@ -595,7 +568,6 @@
                             </DropDownButton.Content>
                         </DropDownButton>
 
-
                         <StackPanel Orientation="Horizontal" Padding="0" Spacing="6" Grid.Column="0" Grid.Row="3">
                             <TextBlock Text="{x:Bind data:DLLManager.Instance.GetAssetTypeName(data:GameAssetType.XeSS_DX11)}" FontWeight="Bold" />
                             <Button Style="{StaticResource TextBlockButtonStyle}" Visibility="{x:Bind ViewModel.Game.MultipleXeSSDX11Found, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" Command="{Binding MultipleDLLsFoundCommand}" CommandParameter="{x:Bind data:GameAssetType.XeSS_DX11}" Padding="0" ToolTipService.ToolTip="{x:Bind ViewModel.TranslationProperties.MultipleDllsFoundText, Mode=OneWay}">
@@ -612,7 +584,6 @@
                                 </StackPanel>
                             </DropDownButton.Content>
                         </DropDownButton>
-
 
                         <StackPanel Orientation="Horizontal" Padding="0" Spacing="6" Grid.Column="1" Grid.Row="3">
                             <TextBlock Text="{x:Bind data:DLLManager.Instance.GetAssetTypeName(data:GameAssetType.XeLL)}" FontWeight="Bold" />

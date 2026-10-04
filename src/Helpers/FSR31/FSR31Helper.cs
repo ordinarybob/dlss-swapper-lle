@@ -148,7 +148,7 @@ internal class FSR31Helper
 
     public static string GetLatestVersion(string dllPath)
     {
-        // We really assume these are coming in with the latest version first.
+        // Version IDs are expected in newest-first order.
         var versions = GetVersions(dllPath);
         foreach (var version in versions)
         {

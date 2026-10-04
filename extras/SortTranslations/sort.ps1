@@ -10,12 +10,10 @@ foreach ($file in $reswFiles)
     [xml]$xml = Get-Content $file.FullName   
     $dataNodes = $xml.root.data | Sort-Object { $_.name }
 
-    # Remove each data node
     foreach ($node in $xml.root.data) {
         $xml.root.RemoveChild($node) | Out-Null
     }
 
-    # Add each data node back in from our sorted list
     foreach ($node in $dataNodes)
     {
         $importedNode = $xml.ImportNode($node, $true)

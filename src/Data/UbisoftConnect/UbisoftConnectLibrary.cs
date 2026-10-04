@@ -28,7 +28,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
         internal string InstallPath { get; init; } = string.Empty;
     }
 
-
     public GameLibrary GameLibrary => GameLibrary.UbisoftConnect;
     public string Name => "Ubisoft Connect";
 
@@ -52,7 +51,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
         return string.IsNullOrEmpty(GetInstallPath()) == false;
     }
 
-
     public async Task<List<Game>> ListGamesAsync(bool forceNeedsProcessing = false)
     {
         var games = new List<Game>();
@@ -64,10 +62,7 @@ internal class UbisoftConnectLibrary : IGameLibrary
 
         var cachedGames = GameManager.Instance.GetGames<UbisoftConnectGame>();
 
-        // Gat a list of installed games.
-        // NOTE: Some games are installed from Ubisoft Connect via Steam (eg. Far Cry: Blood Dragon)
-        // Those titles will show up in the Steam games list.
-        // Ironically Ubisoft Connect may show double gamess listed here if you do indeed own it from uplay/ubisoft connect and from 3rd party stores.
+        // Steam-owned Ubisoft titles are discovered by Steam; Ubisoft-owned copies may also appear here.
         var installedTitles = new Dictionary<int, UbisoftGameRegistryRecord>();
         try
         {
@@ -75,7 +70,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
             {
                 using (var ubisoftConnectInstallsKey = hklm.OpenSubKey(@"SOFTWARE\Ubisoft\Launcher\Installs"))
                 {
-                    // if ubisoftConnectRegistryKey is null then Ubisoft is not installed .
                     if (ubisoftConnectInstallsKey is null)
                     {
                         throw new Exception("Could not detect ubisoftConnectInstallsKey.");
@@ -84,7 +78,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
                     var subKeyNames = ubisoftConnectInstallsKey.GetSubKeyNames();
                     foreach (var subKeyName in subKeyNames)
                     {
-                        // Only use the subKeyName that is a number (which is the installId.
                         if (Int32.TryParse(subKeyName, out var installId))
                         {
                             using (var ubisoftConnectInstallDirKey = ubisoftConnectInstallsKey.OpenSubKey(subKeyName))
@@ -115,7 +108,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
             return games;
         }
 
-        // Could not detect any installed games.
         if (installedTitles.Count == 0)
         {
             Logger.Info("Unable to load any Ubisoft Connect games, maybe none are installed?");
@@ -140,7 +132,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
             .Build();
 
         // Load data from the configurations file. This is the data the game+dlc that the user has access.
-        // Not sure what happens if you are on a shared PC.
         var configurationFileData = await File.ReadAllBytesAsync(configurationPath).ConfigureAwait(false);
 
         // This file contains multiple game records separated by a custom header.
@@ -149,7 +140,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
         var configurationRecords = ParseConfiguration(configurationFileData);
         foreach (var configurationRecord in configurationRecords)
         {
-            // Only bother trying to read the game data if the install list
             if (installedTitles.TryGetValue(configurationRecord.InstallId, out var installedTitle))
             {
                 // Read the YAML record directly from the source buffer without copying it.
@@ -172,29 +162,17 @@ internal class UbisoftConnectLibrary : IGameLibrary
                                 continue;
                             }
 
-                            // Unsure if we care about version at the moment.
-                            /*
-                            if (ubisoftConnectConfigurationItem.Version != "2.0")
-                            {
-                                // If Version isn't 2.0 we will just not load any games.
-                                Logger.Error($"Unknown item version. Expected 2.0, found {ubisoftConnectConfigurationItem.Version}");
-                                continue;
-                            }
-                            */
-
                             // This can be expected. If there is no installer item there is no game to install.
                             if (ubisoftConnectConfigurationItem.Root.Installer is null)
                             {
                                 continue;
                             }
 
-                            // This is not expected.
                             if (ubisoftConnectConfigurationItem.Root.StartGame is null)
                             {
                                 Logger.Info($"StartGameNode is null for {ubisoftConnectConfigurationItem.Root.Installer.GameIdentifier}. This is likely a region specific installer.");
                                 continue;
                             }
-
 
                             var remoteImage = DiscoveryMetadata.UbisoftThumbnail(
                                 ubisoftConnectConfigurationItem.Root.ThumbImage,
@@ -251,7 +229,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
         // Delete games that are no longer loaded, they are likely uninstalled
         foreach (var cachedGame in cachedGames)
         {
-            // Game is to be deleted.
             if (games.Contains(cachedGame) == false)
             {
                 await cachedGame.DeleteAsync();
@@ -274,7 +251,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
             {
                 using (var ubisoftConnectRegistryKey = hklm.OpenSubKey(@"SOFTWARE\Ubisoft\Launcher"))
                 {
-                    // if ubisoftConnectRegistryKey is null then Ubisoft Connect is not installed.
                     if (ubisoftConnectRegistryKey is null)
                     {
                         return string.Empty;
@@ -335,8 +311,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
                 var global_offset_tmp = globalOffset;
                 globalOffset += objectSize + headerSize;
 
-
-
                 if (globalOffset < configurationContent.Length && configurationContent[globalOffset] != 0x0A)
                 {
                     var result = ParseConfigurationHeader(data, true);
@@ -392,10 +366,8 @@ internal class UbisoftConnectLibrary : IGameLibrary
 
             offset += 1; // skip 0x08
 
-            // look for launch_id
             multiplier = 1;
             var launchId = 0;
-
 
             while (header[offset] != 0x10 || header[offset + 1] == 0x10)
             {
@@ -421,7 +393,6 @@ internal class UbisoftConnectLibrary : IGameLibrary
             launchId2 = ConvertData(launchId2);
 
             // if object size is smaller than 128b, there might be a chance that secondary size will not occupy 2b
-            //if record_size - offset < 128 <= record_size:
             if (recordSize - offset < 128 && 120 <= recordSize)
             {
                 tmpSize -= 1;
@@ -434,9 +405,7 @@ internal class UbisoftConnectLibrary : IGameLibrary
         catch (Exception err)
         {
             Logger.Warning($"ParseConfigurationHeader Error: {err.Message}");
-            // something went horribly wrong, do not crash it,
-            // just return 0s, this way it will be handled later in the code
-            // 10 is to step a little in configuration file in order to find next game
+            // Skip ten bytes after a malformed record so the caller can search for the next header.
             return (0, 0, 0, 10);
         }
     }

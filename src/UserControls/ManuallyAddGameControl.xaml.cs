@@ -20,7 +20,6 @@ public partial class ManuallyAddGameControl : UserControl
         DataContext = ViewModel;
     }
 
-
     string[] customCoverValidFileTypes = new string[]
     {
             ".png",
@@ -34,17 +33,15 @@ public partial class ManuallyAddGameControl : UserControl
 
     async void CoverButton_DragEnter(object sender, DragEventArgs e)
     {
-        // This thing likes to break so I took the advice from this thread https://github.com/microsoft/microsoft-ui-xaml/issues/8108
+        // DragOver reapplies the result after async validation completes.
+        // See https://github.com/microsoft/microsoft-ui-xaml/issues/8108
 
-        // Default to this.
         coverDragDropAcceptedOperation = DataPackageOperation.None;
         coverDragDropDragUIOverrideCaption = string.Empty;
 
         e.AcceptedOperation = coverDragDropAcceptedOperation;
         e.DragUIOverride.Caption = coverDragDropDragUIOverrideCaption;
 
-        // This await messes things up. So what we do is also handle in CoverButton_DragOver which will have hopefully
-        // mean this code is finished by then.
         var items = await e.DataView.GetStorageItemsAsync();
         if (items.Count == 1)
         {

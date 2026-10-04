@@ -36,8 +36,7 @@ public class WindowPositionRect
         Height = other.Height;
         State = other.State;
 
-        // LEGACY: Restore broken windows to correct positions.
-        // -32000 is some magic number were windows go to die.
+        // Repair legacy positions saved at Windows' minimized-window coordinates.
         if (X == -32000)
         {
             X = 0;
@@ -59,9 +58,7 @@ public class WindowPositionRect
 
     public RectInt32 GetRectInt32()
     {
-        // LEGACY: Restore broken windows to correct positions.
-        // -32000 is some magic number were windows go to die.
-        // This is to help apps that are already broken to show the main window again.
+        // Repair legacy positions saved at Windows' minimized-window coordinates.
         if (X == -32000)
         {
             X = 0;

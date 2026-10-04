@@ -10,7 +10,6 @@ public struct ffxApiHeader
     public IntPtr pNext; ///< Pointer to next structure, used for optional parameters and extensions. Can be null.
 }
 
-
 [StructLayout(LayoutKind.Sequential)]
 public struct QueryDescGetVersions
 {
@@ -20,7 +19,6 @@ public struct QueryDescGetVersions
     public IntPtr outputCount;      ///< Input capacity of id and name arrays. Output number of returned versions. If initially zero, output is number of available versions.
     public IntPtr versionIds;       ///< Output array of version ids to be used as version overrides. If null, only names and count are returned.
     public IntPtr versionNames;  ///< Output array of version names for display. If null, only ids and count are returned. If both this and versionIds are null, only count is returned.
-    //public byte[]? versionNames;  ///< Output array of version names for display. If null, only ids and count are returned. If both this and versionIds are null, only count is returned.
 
     public QueryDescGetVersions()
     {
@@ -30,7 +28,6 @@ public struct QueryDescGetVersions
         };
     }
 };
-
 
 public enum FfxApiReturnCodes
 {
@@ -42,7 +39,6 @@ public enum FfxApiReturnCodes
     FFX_API_RETURN_ERROR_MEMORY = 5, ///< A memory allocation failed.
     FFX_API_RETURN_ERROR_PARAMETER = 6, ///< A parameter was invalid, e.g. a null pointer, empty resource or out-of-bounds enum value.
 };
-
 
 public class FxxConsts
 {

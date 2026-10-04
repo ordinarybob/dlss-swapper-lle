@@ -137,7 +137,6 @@ public sealed partial class NetworkTesterWindowModel : ObservableObject, IDispos
     {
         _weakWindow = new WeakReference<NetworkTesterWindow>(window);
         
-        // Initialize FlowDirection based on current language
         UpdateFlowDirection();
         
         WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(
@@ -644,7 +643,6 @@ public sealed partial class NetworkTesterWindowModel : ObservableObject, IDispos
             RunningTest8 = false;
         }
     }
-
 
     [RelayCommand]
     async Task RunTest10Async()

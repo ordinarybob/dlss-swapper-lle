@@ -31,7 +31,6 @@ public class GameAsset : IEquatable<GameAsset>
     {
         get
         {
-            // return cached version.
             if (string.IsNullOrWhiteSpace(_displayVersion) == false)
             {
                 return _displayVersion;
@@ -67,7 +66,6 @@ public class GameAsset : IEquatable<GameAsset>
                     return _displayVersion;
                 }
 
-                // If this isn't loaded we fall back to the existing stuff.
             }
 
             var version = Version.AsSpan();
@@ -207,7 +205,6 @@ public class GameAsset : IEquatable<GameAsset>
 
     public GameAsset? GetBackup()
     {
-        // NOTE: DLL type
         var backypType = AssetType switch
         {
             GameAssetType.DLSS => GameAssetType.DLSS_BACKUP,

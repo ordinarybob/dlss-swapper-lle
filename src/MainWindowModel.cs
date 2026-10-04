@@ -24,7 +24,6 @@ public partial class MainWindowModel : ObservableObject
 
     public MainWindowModel()
     {
-        // Initialize FlowDirection based on current language
         UpdateFlowDirection();
         
         WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(

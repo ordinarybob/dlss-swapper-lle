@@ -47,29 +47,11 @@ internal class EpicGamesStoreLibrary : IGameLibrary
 
         var cachedGames = GameManager.Instance.GetGames<EpicGamesStoreGame>();
 
-        // Appears we may not need data from LauncherInstalled.dat if we just parse files in EpicGamesLauncher\Data\Manifests instead
-        /*
-        // Check the launcher installed file exists.
-        var launcherInstalledFile = Path.Combine(epicRootDirectory, "UnrealEngineLauncher", "LauncherInstalled.dat");
-        if (File.Exists(launcherInstalledFile) == false)
-        {
-            return games;
-        }
-
-        var launcherInstalledJsonData = await File.ReadAllTextAsync(launcherInstalledFile).ConfigureAwait(false);
-        var launcherInstalledData = JsonSerializer.Deserialize<LauncherInstalled>(launcherInstalledJsonData);
-        if (launcherInstalledData?.InstallationList?.Any() != true)
-        {
-            return games;
-        }
-        */
-
         var manifestsDirectory = Path.Combine(epicRootDirectory, "EpicGamesLauncher", "Data", "Manifests");
         if (Directory.Exists(manifestsDirectory) == false)
         {
             return games;
         }
-
 
         var cacheItemsDictionary = new Dictionary<string, CacheItem>();
         var catalogCacheFile = Path.Combine(epicRootDirectory, "EpicGamesLauncher", "Data", "Catalog", "catcache.bin");
@@ -96,8 +78,6 @@ internal class EpicGamesStoreLibrary : IGameLibrary
             }
         }
 
-
-
         var foundManifestFiles = Directory.GetFiles(manifestsDirectory, "*.item");
         foreach (var manifestFile in foundManifestFiles)
         {
@@ -106,24 +86,16 @@ internal class EpicGamesStoreLibrary : IGameLibrary
                 var manifestJsonData = await File.ReadAllTextAsync(manifestFile).ConfigureAwait(false);
                 var manifest = JsonSerializer.Deserialize(manifestJsonData, SourceGenerationContext.Default.ManifestFile);
 
-                // Check that it is a game.
                 if (manifest?.AppCategories.Contains("games") != true)
                 {
                     continue;
                 }
-
-                // Check that is is the base game
-                //if (string.IsNullOrWhiteSpace(manifest.MainGameAppName) == false)
-                //{
-                //    continue;
-                //}
 
                 var remoteHeaderUrl = string.Empty;
                 if (cacheItemsDictionary.TryGetValue(manifest.CatalogItemId, out var cacheItem))
                 {
                     if (cacheItem.KeyImages?.Length > 0)
                     {
-                        // Try get desired image.
                         var dieselGameBoxTall = cacheItem.KeyImages.FirstOrDefault(x => x.Type == "DieselGameBoxTall");
                         if (dieselGameBoxTall is not null && string.IsNullOrEmpty(dieselGameBoxTall.Url) == false)
                         {
@@ -131,7 +103,6 @@ internal class EpicGamesStoreLibrary : IGameLibrary
                         }
                         else
                         {
-                            // Then fallback image.
                             var dieselGameBox = cacheItem.KeyImages.FirstOrDefault(x => x.Type == "DieselGameBox");
                             if (dieselGameBox is not null && string.IsNullOrEmpty(dieselGameBox.Url) == false)
                             {
@@ -140,7 +111,6 @@ internal class EpicGamesStoreLibrary : IGameLibrary
                         }
                     }
                 }
-
 
                 var cachedGame = GameManager.Instance.GetGame<EpicGamesStoreGame>(manifest.CatalogItemId);
                 var activeGame = cachedGame ?? new EpicGamesStoreGame(manifest.CatalogItemId);
@@ -188,7 +158,6 @@ internal class EpicGamesStoreLibrary : IGameLibrary
         // Delete games that are no longer loaded, they are likely uninstalled
         foreach (var cachedGame in cachedGames)
         {
-            // Game is to be deleted.
             if (games.Contains(cachedGame) == false)
             {
                 await cachedGame.DeleteAsync();

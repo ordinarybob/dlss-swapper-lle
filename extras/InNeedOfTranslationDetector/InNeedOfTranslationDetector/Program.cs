@@ -30,7 +30,6 @@ var filesToIgnore = new List<string>()
     "Converters\\DLSSStateVisibilityConverter.cs",
 };
 
-
 #region Xaml checking
 var allXamlFiles = Directory.GetFiles(srcDirectory, "*.xaml", SearchOption.AllDirectories).Where(file => file.Contains("\\obj\\") == false && file.Contains("\\bin\\") == false).ToList();
 
@@ -105,19 +104,14 @@ foreach (var xamlFile in allXamlFiles)
 
 #endregion
 
-
 #region C# checking
 
 var allCSharpFiles = Directory.GetFiles(srcDirectory, "*.cs", SearchOption.AllDirectories).Where(file => file.Contains("\\obj\\") == false && file.Contains("\\bin\\") == false).ToList();
 
 var csharpRegexes = new List<Regex>()
 {
-    //new Regex(@"Text = ""([^""{][^""]*)"""),
-    //new Regex(@"Content = ""([^""{][^""]*)"""),
     new Regex(@"(\s*)=(\s*)""([^""{][^""]*)"""),
     new Regex(@"(\s*)=(\s*)\$""([^""{][^""]*)"""),
-    //new Regex(@"(?<![=])\s*=\s*(?![=])\s*([$@]*)""(([^""\\]|\\.|"""")*)""", RegexOptions.Compiled),
-    //new Regex("\"([^\"\\\\]*(\\\\.[^\"\\\\]*)*)\"\r\n")
 };
 
 var ignoredCSharpMatches = new List<string>()
@@ -256,7 +250,6 @@ var ignoredCSharpMatches = new List<string>()
 	" = \"http://s3.amazonaws.com/doc/2006-03-01/\"",
 	" = \"-\"",
 };
-
 
 var getStringRegexes = new List<Regex>()
 {
@@ -429,10 +422,8 @@ foreach ((var file, var matches) in keyResults)
     Console.WriteLine();
 }
 
-
 Console.WriteLine($"Found {xamlInstancesCount} xaml instances across {xamlFilesCount} files.");
 Console.WriteLine($"Found {csharpInstancesCount} cs instances across {csharpFilesCount} files.");
 Console.WriteLine($"Found {unprefixedKeysCount} unprefixed keys.");
-
 
 return 0;

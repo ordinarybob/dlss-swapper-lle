@@ -29,7 +29,6 @@
         <Grid Grid.Row="0" Grid.ColumnSpan="2" Padding="56,2,8,0">
             <TextBlock Text="{x:Bind ViewModel.TranslationProperties.LicencesAndAcknowledgementsText, Mode=OneWay}" TextWrapping="NoWrap" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
 
-            <!-- Needed to achieve parity in the looking with other pages -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <AppBarButton Label="" IsEnabled="False"/>
             </StackPanel>

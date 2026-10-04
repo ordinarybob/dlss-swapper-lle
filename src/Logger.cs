@@ -53,7 +53,7 @@ internal static class Logger
 
     public static void ChangeLoggingLevel(LoggingLevel loggingLevel)
     {
-        // Off is secretly fatal as I don't know how to turn off logging :|
+        // Off suppresses routine messages but retains fatal errors.
         levelSwitch.MinimumLevel = Settings.Instance.LoggingLevel switch
         {
             LoggingLevel.Verbose => LogEventLevel.Verbose,
@@ -64,7 +64,6 @@ internal static class Logger
             _ => LogEventLevel.Fatal,
         };
     }
-
 
     public static void Verbose(string message, [CallerMemberName] string? memberName = null, [CallerFilePath] string? sourceFilePath = null, [CallerLineNumber] int sourceLineNumber = 0)
     {
@@ -102,7 +101,6 @@ internal static class Logger
             Log.Error(FormatLine($"{message}\n{exception}\n{exception.StackTrace}", memberName, sourceFilePath, sourceLineNumber));
         }
     }
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static string FormatLine(string message, string? memberName, string? sourceFilePath, int sourceLineNumber)

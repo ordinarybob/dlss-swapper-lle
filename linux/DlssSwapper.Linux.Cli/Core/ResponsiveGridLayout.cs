@@ -1,11 +1,6 @@
 namespace DlssSwapper.Linux.Cli.Core;
 
-/// <summary>
-/// Mirrors the Windows checkpoint's viewport-driven 2:3 card layout. A single
-/// 1-10 card-size setting chooses an approximate target size, width fill is
-/// authoritative, and one physical pixel is retained to prevent the final
-/// card from wrapping at fractional display scales.
-/// </summary>
+/// <summary>Linux adapter for the shared card-grid layout.</summary>
 internal static class ResponsiveGridLayout
 {
     internal const double ContainerChrome = DlssSwapper.Shared.ResponsiveGridLayout.HorizontalContainerChrome;

@@ -56,7 +56,6 @@ internal class XboxLibrary : IGameLibrary
         var drives = DriveInfo.GetDrives();
         foreach (var drive in drives)
         {
-            // Skip network drives and CDRom drives.
             if (drive.DriveType == DriveType.Unknown || drive.DriveType == DriveType.Network || drive.DriveType == DriveType.CDRom)
             {
                 continue;
@@ -66,15 +65,13 @@ internal class XboxLibrary : IGameLibrary
             if (File.Exists(gamingRootFile))
             {
                 var fileBytes = await File.ReadAllBytesAsync(gamingRootFile).ConfigureAwait(false);
-                // Validate file header.
-                //RGBX
+                // The binary header spells RGBX.
                 if (fileBytes.Length > 5 && fileBytes[0] == 'R' && fileBytes[1] == 'G' && fileBytes[2] == 'B' && fileBytes[3] == 'X')
                 {
                     var stringBuilder = new StringBuilder();
                     stringBuilder.Append(drive.RootDirectory.FullName);
                     for (var i = 5; i < fileBytes.Length; i++)
                     {
-                        // Ignore bytes that are 0
                         if (fileBytes[i] != 0)
                         {
                             stringBuilder.Append((char)fileBytes[i]);
@@ -110,7 +107,6 @@ internal class XboxLibrary : IGameLibrary
                                     Logger.Error($"Unknown configVersion in {configFile}, {configVersion.Value}");
                                     continue;
                                 }
-
 
                                 var identityNode = gameNode.SelectSingleNode("Identity");
                                 if (identityNode is null)
@@ -184,14 +180,12 @@ internal class XboxLibrary : IGameLibrary
                 continue;
             }
 
-            // Filter out frameworks and resource packages first
             if (package.IsFramework || package.IsResourcePackage)
             {
                 continue;
             }
 
             var packageName = package.Id?.Name ?? string.Empty;
-
 
             if (string.IsNullOrWhiteSpace(packageName) == false && gameNamesToFindPackages.TryGetValue(packageName, out var localCoverImages))
             {
@@ -201,13 +195,11 @@ internal class XboxLibrary : IGameLibrary
                     continue;
                 }
 
-                // Does the install path exist?
                 if (Directory.Exists(package.InstalledPath) == false)
                 {
                     continue;
                 }
 
-                // Does the product have appEntries?
                 var appEntries = await package.GetAppListEntriesAsync();
                 if (appEntries.Count == 0)
                 {
@@ -224,7 +216,7 @@ internal class XboxLibrary : IGameLibrary
                         activeGame.IsHidden = true;
                     }
 
-                    activeGame.Title = package.DisplayName;  // TODO: Will this be a problem if the game is already loaded
+                    activeGame.Title = package.DisplayName;
                     activeGame.InstallPath = PathHelpers.NormalizePath(package.InstalledPath);
 
                     if (activeGame.IsInIgnoredPath())
@@ -241,7 +233,6 @@ internal class XboxLibrary : IGameLibrary
                     activeGame.LoadApplicationId();
 
                     await activeGame.SetLocalHeaderImagesAsync(localCoverImages);
-                    //await game.UpdateCacheImageAsync();
                     await activeGame.SaveToDatabaseAsync();
 
                     // If the game is not from cache, force processing
@@ -268,7 +259,6 @@ internal class XboxLibrary : IGameLibrary
         // Delete games that are no longer loaded, they are likely uninstalled
         foreach (var cachedGame in cachedGames)
         {
-            // Game is to be deleted.
             if (games.Contains(cachedGame) == false)
             {
                 await cachedGame.DeleteAsync();

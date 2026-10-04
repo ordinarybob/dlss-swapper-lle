@@ -6,7 +6,6 @@ namespace DLSS_Swapper.UserControls;
 
 public class GameFilterControlViewModelTranslationProperties : LocalizedViewModelBase
 {
-    //public GameFilterControlViewModelTranslationProperties() : base() { }
 
     [TranslationProperty]
     public string OptionsText => $"{ResourceHelper.GetString("General_Options")}:";

@@ -37,7 +37,6 @@ internal partial class BattleNetLibrary : IGameLibrary
     [GeneratedRegex(@"^(agent|agent_beta|beta|battle\.net|wow.*)$", RegexOptions.IgnoreCase)]
     private static partial Regex IgnoredGameIdRegex();
 
-
     private BattleNetLibrary()
     {
         var allUsersProfile = Environment.GetEnvironmentVariable("ALLUSERSPROFILE");
@@ -215,7 +214,6 @@ internal partial class BattleNetLibrary : IGameLibrary
                             activeGame.Title = aggregate.Name;
                         }
 
-                        // Set the cover photo.
                         activeGame.RemoteCoverImage = aggregate.LogoArtUri;
                     }
                     else
@@ -271,7 +269,6 @@ internal partial class BattleNetLibrary : IGameLibrary
         // Delete games that are no longer loaded, they are likely uninstalled
         foreach (var cachedGame in cachedGames)
         {
-            // Game is to be deleted.
             if (games.Contains(cachedGame) == false)
             {
                 await cachedGame.DeleteAsync().ConfigureAwait(false);

@@ -4,9 +4,6 @@ using System.Text.Json;
 
 namespace DLSS_Swapper;
 
-// TODO: Test portable app.
-// TODO: Clean portable temp path on launch
-
 /*
  * For notes on where data is stored please see https://github.com/beeradmoore/dlss-swapper/wiki/Local-Data-Structure 
  */
@@ -14,22 +11,17 @@ static class Storage
 {
     static string? _storagePath;
 #if   PORTABLE && DEBUG
-    //public static string StoragePath => _storagePath ??= Path.Combine(AppContext.BaseDirectory, "StoredData", "DEBUG", Guid.NewGuid().ToString());
     public static string StoragePath => _storagePath ??= Path.Combine(AppContext.BaseDirectory, "StoredData", "DEBUG");
 #elif PORTABLE && !DEBUG
     public static string StoragePath => _storagePath ??= Path.Combine(AppContext.BaseDirectory, "StoredData");
 #elif !PORTABLE && DEBUG
-    //public static string StoragePath => _storagePath ??= Path.Combine(Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%"), "DLSS Swapper", "DEBUG", Guid.NewGuid().ToString());
     public static string StoragePath => _storagePath ??= Path.Combine(Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%"), "DLSS Swapper", "DEBUG");
 #elif !PORTABLE && !DEBUG
     public static string StoragePath => _storagePath  ??= Path.Combine(Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%"), "DLSS Swapper");
 #endif
 
-
     static Storage()
     {
-        // Create directories if they doesn't exist.
-        //CreateDirectoryIfNotExists(GetTemp());
         CreateDirectoryIfNotExists(GetStorageFolder());
         CreateDirectoryIfNotExists(GetDynamicJsonFolder());
         CreateDirectoryIfNotExists(GetImageCachePath());
@@ -84,9 +76,8 @@ static class Storage
     }
 
     /// <summary>
-    /// When given a file path it will make the directory structure so that file is ready to be created in. A directory should not be passed to this. Use CreateDirectoryIfNotExists instead for that.
+    /// Creates the parent directory of a file path. Directory paths are rejected.
     /// </summary>
-    /// <param name="path">File path</param>
     /// <returns>True if the directory could be created</returns>
     public static bool CreateDirectoryForFileIfNotExists(string path)
     {
@@ -110,11 +101,7 @@ static class Storage
         return CreateDirectoryIfNotExists(directory);
     }
 
-    /// <summary>
-    /// Creates a directory if it doesn't already exist.
-    /// </summary>
-    /// <param name="directory">Directory to be created</param>
-    /// <returns>True if the directory could be created</returns>
+    /// <returns>True if the directory exists or was created successfully.</returns>
     public static bool CreateDirectoryIfNotExists(string directory)
     {
         if (string.IsNullOrWhiteSpace(directory))
@@ -137,11 +124,7 @@ static class Storage
         }
     }
 
-    /// <summary>
-    /// Saves the current settings object to settings.json in the apps dynamic json folder.
-    /// </summary>
-    /// <param name="settings">Settings object to be saved</param>
-    /// <returns>Task</returns>
+    /// <returns>True after the staged settings file is committed.</returns>
     internal static bool SaveSettingsJson(Settings settings)
     {
         var settingsFile = Path.Combine(GetDynamicJsonFolder(), "settings.json");
@@ -159,15 +142,11 @@ static class Storage
         }
     }
 
-    /// <summary>
-    /// Loads settings from settings.json in the apps dynamic json folder.
-    /// </summary>
-    /// <returns>Settings object, or null if it could not be loaded</returns>
+    /// <returns>The saved settings, or null if the file is missing or unreadable.</returns>
     internal static Settings? LoadSettingsJson()
     {
         var settingsFile = Path.Combine(GetDynamicJsonFolder(), "settings.json");
 
-        // If the settings file doesn't exist we return null to default it elsewhere.
         if (File.Exists(settingsFile) == false)
         {
             return null;

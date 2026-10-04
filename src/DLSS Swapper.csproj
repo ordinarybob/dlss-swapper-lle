@@ -135,8 +135,6 @@
     </EmbeddedResource>
   </ItemGroup>
 
-
-
     <ItemGroup>
         <Content Update="Assets\BadgeLogo.scale-100.png">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -422,31 +420,15 @@
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
-  <!--
-  Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
-  Tools extension to be activated for this project even if the Windows App SDK Nuget
-  package has not yet been restored.
-  -->
+  <!-- Enable packaging tools before Windows App SDK packages are restored. -->
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <ProjectCapability Include="Msix" />
   </ItemGroup>
 
-  <!--
-  Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
-  Explorer "Package and Publish" context menu entry to be enabled for this project even if
-  the Windows App SDK Nuget package has not yet been restored.
-  -->
   <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
   </PropertyGroup>
 
-  <!--
-  <ItemGroup Condition="'$(Configuration)'=='Release'">
-    <NativeLibrary Include="../extras/RTSSHooksCompatibility/RTSSHooksCompatibility.obj" />
-  </ItemGroup>
-  -->
-
-  <!-- Copy all "Resources.resw" files in the "Translations" folder to the output folder. -->
   <ItemGroup>
     <Content Include="Translations\**\*.resw">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -115,10 +115,6 @@ internal partial class SteamLibrary : IGameLibrary
 
         var installPath = GetInstallPath();
 
-
-        // I hope this runs on a background thread. 
-        // Tasks are whack.
-
         // Base steamapps folder contains libraryfolders.vdf which has references to other steamapps folders and individual installed Steam games.
         // All of these folders contain appmanifest_[some_id].acf which contains information about the game.
 
@@ -354,7 +350,6 @@ internal partial class SteamLibrary : IGameLibrary
                     if (knownInstallPaths.Contains(installDir) == false
                         && Directory.Exists(installDir) == false)
                     {
-                        // If the install directory does not exist, skip this game.
                         Logger.Error($"SteamLibary could not load game {game.Title} ({game.PlatformId}) because install path does not exist: {installDir}");
                         return;
                     }
@@ -432,7 +427,6 @@ internal partial class SteamLibrary : IGameLibrary
             .Select(static game => game.PlatformId)
             .ToHashSet(StringComparer.Ordinal);
 
-
         foreach (var cachedGame in cachedGames)
         {
             if (!discoveredPlatformIds.Contains(cachedGame.PlatformId))
@@ -508,7 +502,6 @@ internal partial class SteamLibrary : IGameLibrary
             {
                 using (var steamRegistryKey = hklm.OpenSubKey(@"SOFTWARE\Valve\Steam"))
                 {
-                    // if steamRegistryKey is null then Steam is not installed.
                     if (steamRegistryKey is null)
                     {
                         return string.Empty;

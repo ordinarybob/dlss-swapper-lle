@@ -15,9 +15,6 @@ using Microsoft.UI.Xaml;
 
 namespace DLSS_Swapper;
 
-/// <summary>
-/// Provides application-specific behavior to supplement the default Application class.
-/// </summary>
 public sealed partial class App : Application
 {
     public ElementTheme GlobalElementTheme { get; set; }
@@ -32,10 +29,6 @@ public sealed partial class App : Application
 
     public HttpClient HttpClient { get; private set; }
 
-    /// <summary>
-    /// Initializes the singleton application object.  This is the first line of authored code
-    /// executed, and as such is the logical equivalent of main() or WinMain().
-    /// </summary>
     public App()
     {
         AppDataReset.RunHelperIfRequested();
@@ -47,10 +40,8 @@ public sealed partial class App : Application
 
         var language = Settings.Instance.Language;
 
-        // Language is not set, try to fetch from system.
         if (string.IsNullOrWhiteSpace(language))
         {
-            // Try the language of the current thread.
             var currentLauguage = Thread.CurrentThread.CurrentCulture.Name;
             var knownLanguages = LanguageManager.Instance.GetKnownLanguages();
             foreach (var knownLanguage in knownLanguages)
@@ -62,10 +53,9 @@ public sealed partial class App : Application
                 }
             }
 
-            // TODO: Can we fallback to other languages? eg. Is fr-CA acceptable to fallback to fr-FR or does the app just default back to en-US?
+            // TODO: Support regional-language fallback when the exact locale is unavailable.
         }
 
-        // If we failed to fetch the users language, default to en-US.
         if (string.IsNullOrWhiteSpace(language))
         {
             language = "en-US";
@@ -89,10 +79,8 @@ public sealed partial class App : Application
         previousHttpClient.Dispose();
     }
 
-
     HttpClient GenerateNewHttpClient()
     {
-        // Setup HttpClient.
         var version = GetVersion();
         var versionString = $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
 
@@ -150,32 +138,20 @@ public sealed partial class App : Application
         return newHttpClient;
     }
 
-
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         Serilog.Log.Error(e.Exception, "UnhandledException");
         Serilog.Log.CloseAndFlush();
     }
 
-    /// <summary>
-    /// Invoked when the application is launched normally by the end user.  Other entry points
-    /// will be used such as when the application is launched to open a specific file.
-    /// </summary>
-    /// <param name="args">Details about the launch request and process.</param>
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         Logger.Info("Launch activation received.");
 
-        // If this is the first instance launched, then register it as the "main" instance.
-        // If this isn't the first instance launched, then "main" will already be registered,
-        // so retrieve it.
         var mainInstance = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey("main");
 
-        // If the instance that's executing the OnLaunched handler right now
-        // isn't the "main" instance.
         if (mainInstance.IsCurrent == false)
         {
-            // Redirect the activation (and args) to the "main" instance, and exit.
             var activatedEventArgs = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
             await mainInstance.RedirectActivationToAsync(activatedEventArgs);
             Process.GetCurrentProcess().Kill();
@@ -194,7 +170,6 @@ public sealed partial class App : Application
         Logger.Info($"App launch - v{versionString}", null);
         Logger.Info($"StoragePath: {Storage.StoragePath}");
 
-        // Check if its the first launch of the app from a new version.
         var lastLaunchVersion = Settings.Instance.LastLaunchVersion;
         if (lastLaunchVersion != versionString)
         {
@@ -226,7 +201,6 @@ public sealed partial class App : Application
         calculateInstallSizeThread.Start();
 #endif
 
-        // Delete updates folder
         var updatesFolder = Storage.GetUpdatesFolder();
         if (Directory.Exists(updatesFolder))
         {
@@ -236,7 +210,6 @@ public sealed partial class App : Application
             }
             catch (Exception err)
             {
-                // If we failed 
                 Logger.Error(err);
             }
         }
@@ -281,8 +254,6 @@ public sealed partial class App : Application
             directorySize += fileInfo.Length;
             ++fileCount;
         }
-
-        //Logger.Debug($"{path} has {fileCount} files for a total size of {directorySize} bytes");
 
         return directorySize;
     }
@@ -370,7 +341,6 @@ public sealed partial class App : Application
 
         return false;
     }
-
 
     public Task RunOnUIThreadAsync(Func<Task> function)
     {

@@ -17,13 +17,8 @@ using Windows.System;
 
 namespace DLSS_Swapper;
 
-/// <summary>
-/// An empty window that can be used on its own or navigated to within a Frame.
-/// </summary>
 public sealed partial class MainWindow : Window
 {
-    // Matches the compact six-column reference window at the current 150% DPI:
-    // approximately 1,100 x 1,527 physical pixels.
     const double DefaultWindowWidthDip = 734;
     const double DefaultWindowHeightDip = 1000;
     const double DefaultWindowMarginDip = 16;
@@ -140,7 +135,6 @@ public sealed partial class MainWindow : Window
                 Settings.Instance.LastWindowSizeAndPosition = new WindowPositionRect(_trackedWindow);
             }
 
-            // Release the icon.
             if (_windowIcon != IntPtr.Zero)
             {
                 _ = DestroyIcon(_windowIcon);
@@ -245,8 +239,6 @@ public sealed partial class MainWindow : Window
         ToolTipService.SetToolTip(SettingsTab, settingsText);
     }
 
-
-
     /// <summary>
     /// Default the Window Icon to the icon stored in the .exe, if any.
     ///
@@ -273,8 +265,6 @@ public sealed partial class MainWindow : Window
             }
         }
     }
-
-
 
     bool _syncingMainTabs;
 
@@ -312,7 +302,6 @@ public sealed partial class MainWindow : Window
             _syncingMainTabs = false;
         }
     }
-
 
     GameGridPage? gameGridPage;
     LibraryPage? libraryPage;
@@ -372,7 +361,6 @@ public sealed partial class MainWindow : Window
         Logger.Info("Main window content loaded.");
         await DLLManager.Instance.LoadManifestsAsync();
 
-
         if (Settings.Instance.HasSelectedSystemPerformance == false)
         {
             Logger.Info("Showing first-run game library storage selector.");
@@ -407,7 +395,6 @@ public sealed partial class MainWindow : Window
             Settings.Instance.ApplyGameLibraryStorageProfile(profile);
             Logger.Info($"Applied first-run game library storage profile: {profile}.");
         }
-
 
         if (DLLManager.Instance.HasLoadedManifest() == false)
         {
@@ -473,10 +460,8 @@ public sealed partial class MainWindow : Window
             await dialog.ShowAsync();
         }
 
-        // Yeet this into the void and let it load in the background.
         _ = DLLManager.Instance.UpdateManifestAsync();
 
-        // We are now ready to show the games list.
         LoadingStackPanel.Visibility = Visibility.Collapsed;
 
         GoToPage(GameGridPage.PageTag);

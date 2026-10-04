@@ -33,7 +33,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     [Column("title")]
     public partial string Title { get; set; } = string.Empty;
 
-
     [Column("install_path")]
     public string InstallPath { get; set; } = string.Empty;
 
@@ -48,7 +47,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     [ObservableProperty]
     [Ignore]
     public partial uint? DlssDPreset { get; set; }
-
 
     [ObservableProperty]
     [Ignore]
@@ -89,16 +87,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     public abstract GameLibrary GameLibrary { get; }
 
     [Ignore]
-    //public string ExpectedCoverImage => Path.Combine(Storage.GetImageCachePath(), $"{ID}_600_900.jpg");
-    //public string ExpectedCoverImage => Path.Combine(Storage.GetImageCachePath(), $"{ID}_600_900.png");
     public string ExpectedCoverImage => Path.Combine(Storage.GetImageCachePath(), $"{ID}_400_600.png");
-    //public string ExpectedCoverImage => Path.Combine(Storage.GetImageCachePath(), $"{ID}_600_900.webp");
 
     [Ignore]
-    //public string ExpectedCustomCoverImage => Path.Combine(Storage.GetImageCachePath(), $"{ID}_custom_600_900.jpg");
-    //public string ExpectedCustomCoverImage => Path.Combine(Storage.GetImageCachePath(), $"{ID}_custom_600_900.png");
     public string ExpectedCustomCoverImage => Path.Combine(Storage.GetImageCachePath(), $"{ID}_custom_400_600.png");
-    //public string ExpectedCustomCoverImage => Path.Combine(Storage.GetImageCachePath(), $"{ID}_custom_600_900.webp");
 
     [Ignore]
     public List<GameAsset> GameAssets { get; } = new List<GameAsset>();
@@ -111,7 +103,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
     readonly SemaphoreSlim _coverImageGate = new(1, 1);
 
-    // NOTE: DLL type
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasCurrentDLSSForSort))]
     [NotifyPropertyChangedFor(nameof(CurrentDLSSVersionSortKey))]
@@ -207,15 +198,13 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     [ObservableProperty]
     [Ignore]
     public partial bool MultipleXeSSDX11Found { get; set; } = false;
-    
 
     [Ignore]
     public abstract bool IsReadyToPlay { get; }
 
     protected void SetID()
     {
-        // Seeing as we use ID, it sure would be a shame if a PlatformId was set to "C:\Program Files\"
-        // So try to remove all funky characters before
+        // IDs become filenames; strip path separators and invalid filename characters.
 
         var platformId = PlatformId;
         foreach (var invalidPathChar in PathHelpers.InvalidFileNamePathChars)
@@ -241,14 +230,13 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     }
 
     /// <summary>
-    /// Detects DLSS and updates cover image.
+    /// Scans supported game assets and refreshes artwork.
     /// </summary>
     public void ProcessGame(
         bool autoSave = true,
         bool forceNeedsProcessing = false,
         bool installPathValidated = false)
     {
-        // If we are alreayd procssing we don't need to process again
         if (Processing == true)
         {
             return;
@@ -376,7 +364,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                         });
                     }
 
-
                     LoadBackupForGameAsset(gameAsset, replacementAssets, oldGameAssets);
 
                 }
@@ -411,8 +398,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 {
                     newHasSwappableItems = true;
 
-                    //App.CurrentApp.Database.ExecuteAsync
-                    //savePoint is not valid, and should be the result of a call to SaveTransactionPoint.
                     using (await Database.Instance.Mutex.LockAsync())
                     {
                         await Database.Instance.Connection.InsertAllAsync(dllHistory, false).ConfigureAwait(false);
@@ -497,7 +482,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             }
             finally
             {
-                // Now update all the data on the UI thread.
                 await App.CurrentApp.RunOnUIThreadAsync(async () =>
                 {
                     NeedsProcessing = scanCompleted == false;
@@ -684,13 +668,11 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
     }
 
-
     public async Task LoadCoverImageAsync()
     {
         await _coverImageGate.WaitAsync().ConfigureAwait(false);
         try
         {
-            // TODO: Update if the image last write is > 1 week old or something
 
             var cachedCoverImage = GetCachedCoverImage();
             if (cachedCoverImage is not null)
@@ -877,7 +859,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 };
                 newGameAsset.SetKnownVersionAndHash(existingBackupRecord.Version, backupHash);
 
-
                 dllHistory.Add(new GameHistory()
                 {
                     GameId = ID,
@@ -899,7 +880,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             {
                 await Database.Instance.Connection.InsertAllAsync(dllHistory, false);
 
-                // Update game assets list by deleting and re-adding.
                 await Database.Instance.Connection.ExecuteAsync("DELETE FROM game_asset WHERE id = ?", ID).ConfigureAwait(false);
                 await Database.Instance.Connection.InsertAllAsync(GameAssets, false).ConfigureAwait(false);
             }
@@ -909,9 +889,8 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     }
 
     /// <summary>
-    /// Attempts to update a DLSS dll in a given game.
+    /// Replaces matching game assets with the selected DLL.
     /// </summary>
-    /// <param name="dlssRecord"></param>
     /// <returns>Tuple containing a boolean of Success, if this is false there will be an error message in the Message response.</returns>
     internal async Task<(bool Success, string Message, bool PromptToRelaunchAsAdmin)> UpdateDllAsync(DLLRecord dllRecord,
         VerifiedDllSource? verifiedSource = null)
@@ -1023,7 +1002,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         {
             try
             {
-                // Copy the DLL
                 StagedFile.CopyVerified(dllRecord.LocalRecord.ExpectedPath, existingRecord.Path, dllRecord.MD5Hash);
 
                 var newGameAsset = new GameAsset()
@@ -1076,7 +1054,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
         GameAssets.AddRange(newGameAssets);
 
-        // This should never be null.
         // Using FirstOrDefault as there may be multiple, but we only care about using the information of the first.
         var firstNewGameAsset = newGameAssets.FirstOrDefault(x => x.AssetType == dllRecord.AssetType);
         if (firstNewGameAsset is not null)
@@ -1084,7 +1061,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             UpdateCurrentAsset(firstNewGameAsset, dllRecord.AssetType);
         }
 
-        // Update game assets list by deleting and re-adding.
         using (await Database.Instance.Mutex.LockAsync())
         {
             await Database.Instance.Connection.RunInTransactionAsync(connection =>
@@ -1102,7 +1078,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
     {
         App.CurrentApp.RunOnUIThread(() =>
         {
-            // NOTE: DLL type
             if (gameAssetType == GameAssetType.DLSS)
             {
                 CurrentDLSS = null;
@@ -1169,16 +1144,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
     protected async Task ResizeCoverAsync(Stream imageStream)
     {
-        // TODO:
-        // - find optimal format (eg, is displaying 100 webp images more intense than 100 png images)
-        // - load image based on scale
         try
         {
             using (var image = await SixLabors.ImageSharp.Image.LoadAsync(imageStream).ConfigureAwait(false))
             {
-                // If images are really big we resize to at least 2x the 200x300 we display as.
-                // In future this should be updated to resize to display scale.
-                // If the image is smaller than this we are just saving as png.
                 var resizeOptions = new ResizeOptions()
                 {
                     Size = new Size(200 * 2, 300 * 2),
@@ -1187,8 +1156,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 };
                 image.Mutate(x => x.Resize(resizeOptions));
                 await image.SaveAsPngAsync(ExpectedCoverImage).ConfigureAwait(false);
-                //image.SaveAsWebp(ExpectedCoverImage);
-                //image.SaveAsJpeg(ExpectedCoverImage);
             }
 
             App.CurrentApp.RunOnUIThread(() =>
@@ -1203,7 +1170,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
     }
 
-
     public void AddCustomCover(string imageSource)
     {
         using (var fileStream = File.OpenRead(imageSource))
@@ -1214,16 +1180,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
 
     public void AddCustomCover(Stream stream)
     {
-        // TODO:
-        // - find optimal format (eg, is displaying 100 webp images more intense than 100 png images)
-        // - load image based on scale
         try
         {
             using (var image = SixLabors.ImageSharp.Image.Load(stream))
             {
-                // If images are really big we resize to at least 3x the 200x300 we display as.
-                // In future this should be updated to resize to display scale.
-                // If the image is smaller than this we are just saving as png.
                 var resizeOptions = new ResizeOptions()
                 {
                     Size = new Size(200 * 3, 300 * 3),
@@ -1232,8 +1192,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 };
                 image.Mutate(x => x.Resize(resizeOptions));
                 image.SaveAsPng(ExpectedCustomCoverImage);
-                //image.SaveAsWebp(ExpectedCustomCoverImage);
-                //image.SaveAsJpeg(ExpectedCustomCoverImage);
             }
 
             App.CurrentApp.RunOnUIThread(() =>
@@ -1262,7 +1220,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             return false;
         }
 
-
         var extension = Path.GetExtension(url);
 
         // Path.GetExtension retains query arguments, so remove them if they exist.
@@ -1272,7 +1229,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         }
         var tempFile = Path.Combine(Storage.GetTemp(), $"{ID}{extension}");
 
-
         try
         {
             using (var memoryStream = new MemoryStream())
@@ -1281,7 +1237,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 await fileDownloader.DownloadFileToStreamAsync(memoryStream).ConfigureAwait(false);
                 memoryStream.Position = 0;
 
-                // Now if the image is downloaded lets resize it,
                 await ResizeCoverAsync(memoryStream).ConfigureAwait(false);
             }
             return true;
@@ -1289,12 +1244,10 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         catch (Exception err)
         {
             Logger.Error(err, $"For url: {url}");
-            //DebuggerHelper.BreakIfAttached();
             return false;
         }
         finally
         {
-            // Cleanup temp file.
             if (File.Exists(tempFile))
             {
                 File.Delete(tempFile);
@@ -1315,14 +1268,11 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             using (await Database.Instance.Mutex.LockAsync())
             {
                 rowsChanged = await Database.Instance.Connection.InsertOrReplaceAsync(this);
-                // tODO: Configure await
             }
             if (rowsChanged == 0)
             {
-                // TODO: Fix why this happens occasionally to random games.
-                // This appears to change to different games in different libraries.
+                // TODO: Investigate zero-row results from InsertOrReplaceAsync.
                 Logger.Error($"Tried to save game to database but rowsChanged was 0.");
-                //DebuggerHelper.BreakIfAttached();
                 return false;
             }
             return true;
@@ -1340,7 +1290,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         try
         {
             // Sometimes when a game is uninstalled the backup files are not removed, so ensure they are.
-            // Some AMD driver packages ship version fields in a nonstandard form.
 
             List<GameAsset> gameAssets;
             using (await Database.Instance.Mutex.LockAsync())
@@ -1349,7 +1298,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             }
             foreach (var cachedGameAsset in gameAssets)
             {
-                // NOTE: DLL type
                 // If its a file we made we should attempt to delete it.
                 if (cachedGameAsset.AssetType == GameAssetType.DLSS_BACKUP ||
                     cachedGameAsset.AssetType == GameAssetType.DLSS_G_BACKUP ||
@@ -1380,7 +1328,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 await Database.Instance.Connection.Table<GameAsset>().DeleteAsync(ga => ga.Id == ID).ConfigureAwait(false);
             }
 
-            // Delete the thumbnails.
             var thumbnailImages = Directory.GetFiles(Storage.GetImageCachePath(), $"{ID}_*", SearchOption.AllDirectories);
             foreach (var thumbnailImage in thumbnailImages)
             {
@@ -1395,13 +1342,11 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                 }
             }
 
-            // Delete the game itself.
             using (await Database.Instance.Mutex.LockAsync())
             {
                 await Database.Instance.Connection.DeleteAsync(this).ConfigureAwait(false);
             }
 
-            // Remove the game from the list.
             GameManager.Instance.RemoveGame(this);
             return true;
         }
@@ -1454,9 +1399,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             };
 
             var coverImageFile = FileSystemHelper.OpenFile(hWnd, fileFilters, Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
-
-            //                    ViewMode = PickerViewMode.Thumbnail,
-
 
             if (string.IsNullOrWhiteSpace(coverImageFile))
             {
@@ -1520,7 +1462,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
             didChange = true;
         }
 
-        // NOTE: DLL type
         if (CurrentDLSS != game.CurrentDLSS)
         {
             CurrentDLSS = game.CurrentDLSS;
@@ -1608,7 +1549,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         CurrentXeSS_DX11 = null;
         CurrentXeLL = null;
 
-        // NOTE: DLL type
         MultipleDLSSFound = GameAssets.Count(x => x.AssetType == GameAssetType.DLSS) > 1;
         MultipleDLSSGFound = GameAssets.Count(x => x.AssetType == GameAssetType.DLSS_G) > 1;
         MultipleDLSSDFound = GameAssets.Count(x => x.AssetType == GameAssetType.DLSS_D) > 1;
@@ -1619,7 +1559,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
         MultipleXeSSDX11Found = GameAssets.Count(x => x.AssetType == GameAssetType.XeSS_DX11) > 1;
         MultipleXeLLFound = GameAssets.Count(x => x.AssetType == GameAssetType.XeLL) > 1;
 
-        // NOTE: DLL type
         foreach (var gameAsset in GameAssets)
         {
             if (gameAsset.AssetType == GameAssetType.DLSS)
@@ -1717,7 +1656,6 @@ public abstract partial class Game : ObservableObject, IComparable<Game>, IEquat
                     return true;
                 }
             }
-
 
             if (InstallPath.StartsWith(ignoredPath, StringComparison.OrdinalIgnoreCase))
             {

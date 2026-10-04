@@ -14,15 +14,8 @@ using AsyncAwaitBestPractices;
 using CommunityToolkit.WinUI;
 using DLSS_Swapper.Helpers;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace DLSS_Swapper.Pages;
 
-
-/// <summary>
-/// An empty page that can be used on its own or navigated to within a Frame.
-/// </summary>
 public sealed partial class GameGridPage : Page
 {
     public static string PageTag { get; } = "PageTag_Games";
@@ -226,7 +219,6 @@ public sealed partial class GameGridPage : Page
         menu.ShowAt(gameContainer, showOptions);
         args.Handled = true;
     }
-
 
     static readonly SolidColorBrush _cardHoverRestBrush = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
 

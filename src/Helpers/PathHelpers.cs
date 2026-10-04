@@ -17,7 +17,6 @@ internal static class PathHelpers
         InvalidFileNamePathChars = invalidChars.Distinct().ToArray();
     }
 
-
     /// <summary>
     /// Tries to format path on disk so any and all paths will match after they have gone through this method.  
     /// </summary>
@@ -26,7 +25,6 @@ internal static class PathHelpers
     internal static string NormalizePath(string path)
     {
         // Via https://stackoverflow.com/a/21058152
-        //new Uri(path).LocalPath
         return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 

@@ -10,9 +10,6 @@ using Microsoft.UI.Xaml.Input;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace DLSS_Swapper.UserControls;
 
 public sealed partial class GameControl : FakeContentDialog
@@ -113,7 +110,6 @@ public sealed partial class GameControl : FakeContentDialog
         }
     }
 
-
     string[] customCoverValidFileTypes = new string[]
     {
             ".png",
@@ -129,17 +125,15 @@ public sealed partial class GameControl : FakeContentDialog
     async void CoverButton_DragEnter(object sender, DragEventArgs e)
     {
 
-        // This thing likes to break so I took the advice from this thread https://github.com/microsoft/microsoft-ui-xaml/issues/8108
+        // DragOver reapplies the result after async validation completes.
+        // See https://github.com/microsoft/microsoft-ui-xaml/issues/8108
 
-        // Default to this.
         coverDragDropAcceptedOperation = DataPackageOperation.None;
         coverDragDropDragUIOverrideCaption = string.Empty;
 
         e.AcceptedOperation = coverDragDropAcceptedOperation;
         e.DragUIOverride.Caption = coverDragDropDragUIOverrideCaption;
 
-        // This await messes things up. So what we do is also handle in CoverButton_DragOver which will have hopefully
-        // mean this code is finished by then.
         var items = await e.DataView.GetStorageItemsAsync();
         if (items.Count == 1)
         {
@@ -168,13 +162,11 @@ public sealed partial class GameControl : FakeContentDialog
         }
     }
 
-
     void CoverButton_DragOver(object sender, DragEventArgs e)
     {
         e.AcceptedOperation = coverDragDropAcceptedOperation;
         e.DragUIOverride.Caption = coverDragDropDragUIOverrideCaption;
     }
-
 
     async void CoverButton_Drop(object sender, DragEventArgs e)
     {

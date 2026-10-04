@@ -116,7 +116,6 @@ public sealed class WindowManager : IDisposable
                     var appWindow = GetAppWindowForWindow(window);
                     var appWindowTitleBar = appWindow.TitleBar;
 
-
                     appWindowTitleBar.ButtonBackgroundColor = (Color)theme["ButtonBackgroundColor"];
                     appWindowTitleBar.ButtonForegroundColor = (Color)theme["ButtonForegroundColor"];
                     appWindowTitleBar.ButtonHoverBackgroundColor = (Color)theme["ButtonHoverBackgroundColor"];
@@ -130,10 +129,8 @@ public sealed class WindowManager : IDisposable
                 else
                 {
                     var appResources = Application.Current.Resources;
-                    // Removes the tint on title bar
                     appResources["WindowCaptionBackground"] = theme["WindowCaptionBackground"];
                     appResources["WindowCaptionBackgroundDisabled"] = theme["WindowCaptionBackgroundDisabled"];
-                    // Sets the tint of the forground of the buttons
                     appResources["WindowCaptionForeground"] = theme["WindowCaptionForeground"];
                     appResources["WindowCaptionForegroundDisabled"] = theme["WindowCaptionForegroundDisabled"];
 
@@ -184,10 +181,8 @@ public sealed class WindowManager : IDisposable
                 {
                     var appResources = Application.Current.Resources;
 
-                    // Removes the tint on title bar
                     appResources["WindowCaptionBackground"] = theme["WindowCaptionBackground"];
                     appResources["WindowCaptionBackgroundDisabled"] = theme["WindowCaptionBackgroundDisabled"];
-                    // Sets the tint of the forground of the buttons
                     appResources["WindowCaptionForeground"] = theme["WindowCaptionForeground"];
                     appResources["WindowCaptionForegroundDisabled"] = theme["WindowCaptionForegroundDisabled"];
 
@@ -201,7 +196,6 @@ public sealed class WindowManager : IDisposable
 
     public AppWindow GetAppWindowForWindow(Window window)
     {
-        // TODO: Can this be replaced by window.AppWindow ?
         var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
         var myWndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
         return AppWindow.GetFromWindowId(myWndId);

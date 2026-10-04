@@ -17,7 +17,6 @@ internal class DLLManager
 {
     public static DLLManager Instance { get; private set; } = new DLLManager();
 
-    // NOTE: DLL type
     public ObservableCollection<DLLRecord> DLSSRecords { get; } = new ObservableCollection<DLLRecord>();
     public ObservableCollection<DLLRecord> DLSSGRecords { get; } = new ObservableCollection<DLLRecord>();
     public ObservableCollection<DLLRecord> DLSSDRecords { get; } = new ObservableCollection<DLLRecord>();
@@ -33,7 +32,6 @@ internal class DLLManager
 
     public async Task LoadManifestsAsync()
     {
-        // Try load the manifest.
         var manifestFile = Storage.GetManifestPath();
         if (File.Exists(manifestFile))
         {
@@ -144,9 +142,7 @@ internal class DLLManager
 
             using (var memoryStream = new MemoryStream())
             {
-                // TODO: Check how quickly this takes to timeout if there is no internet connection. Consider
-                // adding a "fast UpdateManifest" which will quit early if we were unable to load in 10sec
-                // which would then fall back to loading local.
+                // TODO: Bound catalog refresh time when offline.
                 var fileDownloader = new FileDownloader("https://beeradmoore.github.io/dlss-swapper/manifest.json", 0);
                 await fileDownloader.DownloadFileToStreamAsync(memoryStream);
 
@@ -202,7 +198,6 @@ internal class DLLManager
     /// </summary>
     async Task ProcessManifestsAsync()
     {
-        // If manifest is not loaded we can't do anything.
         if (Manifest is null)
         {
             return;
@@ -285,8 +280,6 @@ internal class DLLManager
     /// <summary>
     /// Updates every dllRecord to have the specific gameAssetType
     /// </summary>
-    /// <param name="dllRecords"></param>
-    /// <param name="gameAssetType"></param>
     static void SetGameAssetType(List<DLLRecord> dllRecords, GameAssetType gameAssetType)
     {
         foreach (var dllRecord in dllRecords)
@@ -300,9 +293,6 @@ internal class DLLManager
     ///
     /// This needs to be called before LoadLocalRecords
     /// </summary>
-    /// <param name="dllRecords"></param>
-    /// <param name="importedDllRecords"></param>
-    /// <returns></returns>
     static void CheckDllRecordsForMigration_117(List<DLLRecord> dllRecords, List<DLLRecord>? importedDllRecords)
     {
         foreach (var dllRecord in dllRecords)
@@ -323,11 +313,8 @@ internal class DLLManager
     /// As of v1.1.7 we migrated DLLs from being in a zip folder to being a DLL in a folder.
     /// This method will move where the zip was to where the dll will be.
     /// </summary>
-    /// <param name="dllRecord"></param>
-    /// <param name="isImported"></param>
     static void CheckDllRecordForMigration_117(DLLRecord dllRecord, bool isImported)
     {
-        // From GetExpectedZipPath
         var recordType = dllRecord.GetRecordSimpleType();
         if (recordType == string.Empty)
         {
@@ -340,7 +327,6 @@ internal class DLLManager
             return;
         }
 
-        // If the zip path does not exist then we don't need to continue any further.
         if (Directory.Exists(zipPath) == false)
         {
             return;
@@ -357,7 +343,6 @@ internal class DLLManager
         {
             return;
         }
-
 
         var dllName = Path.GetFileName(dllPath);
         if (string.IsNullOrWhiteSpace(dllName))
@@ -390,7 +375,6 @@ internal class DLLManager
         {
             try
             {
-                // Delete the zip we moved
                 File.Delete(legacyExpectedPath);
             }
             catch (Exception err)
@@ -398,7 +382,6 @@ internal class DLLManager
                 Logger.Error(err, $"Could not delete {legacyExpectedPath}");
             }
 
-            // If the old zip folder is empty we can delete it.
             if (Directory.GetFiles(zipPath).Length == 0 && Directory.GetDirectories(zipPath).Length == 0)
             {
                 try
@@ -420,9 +403,6 @@ internal class DLLManager
     ///
     /// This needs to be called after LoadLocalRecords
     /// </summary>
-    /// <param name="dllRecords"></param>
-    /// <param name="importedDllRecords"></param>
-    /// <returns></returns>
     static bool CheckImportedManifestForCleanUp(List<DLLRecord> dllRecords, List<DLLRecord>? importedDllRecords)
     {
         var didChangeImportedManifestList = false;
@@ -431,10 +411,8 @@ internal class DLLManager
         {
             var importedDllRecordsToDelete = new List<DLLRecord>();
 
-            // Delete imported DLLs if the file is no longer found.
             foreach (var importedDllRecord in importedDllRecords)
             {
-                // If IsDownloaded is false it means the DLL does not exist on the disk
                 if (importedDllRecord.LocalRecord?.IsDownloaded == false)
                 {
                     Logger.Info($"Imported file not found ({importedDllRecord.LocalRecord}), deleting imported record.");
@@ -442,11 +420,9 @@ internal class DLLManager
                 }
             }
 
-            // Check if imported DLLs are in the new manifest. If they are we want to
-            // move them and pretend they were imported.
+            // Promote imports now present in the catalog to standard library records.
             foreach (var importedDllRecord in importedDllRecords)
             {
-                // Skip the imported DLL if we are about to remove it.
                 if (importedDllRecordsToDelete.Contains(importedDllRecord))
                 {
                     continue;
@@ -454,7 +430,6 @@ internal class DLLManager
 
                 var manifestDllRecord = dllRecords.FirstOrDefault(x => x.MD5Hash == importedDllRecord.MD5Hash);
 
-                // Make sure both records have a local record.
                 if (manifestDllRecord?.LocalRecord is not null && importedDllRecord.LocalRecord is not null)
                 {
                     try
@@ -469,7 +444,6 @@ internal class DLLManager
                         var oldZipPath = importedDllRecord.LocalRecord.ExpectedPath;
                         if (File.Exists(oldZipPath) == false)
                         {
-                            // This should never happen.
                             Logger.Error($"oldZipPath ({oldZipPath}) does not exist.");
                             DebuggerHelper.BreakIfAttached();
                             continue;
@@ -504,8 +478,6 @@ internal class DLLManager
                 }
             }
 
-
-            // If any of the imported DLLs need to be removed from the imported DLL list.
             if (importedDllRecordsToDelete.Count > 0)
             {
                 foreach (var dllRecord in importedDllRecordsToDelete)
@@ -534,9 +506,8 @@ internal class DLLManager
     }
 
     /// <summary>
-    /// Loads the LocalRecrod object on every dllRecord in the list.
+    /// Loads the local file record for each DLL.
     /// </summary>
-    /// <param name="dllRecords"></param>
     void LoadLocalRecords(List<DLLRecord> dllRecords, bool isImported = false)
     {
         foreach (var dllRecord in dllRecords)
@@ -569,13 +540,9 @@ internal class DLLManager
         });
     }
 
-
     /// <summary>
     /// Takes DLL list from manifest and imported manifest and inserts them into the master DLL records list which is bindable in the app.
     /// </summary>
-    /// <param name="records"></param>
-    /// <param name="manifestRecords"></param>
-    /// <param name="importedRecords"></param>
     /// <returns>Returns true if importedRecords was changed and requires saving</returns>
     static void MergeManifestsIntoMasterList(ObservableCollection<DLLRecord> records, List<DLLRecord> manifestRecords, List<DLLRecord>? importedManifestRecords)
     {
@@ -587,13 +554,11 @@ internal class DLLManager
 
         foreach (var dllRecord in manifestRecords)
         {
-            // LoadLocalRecord(dllRecord, false);
 
             var insertIndex = tempRecords.BinarySearch(dllRecord);
             if (insertIndex < 0) // InsertObject
             {
                 insertIndex = ~insertIndex;
-
 
                 records.Insert(insertIndex, dllRecord);
 
@@ -606,7 +571,6 @@ internal class DLLManager
             }
         }
 
-        // Now that we have loaded DLL records we want to add the importedRecords back into that list.
         if (importedManifestRecords?.Count > 0)
         {
             foreach (var importedRecord in importedManifestRecords)
@@ -733,7 +697,6 @@ internal class DLLManager
         return (true, string.Empty);
     }
 
-
     public GameAssetType GetAssetBackupType(GameAssetType assetType) =>
         DllFamilyRegistry.Get(assetType).BackupType;
 
@@ -764,7 +727,6 @@ internal class DLLManager
         }
         var isTrusted = WinTrust.VerifyEmbeddedSignature(filePath);
 
-        // Don't do anything with untrusted dlls.
         if (Settings.Instance.AllowUntrusted == false && isTrusted == false)
         {
             return DLLImportResult.FromFail(zippedDllFullName ?? filePath, ResourceHelper.GetString("DllManager_UntrustedDll"));
@@ -778,7 +740,6 @@ internal class DLLManager
         var existingDll = recordList.FirstOrDefault(x => string.Equals(x.MD5Hash, dllHash, StringComparison.InvariantCultureIgnoreCase));
         if (existingDll is not null)
         {
-            // If the DLL is already imported we can skip it.
             if (existingDll.LocalRecord?.IsDownloaded == true)
             {
                 return DLLImportResult.FromSucces(zippedDllFullName ?? filePath, $"{fileName} {ResourceHelper.GetString("DllManager_AlreadyImported")}", false);
@@ -802,9 +763,6 @@ internal class DLLManager
                 AssetType = gameAssetType.Value,
             };
 
-
-            // TODO: Get extra data from DLL if possible
-
             var expectedPath = GetExpectedDllFileName(dllRecord, !importingAsDownloadedDll);
             if (string.IsNullOrWhiteSpace(expectedPath))
             {
@@ -812,7 +770,6 @@ internal class DLLManager
             }
             Storage.CreateDirectoryForFileIfNotExists(expectedPath);
 
-            // Move new record to where it should live
             File.Copy(filePath, expectedPath, true);
             var newLocalRecord = LocalRecord.FromExpectedPath(expectedPath, !importingAsDownloadedDll);
 
@@ -822,14 +779,12 @@ internal class DLLManager
                 dllRecord.LocalRecord = newLocalRecord;
             });
 
-            // Add our new record.
             if (importingAsDownloadedDll == true)
             {
                 // NOOP - DLL is already in the list, we just updated the LocalRecord for it.
             }
             else
             {
-                // Insert into the main DLL list
                 var tempList = new List<DLLRecord>(recordList);
                 var insertIndex = tempList.BinarySearch(dllRecord);
                 if (insertIndex < 0)
@@ -841,7 +796,6 @@ internal class DLLManager
                     recordList.Insert(insertIndex, dllRecord);
                 });
 
-                // Insert into the list used for local manifest
                 var importedInsertIndex = importedRecordList.BinarySearch(dllRecord);
                 if (importedInsertIndex < 0)
                 {
@@ -868,7 +822,6 @@ internal class DLLManager
 
         if (recordList is null)
         {
-            // For some reason we couldn't get the recordList, is this a new DLL type?
             DebuggerHelper.BreakIfAttached();
             return;
         }
@@ -883,9 +836,6 @@ internal class DLLManager
     /// <summary>
     /// This handles extracting of the DLL from both downloaded and imported zips (when imported matches the hash of one that could be downloaded)
     /// </summary>
-    /// <param name="zipArchive"></param>
-    /// <param name="dllRecord"></param>
-    /// <exception cref="Exception"></exception>
     internal static void HandleExtractFromZip(ZipArchive zipArchive, DLLRecord dllRecord)
     {
         if (dllRecord.LocalRecord is null)

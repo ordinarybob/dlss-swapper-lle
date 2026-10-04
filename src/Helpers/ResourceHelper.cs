@@ -35,7 +35,6 @@ public partial class ResourceHelper
         }
     }
 
-
     internal static void LoadResource(string key)
     {
 #if DEBUG
@@ -68,7 +67,6 @@ public partial class ResourceHelper
             {
                 continue;
             }
-            // Add the translation to our dictionary.
             _resources[translation.Key] = translation.NewTranslation;
         }
         LanguageManager.Instance.ReloadLanguage();
@@ -84,13 +82,12 @@ public partial class ResourceHelper
         }
 #endif
 
-        // Load from our dictionary if we are in translator mode, but then fallback if we don't have the value.
+        // Prefer unsaved translation edits, then the selected locale, then the fallback locale.
         if (TranslatorModeEnabled && _resources.TryGetValue(resourceName, out var value))
         {
             return value;
         }
 
-        // But if we have a resource map fall back to it.
         var resourceCandidate = _resourceMap.GetValue(resourceName, _resourceContext);
         if (string.IsNullOrWhiteSpace(resourceCandidate?.ValueAsString) == false)
         {
@@ -99,7 +96,6 @@ public partial class ResourceHelper
 
         Debug.WriteLine($"Translation not found: {resourceName}");
 
-        // If not we fallback to the original language.
         var fallbackString = _resourceLoader.GetString(resourceName);
 
 #if DEBUG

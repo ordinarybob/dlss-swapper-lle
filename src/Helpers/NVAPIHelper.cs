@@ -42,9 +42,6 @@ public class NVIDIAApiException : Exception
 {
     public override string Message => GeneralApi.GetErrorMessage(Status) ?? Status.ToString();
 
-    //
-    // Summary:
-    //     Gets NVIDIA Api exception status code
     public Status Status { get; }
 
     internal NVIDIAApiException(Status status)
@@ -89,7 +86,6 @@ internal partial class NVAPIHelper : ObservableObject
 
     private NVAPIHelper()
     {
-        // Load DLSS presets
         try
         {
             var dlssPresetsJsonPath = @"Assets\dlss_presets.json";
@@ -125,9 +121,6 @@ internal partial class NVAPIHelper : ObservableObject
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "D"), 0x00000004),
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "E"), 0x00000005),
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "F"), 0x00000006),
-                // new DlssPresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "G"), 0x00000007),
-                // new DlssPresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "H"), 0x00000008),
-                // new DlssPresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "I"), 0x00000009),
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "J"), 0x0000000A),
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "K"), 0x0000000B),
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "L"), 0x0000000C),
@@ -136,7 +129,6 @@ internal partial class NVAPIHelper : ObservableObject
             ];
         }
 
-        // Load DLSS D presets
         try
         {
             var dlssDPresetsJsonPath = @"Assets\dlss_d_presets.json";
@@ -176,16 +168,10 @@ internal partial class NVAPIHelper : ObservableObject
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "D"), 0x00000004),
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "E"), 0x00000005),
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "F"), 0x00000006),
-                // new DlssPresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "G"), 0x00000007),
-                // new DlssPresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "H"), 0x00000008),
-                // new DlssPresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "I"), 0x00000009),
-                //new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "J"), 0x0000000A),
-                //new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "K"), 0x0000000B),
                 new PresetOption(ResourceHelper.GetString("DLSS_Preset_AlwaysUseLatest"), 0x00FFFFFF),
             ];
         }
 
-        // Load DLSS G presets
         try
         {
             var dlssgPresetsJsonPath = @"Assets\dlss_g_presets.json";
@@ -213,15 +199,6 @@ internal partial class NVAPIHelper : ObservableObject
                 new PresetOption(ResourceHelper.GetString("DLSS_Preset_Default"), 0x00000000),
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "A"), 0x00000001),
                 new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "B"), 0x00000002),
-                //new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "C"), 0x00000003),
-                //new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "D"), 0x00000004),
-                //new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "E"), 0x00000005),
-                //new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "F"), 0x00000006),
-                // new DlssPresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "G"), 0x00000007),
-                // new DlssPresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "H"), 0x00000008),
-                // new DlssPresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "I"), 0x00000009),
-                //new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "J"), 0x0000000A),
-                //new PresetOption(ResourceHelper.GetFormattedResourceTemplate("DLSS_Preset_Letter", "K"), 0x0000000B),
                 new PresetOption(ResourceHelper.GetString("DLSS_Preset_AlwaysUseLatest"), 0x00FFFFFE)
             ];
         }
@@ -236,19 +213,12 @@ internal partial class NVAPIHelper : ObservableObject
             }
             else
             {
-                // Library should exist, unload it and continue
                 FreeLibrary(handle);
 
                 NVIDIA.Initialize();
 
                 _driverSettingSession = DriverSettingsSession.CreateAndLoad();
-                // Looked at checking if it is worth filtering this by IsValid and GPUSupport.IsGeForceSupported,
-                // but it only dropped number of items from 7200 to 7000.
-
-                // TODO: This takes ~400ms on my dev machine (in debug mode)
-                // Time this in release mode and see if it can be done better (eg, of main thread so it isn't blocking)
-                // It may also pay to initialize this earlier, as currently this will all run when
-                // you click your first game.
+                // TODO: Move driver-profile enumeration off the UI thread.
                 _cachedProfiles = _driverSettingSession.Profiles.AsParallel().ToDictionary(profile => profile.Name);
                 IsSupported = true;
             }
@@ -297,35 +267,28 @@ internal partial class NVAPIHelper : ObservableObject
 
     public DriverSettingsProfile? FindGameProfile(Game game)
     {
-        // If this is cached on the game use it first.
         if (game.DriverSettingsProfile is not null)
         {
             return game.DriverSettingsProfile;
         }
 
-        // If this is directly accessed from the cached profiles list it there. 
         if (_cachedProfiles.TryGetValue(game.Title, out var exactProfile))
         {
             game.DriverSettingsProfile = exactProfile;
             return exactProfile;
         }
 
-        // If the game is not a direct title match we will search through all profiles for a match.
-        // First sort all possible profiles by title similarity.
+        // Title similarity orders candidates; executable names confirm the match.
         var possibleProfiles = _cachedProfiles.OrderBy(entry => CommonHelpers.LevenshteinDistance(entry.Key, game.Title)).Select(x => x.Value).ToList();
 
-        // Now list every executable in the game install folder
         var executables = Directory.GetFiles(game.InstallPath, "*.exe", SearchOption.AllDirectories).Select(x => Path.GetFileName(x)).ToList();
 
-        // For each possible profile (starting with most likely) we try confirm the profile.
         foreach (var possibleProfile in possibleProfiles)
         {
-            // To be sure we confirm the profile we also check applications in the profile to match our executables.
             foreach (var application in possibleProfile.Applications)
             {
                 if (executables.Contains(application.ApplicationName, StringComparer.OrdinalIgnoreCase))
                 {
-                    // If matched, cache 
                     game.DriverSettingsProfile = possibleProfile;
                     return possibleProfile;
                 }
@@ -362,7 +325,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(true, profileSettingValue);
             }
 
-            // No default value found.
             return new NVAPIResult<uint>(true, 0);
         }
         catch (NVIDIAApiException ex)
@@ -411,7 +373,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(true, currentValue);
             }
 
-            // No default value found.
             return new NVAPIResult<uint>(true, 0);
         }
         catch (NVIDIAApiException ex)
@@ -460,7 +421,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(true, currentValue);
             }
 
-            // No default value found.
             return new NVAPIResult<uint>(true, 0);
         }
         catch (NVIDIAApiException ex)
@@ -621,7 +581,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(true, currentValue);
             }
 
-            // No default value found.
             return new NVAPIResult<uint>(true, 0);
         }
         catch (NVIDIAApiException ex)
@@ -665,7 +624,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(true, currentValue);
             }
 
-            // No default value found.
             return new NVAPIResult<uint>(true, 0);
         }
         catch (NVIDIAApiException ex)
@@ -709,7 +667,6 @@ internal partial class NVAPIHelper : ObservableObject
                 return new NVAPIResult<uint>(true, currentValue);
             }
 
-            // No default value found.
             return new NVAPIResult<uint>(true, 0);
         }
         catch (NVIDIAApiException ex)
@@ -986,7 +943,6 @@ internal partial class NVAPIHelper : ObservableObject
                     partHashes.Add(computedHash);
                 }
 
-                // Concatenate all raw MD5 hashes onto one long byte array
                 int totalBytes = partHashes.Count * 16;
                 var allHashes = new byte[totalBytes];
                 int offset = 0;
@@ -996,7 +952,6 @@ internal partial class NVAPIHelper : ObservableObject
                     offset += partHash.Length;
                 }
 
-                // MD5 the final large byte array
                 var finalHash = MD5.HashData(allHashes);
                 var hashStringWithQuotes = $"\"{Convert.ToHexStringLower(finalHash)}-{partHashes.Count}\"";
                 var valid = string.Equals(hashStringWithQuotes, hash);

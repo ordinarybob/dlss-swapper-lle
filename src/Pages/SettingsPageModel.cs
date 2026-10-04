@@ -185,7 +185,6 @@ public partial class SettingsPageModel : ObservableObject
             Languages.Add(new KeyValuePair<string, string>(knownLanguage, languageName));
         }
 
-        //work with selected language state
         SelectedLanguage = Languages.FirstOrDefault(x => x.Key == Settings.Instance.Language);
 
         _dlssSettingsManager = new DLSSSettingsManager();
@@ -217,7 +216,6 @@ public partial class SettingsPageModel : ObservableObject
         DatabaseWriteBatchSize = Settings.Instance.DatabaseWriteBatchSize;
         BatchSwapConcurrency = Settings.Instance.BatchSwapConcurrency;
         GridViewCardSize = Settings.Instance.GridViewCardSize;
-
 
         var loggingLevel = Settings.Instance.LoggingLevel;
         LoggingLevel = LoggingLevelOptions.FirstOrDefault(x => x.Value == (int)loggingLevel) ?? LoggingLevelOptions.Last();

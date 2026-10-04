@@ -35,7 +35,6 @@ public class XboxGame : Game
     {
         if (String.IsNullOrWhiteSpace(ApplicationId) == false)
         {
-            // It is already loaded, don't load it again.
             return;
         }
 

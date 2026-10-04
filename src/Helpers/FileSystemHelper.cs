@@ -48,7 +48,6 @@ internal class FileSystemHelper
                 Marshal.ThrowExceptionForHR(hResult);
             }
 
-            // Set options to pick a folder
             var options = FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS | FILEOPENDIALOGOPTIONS.FOS_FORCEFILESYSTEM;
             if (pickMultiple)
             {
@@ -57,13 +56,11 @@ internal class FileSystemHelper
             folderOpenDialog.SetOptions(options);
 
             // If no default is provided (or doesn't exist) use My Computer.
-            // I hope users don't just click C:\ and call it a day -_-
             if (string.IsNullOrWhiteSpace(defaultPath) || Directory.Exists(defaultPath) == false)
             { 
                 defaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyComputer);
             }
 
-            // Set the default folder.
             hResult = PInvoke.SHCreateItemFromParsingName<IShellItem>(defaultPath, null, out var directoryShellItem);
             if (hResult < 0)
             {
@@ -143,7 +140,6 @@ internal class FileSystemHelper
                 Marshal.ThrowExceptionForHR(hResult);
             }
 
-
             if (filters is null || filters.Count == 0)
             {
                 filters = new List<FileFilter>()
@@ -162,16 +158,12 @@ internal class FileSystemHelper
                 FreeFilterStrings(unmanagedFilterStrings);
             }
 
-
             // If no default is provided (or doesn't exist) use My Computer.
-            // I hope users don't just click C:\ and call it a day -_-
             if (string.IsNullOrWhiteSpace(defaultPath) || Directory.Exists(defaultPath) == false)
             {
                 defaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyComputer);
             }
 
-
-            // Set the default folder.
             hResult = PInvoke.SHCreateItemFromParsingName<IShellItem>(defaultPath, null, out var directoryShellItem);
             if (hResult < 0)
             {
@@ -186,7 +178,6 @@ internal class FileSystemHelper
                 fileOpenDialog.SetOkButtonLabel(okButtonLabel);
             }
 
-            // This does not seem to do anything.
             if (string.IsNullOrWhiteSpace(defaultExtension) == false)
             {
                 fileOpenDialog.SetDefaultExtension(defaultExtension);
@@ -255,7 +246,6 @@ internal class FileSystemHelper
         }
     }
 
-
     internal static string SaveFile(nint hWnd, IReadOnlyList<FileFilter>? filters, string? defaultPath = null, string? defaultFileName = null, string? defaultExtension = null, string? okButtonLabel = null)
     {
         try
@@ -265,7 +255,6 @@ internal class FileSystemHelper
             {
                 Marshal.ThrowExceptionForHR(hResult);
             }
-
 
             if (filters is null || filters.Count == 0)
             {
@@ -285,16 +274,12 @@ internal class FileSystemHelper
                 FreeFilterStrings(unmanagedFilterStrings);
             }
 
-
             // If no default is provided (or doesn't exist) use My Computer.
-            // I hope users don't just click C:\ and call it a day -_-
             if (string.IsNullOrWhiteSpace(defaultPath) || Directory.Exists(defaultPath) == false)
             {
                 defaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyComputer);
             }
 
-
-            // Set the default folder.
             hResult = PInvoke.SHCreateItemFromParsingName<IShellItem>(defaultPath, null, out var directoryShellItem);
             if (hResult < 0)
             {
@@ -314,8 +299,6 @@ internal class FileSystemHelper
                 fileSaveDialog.SetFileName(defaultFileName);
             }
 
-
-            // This does not seem to do anything. Disabled for now.
             if (string.IsNullOrWhiteSpace(defaultExtension) == false)
             {
                 fileSaveDialog.SetDefaultExtension(defaultExtension);

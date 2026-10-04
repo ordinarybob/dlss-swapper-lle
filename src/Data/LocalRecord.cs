@@ -24,7 +24,6 @@ public partial class LocalRecord : ObservableObject, IEquatable<LocalRecord>
     [ObservableProperty]
     public partial string DownloadErrorMessage { get; set; } = string.Empty;
 
-
     private LocalRecord()
     {
 
@@ -46,7 +45,6 @@ public partial class LocalRecord : ObservableObject, IEquatable<LocalRecord>
         return localRecord;
     }
 
-
     internal bool Delete()
     {
         try
@@ -65,8 +63,6 @@ public partial class LocalRecord : ObservableObject, IEquatable<LocalRecord>
                 }
             }
 
-
-
             IsDownloaded = false;
             HasDownloadError = false;
             DownloadErrorMessage = string.Empty;
@@ -80,10 +76,8 @@ public partial class LocalRecord : ObservableObject, IEquatable<LocalRecord>
         }
     }
 
-
     internal void UpdateFromNewLocalRecord(LocalRecord localRecord)
     {
-        // First make sure expected path matches on both.
         if (Equals(localRecord) == false)
         {
             return;

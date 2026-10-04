@@ -34,11 +34,7 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
     public string MD5Hash { get; set; } = string.Empty;
 
     /// <summary>
-    /// This hash is not guaranteed to be the same as the hash on the zip on the disk.
-    /// It is used during download to validate a successful download. However if you
-    /// import a DLL that exists in the manifest we will then create the zip for that
-    /// file. Doing so will cause the new generateed zip hash and this entry in the
-    /// manifest to differ.
+    /// Expected download archive hash, not the hash of a locally repackaged import.
     /// </summary>
     [JsonPropertyName("zip_md5_hash")]
     public string ZipMD5Hash { get; set; } = string.Empty;
@@ -84,7 +80,6 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
     {
         get
         {
-            // return cached version.
             if (string.IsNullOrWhiteSpace(_displayVersion) == false)
             {
                 return _displayVersion;
@@ -110,9 +105,7 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
                     }
                 }
 
-                // If this isn't loaded we fall back to the existing stuff.
             }
-
 
             var version = Version.AsSpan();
 
@@ -159,7 +152,6 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
         }
     }
 
-
     /// <summary>
     /// Returns the display version (eg 2.5.0.0 slimmed down to 2.5) and prefixes with v, and suffix with additional label if it exists.
     /// </summary>
@@ -169,7 +161,6 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
         get
         {
             var devString = IsDevFile ? " (Debug)" : string.Empty;
-
 
             if (AssetType == GameAssetType.FSR_31_DX12 || AssetType == GameAssetType.FSR_31_VK ||
                 AssetType == GameAssetType.FSR_31_DX12_BACKUP || AssetType == GameAssetType.FSR_31_VK_BACKUP)
@@ -289,7 +280,6 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
             LocalRecord.FileDownloader = fileDownloader;
             NotifyPropertyChanged(nameof(LocalRecord));
 
-
             using (var fileStream = new FileStream(tempZipFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None, FileDownloader.BufferSize, true))
             {
                 var didDownload = await LocalRecord.FileDownloader.DownloadFileToStreamAsync(fileStream, cancellationToken).ConfigureAwait(false);
@@ -359,7 +349,6 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
                 NotifyPropertyChanged(nameof(LocalRecord));
             });
 
-            // Remove temp file.
             try
             {
                 File.Delete(tempZipFile);
@@ -373,7 +362,6 @@ public class DLLRecord : IComparable<DLLRecord>, INotifyPropertyChanged
 
     internal string GetRecordSimpleType()
     {
-        // NOTE: DLL type
         return AssetType switch
         {
             GameAssetType.DLSS => "dlss",

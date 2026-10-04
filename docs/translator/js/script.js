@@ -1,7 +1,6 @@
 let englishResourceStrings = {}; // To store { key: { value: '...', comment: '...' } }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Load English translation and then init auto-save if enabled
   loadEnglishResw().then(() => {
     const autoSaveCheckbox = document.getElementById("autoSave");
     let isEnabled = localStorage.getItem("autoSaveEnabled");
@@ -22,7 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
     autoSaveCheckbox.addEventListener("change", handleAutoSaveToggle);
   });
 
-  // Load translations
   document
     .getElementById("loadTranslationBtn")
     .addEventListener("click", () => {
@@ -33,7 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("reswFile")
     .addEventListener("change", handleUserFileSelect);
 
-  // Save translations
   document
     .getElementById("saveTranslationBtn")
     .addEventListener("click", saveTranslationFile);
@@ -108,7 +105,6 @@ async function loadEnglishResw() {
       translationCell.appendChild(translationTextarea);
     }
 
-    // Initialize popovers
     const popoverTriggerList = [].slice.call(
       document.querySelectorAll('[data-bs-toggle="popover"]')
     );
@@ -261,9 +257,6 @@ function saveTranslationFile() {
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
 }
-
-///////////////////////////////////////////////////////////////
-// Auto Save logic
 
 function autoSaveTranslations() {
   const data = {};

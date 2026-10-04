@@ -30,19 +30,6 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-
-        <!-- Reserved for future in-context guidance. -->
-        <!-- <InfoBar
-              IsOpen="True"
-              Severity="Informational"
-              IsClosable="False"
-              Title="Game asset not found in DLSS Swapper LLE"
-              Message="Would you like to import the current game asset into DLSS Swapper LLE?">
-                <InfoBar.ActionButton>
-                    <Button Content="{x:Bind ViewModel.TranslationProperties.ImportText, Mode=OneWay}" />
-                </InfoBar.ActionButton>
-        </InfoBar>-->
-
         <Grid Grid.Row="0" ColumnSpacing="6" RowSpacing="4" Visibility="{x:Bind ViewModel.BackupGameAsset, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />

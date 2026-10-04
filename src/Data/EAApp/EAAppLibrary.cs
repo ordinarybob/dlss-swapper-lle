@@ -95,12 +95,8 @@ internal class EAAppLibrary : IGameLibrary
         var games = new List<Game>();
         var cachedGames = GameManager.Instance.GetGames<EAAppGame>();
 
-        // I had no idea how to discover install EA App games until I had come across Flow.Launcher.Plugin.GamesLauncher
-        // repo by KrystianLesniak.
-        // https://github.com/KrystianLesniak/Flow.Launcher.Plugin.GamesLauncher
-        // It works by looking at all installed applications and looking at the ones that have "EAInstaller" and "Cleanup.exe"
-        // in the install path. Below is heavily based off their implementation.
-
+        // Identify EA games by EAInstaller/Cleanup.exe in their uninstall commands.
+        // Based on https://github.com/KrystianLesniak/Flow.Launcher.Plugin.GamesLauncher
 
         var registryHives = new RegistryHive[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
         var registryViews = new RegistryView[] { RegistryView.Registry32, RegistryView.Registry64 };
@@ -116,7 +112,6 @@ internal class EAAppLibrary : IGameLibrary
                 {
                     using (var uninstallSubKey = baseKey.OpenSubKey(uninstallRootKey))
                     {
-                        // Check if the uninstall sub key exists
                         if (uninstallSubKey is null)
                         {
                             return;
@@ -131,14 +126,12 @@ internal class EAAppLibrary : IGameLibrary
                                 {
                                     if (programUninstallSubKey is null)
                                     {
-                                        // Could not open program uninstall sub key
                                         continue;
                                     }
 
                                     var uninstallString = programUninstallSubKey.GetValue("UninstallString")?.ToString() ?? string.Empty;
                                     if (string.IsNullOrWhiteSpace(uninstallString))
                                     {
-                                        // No uninstall string found
                                         continue;
                                     }
 
@@ -147,7 +140,6 @@ internal class EAAppLibrary : IGameLibrary
                                     {
                                         continue;
                                     }
-
 
                                     var name = programUninstallSubKey.GetValue("DisplayName")?.ToString() ?? string.Empty;
                                     var installPath = programUninstallSubKey.GetValue("InstallLocation")?.ToString() ?? string.Empty;
@@ -223,7 +215,6 @@ internal class EAAppLibrary : IGameLibrary
         // Delete games that are no longer loaded, they are likely uninstalled
         foreach (var cachedGame in cachedGames)
         {
-            // Game is to be deleted.
             if (games.Contains(cachedGame) == false)
             {
                 await cachedGame.DeleteAsync().ConfigureAwait(false);
@@ -232,7 +223,6 @@ internal class EAAppLibrary : IGameLibrary
 
         return games;
     }
-
 
     public async Task LoadGamesFromCacheAsync()
     {
@@ -254,7 +244,6 @@ internal class EAAppLibrary : IGameLibrary
 
     internal string SearchForCover(Game game)
     {
-        // Use ExtractOne with a selector to match by the Name property
         var search = new GameSearchResult()
         {
             Title = game.Title,

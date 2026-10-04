@@ -5,14 +5,8 @@ using DLSS_Swapper.UserControls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace DLSS_Swapper.Pages;
 
-/// <summary>
-/// An empty page that can be used on its own or navigated to within a Frame.
-/// </summary>
 public sealed partial class LibraryPage : Page
 {
     public static string PageTag { get; } = "PageTag_Library";
@@ -30,7 +24,6 @@ public sealed partial class LibraryPage : Page
         };
         Unloaded += (_, _) => ViewModel.StopDownloadProgress();
     }
-
 
     void MainGridView_SizeChanged(object sender, SizeChangedEventArgs e)
     {

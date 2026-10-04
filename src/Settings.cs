@@ -51,8 +51,6 @@ public class Settings
     static Settings? _instance;
 
     public static Settings Instance => _instance ??= Settings.FromJson();
-    //public event EnabledGameLibrariesChangedHandler EnabledGameLibrariesChanged;
-    //public delegate Task EnabledGameLibrariesChangedHandler(object sender, EventArgs e);
 
     // We default this to false to prevent saves firing when loading from json.
     bool _autoSave;
@@ -142,7 +140,6 @@ public class Settings
         }
     }
 
-
     bool _groupGameLibrariesTogether = true;
     public bool GroupGameLibrariesTogether
     {
@@ -194,8 +191,6 @@ public class Settings
         }
     }
 
-
-
     bool _allowUntrusted;
     public bool AllowUntrusted
     {
@@ -212,7 +207,6 @@ public class Settings
             }
         }
     }
-
 
     ulong _lastPromptWasForVersion;
     public ulong LastPromptWasForVersion
@@ -231,8 +225,6 @@ public class Settings
         }
     }
 
-
-    // Don't forget to change this back to off.
 #if DEBUG
     LoggingLevel _loggingLevel = LoggingLevel.Verbose;
 #else
@@ -268,7 +260,6 @@ public class Settings
         }
     }
 
-
     bool _wasLoadingGames;
     public bool WasLoadingGames
     {
@@ -285,7 +276,6 @@ public class Settings
             }
         }
     }
-
 
     bool _dontShowManuallyAddingGamesNotice;
     public bool DontShowManuallyAddingGamesNotice
@@ -356,7 +346,6 @@ public class Settings
         }
     }
 
-
     int _gridViewCardSize = DefaultGridViewCardSize;
     bool _hasLoadedGridViewCardSize;
     public int GridViewCardSize
@@ -381,9 +370,7 @@ public class Settings
         }
     }
 
-    // Read the two checkpoint-era settings once, then omit them from newly
-    // written files. They remain named explicitly so existing settings migrate
-    // without a reset when the single card-size control replaces them.
+    // Read legacy grid settings for migration, but omit them when saving.
     [JsonPropertyName("GridViewPreferredColumns")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public int LegacyGridViewPreferredColumns { get; set; }
@@ -754,7 +741,6 @@ public class Settings
             settings.SaveJson();
         }
 
-        // Re-enable auto save.
         settings._autoSave = true;
         return settings;
     }
@@ -769,7 +755,6 @@ public class Settings
     /// <summary>
     /// Checks game libraries to see if there are any new ones to be added, or misconfigured settings.
     /// </summary>
-    /// <returns></returns>
     private bool CheckGameLibraries()
     {
         var gameLibraries = Enum.GetValues<GameLibrary>().ToList();
@@ -789,7 +774,6 @@ public class Settings
             var tempGameLibraries = new List<GameLibrarySettings>(gameLibraries.Count);
             foreach (var gameLibrary in gameLibraries)
             {
-                // Enaable libraries based on EnabledGameLibraries property.
                 tempGameLibraries.Add(new GameLibrarySettings()
                 {
                     GameLibrary = gameLibrary,
@@ -801,7 +785,6 @@ public class Settings
         }
         else
         {
-            // Remove each one of the loaded gameLibraries from the list.
             foreach (var gameLibrarySetting in _gameLibrarySettings)
             {
                 gameLibraries.Remove(gameLibrarySetting.GameLibrary);

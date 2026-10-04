@@ -23,16 +23,12 @@ internal partial class GameManager : ObservableObject
 {
     public static GameManager Instance { get; private set; } = new GameManager();
 
-    // Because access to _allGames should be done on the UI thread we have _synchronisedAllGames which
-    // will be used for adding/removing/fetching games. _allGames gets updated which will then be reflected
-    // to the user.
+    // The locked list serves workers; the observable collection is updated only on the UI thread.
     List<Game> _synchronisedAllGames = new List<Game>();
     ObservableCollection<Game> _allGames { get; } = new ObservableCollection<Game>();
 
     public CollectionViewSource GroupedGameCollectionViewSource { get; init; }
     public CollectionViewSource UngroupedGameCollectionViewSource { get; init; }
-
-
 
     [ObservableProperty]
     public partial bool ShowHiddenGames { get; set; } = false;
@@ -90,7 +86,6 @@ internal partial class GameManager : ObservableObject
         };
     }
 
-
     Predicate<object> GetPredicateForLibraryGames(GameLibrary library, bool hideNonDLSSGames, string? filterText = null)
     {
         return (obj) =>
@@ -124,7 +119,6 @@ internal partial class GameManager : ObservableObject
         AllGamesView.ObserveFilterProperty(nameof(Game.IsEligibilityPending));
         AllGamesView.ObserveFilterProperty(nameof(Game.IsHidden));
 
-
         allGamesGroup = new GameGroup(string.Empty, null, AllGamesView);
         favouriteGamesGroup = new GameGroup("Favourites", null, FavouriteGamesView);
 
@@ -138,7 +132,6 @@ internal partial class GameManager : ObservableObject
             favouriteGamesGroup,
             allGamesGroup,
         };
-
 
         foreach (var gameLibraryEnum in GetGameLibraries(false))
         {
@@ -160,14 +153,12 @@ internal partial class GameManager : ObservableObject
 
         ApplySort(Settings.Instance.GameSortMode);
 
-
         GroupedGameCollectionViewSource = new CollectionViewSource()
         {
             IsSourceGrouped = true,
             Source = groupedList,
             ItemsPath = new PropertyPath("Games"),
         };
-
 
         UngroupedGameCollectionViewSource = new CollectionViewSource()
         {
@@ -176,17 +167,14 @@ internal partial class GameManager : ObservableObject
             ItemsPath = new PropertyPath("Games"),
         };
 
-
         WeakReferenceMessenger.Default.Register<GameLibrariesOrderChangedMessage>(this, (sender, message) =>
         {
             var groupedGameLibraryList = groupedList.ToList();
 
             groupedList.Clear();
 
-            // Add favourites
             groupedList.Add(groupedGameLibraryList[0]);
             groupedGameLibraryList.RemoveAt(0);
-
 
             // Add each of the items in the order that is from settings.
             foreach (var gameLibrarySetting in Settings.Instance.GameLibrarySettings)
@@ -377,7 +365,6 @@ internal partial class GameManager : ObservableObject
 
     public ICollectionView GetGameCollection(string? filterText = null)
     {
-        // Refresh all filters.
         using (FavouriteGamesView.DeferRefresh())
         {
             FavouriteGamesView.Filter = GetPredicateForFavouriteGames(Settings.Instance.HideNonDLSSGames, filterText);
@@ -416,16 +403,12 @@ internal partial class GameManager : ObservableObject
         }
     }
 
-
-
     public Game AddGame(Game game, bool scrollIntoView = false)
     {
         lock (gameLock)
         {
             if (_synchronisedAllGames.Contains(game) == true)
             {
-                // This probably checks the game collection twice looking for the game.
-                // We could do away with this, but in theory this if is never hit
                 var oldGame = _synchronisedAllGames.First(x => x.Equals(game));
 
                 void UpdateExistingGame()
@@ -606,7 +589,6 @@ internal partial class GameManager : ObservableObject
         }
     }
 
-
     public bool CheckIfGameIsAdded(string installPath)
     {
         lock (gameLock)
@@ -621,7 +603,6 @@ internal partial class GameManager : ObservableObject
         }
         return false;
     }
-
 
     public GameLibrarySettings? GetGameLibrarySettings(GameLibrary gameLibrary)
     {

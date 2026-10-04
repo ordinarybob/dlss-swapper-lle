@@ -42,7 +42,6 @@ internal class UbisoftConnectConfigurationItem
             {
                 foreach (var executable in Online.Executables)
                 {
-                    // If there is no registry key then skip.
                     if (string.IsNullOrEmpty(executable.WorkingDirectory?.Register))
                     {
                         continue;
@@ -59,7 +58,6 @@ internal class UbisoftConnectConfigurationItem
             {
                 foreach (var executable in Offline.Executables)
                 {
-                    // If there is no registry key then skip.
                     if (string.IsNullOrEmpty(executable.WorkingDirectory?.Register))
                     {
                         continue;

@@ -49,15 +49,13 @@ internal static class StagedFileTests
         }
         finally
         {
-            // Only the unique fixture directory created above is removed.
             Directory.Delete(root, recursive: true);
         }
     }
 
     static void CheckSerializationFailure(string root)
     {
-        // Exercise the production staging primitive with the serializers used by
-        // translation saving. This is not an execution of the file-picker UI.
+        // Use the same staging primitive and serializers as translation exports.
         var destination = Path.Combine(root, "translation.json");
         File.WriteAllText(destination, "previous translation");
         try

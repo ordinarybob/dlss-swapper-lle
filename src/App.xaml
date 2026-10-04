@@ -7,8 +7,6 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-                <!-- Other merged dictionaries here -->
-
 
                 <ResourceDictionary>
                     <ResourceDictionary.ThemeDictionaries>
@@ -57,7 +55,6 @@
                     </ResourceDictionary.ThemeDictionaries>
                 </ResourceDictionary>
 
-
                 <ResourceDictionary Source="Themes/FakeContentDialogStyle.xaml" />
 
                 <ResourceDictionary>
@@ -69,7 +66,6 @@
                 </ResourceDictionary>
                 
             </ResourceDictionary.MergedDictionaries>
-            <!-- Other app resources here -->
 
             <Style TargetType="FontIcon">
                 <Setter Property="FontFamily" Value ="Assets/Fonts/Segoe-Fluent-Icons.ttf#Segoe Fluent Icons"/>

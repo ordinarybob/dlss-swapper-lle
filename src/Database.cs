@@ -71,11 +71,9 @@ internal class Database
             }
         }
 
-        // Use a single syncronous connection to make tables
         using (var syncConnection = new SQLiteConnection(Storage.GetDBPath()))
         {
-            // Some nonesense migrations as of v1.2.2+
-            // Make all tables snake case
+            // Migrate pre-1.2.2 table names to the current schema.
             RenameTable(syncConnection, "SteamGame", "steam_game");
             RenameTable(syncConnection, "ManuallyAddedGame", "manually_added_game");
             RenameTable(syncConnection, "GOGGame", "gog_game");
@@ -87,20 +85,16 @@ internal class Database
             RenameTable(syncConnection, "GameHistory", "game_history");
             RenameTable(syncConnection, "GameAsset", "game_asset");
 
-            // Make all columns snake case
             RenameColumn(syncConnection, "battlenet_game", "StatePlayable", "state_playable");
             RenameColumn(syncConnection, "battlenet_game", "RemoteCoverImage", "remote_cover_image");
             RenameColumn(syncConnection, "battlenet_game", "LauncherId", "launcher_id");
             RenameColumn(syncConnection, "gog_game", "FallbackHeaderUrl", "fallback_header_url");
             RenameColumn(syncConnection, "game_asset", "Hash", "hash");
 
-            // Delete old indexes if they exist.
             syncConnection.Execute("DROP INDEX IF EXISTS GameAsset_id");
             syncConnection.Execute("DROP INDEX IF EXISTS GameHistory_game_id");
 
-            // Debug code to make sure all tables and columns are snake case. This is made to protect adding data to
-            // the database that was not intended to go to the database. (eg. you need to add [Column( and [Table( to
-            // show your intent for this data to be stored.
+            // Reject unintended persistence: mapped properties need explicit snake_case table/column names.
 #if DEBUG
             var validDbParts = new List<string>()
             {
@@ -181,7 +175,6 @@ internal class Database
                     }
                 }
 
-                // Now for every column in this table we should also check it.
                 var columns = syncConnection.Query<SQLiteConnection.ColumnInfo>($"PRAGMA table_info({table.Name})");
                 foreach (var column in columns)
                 {
@@ -206,13 +199,10 @@ internal class Database
             if (hasIssues)
             {
                 Logger.Error($"You will need to delete {Storage.GetDBPath()} to remove these errors.");
-                // If you got here you should go fix this, you likely will have to delete the .db file to prevent it re-appearing.
-                // Check your debug output for specific information.
                 DebuggerHelper.BreakIfAttached();
             }
 #endif
 
-            // Create the tables normally.
             try
             {
                 syncConnection.CreateTable<GameHistory>();
@@ -233,7 +223,6 @@ internal class Database
                 DebuggerHelper.BreakIfAttached();
             }
 
-
             try
             {
                 syncConnection.CreateTable<GOGGame>();
@@ -243,7 +232,6 @@ internal class Database
                 Logger.Error(err);
                 DebuggerHelper.BreakIfAttached();
             }
-
 
             try
             {
@@ -255,7 +243,6 @@ internal class Database
                 DebuggerHelper.BreakIfAttached();
             }
 
-
             try
             {
                 syncConnection.CreateTable<UbisoftConnectGame>();
@@ -266,7 +253,6 @@ internal class Database
                 DebuggerHelper.BreakIfAttached();
             }
 
-
             try
             {
                 syncConnection.CreateTable<XboxGame>();
@@ -276,7 +262,6 @@ internal class Database
                 Logger.Error(err);
                 DebuggerHelper.BreakIfAttached();
             }
-
 
             try
             {
@@ -327,7 +312,6 @@ internal class Database
 
     public void Init()
     {
-        // If we didn't get this the database was not created as the above threw an exception
         Logger.Verbose("Database Init");
     }
 
