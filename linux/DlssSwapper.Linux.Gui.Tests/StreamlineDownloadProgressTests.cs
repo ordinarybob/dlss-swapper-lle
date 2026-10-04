@@ -38,7 +38,7 @@ internal static class StreamlineDownloadProgressTests
         Check(progress.IsIndeterminate, "Unknown content length used determinate progress");
         handler.Release.TrySetResult();
         Until(() => Text("Downloaded SDK") && Button("Download selected package").IsEnabled);
-        Dispatcher.UIThread.RunJobs();
+        TestUi.Flush();
         Check(!progress.IsVisible && !Text("503") && !Text("Downloading Streamline"), "Late progress replaced the completion result");
         Click("Close"); Check(closed.IsCompleted, "Progress dialog did not close");
         Console.WriteLine("PASS Streamline progress, stale error clearing, cancellation and retry");
@@ -47,7 +47,7 @@ internal static class StreamlineDownloadProgressTests
     private static void Until(Func<bool> condition)
     {
         var timer = System.Diagnostics.Stopwatch.StartNew();
-        while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
+        while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { TestUi.Flush(); Thread.Sleep(1); }
         Check(condition(), "Download progress transition timed out");
     }
     private sealed class DownloadHandler : HttpMessageHandler

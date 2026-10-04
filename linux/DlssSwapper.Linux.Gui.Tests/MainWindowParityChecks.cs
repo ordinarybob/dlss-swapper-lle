@@ -20,7 +20,7 @@ internal static class MainWindowParityChecks
         Check(refresh.Flyout is MenuFlyout { Items.Count: 2 }, "Refresh must offer preserve-excluded and restore-excluded actions.");
         var filter = commands.Single(button => AutomationProperties.GetName(button) == "Filter");
         filter.Flyout!.ShowAt(filter);
-        Dispatcher.UIThread.RunJobs();
+        TestUi.Flush();
         foreach (var name in new[] { "HideNonSwappableCheckBox", "ShowHiddenCheckBox", "GroupLibrariesCheckBox" })
             Check(window.FindControl<CheckBox>(name) is not null, "Missing Windows filter: " + name);
         var hidden = window.FindControl<CheckBox>("ShowHiddenCheckBox")!;
@@ -41,7 +41,7 @@ internal static class MainWindowParityChecks
         foreach (var size in new[] { 620d, 720d, 800d, 1100d })
         {
             window.Width = size;
-            Dispatcher.UIThread.RunJobs();
+            TestUi.Flush();
             var header = window.FindControl<Grid>("GameHeaderStatus")!;
             var headerRect = Bounds(header, window); var toolbarRect = Bounds(toolbar, window);
             Check(!headerRect.Intersects(toolbarRect), "Games title overlaps commands at width " + size);
@@ -55,7 +55,7 @@ internal static class MainWindowParityChecks
                 Check(!Bounds(checkbox, row).Intersects(Bounds(text, row)), "Game selection checkbox overlaps game text.");
         }
         vm.IsBatchMode = false; vm.IsGridView = wasGrid; window.Width = width;
-        Dispatcher.UIThread.RunJobs();
+        TestUi.Flush();
         Console.WriteLine("PASS Games menu functions and non-overlapping headers, selection controls and game rows at 620–1100 DIPs");
     }
 

@@ -26,7 +26,7 @@ internal static class GameDllPickerDialogTests
         try
         {
             details.Show(owner); details.Width = details.MinWidth; details.Height = details.MinHeight;
-            Dispatcher.UIThread.RunJobs();
+            TestUi.Flush();
             var closeDetails = details.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "Close"));
             var point = closeDetails.TranslatePoint(default, details)!.Value;
             Check(point.Y >= 0 && point.Y + closeDetails.Bounds.Height <= details.ClientSize.Height + 1
@@ -46,7 +46,7 @@ internal static class GameDllPickerDialogTests
         void Until(Func<bool> condition)
         {
             var timer = System.Diagnostics.Stopwatch.StartNew();
-            while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
+            while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { TestUi.Flush(); Thread.Sleep(1); }
             Check(condition(), "DLL picker timed out");
         }
         ConfirmationDialog Confirm()
@@ -55,7 +55,7 @@ internal static class GameDllPickerDialogTests
             return window.OwnedWindows.OfType<ConfirmationDialog>().Single();
         }
         Until(() => Action(window, "Close").IsEnabled);
-        window.Width = window.MinWidth; window.Height = window.MinHeight; Dispatcher.UIThread.RunJobs();
+        window.Width = window.MinWidth; window.Height = window.MinHeight; TestUi.Flush();
         CheckActions(window);
         var releases = window.GetVisualDescendants().OfType<ListBox>().Single();
         Check(releases.Items.Count == 1 && releases.Items[0]?.ToString() == "v3.1.4 (v1.0.1.41314)", "Picker lacks readable release/build version");
@@ -79,7 +79,7 @@ internal static class GameDllPickerDialogTests
         Click(window, "Apply"); Click(Confirm(), "Continue"); Until(() => Action(window, "Restore this family").IsEnabled);
         Check(File.ReadAllBytes(target).SequenceEqual(updated) && File.ReadAllBytes(target + ".dlsss").SequenceEqual(original), "Picker apply or backup failed");
         Check(!Action(window, "Apply").IsEnabled && releases.SelectedItem?.ToString()?.EndsWith(" — installed") == true, "Picker did not recognize updated file");
-        Dispatcher.UIThread.RunJobs(); CheckActions(window);
+        TestUi.Flush(); CheckActions(window);
         var emptyCacheRoot = Path.Combine(fixtureRoot, "picker-empty-cache");
         var uncached = new GameDllPickerWindow(game, catalog, emptyCacheRoot, downloadedOnly: true);
         var uncachedClosed = uncached.ShowDialog(owner);

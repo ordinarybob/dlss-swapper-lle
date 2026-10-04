@@ -27,7 +27,7 @@ internal static class BatchDialogTests
         var closed = window.ShowDialog(owner);
         window.Width = window.MinWidth; window.Height = window.MinHeight;
         var include = window.GetVisualDescendants().OfType<CheckBox>().Single(box => box.Content?.ToString()?.StartsWith("Include Streamline") == true);
-        include.IsChecked = true; Dispatcher.UIThread.RunJobs();
+        include.IsChecked = true; TestUi.Flush();
         var components = Components(window);
         Check(components.Length == 2 && components.All(box => box.IsChecked == true), "Batch lists absent components or omits detected components");
         Check(Equals(ToolTip.GetTip(components.Single(box => Equals(box.Content, "sl.common.dll"))), "Fixture common services"),
@@ -81,13 +81,13 @@ internal static class BatchDialogTests
         var network = new StreamlineMutationDialogTests.PackageHandler();
         var window = new BatchUpdateWindow(catalog, scans, network, Path.Combine(root, "batch-sdk"), dllCacheRoot);
         var closed = window.ShowDialog(owner);
-        Dispatcher.UIThread.RunJobs();
+        TestUi.Flush();
         Button Action(Window dialog, string name) => dialog.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, name));
         void Click(Window dialog, string name) => Action(dialog, name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         void Until(Func<bool> condition)
         {
             var timer = System.Diagnostics.Stopwatch.StartNew();
-            while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
+            while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { TestUi.Flush(); Thread.Sleep(1); }
             Check(condition(), "Timed out waiting for batch operation");
         }
         ConfirmationDialog Confirm()
@@ -156,7 +156,7 @@ internal static class BatchDialogTests
         var button = window.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "Components…"));
         Check(button.IsEnabled, "Component picker unavailable");
         var flyout = (Flyout)button.Flyout!;
-        flyout.ShowAt(button); Dispatcher.UIThread.RunJobs();
+        flyout.ShowAt(button); TestUi.Flush();
         var boxes = ((Control)flyout.Content!).GetVisualDescendants().OfType<CheckBox>().ToArray();
         Check(boxes.Length > 0, "Component popup is empty");
         flyout.Hide();

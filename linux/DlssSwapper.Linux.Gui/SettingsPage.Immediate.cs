@@ -20,13 +20,13 @@ public sealed partial class SettingsPage
             else if (control is ComboBox combo)
                 combo.SelectionChanged += (_, _) => SaveLive();
             else if (control is TextBox { IsReadOnly: false } text)
-                text.LostFocus += (_, _) => SaveLive();
+                text.LostFocus += (_, _) => SaveLive(allowHidden: true);
         }
     }
 
-    private void SaveLive()
+    private void SaveLive(bool allowHidden = false)
     {
-        if (!_liveSettings || _savingLive || !IsEffectivelyVisible) return;
+        if (!_liveSettings || _savingLive || (!allowHidden && !IsEffectivelyVisible)) return;
         // Save a profile change and its reset controls in one transaction.
         _savingLive = true;
         Dispatcher.UIThread.Post(() =>

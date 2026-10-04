@@ -24,7 +24,7 @@ internal static class DllRestoreDialogTests
         void Until(Func<bool> condition)
         {
             var timer = System.Diagnostics.Stopwatch.StartNew();
-            while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
+            while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { TestUi.Flush(); Thread.Sleep(1); }
             if (!condition()) throw new Exception("Offline restore timed out");
         }
         ConfirmationDialog Confirm()
@@ -33,7 +33,7 @@ internal static class DllRestoreDialogTests
             return window.OwnedWindows.OfType<ConfirmationDialog>().Single();
         }
         Until(() => window.GetVisualDescendants().OfType<CheckBox>().Any());
-        window.Width = window.MinWidth; window.Height = window.MinHeight; Dispatcher.UIThread.RunJobs();
+        window.Width = window.MinWidth; window.Height = window.MinHeight; TestUi.Flush();
         CheckActions(window);
         window.GetVisualDescendants().OfType<CheckBox>().Single().IsChecked = true;
         Click(window, "Restore selected families"); Click(Confirm(), "Cancel");
@@ -42,7 +42,7 @@ internal static class DllRestoreDialogTests
         Click(window, "Restore selected families"); Click(Confirm(), "Continue");
         Until(() => window.Results.Count > 0 && Action(window, "Close").IsEnabled);
         Check(File.ReadAllBytes(target).SequenceEqual(original) && !File.Exists(target + ".dlsss"), "Offline restore failed");
-        Dispatcher.UIThread.RunJobs(); CheckActions(window);
+        TestUi.Flush(); CheckActions(window);
         Check(window.Results.Count == 1 && window.Results[0].Success && window.Results[0].Game.SteamAppId == "fixture-id", "Restore result lost game identity");
         var scan = new DllScanner().Scan(game, DllCatalog.Empty());
         Check(scan.Dlls.Count == 1 && scan.Dlls[0].Md5 == DllScanner.ComputeMd5(target), "Catalog-free rescan failed");

@@ -27,7 +27,7 @@ internal static class StreamlineDialogTests
         Button Action(string name) => window.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, name));
         var timeout = System.Diagnostics.Stopwatch.StartNew();
         while ((!Action("Close").IsEnabled || network.Requests == 0) && timeout.Elapsed < TimeSpan.FromSeconds(5))
-        { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
+        { TestUi.Flush(); Thread.Sleep(1); }
         Check(Action("Close").IsEnabled && !Action("Apply all").IsEnabled, "Offline dialog must not offer an unspecified SDK update");
         Check(window.GetVisualDescendants().OfType<TextBlock>().Any(text => Equals(ToolTip.GetTip(text), "Fixture common services")),
             "Streamline component description ignored translation");
@@ -46,7 +46,7 @@ internal static class StreamlineDialogTests
         all.IsChecked = false;
         Check(!Action("Apply selected").IsEnabled, "Clear all retained selected operation");
         Check(!Action("Restore selected").IsEnabled && !Action("Restore all originals").IsEnabled, "Restore enabled without backups");
-        window.Width = window.MinWidth; window.Height = window.MinHeight; Dispatcher.UIThread.RunJobs();
+        window.Width = window.MinWidth; window.Height = window.MinHeight; TestUi.Flush();
         foreach (var name in new[] { "Download selected package", "Use local package", "Restore all originals", "Restore selected", "Recover interrupted operation", "Apply selected", "Apply all", "Close" })
         {
             var button = Action(name); var point = button.TranslatePoint(default, window)!.Value;
@@ -74,7 +74,7 @@ internal static class StreamlineDialogTests
         void Until(Func<bool> condition)
         {
             var timer = System.Diagnostics.Stopwatch.StartNew();
-            while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(5)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
+            while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(5)) { TestUi.Flush(); Thread.Sleep(1); }
             Check(condition(), "Streamline dialog did not finish the expected state transition");
         }
         Until(() => Action("Apply all").IsEnabled && window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text?.Contains("Latest SDK: v2.12.0") == true));

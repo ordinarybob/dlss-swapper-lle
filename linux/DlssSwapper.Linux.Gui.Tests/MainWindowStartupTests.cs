@@ -43,10 +43,16 @@ internal static class MainWindowStartupTests
             Check(window.OwnedWindows.Count == 0, "Settings navigation opened a modal.");
             Check(!page.FindControl<StackPanel>("SettingsSaveActions")!.IsVisible, "Production settings still require a separate Save step.");
             page.FindControl<NumericUpDown>("BatchConcurrencyInput")!.Value = 4;
-            Dispatcher.UIThread.RunJobs();
+            TestUi.Flush();
             Check(new PersistentLibrary(new LibraryStateStore(stateRoot)).State.BatchSwapConcurrency == 4,
                 "Changing a performance setting did not persist immediately.");
+            var roots = page.FindControl<TextBox>("AdditionalSteamRootsTextBox")!;
+            roots.Text = root;
             window.FindControl<Button>("GamesNavigationButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            roots.RaiseEvent(new Avalonia.Input.FocusChangedEventArgs(Avalonia.Input.InputElement.LostFocusEvent));
+            TestUi.Flush();
+            Check(new PersistentLibrary(new LibraryStateStore(stateRoot)).State.AdditionalSteamRoots.Contains(root),
+                "Leaving Settings discarded the text field edit.");
             Check(ReferenceEquals(originalRow, vm.Games.Single()), "Navigation rebuilt the Games state.");
             window.FindControl<Button>("SettingsNavigationButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(ReferenceEquals(page, window.FindControl<ContentControl>("SettingsPageHost")!.Content)
@@ -62,7 +68,7 @@ internal static class MainWindowStartupTests
                 && libraryPage.FindControl<TextBox>("SearchTextBox")!.Text == "retained filter"
                 && ReferenceEquals(originalRow, vm.Games.Single()), "Library navigation lost filters or Games state.");
             window.FindControl<Button>("GamesNavigationButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Dispatcher.UIThread.RunJobs();
+            TestUi.Flush();
             MainWindowParityChecks.Run(window, vm);
             var card = window.GetVisualDescendants().OfType<Border>().First(control => control.Classes.Contains("row") && control.IsEffectivelyVisible);
             card.RaiseEvent(new Avalonia.Input.KeyEventArgs { RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Enter });
@@ -134,7 +140,7 @@ internal static class MainWindowStartupTests
                 Check(!vm.HasStartupError, "MainWindow reported a startup error");
                 verify(window, vm);
             }
-            finally { window.Close(); Dispatcher.UIThread.RunJobs(); }
+            finally { window.Close(); TestUi.Flush(); }
         }
     }
 
@@ -145,7 +151,7 @@ internal static class MainWindowStartupTests
     {
         var elapsed = System.Diagnostics.Stopwatch.StartNew();
         while (!condition() && elapsed.Elapsed < TimeSpan.FromSeconds(10))
-        { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
+        { TestUi.Flush(); Thread.Sleep(1); }
         Check(condition(), "MainWindow startup did not reach the expected state");
     }
     private static void Check(bool value, string message) { if (!value) throw new Exception(message); }

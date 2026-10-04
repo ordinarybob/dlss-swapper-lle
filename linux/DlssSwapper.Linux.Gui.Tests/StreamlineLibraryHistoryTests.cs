@@ -48,7 +48,7 @@ internal static class StreamlineLibraryHistoryTests
     static void Until(Func<bool> condition)
     {
         var elapsed = System.Diagnostics.Stopwatch.StartNew();
-        while (!condition() && elapsed.Elapsed < TimeSpan.FromSeconds(10)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
+        while (!condition() && elapsed.Elapsed < TimeSpan.FromSeconds(10)) { TestUi.Flush(); Thread.Sleep(1); }
         Check(condition(), "Library SDK history state transition timed out.");
     }
     static void Check(bool value, string message) { if (!value) throw new Exception(message); }

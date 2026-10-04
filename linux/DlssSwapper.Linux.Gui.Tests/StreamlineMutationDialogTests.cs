@@ -83,7 +83,7 @@ internal static class StreamlineMutationDialogTests
     private static void Until(Func<bool> condition)
     {
         var timer = System.Diagnostics.Stopwatch.StartNew();
-        while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(1); }
+        while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(10)) { TestUi.Flush(); Thread.Sleep(1); }
         Check(condition(), "Timed out waiting for Streamline operation");
     }
     private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
