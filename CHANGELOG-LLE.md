@@ -17,7 +17,7 @@
 - One-click update-all, specific DLL-version selection and parallel updates across games.
 - Batch NVIDIA preset controls on Windows, with copyable and exportable operation reports.
 - Bulk removal and persistent launcher exclusions.
-- Library download progress, DLL import/export and application-data reset.
+- Combined Library download progress and application-data reset.
 
 ### Streamline
 

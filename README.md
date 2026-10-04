@@ -14,7 +14,7 @@ DLL catalog updates and translations from later upstream releases.
 [Screenshots](docs/SCREENSHOTS.md) ·
 [Linux guide](linux/README.md) · [Build from source](docs/BUILDING.md)
 
-## Headline features
+## What LLE changes
 
 - **Ultra fast library loading.** Cached games become usable while scanning, artwork
   and metadata continue loading in the background. Adaptive Fast Scan reuses
@@ -43,7 +43,7 @@ DLL catalog updates and translations from later upstream releases.
 
 ![DLSS Swapper LLE on Windows: default list view on the left and grid view on the right](docs/images/windows-main.png)
 
-*Windows Games page: default list view (left), grid view (right). [Interface and workflow gallery](docs/SCREENSHOTS.md).*
+*LLE's redesigned Games page: Deep Scan and batch controls, sorting and responsive card density. Default list view (left), grid view (right). [Workflow screenshots](docs/SCREENSHOTS.md).*
 
 ## Downloads
 
@@ -54,21 +54,20 @@ Both packages include the .NET runtime. Extract the Windows ZIP and run
 `DLSS Swapper LLE.exe`; extract the Linux archive and run
 `./dlss-swapper-linux-gui` or `./dlss-swapper-linux --help`.
 
-## Getting started
+## Using LLE's workflows
 
 1. Start LLE. Choose **HDD** if your games are on a mechanical hard drive, or
    **Standard** for SSD storage. LLE discovers installed games from enabled
    launchers and scans their folders for supported DLLs.
-2. For games outside those launchers, use **Add Games** to select one folder,
-   several folders, or a parent folder containing multiple games. Launch setup
+2. Use **Add Games → Add multiple game folders** or **Add a multi-game directory**
+   to import games together. Launch setup
    lists the imported games together: choose each game's executable from its
    dropdown or use **Browse**, then **Save and close**.
-3. Click a game to see its installed DLL versions. Click a DLL family to choose
-   a replacement version or restore its saved original. For several games,
-   choose **Batch**, select the games and click **Apply updates**. Choose versions
+3. For parallel updates, choose **Batch**, select the games and click
+   **Apply updates**. Choose versions
    individually or click **Update detected DLLs to latest**, then **Apply**.
-4. Use **Library** to download versions in advance. **Streamline** lists SDK
-   releases; the game's **Streamline components** window lets you select a
+4. **Library → Streamline** lists historical SDK releases to download.
+   The game's **Streamline components** window lets you select a
    release, compare its components and apply or restore them.
 
 Close affected games before replacing files and keep their `.dlsss` backups.

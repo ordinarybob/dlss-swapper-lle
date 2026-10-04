@@ -1,6 +1,6 @@
 # DLSS Swapper LLE feature clusters
 
-Changes in LLE V1 compared with upstream `v1.2.5.0` (`4c58e19`), organized into 25 feature groups with platform details, attribution and supporting commits. The [commit inventory](COMMITS.md) separates LLE changes from upstream imports.
+LLE additions and changes compared with upstream `v1.2.5.0` (`4c58e19`), with platform details and supporting commits. Selective upstream imports are recorded separately in the [commit inventory](COMMITS.md) and [attribution](../ATTRIBUTION.md).
 
 ## Feature groups
 
@@ -132,7 +132,7 @@ Sorts the library by game name or detected DLSS version and preserves the select
 
 Windows and Linux.
 
-Adjusts cover-card size with a single control. The grid fills the available width, preserves cover proportions and provides hover borders without overlapping cards.
+Replaces fixed-width cover sizing with a responsive grid that fills the available width and preserves cover proportions. Adds an inline Card size selector to the Windows Steam grid.
 
 **Commits:** [07a9b80](https://github.com/ordinarybob/dlss-swapper-lle/commit/07a9b8053c2170939781459a770d18b9bfb356aa), [f715332](https://github.com/ordinarybob/dlss-swapper-lle/commit/f715332fbe138de6dda108e205b7ac9937e09518), [cdb40cf](https://github.com/ordinarybob/dlss-swapper-lle/commit/cdb40cfb113cc72cd66f43304871ada5424f5445), [848df8d](https://github.com/ordinarybob/dlss-swapper-lle/commit/848df8de0b8ae14d05a2b3c9c8b27d07e1f9ec97), [4633a30](https://github.com/ordinarybob/dlss-swapper-lle/commit/4633a303d4166353e3789220ec34e2d36d66df23), [45daf2e](https://github.com/ordinarybob/dlss-swapper-lle/commit/45daf2ee7df87ce8afc7924ca337246524a6796c), [23af5da](https://github.com/ordinarybob/dlss-swapper-lle/commit/23af5da8d47761e1c37022f0ae1ce4979be3df64), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47).
 
@@ -159,17 +159,17 @@ Reworks the application's navigation, page layouts and dialogs:
 
 Windows and Linux.
 
-Adds a text context menu for existing per-game actions. Notes, titles, favourites and visibility changes retain their drafts or roll back appropriately when saving fails.
+Adds a right-click text menu for direct access to game actions, including LLE's update-all command.
 
 **Commits:** [ed42f95](https://github.com/ordinarybob/dlss-swapper-lle/commit/ed42f95ed555ba59d12a9c5a43f9a9e84ffe596f), [3b01d2e](https://github.com/ordinarybob/dlss-swapper-lle/commit/3b01d2eda24ca1c2fabb0edb1e1a54856c882809), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa).
 
 **Implementation references:** [src/UserControls/GameControlModel.Metadata.cs](../src/UserControls/GameControlModel.Metadata.cs); [src/Pages/GameGridPage.xaml](../src/Pages/GameGridPage.xaml); [linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs](../linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs).
 
-### F13 Complete an individual DLL swap or restore reliably
+### F13 Staged DLL replacement and backup validation
 
 Windows and Linux.
 
-Improves DLL selection, download, replacement and restoration of the pre-swap backup. Adds duplicate-Apply protection, staged writes, file-identity checks, backup protection and corrected DLL-version detection on Linux.
+Adds staged writes, file-identity and backup checks, and duplicate-Apply protection to the existing DLL swap/restore operation. Linux reads Windows DLL version metadata directly.
 
 **Commits:** [fb0caa3](https://github.com/ordinarybob/dlss-swapper-lle/commit/fb0caa31f5816b13058b53daf4cb5b0019966aaa), [6bd2e19](https://github.com/ordinarybob/dlss-swapper-lle/commit/6bd2e19a2389c94a57f04f15c90606b4ebe9d0b4), [ed6a2e7](https://github.com/ordinarybob/dlss-swapper-lle/commit/ed6a2e77df0f818b58734bc08ee5452d612cffd7), [ec48dd8](https://github.com/ordinarybob/dlss-swapper-lle/commit/ec48dd89fc0e6c58967ec25e84721f89099088db), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa), [8069d8b](https://github.com/ordinarybob/dlss-swapper-lle/commit/8069d8b9d25db0016769659ba0934f8d84840bdc), [ae087f9](https://github.com/ordinarybob/dlss-swapper-lle/commit/ae087f9ad2134b0e85aa6f8ebdc24deb0d098206).
 
@@ -189,11 +189,11 @@ Adds clipboard copying and text-file export of batch reports. Fixes Windows cras
 
 **Implementation references:** [src/Data/DllUpdateWorkflow.cs](../src/Data/DllUpdateWorkflow.cs); [src/Helpers/VerifiedDllSource.cs](../src/Helpers/VerifiedDllSource.cs); [src/UserControls/BatchSwapSummaryControl.xaml.cs](../src/UserControls/BatchSwapSummaryControl.xaml.cs); [src/UserControls/EasyContentDialog.cs](../src/UserControls/EasyContentDialog.cs); [linux/DlssSwapper.Linux.Cli/Core/BatchUpdateWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/BatchUpdateWorkflow.cs); [linux/DlssSwapper.Linux.Gui/OperationReportWindow.cs](../linux/DlssSwapper.Linux.Gui/OperationReportWindow.cs).
 
-### F15 Apply NVIDIA presets across selected games
+### F15 Batch preset applicability and per-game results
 
 LLE restoration and extension of PR #913's preset foundation; Windows only.
 
-Applies selected NVIDIA DLSS presets to matching games in a batch. Skips inapplicable profiles and reports already-current, successful and failed changes.
+Extends the imported batch preset workflow with matching-profile checks and per-game results that distinguish inapplicable, already-current, successful and failed changes.
 
 **Commits:** [aa7ec4b](https://github.com/ordinarybob/dlss-swapper-lle/commit/aa7ec4b0a2427fe79bf99a7d7642cd201844ffff), [4beeead](https://github.com/ordinarybob/dlss-swapper-lle/commit/4beeead33b164cde0376266775b23fdc0835594f), [5595e31](https://github.com/ordinarybob/dlss-swapper-lle/commit/5595e317a4ecd4f75c2ef8e1d876d143e934954f), [ed6a2e7](https://github.com/ordinarybob/dlss-swapper-lle/commit/ed6a2e77df0f818b58734bc08ee5452d612cffd7).
 
@@ -213,7 +213,7 @@ Previews upgrades, downgrades and same-version file differences before applying 
 
 **Implementation references:** [shared/DlssSwapper.Shared/Streamline/StreamlineSdkAcquisition.cs](../shared/DlssSwapper.Shared/Streamline/StreamlineSdkAcquisition.cs); [shared/DlssSwapper.Shared/Streamline/StreamlineComponentSet.cs](../shared/DlssSwapper.Shared/Streamline/StreamlineComponentSet.cs); [shared/DlssSwapper.Shared/Streamline/StreamlineDecisionPreview.cs](../shared/DlssSwapper.Shared/Streamline/StreamlineDecisionPreview.cs); [src/UserControls/StreamlineComponentsControl.xaml](../src/UserControls/StreamlineComponentsControl.xaml); [linux/DlssSwapper.Linux.Gui/StreamlineGameWindow.cs](../linux/DlssSwapper.Linux.Gui/StreamlineGameWindow.cs).
 
-### F17 Download library components with visible progress
+### F17 Combined Library and Streamline download progress
 
 Windows and Linux.
 
@@ -225,7 +225,7 @@ The Windows Library header combines simultaneous transfers into one progress bar
 
 **Implementation references:** [src/Pages/LibraryPageModel.DownloadProgress.cs](../src/Pages/LibraryPageModel.DownloadProgress.cs); [src/Helpers/LibraryDownloadProgress.cs](../src/Helpers/LibraryDownloadProgress.cs); [linux/DlssSwapper.Linux.Gui/LibraryPage.Downloads.cs](../linux/DlssSwapper.Linux.Gui/LibraryPage.Downloads.cs).
 
-### F18 Transfer DLL libraries through import and export
+### F18 DLL archive validation and safe destination replacement
 
 Windows and Linux.
 
@@ -268,43 +268,3 @@ Matches the Windows Games commands, filtering and sorting, click-to-open game de
 **Commits:** [32f7ed6](https://github.com/ordinarybob/dlss-swapper-lle/commit/32f7ed60a3769fcf4704639c73cce78cba213526), [e75a4e7](https://github.com/ordinarybob/dlss-swapper-lle/commit/e75a4e72da1502ff4421339d599d6a10e676a525), [45daf2e](https://github.com/ordinarybob/dlss-swapper-lle/commit/45daf2ee7df87ce8afc7924ca337246524a6796c), [23af5da](https://github.com/ordinarybob/dlss-swapper-lle/commit/23af5da8d47761e1c37022f0ae1ce4979be3df64), [ec48dd8](https://github.com/ordinarybob/dlss-swapper-lle/commit/ec48dd89fc0e6c58967ec25e84721f89099088db), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [ae087f9](https://github.com/ordinarybob/dlss-swapper-lle/commit/ae087f9ad2134b0e85aa6f8ebdc24deb0d098206), [923ea5e](https://github.com/ordinarybob/dlss-swapper-lle/commit/923ea5e801e9084004cae9f67150b37ca16a8ad1), [509ac0b](https://github.com/ordinarybob/dlss-swapper-lle/commit/509ac0ba8a55124448b1c583ca7cc6c7d62395e3).
 
 **Implementation references:** [linux/DlssSwapper.Linux.Gui/App.axaml.cs](../linux/DlssSwapper.Linux.Gui/App.axaml.cs); [linux/DlssSwapper.Linux.Gui/MainWindow.axaml](../linux/DlssSwapper.Linux.Gui/MainWindow.axaml); [linux/DlssSwapper.Linux.Gui/DlssSwapper.Linux.Gui.csproj](../linux/DlssSwapper.Linux.Gui/DlssSwapper.Linux.Gui.csproj).
-
-### F22 Updated Japanese interface translation
-
-Upstream translation from `9015474` and `9c757eb`, adapted to LLE; Windows and Linux.
-
-Adds 27 missing Japanese strings and improves 195 existing strings while preserving LLE branding and local labels.
-
-**Commits:** [8abfd44](https://github.com/ordinarybob/dlss-swapper-lle/commit/8abfd44ed8b58cfa14745ad4bb08ac5ca7e28f68).
-
-**Implementation references:** [src/Translations/ja-JP/Resources.resw](../src/Translations/ja-JP/Resources.resw).
-
-### F23 Hebrew interface selection
-
-Upstream translation from `375e8a4` / #950, integrated into LLE; Windows and Linux.
-
-Adds selectable Hebrew with 326 translated strings, right-to-left layout and English fallback for untranslated LLE strings.
-
-**Commits:** [8abfd44](https://github.com/ordinarybob/dlss-swapper-lle/commit/8abfd44ed8b58cfa14745ad4bb08ac5ca7e28f68).
-
-**Implementation references:** [src/Translations/he-IL/Resources.resw](../src/Translations/he-IL/Resources.resw); [src/Helpers/LanguageManager.cs](../src/Helpers/LanguageManager.cs); [linux/DlssSwapper.Linux.Cli/Core/Translations.cs](../linux/DlssSwapper.Linux.Cli/Core/Translations.cs).
-
-### F24 Updated built-in DLL catalog
-
-Upstream catalog data adopted by LLE; Windows and Linux.
-
-Updates the built-in fallback catalog with known DLL versions and identities through DLSS 310.9.1, plus the earlier XeLL update, for first-start and offline identification.
-
-**Commits:** [21adc8c](https://github.com/ordinarybob/dlss-swapper-lle/commit/21adc8c7c04f16120a0637e51957a0eff5b73b9b), [8abfd44](https://github.com/ordinarybob/dlss-swapper-lle/commit/8abfd44ed8b58cfa14745ad4bb08ac5ca7e28f68).
-
-**Implementation references:** [docs/manifest.json](../docs/manifest.json); [src/Assets/static_manifest.json](../src/Assets/static_manifest.json).
-
-### F25 Ray Reconstruction Preset F
-
-Upstream preset addition from `935534b`; Windows only.
-
-Adds Ray Reconstruction Preset F to the existing NVIDIA preset controls.
-
-**Commits:** [21adc8c](https://github.com/ordinarybob/dlss-swapper-lle/commit/21adc8c7c04f16120a0637e51957a0eff5b73b9b).
-
-**Implementation references:** [src/Assets/dlss_d_presets.json](../src/Assets/dlss_d_presets.json); [src/Helpers/NVAPIHelper.cs](../src/Helpers/NVAPIHelper.cs).
