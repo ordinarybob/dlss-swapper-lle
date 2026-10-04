@@ -38,19 +38,26 @@ Run LLE as your normal user, not with `sudo`.
 - Native and Flatpak Steam libraries are discovered automatically.
 - Epic installations can be found through Legendary/Heroic, and GOG through Heroic.
 - Configured Wine prefixes support Epic, GOG, Ubisoft Connect, EA App and Battle.net discovery.
-- Manual import accepts individual folders, multiple folders or the immediate game folders inside a parent directory.
 
 On first launch, enable the HDD option for games on a mechanical hard drive;
 leave it off for SSD or NVMe storage. The initial Deep Scan searches game folders
 and remembers DLL locations for later Fast Scans.
 
-When importing games, choose launch setup to scan the whole imported batch and
-preselect suggested executables. Review and save every selection in one window,
-or adjust native/Wine executables, arguments and working folders individually.
-
 Settings lets you set launcher locations, simultaneous game scans, cover loads
 and game updates, and the number of game entries added to the screen together.
 New scan and cover-loading limits take effect when the next operation starts.
+
+## Manual multi-game import
+
+Use **Add Games** to select several individual game folders, or choose a parent
+directory to import each game folder immediately inside it. Duplicate entries
+are skipped and the imported games are scanned for supported DLLs.
+
+## Automatic executable detection and batch launch setup
+
+After import, choose launch setup to scan all added games and preselect suggested
+executables. Review and save every selection in one window, or adjust native/Wine
+executables, arguments and working folders individually.
 
 ## Updates and restoration
 

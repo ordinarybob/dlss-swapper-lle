@@ -49,9 +49,11 @@ Imports multiple games in one operation, scans their folders for supported DLLs 
 - **Multi-folder import:** adds several individually selected game installation folders in one operation.
 - **Parent-folder batch import:** adds each immediate child folder of a selected games directory as a separate manually added game.
 
-Both skip duplicate entries. Choosing launch setup starts automatic executable detection for the entire imported batch, followed by one window for reviewing and saving the selections. The import notice and launch-setup prompt can remember their choices.
+Both skip duplicate entries. The import notices can be dismissed for future imports. Launch setup is offered separately after import.
 
 The Windows batch summary records added, already-present and failed imports, with details for each failed folder.
+
+[Multi-game import screenshot](SCREENSHOTS.md#manual-multi-game-import).
 
 **Commits:** [32e4e1f](https://github.com/ordinarybob/dlss-swapper-lle/commit/32e4e1f71403552d44a926c23ae6eb8e4247a2bf), [3d58a48](https://github.com/ordinarybob/dlss-swapper-lle/commit/3d58a484292e7ba7457ee1ff99ce94fc629da960), [281b4bb](https://github.com/ordinarybob/dlss-swapper-lle/commit/281b4bbeeb526fdabadf99475b14ab54cd1b88fe), [1c466d9](https://github.com/ordinarybob/dlss-swapper-lle/commit/1c466d9eabfd695d6e6d208af65181801126b1ca), [d79ed42](https://github.com/ordinarybob/dlss-swapper-lle/commit/d79ed4214bb6db7ff5a37a818d205aaedac29b4a), [a4ea439](https://github.com/ordinarybob/dlss-swapper-lle/commit/a4ea43984c9ff4cd59fbdc8db456d8ca94a3504e), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa).
 
@@ -61,7 +63,7 @@ The Windows batch summary records added, already-present and failed imports, wit
 
 Windows and Linux.
 
-Automatically finds and preselects suggested launch executables for the entire imported batch. All games appear together in one window, ready to save as a group or adjust individually.
+Choosing launch setup after import finds and preselects suggested launch executables for the entire added batch. All games appear together in one window, ready to save as a group or adjust individually. The launch-setup prompt can remember the choice for future imports.
 
 Saved launch settings include executables, arguments and working folders. Linux supports native executables and Wine, with configurable Wine executable and prefix.
 
@@ -71,6 +73,8 @@ Saved launch settings include executables, arguments and working folders. Linux 
 - **Batch save controls:** Apply saves selections without closing; Save and close saves and exits; Skip and close exits without saving pending changes. Unselected rows are highlighted but do not block saving the other games.
 
 Saved launch settings can also be reopened for an individual manually added game.
+
+[Executable detection and batch launch-setup screenshot](SCREENSHOTS.md#automatic-executable-detection-and-batch-launch-setup).
 
 **Commits:** [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa), [4a34d03](https://github.com/ordinarybob/dlss-swapper-lle/commit/4a34d0343e30edde54d4c63663e6a29de1b273e6), [c72346d](https://github.com/ordinarybob/dlss-swapper-lle/commit/c72346d16b48572c9ace234515064c6e3331cdda), [283184b](https://github.com/ordinarybob/dlss-swapper-lle/commit/283184bf48bbde2a4d8af209ec61493b431f6504), [2df6c1f](https://github.com/ordinarybob/dlss-swapper-lle/commit/2df6c1f85827307452157da79d0e0d58bb564391), [e129dd9](https://github.com/ordinarybob/dlss-swapper-lle/commit/e129dd9eb46064ae3c27481ee767f6fceadae729), [d8bdc24](https://github.com/ordinarybob/dlss-swapper-lle/commit/d8bdc249daa24cfba42b5b2324f2a304b8fce499), [63805d4](https://github.com/ordinarybob/dlss-swapper-lle/commit/63805d4b7207331b59fbc836e25e9d772b205797).
 

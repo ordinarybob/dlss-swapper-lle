@@ -17,10 +17,15 @@
 - Finds games in native/Flatpak Steam, Legendary/Heroic and supported launchers in configured Wine prefixes.
 - Desktop selection and download of Streamline SDK releases; desktop and terminal operations to inspect, replace, restore and recover game-local Streamline components.
 
-### Batch game import and automatic executable detection
+### Manual multi-game import
 
 - Import all games inside a parent folder or select several game folders in one operation.
-- Scan the entire imported batch and automatically preselect suggested launch executables.
+- Skip duplicate library entries and scan the imported games for supported DLLs.
+- Show added, already-present and failed import counts in the Windows import summary.
+
+### Automatic executable detection and batch launch setup
+
+- Optionally scan the entire imported batch and automatically preselect suggested launch executables.
 - Review every game together and save all selections in one window, with per-game executable, argument and working-folder overrides.
 
 ### Interface and batch updates

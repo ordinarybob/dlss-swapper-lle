@@ -9,11 +9,23 @@ complete game folders and learns new locations.
 
 ![LLE Games page with Deep Scan, batch actions and the Steam Card size selector](images/workflow-game-library.png)
 
-## Batch game import with automatic executable detection
+## Manual multi-game import
 
-Import several game folders or every game folder inside a parent directory in
-one operation. Launch setup scans the imported batch and automatically preselects
-suggested executables. Review, change and save all selections in one window.
+Add multiple games to the library in one operation:
+
+- **Add multiple game folders:** select several individual game installation folders.
+- **Add a multi-game directory:** select a parent directory and import each game folder immediately inside it.
+
+Both modes skip duplicate entries and scan imported games for supported DLLs.
+
+![Add Games menu showing Add multiple game folders and Add a multi-game directory](images/workflow-manual-import.png)
+
+## Automatic executable detection and batch launch setup
+
+After import, choose launch setup to scan all added games for launch executables.
+Review the suggested executable for every game in one window, use Browse to
+change individual selections, and save the whole batch together. Launch arguments
+and working folders can be set separately for each game.
 
 ![LLE automatically selected launch executables for eleven imported games, ready to save together](images/workflow-manual-launch.png)
 

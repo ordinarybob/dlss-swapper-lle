@@ -1,13 +1,14 @@
 # DLSS Swapper LLE V1
 
 Large Library Edition adds ultra fast library scanning and parsing, native Linux
-support, and batch game import with automatic launch-executable detection.
+support, manual multi-game import, and batch launch setup.
 
 ## Highlights
 
 - **Ultra fast library scanning.** First library scan takes ~15 seconds for a 4,000-game Steam library, with cached reloads instantaneous. Launcher records and game folders are processed in parallel. Adaptive Fast Scan checks known DLL locations; Deep Scan searches complete folders and learns new locations.
 - **Native Linux support.** A desktop application for library scanning, batch game import, launch setup, DLL updates and restoration. Terminal commands provide discovery, scanning, updates and restoration using the same saved library. Supports native/Flatpak Steam, Legendary/Heroic and launchers in configured Wine prefixes.
-- **Batch game import with automatic executable detection.** Select several game folders or a parent folder containing them. Launch setup scans all imported games together, preselects suggested executables and lets you review and save every selection in one window.
+- **Manual multi-game import.** Select several game installation folders, or a parent directory containing them, to add the games in one operation. Duplicate entries are skipped and imported games are scanned for supported DLLs.
+- **Automatic executable detection and batch launch setup.** After import, choose launch setup to scan all added games for executables. Review and change suggestions in one window, set per-game launch arguments and working folders, then save the whole batch.
 - **Adjustable scan, cover-loading and update limits.** Choose how many games scan or update at once, how many covers load at once, and how many game entries are added to the screen together. HDD mode reduces simultaneous scans and cover loads.
 - **Redesigned interface.** Vertical navigation, grouped toolbars, resizable cover cards and dialogs that fit smaller windows. Sort games by name or DLSS version and access update-all from a game's right-click menu.
 - **Automatic game covers.** Find covers for manually added games and reuse images already downloaded by Steam or LLE. Windows portable copies can share a cover cache on the game-library drive.
