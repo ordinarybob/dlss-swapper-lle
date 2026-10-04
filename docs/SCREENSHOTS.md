@@ -1,7 +1,6 @@
 # Interface and workflows
 
 Screenshots from LLE with an example library and operation data.
-Windows and Linux views are labelled below.
 
 [Games](#games) · [Import and launch setup](#import-and-launch-setup) ·
 [Updates and restoration](#updates-and-restoration) · [Library](#library) ·

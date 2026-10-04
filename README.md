@@ -6,8 +6,7 @@ interface and bulk workflows for importing games, choosing launch executables
 and updating DLSS, FSR, XeSS and Streamline components.
 
 **LLE V1** is based on upstream **DLSS Swapper v1.2.5.0**, with selected fixes,
-DLL catalog updates and translations from later upstream releases. LLE uses its
-own version numbering.
+DLL catalog updates and translations from later upstream releases.
 
 [Releases](https://github.com/ordinarybob/dlss-swapper-lle/releases) ·
 [Complete feature list](docs/FEATURE_CLUSTERS.md) ·
@@ -42,19 +41,11 @@ own version numbering.
   desktop interface or command line, including discovery, scanning, updates
   and restoration.
 
-The [complete feature list](docs/FEATURE_CLUSTERS.md) covers all 25 feature groups,
-including download progress, DLL import/export, persistent game exclusions,
-translations and upstream contributions.
-
 ![DLSS Swapper LLE main Games page on Windows, with the cover grid and grouped toolbar](docs/images/windows-main.png)
 
-*The main Games page on Windows. [View the interface and workflow gallery](docs/SCREENSHOTS.md)
-for importing games, bulk launch setup, DLL and Streamline updates, downloads,
-performance controls and the Linux desktop.*
+*Windows Games page. [Interface and workflow gallery](docs/SCREENSHOTS.md).*
 
 ## Downloads
-
-**LLE V1**
 
 - **Windows x64 portable:** [Download ZIP](https://github.com/ordinarybob/dlss-swapper-lle/releases/download/v1.0.0/DLSS.Swapper-LLE-1.0.0-windows-x64-portable.zip)
 - **Linux x64 desktop and CLI:** [Download tar.gz](https://github.com/ordinarybob/dlss-swapper-lle/releases/download/v1.0.0/DLSS.Swapper-LLE-1.0.0-linux-x64.tar.gz)
@@ -90,8 +81,7 @@ Game updates, file verification and anti-cheat systems may reject modified DLLs.
 | Windows x64 | Windows 10 build 19041 or newer | Steam, GOG, Epic, Ubisoft Connect, Xbox App, Battle.net and manual imports |
 | Linux x64 | glibc 2.38 or newer and a desktop session for the GUI | Native/Flatpak Steam, Legendary/Heroic, supported launchers in configured Wine prefixes and manual imports |
 
-Linux desktop operation, file dialogs, clipboard, DLL swaps and restores were
-validated on Ubuntu 24.04 under WSL. See the [Linux guide](linux/README.md) for
+See the [Linux guide](linux/README.md) for
 dependencies, launcher setup and Windows-only controls.
 
 ## Release policy
@@ -101,8 +91,8 @@ See [security and safe use](SECURITY.md).
 
 ## Credits and license
 
-An unofficial fork of [beeradmoore/DLSS Swapper](https://github.com/beeradmoore/dlss-swapper),
-based on `v1.2.5.0`. The batch-selection foundation comes from RafaelHGOliveira's
+An unofficial fork of [beeradmoore/DLSS Swapper](https://github.com/beeradmoore/dlss-swapper).
+The batch-selection foundation comes from RafaelHGOliveira's
 [PR #913](https://github.com/beeradmoore/dlss-swapper/pull/913).
 
 Distributed under [GPL-3.0](LICENSE). See [attribution](ATTRIBUTION.md) for

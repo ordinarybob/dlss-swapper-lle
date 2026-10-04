@@ -7,10 +7,7 @@ select the two separate bundles. Disabled roots and TLS-only roots are excluded.
 
 Each downloaded certificate's SHA-256 was checked against the HTTPS report.
 `microsoft-roots.csv` records the selected identities, purposes and fingerprints.
-`linux/Refresh-TrustBundles.ps1` reproduces this operation using public data only;
-it never exports personal certificates or changes the host trust store.
+Regenerate the bundles with `linux/Refresh-TrustBundles.ps1`.
 
-These are static trust snapshots for osslsigncode chain checking, not a copy of
-Windows' complete WinVerifyTrust policy or an online Windows root update service.
-Native signed, unsigned, modified and timestamped DLL verification remains to be
-tested. Bundling the roots is not evidence that those tests passed.
+osslsigncode uses these static bundles for chain checking; they do not reproduce
+Windows' complete WinVerifyTrust policy.

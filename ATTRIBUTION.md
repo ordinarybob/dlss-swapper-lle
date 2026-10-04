@@ -16,7 +16,3 @@ Preset F. Their commits are identified in the [feature list](docs/FEATURE_CLUSTE
 The project retains the [GNU GPL version 3 license](LICENSE), upstream copyright
 notices and contributor credit. Third-party licenses and acknowledgements are
 included in the source tree and application packages.
-
-LLE is independently maintained and is not affiliated with or endorsed by the
-upstream project. NVIDIA, AMD, Intel and other product names remain the
-trademarks of their respective owners.

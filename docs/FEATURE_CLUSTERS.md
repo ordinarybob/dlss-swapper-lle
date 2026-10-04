@@ -6,7 +6,7 @@ Changes in LLE V1 compared with upstream `v1.2.5.0` (`4c58e19`), organized into 
 
 ### F01 Resilient game discovery and Linux launcher integration
 
-LLE refinement of existing discovery; Windows and Linux.
+Windows and Linux.
 
 Linux discovery supports native and Flatpak Steam, Epic through Legendary/Heroic, GOG through Heroic, and Epic, GOG, Ubisoft Connect, EA App and Battle.net installations in configured Wine prefixes.
 
@@ -18,7 +18,7 @@ Finds installed games despite stale or missing Steam library indexes, preserves 
 
 ### F02 Adaptive Fast Scan and Deep Scan
 
-LLE addition and scan-engine rework; Windows and Linux.
+Windows and Linux.
 
 Finds supported game DLLs using learned Fast Scan paths or an exhaustive Deep Scan. The first scan learns additional paths; later scans reuse them, share directory traversal and cache empty results to avoid repeated work.
 
@@ -30,7 +30,7 @@ Adds built-in scan-pattern display and editing for learned and custom Fast Scan 
 
 ### F03 Fast large-library startup and responsive background loading
 
-LLE refinement with an adapted upstream safety fix; Windows and Linux.
+Windows and Linux.
 
 Makes cached games usable before the full scan, artwork and metadata loading finish. Shows completed results progressively, reduces repeated status updates and clears loading state after errors. Includes the UI-thread/loading fix from upstream #933, adapted in [8abfd44](https://github.com/ordinarybob/dlss-swapper-lle/commit/8abfd44ed8b58cfa14745ad4bb08ac5ca7e28f68).
 
@@ -44,7 +44,7 @@ On Windows, repeated database updates are combined into batched transactions. DL
 
 ### F04 Performance profiles and live tuning for different systems
 
-LLE addition; Windows and Linux.
+Windows and Linux.
 
 Adds first-start storage profiles and independent performance controls for scanning, artwork, game updates and batching. Numeric controls support direct editing, with scan and artwork limits adjustable during operation.
 
@@ -64,7 +64,7 @@ Adds performance-settings reset.
 
 ### F05 Manual multi-folder and parent-folder batch game import
 
-LLE extension of manual import; Windows and Linux.
+Windows and Linux.
 
 Extends upstream's single-game import with two additional manual game-loading workflows:
 
@@ -81,7 +81,7 @@ The Windows batch summary records added, already-present and failed imports, wit
 
 ### F06 Bulk removal with persistent launcher exclusions
 
-LLE extension of library management; Windows and Linux.
+Windows and Linux.
 
 Removes selected manual library entries or excludes launcher-discovered games. Exclusions survive rescans and can be restored. Failed saves preserve the affected entry and report the error.
 
@@ -91,7 +91,7 @@ Removes selected manual library entries or excludes launcher-discovered games. E
 
 ### F07 Bulk executable scanning and selection for manually added games
 
-LLE addition; Windows and Linux.
+Windows and Linux.
 
 Adds launching for manually imported games using saved executables, arguments and working folders. Linux supports native executables and Wine, with configurable Wine executable and prefix.
 
@@ -108,7 +108,7 @@ Saved launch settings can also be reopened for an individual manually added game
 
 ### F08 Automatic artwork for manual games and shared cover caching
 
-LLE extension of existing artwork; Windows and Linux.
+Windows and Linux.
 
 Adds automatic covers for manually added games through Steam title matching and a configurable MediaWiki fallback requiring no API key. Expands Steam cache discovery and shared artwork reuse, limits concurrent requests and retries temporary misses.
 
@@ -120,7 +120,7 @@ Cached covers are reused without another download. On Windows, a shared artwork 
 
 ### F09 Sort the game library
 
-LLE addition; Windows and Linux.
+Windows and Linux.
 
 Sorts the library by game name or detected DLSS version and preserves the selected order alongside existing filters.
 
@@ -130,7 +130,7 @@ Sorts the library by game name or detected DLSS version and preserves the select
 
 ### F10 Adjustable cover grid that fills the window
 
-LLE presentation feature; Windows and Linux.
+Windows and Linux.
 
 Adjusts cover-card size with a single control. The grid fills the available width, preserves cover proportions and provides hover borders without overlapping cards.
 
@@ -140,7 +140,7 @@ Adjusts cover-card size with a single control. The grid fills the available widt
 
 ### F11 Redesigned Windows and Linux interface
 
-LLE interface redesign; Windows and Linux.
+Windows and Linux.
 
 Reworks the application's navigation, page layouts and dialogs:
 
@@ -157,7 +157,7 @@ Reworks the application's navigation, page layouts and dialogs:
 
 ### F12 Direct game actions through text context menus
 
-LLE access improvement plus persistence fixes to existing actions; Windows and Linux.
+Windows and Linux.
 
 Adds a text context menu for existing per-game actions. Notes, titles, favourites and visibility changes retain their drafts or roll back appropriately when saving fails.
 
@@ -167,7 +167,7 @@ Adds a text context menu for existing per-game actions. Notes, titles, favourite
 
 ### F13 Complete an individual DLL swap or restore reliably
 
-LLE refinement of upstream single-game swapping; Windows and Linux.
+Windows and Linux.
 
 Improves DLL selection, download, replacement and restoration of the pre-swap backup. Adds duplicate-Apply protection, staged writes, file-identity checks, backup protection and corrected DLL-version detection on Linux.
 
@@ -201,7 +201,7 @@ Applies selected NVIDIA DLSS presets to matching games in a batch. Skips inappli
 
 ### F16 Streamline version switching, rollback and interrupted-update recovery
 
-LLE addition using NVIDIA-supplied SDK packages; Windows and Linux.
+Windows and Linux.
 
 Adds coordinated Streamline component updates with rollback and recovery after interrupted writes. Browses historical NVIDIA Streamline SDK releases, downloads and caches the selected x64 package, and compares it with installed components. Updates selected existing components across one or more games and restores pre-swap backups. Parallel updates use per-game-folder locking.
 
@@ -215,7 +215,7 @@ Previews upgrades, downgrades and same-version file differences before applying 
 
 ### F17 Download library components with visible progress
 
-LLE refinement of Library acquisition; Windows and Linux.
+Windows and Linux.
 
 Shows download and preparation progress, clears stale errors and supports retries. Includes aggregate Library progress on Windows and Streamline download progress on both platforms.
 
@@ -227,7 +227,7 @@ The Windows Library header combines simultaneous transfers into one progress bar
 
 ### F18 Transfer DLL libraries through import and export
 
-LLE reliability refinement of existing Library transfer; Windows and Linux.
+Windows and Linux.
 
 Improves existing DLL import/export with case-insensitive ZIP discovery, imported debug metadata and verified archive creation. Preserves existing destination files when an operation is cancelled or fails.
 
@@ -237,7 +237,7 @@ Improves existing DLL import/export with case-insensitive ZIP discovery, importe
 
 ### F19 Reset all LLE local application data
 
-LLE addition; Windows and Linux.
+Windows and Linux.
 
 Adds a full reset of saved library data, settings and application caches.
 
@@ -247,7 +247,7 @@ Adds a full reset of saved library data, settings and application caches.
 
 ### F20 Native Linux command line interface
 
-LLE platform addition; Linux x64.
+Linux x64.
 
 Provides native command-line discovery, library management, game selection, dry-run planning, DLL updates and restores. Shares saved application state with the Linux GUI.
 
@@ -259,7 +259,7 @@ Supports exact DLL-version selection, Streamline inspection, updates, restores a
 
 ### F21 Native Linux desktop interface
 
-LLE platform addition; Linux x64.
+Linux x64.
 
 Provides a native Avalonia desktop interface for the library, scanning, artwork, updates/restores, settings and launch setup, with native desktop integration and shared saved state.
 

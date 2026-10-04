@@ -5,9 +5,8 @@ manual games, launcher settings, scan patterns, artwork and history.
 
 ## Install and start
 
-Use the Linux x64 archive from the [LLE releases](https://github.com/ordinarybob/dlss-swapper-lle/releases)
-for Windows and Linux. The LLE V1 release includes both applications and their .NET
-runtime in one folder.
+The [Linux x64 archive](https://github.com/ordinarybob/dlss-swapper-lle/releases)
+includes the desktop application, CLI and .NET runtime.
 
 Requirements: x86-64, glibc 2.38 or newer, and a graphical desktop session for the GUI.
 On Debian/Ubuntu, install the desktop libraries if they are not already present:
@@ -55,13 +54,10 @@ chosen operation with `--yes`. See the [CLI reference](DlssSwapper.Linux.Cli/REA
 
 ## Platform details
 
-Desktop operation, native file dialogs, clipboard, DLL version detection,
-signature verification, swapping and restoration were validated on Ubuntu 24.04
-under WSL. Windows NVIDIA driver-profile presets, DLSS indicators and driver
-logging controls remain Windows-only.
+Tested on Ubuntu 24.04 under WSL. NVIDIA driver-profile presets, DLSS indicators
+and driver logging controls are Windows-only.
 
 The app reports backing filesystems and warns about NTFS/FUSE game libraries.
-It does not install or manage Proton or Wine.
 
 The package includes osslsigncode and its supporting libraries for signature
 verification. Certificates remain app-local. See [verifier sources](Runtime/VERIFIER-SOURCES.md),

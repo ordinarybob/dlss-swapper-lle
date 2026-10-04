@@ -30,7 +30,6 @@
 - Native x64 desktop and command-line applications sharing one saved library.
 - Native/Flatpak Steam, Legendary/Heroic and configured Wine-prefix discovery.
 - Manual import, launch setup, artwork, scanning, DLL and Streamline update/restore workflows.
-- Packaged desktop, file-dialog, clipboard and swap/restore validation on Ubuntu 24.04 under WSL.
 
 ### Upstream contributions
 

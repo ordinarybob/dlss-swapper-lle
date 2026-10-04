@@ -10,8 +10,7 @@ recovery action before making another change to those components.
 
 ## Maintenance and reporting
 
-LLE is a checkpoint release. There is no ongoing security-maintenance commitment,
-guaranteed response time or private reporting service.
+There is no ongoing security-maintenance commitment or private reporting service.
 
 Do not post credentials, private paths, raw application databases or unredacted
 logs in public reports. LLE-specific problems belong to this fork, not the

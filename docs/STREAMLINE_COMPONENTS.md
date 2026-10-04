@@ -1,8 +1,6 @@
 # Streamline component descriptions
 
-The descriptions in `StreamlineComponentDescriptions` summarize the roles of existing game-local components, not Windows display drivers. Installing a newer plugin does not by itself add game integration or establish compatibility. DLSS Streamline plugins are distinct from the accompanying `nvngx_*` implementation DLLs.
-
-Verified against NVIDIA documentation/source on 2026-09-04. The descriptions are original summaries; source links below document their basis.
+NVIDIA references for the component descriptions shown in LLE.
 
 | Component | Official source |
 | --- | --- |
@@ -18,4 +16,4 @@ Verified against NVIDIA documentation/source on 2026-09-04. The descriptions are
 | `sl.pcl.dll` | [PCL guide: timing measurements and migration from Reflex](https://github.com/NVIDIA-RTX/Streamline/blob/main/docs/ProgrammingGuidePCL.md) |
 | `sl.reflex.dll` | [Reflex guide: low-latency control, frame limiting, and separate PCL statistics](https://github.com/NVIDIA-RTX/Streamline/blob/main/docs/ProgrammingGuideReflex.md) |
 
-NVIDIA's [packaging script](https://github.com/NVIDIA-RTX/Streamline/blob/main/package.bat) distinguishes the Streamline plugin DLLs from the separate feature binaries. The application continues to restrict replacement to supported files already present in the selected game.
+NVIDIA's [packaging script](https://github.com/NVIDIA-RTX/Streamline/blob/main/package.bat) separates Streamline plugins from the accompanying `nvngx_*` implementation DLLs. LLE replaces supported components already present in the game.

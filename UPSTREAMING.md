@@ -1,10 +1,7 @@
 # Reviewing LLE changes
 
-The [feature list](docs/FEATURE_CLUSTERS.md) groups the release by complete
-features and links each group to its implementation and supporting commits.
-The [attribution page](ATTRIBUTION.md) identifies upstream contributions.
-The [commit inventory](docs/COMMITS.md) separates LLE implementations from
-upstream imports and links to the actual commits in this repository.
+[Feature groups](docs/FEATURE_CLUSTERS.md) ·
+[Commit inventory](docs/COMMITS.md) · [Attribution](ATTRIBUTION.md)
 
 The comparison baseline is upstream `v1.2.5.0`
 (`4c58e1969ea39b35f21754e4f81e4e3baed5f8ca`). From the release source checkout:
@@ -29,6 +26,3 @@ git cherry-pick <commit> [<next-commit> ...]
 For batch workflows, also review RafaelHGOliveira's
 [PR #913](https://github.com/beeradmoore/dlss-swapper/pull/913), whose selection
 and batch-update foundation LLE incorporates.
-
-Any proposed upstream contribution should be scoped to one feature and adapted
-to upstream's current code. Fork branding and release policy remain LLE-specific.
