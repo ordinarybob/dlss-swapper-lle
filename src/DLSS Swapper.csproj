@@ -32,6 +32,7 @@
     <Optimize>True</Optimize>
     <DebugType>None</DebugType>
     <DebugSymbols>false</DebugSymbols>
+    <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/..'))=/_/</PathMap>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug_Portable'">
