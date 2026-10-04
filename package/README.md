@@ -1,10 +1,14 @@
-# Package instructions
-This document assumes you have a correct development environment setup. Each package step may require additional tools. 
+# Packaging
 
-Final output for all 3 build scripts is `Output/`.
+See [building from source](../docs/BUILDING.md) for SDK requirements and commands.
+Run the Windows scripts from this directory:
 
-## build_Portable.cmd
-Builds a portable zipped app. This requires [powershell](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows) installed to complete the actual zip step.
+- `build_Portable.cmd` compiles the portable application.
+- `package_Portable.cmd` creates its ZIP in `Output/`, using PowerShell 7.
+- `build_Installer.cmd` compiles the installer's application files;
+  `package_Installer.cmd` creates the installer using NSIS.
 
-## build_Installer.cmd
-Builds an installable app, also referred to as an unpackaged app. This requires [Nullsoft Scriptable Install System](https://nsis.sourceforge.io/Main_Page) installed. The script that is run to build the installer is in `NSIS\Installer.nsi`.
+The [Linux packaging script](../linux/Package-Portable.ps1) creates one archive
+containing the desktop application, CLI and shared runtime.
+
+See the [release notes](RELEASE_NOTES.md) for LLE V1.

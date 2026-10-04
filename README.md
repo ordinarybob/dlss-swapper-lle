@@ -1,125 +1,109 @@
-<p align="center">
- <img width="150px" src="https://beeradmoore.github.io/dlss-swapper/logo_250.png" align="center" alt="GitHub Readme Stats" />
- <h2 align="center">DLSS Swapper
-</h2>
- <p align="center">DLSS Swapper is a tool that allows you to conveniently download, manage, and swap <strong>DLSS</strong>, <strong>FSR</strong> and <strong>XeSS</strong> dlls allowing you to upgrade or downgrade DLSS, FSR and XeSS version in a game without the game needing an update.</p>
-</p>
+# DLSS Swapper LLE — Large Library Edition
 
-> [!WARNING]
-> Please be aware of malicious sites claiming to be DLSS Swapper. This is the only place you will find official downloads. See our [official links](#official-links) for accounts/sites affiliated with DLSS Swapper.
+DLSS Swapper LLE is a Windows and Linux fork built for managing large game
+libraries. It combines fast library loading, adaptive scanning, a redesigned
+interface and bulk workflows for importing games, choosing launch executables
+and updating DLSS, FSR, XeSS and Streamline components.
 
-<p align="center">
-    <a href="https://github.com/beeradmoore/dlss-swapper/releases"><img alt="Github Release" src="https://img.shields.io/github/v/release/beeradmoore/dlss-swapper" /></a>
-    <a href="https://github.com/beeradmoore/dlss-swapper/graphs/contributors"><img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/beeradmoore/dlss-swapper" /></a>
-    <a href="https://github.com/beeradmoore/dlss-swapper/issues"><img alt="Github Issues" src="https://img.shields.io/github/issues/beeradmoore/dlss-swapper?color=0088ff" /></a>
-    <a href="https://github.com/beeradmoore/dlss-swapper/pulls"><img alt="GitHub Pull Requests" src="https://img.shields.io/github/issues-pr/beeradmoore/dlss-swapper?color=0088ff" /></a>
-</p>
+**LLE V1** is based on upstream **DLSS Swapper v1.2.5.0**, with selected fixes,
+DLL catalog updates and translations from later upstream releases. LLE uses its
+own version numbering.
 
-<p align="center">
-    <a href="https://github.com/beeradmoore/dlss-swapper/releases">Releases</a>
-    ·
-    <a href="https://github.com/beeradmoore/dlss-swapper/issues/new?template=bug_report.yml">Report Bug</a>
-    ·
-    <a href="https://github.com/beeradmoore/dlss-swapper/issues/new?template=feature_request.yml">Request Feature</a>
-</p>
+[Releases](https://github.com/ordinarybob/dlss-swapper-lle/releases) ·
+[Complete feature list](docs/FEATURE_CLUSTERS.md) ·
+[Individual commits](docs/COMMITS.md) ·
+[Screenshots](docs/SCREENSHOTS.md) ·
+[Linux guide](linux/README.md) · [Build from source](docs/BUILDING.md)
 
-<p align="center">
-    <a href="./readmes/readme_ca.md">Català</a>
-    ·
-    English
-    ·
-    <a href="./readmes/readme_es.md">Español</a>
-    ·
-    <a href="./readmes/readme_ja-JP.md">日本語</a>    
-    ·
-    <a href="./readmes/readme_pt-BR.md">Português BR</a>
-    ·
-    <a href="./readmes/readme_tr-TR.md">Türkçe</a>
-    ·
-    <a href="./readmes/readme_zh-Hans.md">简体中文</a>
-    ·
-    <a href="./readmes/readme_zh-TW.md">繁體中文</a>
-</p>
+## Headline features
 
-<p align="center">
-    <img src="https://beeradmoore.github.io/dlss-swapper/images/usage/usage_4.gif" />
-</p>
+- **Fast library loading.** Cached games become usable while scanning, artwork
+  and metadata continue loading in the background. Adaptive Fast Scan reuses
+  learned paths; Deep Scan searches the full game folder. A 4,000-game Steam
+  library fully scans in approximately 30 seconds.
+- **Performance controls for different systems.** HDD and standard storage
+  profiles, with adjustable scanning, artwork, game-update and interface
+  workloads. Scan and artwork limits can be changed while work is running.
+- **Redesigned interface.** Responsive navigation and toolbars, adjustable cover
+  grids, sorting, compact dialogs and direct game actions from context menus.
+- **Bulk game import and launch setup.** Add several game folders or the games
+  inside one parent folder. Scan launch executables together, then review every
+  game in one scrollable window with a selector and Browse button on each row.
+- **One-click update-all and parallel batch updates.** Choose the latest or a
+  specific version for each DLL family across selected games. Apply NVIDIA
+  presets in batches on Windows and copy or save the results.
+- **Streamline version management.** Browse historical SDK releases, compare
+  installed, available and original components, and switch versions for one or
+  many games. Restore saved originals or recover interrupted updates.
+- **Automatic artwork and shared caching.** Resolve covers for manually added
+  games and reuse cached artwork. Windows portable instances can share the
+  artwork cache beside a game library.
+- **Native Linux desktop and CLI.** Manage the same saved library through the
+  desktop interface or command line, including discovery, scanning, updates
+  and restoration.
 
-## What game libraries are supported?
+The [complete feature list](docs/FEATURE_CLUSTERS.md) covers all 25 feature groups,
+including download progress, DLL import/export, persistent game exclusions,
+translations and upstream contributions.
 
-- [Steam](https://store.steampowered.com/)
-- [GOG](https://www.gog.com/en/)
-- [Epic Games](https://store.epicgames.com/)
-- [Ubisoft Connect](https://www.ubisoft.com/)
-- [Xbox App](https://www.xbox.com/)
-- [Battle.net](https://shop.battle.net/)
-- Manually added via the `Add Game` button.
+![DLSS Swapper LLE main Games page on Windows, with the cover grid and grouped toolbar](docs/images/windows-main.png)
 
-## Why would you want to change the DLSS dlls in your game?
+*The main Games page on Windows. [View the interface and workflow gallery](docs/SCREENSHOTS.md)
+for importing games, bulk launch setup, DLL and Streamline updates, downloads,
+performance controls and the Linux desktop.*
 
-See [this](https://youtube.com/clip/UgzYyeox3s7jFJZAvYF4AaABCQ) clip, or better yet just watch the entire video ([Lego Builder's Journey Ray Tracing Showcase + DLSS 2.2 Upgrades Analysis](https://www.youtube.com/watch?v=dtbqJXb1UDw)) from Digital Foundry. DLSS 2.2 discussions start at 11:40.
+## Downloads
 
-## Please note
+**LLE V1**
 
-This tool does **NOT** allow you to add DLSS to games that don't support it.
+- **Windows x64 portable:** [Download ZIP](https://github.com/ordinarybob/dlss-swapper-lle/releases/download/v1.0.0/DLSS.Swapper-LLE-1.0.0-windows-x64-portable.zip)
+- **Linux x64 desktop and CLI:** [Download tar.gz](https://github.com/ordinarybob/dlss-swapper-lle/releases/download/v1.0.0/DLSS.Swapper-LLE-1.0.0-linux-x64.tar.gz)
 
-This tool does **NOT** guarantee that swapping DLSS dlls will:
+Both packages include the .NET runtime. Extract the Windows ZIP and run
+`DLSS Swapper LLE.exe`; extract the Linux archive and run
+`./dlss-swapper-linux-gui` or `./dlss-swapper-linux --help`.
 
-- Improve DLSS performance.
-- Reduce DLSS artifacts.
-- Give a crash free experience.
+## Getting started
 
-In many cases you may fix some issues, in other cases you may prevent a game from launching (until you restore your original dll, provided in the tool).
+1. Start LLE. Choose **HDD** if your games are on a mechanical hard drive, or
+   **Standard** for SSD storage. LLE discovers installed games from enabled
+   launchers and scans their folders for supported DLLs.
+2. For games outside those launchers, use **Add Games** to select one folder,
+   several folders, or a parent folder containing multiple games. Launch setup
+   lists the imported games together: choose each game's executable from its
+   dropdown or use **Browse**, then **Save and close**.
+3. Click a game to see its installed DLL versions. Click a DLL family to choose
+   a replacement version or restore its saved original. For several games,
+   choose **Batch**, select the games and click **Apply updates**. Choose versions
+   individually or click **Update detected DLLs to latest**, then **Apply**.
+4. Use **Library** to download versions in advance. **Streamline** lists SDK
+   releases; the game's **Streamline components** window lets you select a
+   release, compare its components and apply or restore them.
 
-Happy experimenting. As my university professor once said,
+Close affected games before replacing files and keep their `.dlsss` backups.
+Game updates, file verification and anti-cheat systems may reject modified DLLs.
 
-> The good thing about computer [science] is we will never die wondering 'What if...?'
+## Platforms and game libraries
 
-Please, come and share your DLSS experience over in [r/DLSS_Swapper](https://www.reddit.com/r/DLSS_Swapper/).
+| Platform | Requirements | Discovery |
+| --- | --- | --- |
+| Windows x64 | Windows 10 build 19041 or newer | Steam, GOG, Epic, Ubisoft Connect, Xbox App, Battle.net and manual imports |
+| Linux x64 | glibc 2.38 or newer and a desktop session for the GUI | Native/Flatpak Steam, Legendary/Heroic, supported launchers in configured Wine prefixes and manual imports |
 
-## How do I get it?
+Linux desktop operation, file dialogs, clipboard, DLL swaps and restores were
+validated on Ubuntu 24.04 under WSL. See the [Linux guide](linux/README.md) for
+dependencies, launcher setup and Windows-only controls.
 
-You can get the latest builds from our [GitHub releases](https://github.com/beeradmoore/dlss-swapper/releases) page.
+## Release policy
 
-You can also install with winget.
+LLE is a standalone release with no application updater or ongoing support commitment.
+See [security and safe use](SECURITY.md).
 
-> winget install --id=beeradmoore.dlss-swapper -e
+## Credits and license
 
-These are the only official places to get DLSS Swapper.
+An unofficial fork of [beeradmoore/DLSS Swapper](https://github.com/beeradmoore/dlss-swapper),
+based on `v1.2.5.0`. The batch-selection foundation comes from RafaelHGOliveira's
+[PR #913](https://github.com/beeradmoore/dlss-swapper/pull/913).
 
-## It would be cool if DLSS Swapper could...
-
-Create a [feature request](https://github.com/beeradmoore/dlss-swapper/issues/new?template=feature_request.yml).
-
-## How can I contribute?
-
-More info on this soon.
-
-## Minimum System Requirements
-
-| Requirement | Description                           |
-| ----------- | ------------------------------------- |
-| OS          | Windows 10 64-bit (20H1, build 19041) |
-| GPU         | Any                                   |
-
-## Official links
-
-- GitHub: https://github.com/beeradmoore/dlss-swapper/
-- Twitter: https://twitter.com/dlss_swapper
-- Reddit: https://www.reddit.com/r/DLSS_Swapper/
-
-If you have found an other accounts or sites claiming to be DLSS Swapper, please ignore them (or better yet, [file an issue](https://github.com/beeradmoore/dlss-swapper/issues/new?template=other_issue.yml) and let us know)
-
-
-## Sponsors
-
-<table>
-    <tr>
-        <td style="width:50px">
-            <img src="https://beeradmoore.github.io/dlss-swapper/images/sponsors/signpath.png" width="50" height="50">
-        </td>
-        <td>
-            Free code signing on Windows provided by <a href="https://signpath.io/">SignPath.io</a>, certificate by <a href="https://www.signpath.com/solutions/for-open-source-community-foundation">SignPath Foundation</a>.
-        </td>
-    </tr>
-</table>
+Distributed under [GPL-3.0](LICENSE). See [attribution](ATTRIBUTION.md) for
+upstream and third-party credits, and the [changelog](CHANGELOG-LLE.md) for LLE V1.

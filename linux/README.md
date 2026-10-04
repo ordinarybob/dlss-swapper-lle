@@ -1,0 +1,70 @@
+# DLSS Swapper LLE for Linux
+
+The native desktop application and CLI share one saved game library, including
+manual games, launcher settings, scan patterns, artwork and history.
+
+## Install and start
+
+Use the Linux x64 archive from the [LLE releases](https://github.com/ordinarybob/dlss-swapper-lle/releases)
+for Windows and Linux. The LLE V1 release includes both applications and their .NET
+runtime in one folder.
+
+Requirements: x86-64, glibc 2.38 or newer, and a graphical desktop session for the GUI.
+On Debian/Ubuntu, install the desktop libraries if they are not already present:
+
+```sh
+sudo apt install libice6 libsm6 libx11-6 libxrandr2 libxfixes3 libxcursor1 libxi6 libgl1 libfontconfig1
+```
+
+Minimal desktop sessions may also need `xdg-desktop-portal` and
+`xdg-desktop-portal-gtk` for native file pickers.
+
+Extract the archive into an empty folder, retaining executable permissions:
+
+```sh
+mkdir -p /path/to/lle
+tar -xzf DLSS.Swapper-LLE-1.0.0-linux-x64.tar.gz -C /path/to/lle
+cd /path/to/lle
+./dlss-swapper-linux-gui
+./dlss-swapper-linux --help
+```
+
+Run LLE as your normal user, not with `sudo`.
+
+## Game discovery and setup
+
+- Native and Flatpak Steam libraries are discovered automatically.
+- Epic installations can be found through Legendary/Heroic, and GOG through Heroic.
+- Configured Wine prefixes support Epic, GOG, Ubisoft Connect, EA App and Battle.net discovery.
+- Manual import accepts individual folders, multiple folders or the immediate game folders inside a parent directory.
+
+Choose HDD or standard storage settings on first launch. The initial Deep Scan
+learns paths for later Fast Scans. Settings also provides launcher locations and
+performance controls. Manually imported games can have native or Wine launch
+executables, arguments and working folders configured together.
+
+## Updates and restoration
+
+Open a game or select several games to choose the latest or a specific DLL
+version. The Library manages downloaded packages. Streamline provides historical
+SDK selection, component comparison, updates, restore and recovery.
+
+Close affected games before writing and keep the adjacent `.dlsss` backups.
+For command-line use, start with an update or restore `--dry-run`, then repeat the
+chosen operation with `--yes`. See the [CLI reference](DlssSwapper.Linux.Cli/README.md).
+
+## Platform details
+
+Desktop operation, native file dialogs, clipboard, DLL version detection,
+signature verification, swapping and restoration were validated on Ubuntu 24.04
+under WSL. Windows NVIDIA driver-profile presets, DLSS indicators and driver
+logging controls remain Windows-only.
+
+The app reports backing filesystems and warns about NTFS/FUSE game libraries.
+It does not install or manage Proton or Wine.
+
+The package includes osslsigncode and its supporting libraries for signature
+verification. Certificates remain app-local. See [verifier sources](Runtime/VERIFIER-SOURCES.md),
+[trust bundles](Runtime/trust/README.md) and [acknowledgements](Acknowledgements).
+
+For compilation and packaging, see [building from source](../docs/BUILDING.md).
