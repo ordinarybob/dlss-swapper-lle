@@ -11,9 +11,9 @@ Screenshots from LLE with an example library and operation data.
 
 ### Main page — Windows
 
-The cover grid, game count, search and grouped commands share one main page.
+Default list view (left) and grid view (right).
 
-![Windows main Games page](images/windows-main.png)
+![Windows Games page in list and grid views, side by side](images/windows-main.png)
 
 ### Main page — Linux
 

@@ -41,9 +41,9 @@ DLL catalog updates and translations from later upstream releases.
   desktop interface or command line, including discovery, scanning, updates
   and restoration.
 
-![DLSS Swapper LLE main Games page on Windows, with the cover grid and grouped toolbar](docs/images/windows-main.png)
+![DLSS Swapper LLE on Windows: default list view on the left and grid view on the right](docs/images/windows-main.png)
 
-*Windows Games page. [Interface and workflow gallery](docs/SCREENSHOTS.md).*
+*Windows Games page: default list view (left), grid view (right). [Interface and workflow gallery](docs/SCREENSHOTS.md).*
 
 ## Downloads
 
