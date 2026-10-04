@@ -47,7 +47,13 @@ internal static class BulkLaunchSetupTests
                 "Failed saves must restore in-memory state.");
             Check(missing.SaveCalls == 0 && drafts[2].Error.Length > 0 && drafts[3].Error.Length > 0,
                 "Invalid rows need individual errors and no writes.");
+            failures = await ManualLaunchSetup.SaveDraftsAsync(drafts, skipUnselected: true);
+            Check(failures == 1 && drafts[2].Error.Length > 0 && drafts[3].Error.Length == 0,
+                "Save and close must skip unselected rows but retain actual save failures.");
             failed.SaveResult = true;
+            failures = await ManualLaunchSetup.SaveDraftsAsync(drafts, skipUnselected: true);
+            Check(failures == 0 && missing.SaveCalls == 0 && missing.LaunchExecutable is null,
+                "Unselected games must remain unconfigured without preventing close.");
             drafts[3].Executable = savedPath;
             failures = await ManualLaunchSetup.SaveDraftsAsync(drafts);
             Check(failures == 0 && drafts.All(item => item.Error.Length == 0) && game.SaveCalls == 1,
@@ -104,7 +110,7 @@ internal static class BulkLaunchSetupTests
             }
             catch (OperationCanceledException) { }
             Console.WriteLine("Bulk pre-scan: full-set barrier, four-worker bound, ordered results, isolated errors, cached acceptance and cancellation passed.");
-            Console.WriteLine("Launch list: staged edits, saved-choice preservation, per-row errors, partial success, retry and repeated Apply passed.");
+            Console.WriteLine("Launch list: staged edits, saved-choice preservation, unselected-row skip on close, per-row errors, partial success, retry and repeated Apply passed.");
         }
         finally { Directory.Delete(root, recursive: true); }
     }

@@ -60,11 +60,16 @@ internal static partial class ManualLaunchSetup
         }
     }
 
-    internal static async Task<int> SaveDraftsAsync(IReadOnlyList<LaunchDraft> drafts)
+    internal static async Task<int> SaveDraftsAsync(IReadOnlyList<LaunchDraft> drafts, bool skipUnselected = false)
     {
         var failures = 0;
         foreach (var draft in drafts)
         {
+            if (skipUnselected && string.IsNullOrWhiteSpace(draft.Executable))
+            {
+                draft.Error = "";
+                continue;
+            }
             var game = draft.Game;
             var old = (game.LaunchExecutable, game.LaunchArguments, game.LaunchWorkingDirectory);
             try

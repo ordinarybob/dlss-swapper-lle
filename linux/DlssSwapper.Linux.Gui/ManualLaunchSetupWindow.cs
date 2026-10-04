@@ -229,6 +229,11 @@ public sealed class ManualLaunchSetupWindow : Window
         {
             foreach (var row in _rows)
             {
+                if (close && string.IsNullOrWhiteSpace(row.Draft.Executable))
+                {
+                    row.Error = "";
+                    continue;
+                }
                 try
                 {
                     var validated = row.Draft.Validate();

@@ -68,7 +68,7 @@ internal sealed class ManualLaunchSetupDialog : EasyContentDialog
             e.Cancel = true;
             if (_saving) return;
             var deferral = e.GetDeferral();
-            try { e.Cancel = !await SaveAsync(); }
+            try { e.Cancel = !await SaveAsync(skipUnselected: true); }
             finally { deferral.Complete(); }
         };
         CloseButtonClick += (_, e) => e.Cancel = _saving;
@@ -181,14 +181,14 @@ internal sealed class ManualLaunchSetupDialog : EasyContentDialog
             container is ComboBoxItem ? _fullPath : _fileName;
     }
 
-    async Task<bool> SaveAsync()
+    async Task<bool> SaveAsync(bool skipUnselected = false)
     {
         _saving = true;
         IsPrimaryButtonEnabled = IsSecondaryButtonEnabled = _scroll.IsEnabled = false;
         _status.Text = "Saving…";
         try
         {
-            var failures = await ManualLaunchSetup.SaveDraftsAsync(_drafts);
+            var failures = await ManualLaunchSetup.SaveDraftsAsync(_drafts, skipUnselected);
             ShowErrors();
             if (failures == 0) _status.Text = "Launch settings saved.";
             return failures == 0;

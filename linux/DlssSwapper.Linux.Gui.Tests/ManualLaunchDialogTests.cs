@@ -137,11 +137,34 @@ internal static class ManualLaunchDialogTests
         Check(new PersistentLibrary(new LibraryStateStore(library.StateDirectory)).State.ManualGames.Count(game => game.Launch is not null) == 45, "Bulk save lost launch records");
         Check(additionalRoots.All(path => File.ReadAllBytes(Path.Combine(path, "game.exe")).SequenceEqual(new byte[] { 1, 2, 3 })), "Setup changed game executables");
         Check(Directory.GetFiles(root, "*", SearchOption.AllDirectories).All(path => File.ReadAllBytes(path).SequenceEqual(new byte[] { 1, 2, 3 })), "Launch setup changed game files");
+        var emptyRoot = Path.Combine(fixtureRoot, "No executable");
+        Directory.CreateDirectory(emptyRoot);
+        library.AddManualGames([emptyRoot]);
+        list = ManualLaunchSetupWindow.ConfigureAsync(owner, library,
+            library.State.ManualGames.Where(game => game.RootPath == root || game.RootPath == emptyRoot).ToArray());
+        setup = owner.OwnedWindows.OfType<ManualLaunchSetupWindow>().Single();
+        Until(() => Button(setup, "Apply").IsEnabled);
+        firstChoice = Choice(setup, root);
+        firstChoice.SelectedItem = firstChoice.Items.Cast<DLSS_Swapper.Data.ManuallyAdded.ManualLaunchManifest.Candidate>()
+            .Single(item => item.Path == Path.Combine(root, "citron.exe"));
+        Click(setup, "Apply");
+        Check(!list.IsCompleted && Equals(Choice(setup, emptyRoot).BorderBrush, Avalonia.Media.Brushes.IndianRed),
+            "Apply must mark unselected rows red and keep the list open");
+        Check(library.State.ManualGames.Single(game => game.RootPath == root).Launch!.Executable == Path.Combine(root, "citron.exe"),
+            "Unselected row prevented another row from saving");
+        Click(setup, "Save and close"); Until(() => list.IsCompleted); list.GetAwaiter().GetResult();
+        Check(new PersistentLibrary(new LibraryStateStore(library.StateDirectory)).State.ManualGames.Single(game => game.RootPath == emptyRoot).Launch is null,
+            "Save and close wrote an unselected game's launch settings");
+        list = ManualLaunchSetupWindow.ConfigureAsync(owner, library,
+            library.State.ManualGames.Where(game => game.RootPath == emptyRoot).ToArray());
+        setup = owner.OwnedWindows.OfType<ManualLaunchSetupWindow>().Single();
+        Until(() => Button(setup, "Apply").IsEnabled);
+        Click(setup, "Save and close"); Until(() => list.IsCompleted); list.GetAwaiter().GetResult();
         var cancelled = ManualLaunchSetupWindow.ConfigureAsync(owner, library, library.State.ManualGames.ToArray());
         setup = owner.OwnedWindows.OfType<ManualLaunchSetupWindow>().Single();
         Click(setup, "Skip and close"); Until(() => cancelled.IsCompleted);
         Dispatcher.UIThread.RunJobs();
-        Console.WriteLine("PASS headless 45-game launch list: bounded layout, ranking, options, Apply, discard, save failure/retry, partial save and scan cancellation");
+        Console.WriteLine("PASS headless 45-game launch list: bounded layout, ranking, options, Apply, unselected-row warning and close, discard, save failure/retry, partial save and scan cancellation");
     }
     private static ComboBox Choice(Window window, string root) => window.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "LaunchChoice" && Equals(control.Tag, root));
     private static Button Button(Window window, string name) => window.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, name));
