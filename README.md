@@ -16,10 +16,10 @@ DLL catalog updates and translations from later upstream releases.
 
 ## Headline features
 
-- **Fast library loading.** Cached games become usable while scanning, artwork
+- **Ultra fast library loading.** Cached games become usable while scanning, artwork
   and metadata continue loading in the background. Adaptive Fast Scan reuses
   learned paths; Deep Scan searches the full game folder. A 4,000-game Steam
-  library fully scans in approximately 30 seconds.
+  library fully scans in approximately 15 seconds.
 - **Performance controls for different systems.** HDD and standard storage
   profiles, with adjustable scanning, artwork, game-update and interface
   workloads. Scan and artwork limits can be changed while work is running.
