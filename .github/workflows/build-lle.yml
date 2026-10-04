@@ -70,10 +70,11 @@ jobs:
           dotnet run --project linux/DlssSwapper.Linux.Tests/DlssSwapper.Linux.Tests.csproj -c Release
 
       - name: Publish Linux CLI and GUI
+        shell: pwsh
         run: |
-          dotnet publish linux/DlssSwapper.Linux.Cli/DlssSwapper.Linux.Cli.csproj -c Release -r linux-x64 --self-contained true -o stage/cli
-          dotnet publish linux/DlssSwapper.Linux.Gui/DlssSwapper.Linux.Gui.csproj -c Release -r linux-x64 --self-contained true -p:LlePackageFormat=tar.gz -o stage/gui
-          tar -C stage -czf DLSS-Swapper-LLE-1.2.5.1-linux-x64.tar.gz cli gui
+          dotnet restore linux/DlssSwapper.Linux.Gui/DlssSwapper.Linux.Gui.csproj -r linux-x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./linux/Package-Portable.ps1 -Dotnet dotnet -OutputPath DLSS-Swapper-LLE-1.2.5.1-linux-x64.tar.gz
 
       - name: Upload Linux checkpoint artifact
         uses: actions/upload-artifact@v4

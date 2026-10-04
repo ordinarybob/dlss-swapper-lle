@@ -1,7 +1,16 @@
-param([string]$Dotnet = (Join-Path $PSScriptRoot '../../.dotnet-sdk/dotnet.exe'))
+param(
+    [string]$Dotnet,
+    [string]$OutputPath
+)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
-$output = [IO.Path]::GetFullPath((Join-Path $repo '../../outputs/DLSS.Swapper-LLE-test-linux-x64.tar.gz'))
+if (!$Dotnet) {
+    $bundledDotnet = Join-Path $PSScriptRoot '../../.dotnet-sdk/dotnet.exe'
+    $Dotnet = if (Test-Path -LiteralPath $bundledDotnet) { $bundledDotnet } else { 'dotnet' }
+}
+$output = if ($OutputPath) { [IO.Path]::GetFullPath($OutputPath) } else {
+    [IO.Path]::GetFullPath((Join-Path $repo '../../outputs/DLSS.Swapper-LLE-test-linux-x64.tar.gz'))
+}
 $stageRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'obj'))
 $stage = Join-Path $stageRoot ('package-' + [Guid]::NewGuid().ToString('N'))
 $temporary = $output + '.tmp'
