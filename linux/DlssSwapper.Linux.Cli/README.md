@@ -1,6 +1,8 @@
 # DLSS Swapper LLE Linux CLI
 
-Manage the same saved game library used by the Linux desktop application.
+LLE adds a native Linux command-line application for library discovery, scanning,
+DLL updates and restoration, and Streamline operations. It shares saved games and
+settings with LLE's Linux desktop application.
 Use `--help` to see the available commands; starting without arguments also
 shows help. See the [Linux guide](../README.md) for installation and requirements.
 

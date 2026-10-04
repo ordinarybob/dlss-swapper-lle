@@ -1,7 +1,10 @@
 # DLSS Swapper LLE for Linux
 
-The native desktop application and CLI share one saved game library, including
-manual games, launcher settings, scan patterns, artwork and history.
+LLE adds native Linux support to DLSS Swapper: a desktop application and
+command-line interface for library scanning, batch game import, automatic
+launch-executable detection, DLL updates and restores, and Streamline management.
+Both share one saved game library, including launcher settings, scan patterns,
+artwork and history.
 
 ## Install and start
 
@@ -39,8 +42,9 @@ Run LLE as your normal user, not with `sudo`.
 
 Choose HDD or standard storage settings on first launch. The initial Deep Scan
 learns paths for later Fast Scans. Settings also provides launcher locations and
-performance controls. Manually imported games can have native or Wine launch
-executables, arguments and working folders configured together.
+performance controls. Batch launch setup automatically scans imported games and
+preselects suggested executables. Save the whole batch together, or adjust native
+or Wine executables, arguments and working folders individually.
 
 ## Updates and restoration
 

@@ -2,6 +2,80 @@
 
 LLE features grouped with their source files and commits, relative to upstream `v1.2.5.0`. See [upstream contributions](COMMITS.md#upstream-imports-and-adaptations) for imported changes.
 
+## F02 Ultra fast library scanning and parsing
+
+Windows and Linux.
+
+Parallelizes library parsing and game scanning for large collections. First library scan takes ~15 seconds for a 4,000-game Steam library, with cached reloads instantaneous.
+
+Adaptive Fast Scan finds supported game DLLs using learned paths; Deep Scan searches complete game folders. The first scan learns additional paths, while later scans reuse those paths, share directory traversal and cache empty results to avoid repeated work.
+
+Adds built-in scan-pattern display and editing for learned and custom Fast Scan paths.
+
+**Commits:** [19352e4](https://github.com/ordinarybob/dlss-swapper-lle/commit/19352e42a7d3f826738d9ac207b65dab7a2f2579), [95ede66](https://github.com/ordinarybob/dlss-swapper-lle/commit/95ede6689505fc1630ba893e8343d38ad9db6ecb), [f3fdb30](https://github.com/ordinarybob/dlss-swapper-lle/commit/f3fdb30f89d8d394af70fccf68f11934472ee945), [dc2237a](https://github.com/ordinarybob/dlss-swapper-lle/commit/dc2237affc2fb660beea90278cb9f3149ad4d824), [4021e63](https://github.com/ordinarybob/dlss-swapper-lle/commit/4021e638b462c0ed8b218353791c3b586d31066e), [182f6b9](https://github.com/ordinarybob/dlss-swapper-lle/commit/182f6b90ec6359f67236c9aa7e69a48a601d2341), [48b903a](https://github.com/ordinarybob/dlss-swapper-lle/commit/48b903a768469477400ed9eeb6ff7da0037deecc), [69cd628](https://github.com/ordinarybob/dlss-swapper-lle/commit/69cd628389469c7075ac6923354a9a7853751df4), [f435cd7](https://github.com/ordinarybob/dlss-swapper-lle/commit/f435cd7f7717bff0f20ff5f88903880855656052), [787e8b7](https://github.com/ordinarybob/dlss-swapper-lle/commit/787e8b75d350acf8b239a3dee1f8e73032b6444a), [1b2753a](https://github.com/ordinarybob/dlss-swapper-lle/commit/1b2753a8ce5c2d809a7275648d5760dbf7c6152e), [bb2d3bc](https://github.com/ordinarybob/dlss-swapper-lle/commit/bb2d3bcdead657f2069ebcde02bacda73228f47d), [ce1d055](https://github.com/ordinarybob/dlss-swapper-lle/commit/ce1d055cb6360aa46a332db6feb7b18919da1ced), [cb1389a](https://github.com/ordinarybob/dlss-swapper-lle/commit/cb1389a7b8dcf465e1b2931feb3ad368a17f716c), [ed6a2e7](https://github.com/ordinarybob/dlss-swapper-lle/commit/ed6a2e77df0f818b58734bc08ee5452d612cffd7), [ec48dd8](https://github.com/ordinarybob/dlss-swapper-lle/commit/ec48dd89fc0e6c58967ec25e84721f89099088db), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa).
+
+**Implementation references:** [src/Data/Steam/SteamLibrary.cs](../src/Data/Steam/SteamLibrary.cs); [src/Data/GameScanQueue.cs](../src/Data/GameScanQueue.cs); [src/Data/GameAssetPathIndex.cs](../src/Data/GameAssetPathIndex.cs); [src/Data/GameAssetCandidatePathIndex.cs](../src/Data/GameAssetCandidatePathIndex.cs); [linux/DlssSwapper.Linux.Cli/Core/LibraryScanService.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryScanService.cs).
+
+## F21 Native Linux desktop support
+
+Linux x64.
+
+LLE introduces native Linux desktop support for DLSS Swapper, implemented with Avalonia. It includes launcher discovery, library scanning, batch game import, automatic launch-executable detection, artwork, DLL updates and restores, Streamline management and performance controls.
+
+Matches the Windows Games commands, filtering and sorting, click-to-open game details, DLL selection, batch results and immediate settings. Toolbars and selection controls adapt to narrow windows; download progress remains visible above the Library.
+
+**Commits:** [32f7ed6](https://github.com/ordinarybob/dlss-swapper-lle/commit/32f7ed60a3769fcf4704639c73cce78cba213526), [e75a4e7](https://github.com/ordinarybob/dlss-swapper-lle/commit/e75a4e72da1502ff4421339d599d6a10e676a525), [45daf2e](https://github.com/ordinarybob/dlss-swapper-lle/commit/45daf2ee7df87ce8afc7924ca337246524a6796c), [23af5da](https://github.com/ordinarybob/dlss-swapper-lle/commit/23af5da8d47761e1c37022f0ae1ce4979be3df64), [ec48dd8](https://github.com/ordinarybob/dlss-swapper-lle/commit/ec48dd89fc0e6c58967ec25e84721f89099088db), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [ae087f9](https://github.com/ordinarybob/dlss-swapper-lle/commit/ae087f9ad2134b0e85aa6f8ebdc24deb0d098206), [923ea5e](https://github.com/ordinarybob/dlss-swapper-lle/commit/923ea5e801e9084004cae9f67150b37ca16a8ad1), [509ac0b](https://github.com/ordinarybob/dlss-swapper-lle/commit/509ac0ba8a55124448b1c583ca7cc6c7d62395e3).
+
+**Implementation references:** [linux/DlssSwapper.Linux.Gui/App.axaml.cs](../linux/DlssSwapper.Linux.Gui/App.axaml.cs); [linux/DlssSwapper.Linux.Gui/MainWindow.axaml](../linux/DlssSwapper.Linux.Gui/MainWindow.axaml); [linux/DlssSwapper.Linux.Gui/DlssSwapper.Linux.Gui.csproj](../linux/DlssSwapper.Linux.Gui/DlssSwapper.Linux.Gui.csproj).
+
+## F20 Native Linux command-line support
+
+Linux x64.
+
+LLE adds a native Linux command-line application for discovery, library management, scanning, DLL updates and restores. It shares saved application state with LLE's Linux desktop application.
+
+Supports exact DLL-version selection, Streamline inspection, updates, restores and recovery, plus filesystem reports for game-library locations.
+
+**Commits:** [efbe1a4](https://github.com/ordinarybob/dlss-swapper-lle/commit/efbe1a4af4b9ec66b18e03807bb9378fd54163a9), [58d7803](https://github.com/ordinarybob/dlss-swapper-lle/commit/58d7803b233a773be90041dbc3c20a458f6d852f), [4907f4c](https://github.com/ordinarybob/dlss-swapper-lle/commit/4907f4c7f185b6312e2ba4ec0457708fb8b7a9b9), [ec48dd8](https://github.com/ordinarybob/dlss-swapper-lle/commit/ec48dd89fc0e6c58967ec25e84721f89099088db), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47).
+
+**Implementation references:** [linux/DlssSwapper.Linux.Cli/Program.cs](../linux/DlssSwapper.Linux.Cli/Program.cs); [linux/DlssSwapper.Linux.Cli/Cli.cs](../linux/DlssSwapper.Linux.Cli/Cli.cs).
+
+## F05 Manual multi-folder and parent-folder batch game import
+
+Windows and Linux.
+
+Imports a whole collection of manually added games in one operation, then scans them for supported DLLs, artwork and suggested launch executables:
+
+- **Multi-folder import:** adds several individually selected game installation folders in one operation.
+- **Parent-folder batch import:** adds each immediate child folder of a selected games directory as a separate manually added game.
+
+Both skip duplicate entries and feed imported games into automatic executable detection and batch launch setup. Import notices and the launch-setup choice have saved preferences.
+
+The Windows batch summary records added, already-present and failed imports, with details for each failed folder.
+
+**Commits:** [32e4e1f](https://github.com/ordinarybob/dlss-swapper-lle/commit/32e4e1f71403552d44a926c23ae6eb8e4247a2bf), [3d58a48](https://github.com/ordinarybob/dlss-swapper-lle/commit/3d58a484292e7ba7457ee1ff99ce94fc629da960), [281b4bb](https://github.com/ordinarybob/dlss-swapper-lle/commit/281b4bbeeb526fdabadf99475b14ab54cd1b88fe), [1c466d9](https://github.com/ordinarybob/dlss-swapper-lle/commit/1c466d9eabfd695d6e6d208af65181801126b1ca), [d79ed42](https://github.com/ordinarybob/dlss-swapper-lle/commit/d79ed4214bb6db7ff5a37a818d205aaedac29b4a), [a4ea439](https://github.com/ordinarybob/dlss-swapper-lle/commit/a4ea43984c9ff4cd59fbdc8db456d8ca94a3504e), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa).
+
+**Implementation references:** [src/Pages/GameGridPageModel.cs](../src/Pages/GameGridPageModel.cs); [linux/DlssSwapper.Linux.Cli/Core/ManualGameImportWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/ManualGameImportWorkflow.cs); [linux/DlssSwapper.Linux.Cli/Core/LibraryState.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryState.cs); [linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs](../linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs).
+
+## F07 Automatic executable detection and batch launch setup
+
+Windows and Linux.
+
+Automatically finds and preselects suggested launch executables for the entire imported batch. All games appear together in one window, ready to save as a group or adjust individually.
+
+Saved launch settings include executables, arguments and working folders. Linux supports native executables and Wine, with configurable Wine executable and prefix.
+
+- **Bulk executable scan:** scans the entire imported set before selection begins, with parallel scanning, progress and cancellation. Searches nested game directories and preserves saved executable choices.
+- **Ranked suggestions:** matches game titles, abbreviations, sequel numbers and executable metadata; filters helper processes and ranks the main application ahead of companion utilities.
+- **Shared selection window:** one bounded, scrollable list with a game name, executable selector and Browse button on each row. Selectors show filenames when closed and full paths when open. Per-game launch arguments and working folders remain editable.
+- **Batch save controls:** Apply saves selections without closing; Save and close saves and exits; Skip and close exits without saving pending changes. Unselected rows are highlighted but do not block saving the other games.
+
+Saved launch settings can also be reopened for an individual manually added game.
+
+**Commits:** [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa), [4a34d03](https://github.com/ordinarybob/dlss-swapper-lle/commit/4a34d0343e30edde54d4c63663e6a29de1b273e6), [c72346d](https://github.com/ordinarybob/dlss-swapper-lle/commit/c72346d16b48572c9ace234515064c6e3331cdda), [283184b](https://github.com/ordinarybob/dlss-swapper-lle/commit/283184bf48bbde2a4d8af209ec61493b431f6504), [2df6c1f](https://github.com/ordinarybob/dlss-swapper-lle/commit/2df6c1f85827307452157da79d0e0d58bb564391), [e129dd9](https://github.com/ordinarybob/dlss-swapper-lle/commit/e129dd9eb46064ae3c27481ee767f6fceadae729), [d8bdc24](https://github.com/ordinarybob/dlss-swapper-lle/commit/d8bdc249daa24cfba42b5b2324f2a304b8fce499), [63805d4](https://github.com/ordinarybob/dlss-swapper-lle/commit/63805d4b7207331b59fbc836e25e9d772b205797).
+
+**Implementation references:** [src/UserControls/ManualLaunchSetup.cs](../src/UserControls/ManualLaunchSetup.cs); [src/UserControls/ManualLaunchSetup.Bulk.cs](../src/UserControls/ManualLaunchSetup.Bulk.cs); [src/UserControls/ManualLaunchSetupDialog.cs](../src/UserControls/ManualLaunchSetupDialog.cs); [src/Data/GameManager.cs](../src/Data/GameManager.cs); [shared/DlssSwapper.Shared/ManualLaunch/ManualLaunchManifest.cs](../shared/DlssSwapper.Shared/ManualLaunch/ManualLaunchManifest.cs); [linux/DlssSwapper.Linux.Gui/ManualLaunchSetupWindow.cs](../linux/DlssSwapper.Linux.Gui/ManualLaunchSetupWindow.cs); [linux/DlssSwapper.Linux.Cli/Core/ManualGameLaunch.cs](../linux/DlssSwapper.Linux.Cli/Core/ManualGameLaunch.cs).
+
 ## F01 Resilient game discovery and Linux launcher integration
 
 Windows and Linux.
@@ -14,23 +88,11 @@ Finds installed games despite stale or missing Steam library indexes, preserves 
 
 **Implementation references:** [src/Data/Steam/SteamLibrary.cs](../src/Data/Steam/SteamLibrary.cs); [linux/DlssSwapper.Linux.Cli/Platform/SteamDiscovery.cs](../linux/DlssSwapper.Linux.Cli/Platform/SteamDiscovery.cs); [linux/DlssSwapper.Linux.Cli/Platform/ProviderDiscovery.cs](../linux/DlssSwapper.Linux.Cli/Platform/ProviderDiscovery.cs).
 
-## F02 Adaptive Fast Scan and Deep Scan
+## F03 Instant cached reloads and responsive background work
 
 Windows and Linux.
 
-Finds supported game DLLs using learned Fast Scan paths or an exhaustive Deep Scan. The first scan learns additional paths; later scans reuse them, share directory traversal and cache empty results to avoid repeated work.
-
-Adds built-in scan-pattern display and editing for learned and custom Fast Scan paths.
-
-**Commits:** [f3fdb30](https://github.com/ordinarybob/dlss-swapper-lle/commit/f3fdb30f89d8d394af70fccf68f11934472ee945), [dc2237a](https://github.com/ordinarybob/dlss-swapper-lle/commit/dc2237affc2fb660beea90278cb9f3149ad4d824), [4021e63](https://github.com/ordinarybob/dlss-swapper-lle/commit/4021e638b462c0ed8b218353791c3b586d31066e), [182f6b9](https://github.com/ordinarybob/dlss-swapper-lle/commit/182f6b90ec6359f67236c9aa7e69a48a601d2341), [95ede66](https://github.com/ordinarybob/dlss-swapper-lle/commit/95ede6689505fc1630ba893e8343d38ad9db6ecb), [69cd628](https://github.com/ordinarybob/dlss-swapper-lle/commit/69cd628389469c7075ac6923354a9a7853751df4), [f435cd7](https://github.com/ordinarybob/dlss-swapper-lle/commit/f435cd7f7717bff0f20ff5f88903880855656052), [787e8b7](https://github.com/ordinarybob/dlss-swapper-lle/commit/787e8b75d350acf8b239a3dee1f8e73032b6444a), [1b2753a](https://github.com/ordinarybob/dlss-swapper-lle/commit/1b2753a8ce5c2d809a7275648d5760dbf7c6152e), [cb1389a](https://github.com/ordinarybob/dlss-swapper-lle/commit/cb1389a7b8dcf465e1b2931feb3ad368a17f716c), [bb2d3bc](https://github.com/ordinarybob/dlss-swapper-lle/commit/bb2d3bcdead657f2069ebcde02bacda73228f47d), [ce1d055](https://github.com/ordinarybob/dlss-swapper-lle/commit/ce1d055cb6360aa46a332db6feb7b18919da1ced), [ec48dd8](https://github.com/ordinarybob/dlss-swapper-lle/commit/ec48dd89fc0e6c58967ec25e84721f89099088db), [ed6a2e7](https://github.com/ordinarybob/dlss-swapper-lle/commit/ed6a2e77df0f818b58734bc08ee5452d612cffd7), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa).
-
-**Implementation references:** [src/Data/GameAssetPathIndex.cs](../src/Data/GameAssetPathIndex.cs); [src/Data/GameAssetCandidatePathIndex.cs](../src/Data/GameAssetCandidatePathIndex.cs); [linux/DlssSwapper.Linux.Cli/Core/LibraryScanService.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryScanService.cs).
-
-## F03 Fast large-library startup and responsive background loading
-
-Windows and Linux.
-
-Cached games are usable before scanning, artwork and metadata loading finish. Completed results appear progressively without waiting for the slowest game or library.
+The scanned library is cached for instantaneous reloads. Games are usable immediately while fresh scan results, artwork and metadata are processed in the background, without waiting for the slowest game or library.
 
 Artwork loads independently. Screen updates are applied in short, size-limited batches that yield between updates, keeping the interface responsive as the library fills.
 
@@ -58,23 +120,6 @@ HDD and standard profiles provide starting settings; individual controls let use
 
 **Implementation references:** [src/Settings.cs](../src/Settings.cs); [src/UserControls/PerformanceNumberEditor.xaml](../src/UserControls/PerformanceNumberEditor.xaml); [linux/DlssSwapper.Linux.Cli/Core/LibraryState.Performance.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryState.Performance.cs).
 
-## F05 Manual multi-folder and parent-folder batch game import
-
-Windows and Linux.
-
-Extends upstream's single-game import with two additional manual game-loading workflows:
-
-- **Multi-folder import:** adds several individually selected game installation folders in one operation.
-- **Parent-folder batch import:** adds each immediate child folder of a selected games directory as a separate manually added game.
-
-Both validate folders, skip duplicate entries, save the new games and start DLL discovery and artwork loading. Imported games feed into the shared executable-selection workflow. Import notices and the launch-setup choice have saved preferences.
-
-The Windows batch summary records added, already-present and failed imports, with details for each failed folder.
-
-**Commits:** [32e4e1f](https://github.com/ordinarybob/dlss-swapper-lle/commit/32e4e1f71403552d44a926c23ae6eb8e4247a2bf), [3d58a48](https://github.com/ordinarybob/dlss-swapper-lle/commit/3d58a484292e7ba7457ee1ff99ce94fc629da960), [281b4bb](https://github.com/ordinarybob/dlss-swapper-lle/commit/281b4bbeeb526fdabadf99475b14ab54cd1b88fe), [1c466d9](https://github.com/ordinarybob/dlss-swapper-lle/commit/1c466d9eabfd695d6e6d208af65181801126b1ca), [d79ed42](https://github.com/ordinarybob/dlss-swapper-lle/commit/d79ed4214bb6db7ff5a37a818d205aaedac29b4a), [a4ea439](https://github.com/ordinarybob/dlss-swapper-lle/commit/a4ea43984c9ff4cd59fbdc8db456d8ca94a3504e), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa).
-
-**Implementation references:** [src/Pages/GameGridPageModel.cs](../src/Pages/GameGridPageModel.cs); [linux/DlssSwapper.Linux.Cli/Core/ManualGameImportWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/ManualGameImportWorkflow.cs); [linux/DlssSwapper.Linux.Cli/Core/LibraryState.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryState.cs); [linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs](../linux/DlssSwapper.Linux.Gui/MainWindow.axaml.cs).
-
 ## F06 Bulk removal with persistent launcher exclusions
 
 Windows and Linux.
@@ -84,23 +129,6 @@ Removes selected manual library entries or excludes launcher-discovered games. E
 **Commits:** [32e4e1f](https://github.com/ordinarybob/dlss-swapper-lle/commit/32e4e1f71403552d44a926c23ae6eb8e4247a2bf), [4238177](https://github.com/ordinarybob/dlss-swapper-lle/commit/4238177934f4a53f302b382ecdec708e45efd0f2), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa).
 
 **Implementation references:** [src/Pages/GameGridPageModel.cs](../src/Pages/GameGridPageModel.cs); [src/UserControls/GameControlModel.Metadata.cs](../src/UserControls/GameControlModel.Metadata.cs); [linux/DlssSwapper.Linux.Cli/Core/LibraryRemovalWorkflow.cs](../linux/DlssSwapper.Linux.Cli/Core/LibraryRemovalWorkflow.cs).
-
-## F07 Bulk executable scanning and selection for manually added games
-
-Windows and Linux.
-
-Adds launching for manually imported games using saved executables, arguments and working folders. Linux supports native executables and Wine, with configurable Wine executable and prefix.
-
-- **Bulk executable scan:** scans the entire imported set before selection begins, with parallel scanning, progress and cancellation. Searches nested game directories and preserves saved executable choices.
-- **Ranked suggestions:** matches game titles, abbreviations, sequel numbers and executable metadata; filters helper processes and ranks the main application ahead of companion utilities.
-- **Shared selection window:** one bounded, scrollable list with a game name, executable selector and Browse button on each row. Selectors show filenames when closed and full paths when open. Per-game launch arguments and working folders remain editable.
-- **Batch save controls:** Apply saves selections without closing; Save and close saves and exits; Skip and close exits without saving pending changes. Unselected rows are highlighted but do not block saving the other games.
-
-Saved launch settings can also be reopened for an individual manually added game.
-
-**Commits:** [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [9b12179](https://github.com/ordinarybob/dlss-swapper-lle/commit/9b12179196f6a02e8d4e7847fb8873ba644fd6aa), [4a34d03](https://github.com/ordinarybob/dlss-swapper-lle/commit/4a34d0343e30edde54d4c63663e6a29de1b273e6), [c72346d](https://github.com/ordinarybob/dlss-swapper-lle/commit/c72346d16b48572c9ace234515064c6e3331cdda), [283184b](https://github.com/ordinarybob/dlss-swapper-lle/commit/283184bf48bbde2a4d8af209ec61493b431f6504), [2df6c1f](https://github.com/ordinarybob/dlss-swapper-lle/commit/2df6c1f85827307452157da79d0e0d58bb564391), [e129dd9](https://github.com/ordinarybob/dlss-swapper-lle/commit/e129dd9eb46064ae3c27481ee767f6fceadae729), [d8bdc24](https://github.com/ordinarybob/dlss-swapper-lle/commit/d8bdc249daa24cfba42b5b2324f2a304b8fce499), [63805d4](https://github.com/ordinarybob/dlss-swapper-lle/commit/63805d4b7207331b59fbc836e25e9d772b205797).
-
-**Implementation references:** [src/UserControls/ManualLaunchSetup.cs](../src/UserControls/ManualLaunchSetup.cs); [src/UserControls/ManualLaunchSetup.Bulk.cs](../src/UserControls/ManualLaunchSetup.Bulk.cs); [src/UserControls/ManualLaunchSetupDialog.cs](../src/UserControls/ManualLaunchSetupDialog.cs); [src/Data/GameManager.cs](../src/Data/GameManager.cs); [shared/DlssSwapper.Shared/ManualLaunch/ManualLaunchManifest.cs](../shared/DlssSwapper.Shared/ManualLaunch/ManualLaunchManifest.cs); [linux/DlssSwapper.Linux.Gui/ManualLaunchSetupWindow.cs](../linux/DlssSwapper.Linux.Gui/ManualLaunchSetupWindow.cs); [linux/DlssSwapper.Linux.Cli/Core/ManualGameLaunch.cs](../linux/DlssSwapper.Linux.Cli/Core/ManualGameLaunch.cs).
 
 ## F08 Automatic artwork for manual games and shared cover caching
 
@@ -134,11 +162,11 @@ Replaces fixed-width cover sizing with a responsive grid that fills the availabl
 
 **Implementation references:** [src/Pages/ResponsiveGameGridLayout.cs](../src/Pages/ResponsiveGameGridLayout.cs); [shared/DlssSwapper.Shared/ResponsiveGridLayout.cs](../shared/DlssSwapper.Shared/ResponsiveGridLayout.cs).
 
-## F11 Redesigned Windows and Linux interface
+## F11 Windows interface redesign and Linux desktop layout
 
 Windows and Linux.
 
-Reworks the application's navigation, page layouts and dialogs:
+Redesigns the Windows interface and carries the layout into LLE's native Linux application:
 
 - **Navigation:** compact vertical icon controls for Games, Library and Settings, leaving more space for page content.
 - **Games:** redesigned header with game count, search and grouped icon-and-text commands; batch actions sit in their own row below the toolbar. Controls rearrange as the window narrows.
@@ -240,27 +268,3 @@ Adds a full reset of saved library data, settings and application caches.
 **Commits:** [1d9ab27](https://github.com/ordinarybob/dlss-swapper-lle/commit/1d9ab27dd1bafa7a680b9b75e4ee71f1f41f7666), [3e73147](https://github.com/ordinarybob/dlss-swapper-lle/commit/3e73147a7e4a546fa87ac1f4631d98a5990341f8), [ed6a2e7](https://github.com/ordinarybob/dlss-swapper-lle/commit/ed6a2e77df0f818b58734bc08ee5452d612cffd7), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47).
 
 **Implementation references:** [src/AppDataReset.cs](../src/AppDataReset.cs); [linux/DlssSwapper.Linux.Cli/Core/LocalDataResetService.cs](../linux/DlssSwapper.Linux.Cli/Core/LocalDataResetService.cs).
-
-## F20 Native Linux command line interface
-
-Linux x64.
-
-Provides native command-line discovery, library management, game selection, dry-run planning, DLL updates and restores. Shares saved application state with the Linux GUI.
-
-Supports exact DLL-version selection, Streamline inspection, updates, restores and recovery, plus filesystem reports for game-library locations.
-
-**Commits:** [efbe1a4](https://github.com/ordinarybob/dlss-swapper-lle/commit/efbe1a4af4b9ec66b18e03807bb9378fd54163a9), [58d7803](https://github.com/ordinarybob/dlss-swapper-lle/commit/58d7803b233a773be90041dbc3c20a458f6d852f), [4907f4c](https://github.com/ordinarybob/dlss-swapper-lle/commit/4907f4c7f185b6312e2ba4ec0457708fb8b7a9b9), [ec48dd8](https://github.com/ordinarybob/dlss-swapper-lle/commit/ec48dd89fc0e6c58967ec25e84721f89099088db), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47).
-
-**Implementation references:** [linux/DlssSwapper.Linux.Cli/Program.cs](../linux/DlssSwapper.Linux.Cli/Program.cs); [linux/DlssSwapper.Linux.Cli/Cli.cs](../linux/DlssSwapper.Linux.Cli/Cli.cs).
-
-## F21 Native Linux desktop interface
-
-Linux x64.
-
-Provides a native Avalonia desktop interface for the library, scanning, artwork, updates/restores, settings and launch setup, with native desktop integration and shared saved state.
-
-Matches the Windows Games commands, filtering and sorting, click-to-open game details, DLL selection, batch results and immediate settings. Toolbars and selection controls adapt to narrow windows; download progress remains visible above the Library.
-
-**Commits:** [32f7ed6](https://github.com/ordinarybob/dlss-swapper-lle/commit/32f7ed60a3769fcf4704639c73cce78cba213526), [e75a4e7](https://github.com/ordinarybob/dlss-swapper-lle/commit/e75a4e72da1502ff4421339d599d6a10e676a525), [45daf2e](https://github.com/ordinarybob/dlss-swapper-lle/commit/45daf2ee7df87ce8afc7924ca337246524a6796c), [23af5da](https://github.com/ordinarybob/dlss-swapper-lle/commit/23af5da8d47761e1c37022f0ae1ce4979be3df64), [ec48dd8](https://github.com/ordinarybob/dlss-swapper-lle/commit/ec48dd89fc0e6c58967ec25e84721f89099088db), [4f8f447](https://github.com/ordinarybob/dlss-swapper-lle/commit/4f8f4478d62f2c61f10d9930238d7196441d2e47), [ae087f9](https://github.com/ordinarybob/dlss-swapper-lle/commit/ae087f9ad2134b0e85aa6f8ebdc24deb0d098206), [923ea5e](https://github.com/ordinarybob/dlss-swapper-lle/commit/923ea5e801e9084004cae9f67150b37ca16a8ad1), [509ac0b](https://github.com/ordinarybob/dlss-swapper-lle/commit/509ac0ba8a55124448b1c583ca7cc6c7d62395e3).
-
-**Implementation references:** [linux/DlssSwapper.Linux.Gui/App.axaml.cs](../linux/DlssSwapper.Linux.Gui/App.axaml.cs); [linux/DlssSwapper.Linux.Gui/MainWindow.axaml](../linux/DlssSwapper.Linux.Gui/MainWindow.axaml); [linux/DlssSwapper.Linux.Gui/DlssSwapper.Linux.Gui.csproj](../linux/DlssSwapper.Linux.Gui/DlssSwapper.Linux.Gui.csproj).

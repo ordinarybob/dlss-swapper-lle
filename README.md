@@ -1,9 +1,9 @@
 # DLSS Swapper LLE — Large Library Edition
 
-DLSS Swapper LLE is a Windows and Linux fork built for managing large game
-libraries. It combines fast library loading, adaptive scanning, a redesigned
-interface and bulk workflows for importing games, choosing launch executables
-and updating DLSS, FSR, XeSS and Streamline components.
+DLSS Swapper LLE adds ultra fast library scanning and parsing, native Linux
+support, and batch game import with automatic launch-executable detection to
+DLSS Swapper. Built for large game collections, it also brings a redesigned
+Windows interface, parallel DLL updates and Streamline version management.
 
 **LLE V1** is based on upstream **DLSS Swapper v1.2.5.0**, with selected fixes,
 DLL catalog updates and translations from later upstream releases.
@@ -16,18 +16,24 @@ DLL catalog updates and translations from later upstream releases.
 
 ## LLE features
 
-- **Ultra fast library loading.** Cached games become usable while scanning, artwork
-  and metadata continue loading in the background. Adaptive Fast Scan reuses
-  learned paths; Deep Scan searches the full game folder. A 4,000-game Steam
-  library fully scans in approximately 15 seconds.
+- **Ultra fast library scanning.** First library scan takes ~15 seconds for a
+  4,000-game Steam library, with cached reloads instantaneous. LLE parallelizes
+  library parsing and game scanning. Adaptive Fast Scan reuses learned paths;
+  Deep Scan searches complete game folders.
+- **Native Linux support — desktop and command line.** LLE adds native Linux
+  applications for game discovery, scanning, batch import, launch setup, DLL
+  updates and restoration, and Streamline management. The desktop and CLI share
+  one saved library, with native/Flatpak Steam, Legendary/Heroic and Wine-prefix
+  integration. [Linux guide](linux/README.md).
+- **Batch game import with automatic executable detection.** Add a whole folder
+  of games or select multiple game folders in one operation. LLE scans the entire
+  batch, finds and preselects suggested launch executables, then lets you save all
+  selections together in one window. Individual choices remain editable.
 - **Performance controls for different systems.** HDD and standard storage
   profiles, with adjustable scanning, artwork, game-update and interface
   workloads. Scan and artwork limits can be changed while work is running.
 - **Redesigned interface.** Responsive navigation and toolbars, adjustable cover
   grids, sorting, compact dialogs and direct game actions from context menus.
-- **Bulk game import and launch setup.** Add several game folders or the games
-  inside one parent folder. Scan launch executables together, then review every
-  game in one scrollable window with a selector and Browse button on each row.
 - **One-click update-all and parallel batch updates.** Choose the latest or a
   specific version for each DLL family across selected games, with per-game
   preset applicability checks on Windows and copyable or exportable results.
@@ -37,9 +43,6 @@ DLL catalog updates and translations from later upstream releases.
 - **Automatic artwork and shared caching.** Resolve covers for manually added
   games and reuse cached artwork. Windows portable instances can share the
   artwork cache beside a game library.
-- **Native Linux desktop and CLI.** Manage the same saved library through the
-  desktop interface or command line, including discovery, scanning, updates
-  and restoration.
 
 ![DLSS Swapper LLE on Windows: default list view on the left and grid view on the right](docs/images/windows-main.png)
 
@@ -60,9 +63,9 @@ Both packages include the .NET runtime. Extract the Windows ZIP and run
    **Standard** for SSD storage. LLE discovers installed games from enabled
    launchers and scans their folders for supported DLLs.
 2. Use **Add Games → Add multiple game folders** or **Add a multi-game directory**
-   to import games together. Launch setup
-   lists the imported games together: choose each game's executable from its
-   dropdown or use **Browse**, then **Save and close**.
+   to import games in a batch. Choose **Yes** for launch setup: LLE automatically
+   scans the imported games and preselects suggested executables. Review or change
+   any selection, then **Save and close** saves the whole batch.
 3. For parallel updates, choose **Batch**, select the games and click
    **Apply updates**. Choose versions
    individually or click **Update detected DLLs to latest**, then **Apply**.

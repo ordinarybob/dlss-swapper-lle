@@ -33,7 +33,7 @@ The [feature list](FEATURE_CLUSTERS.md) groups these commits by functionality.
 26. [aa5f1bb](https://github.com/ordinarybob/dlss-swapper-lle/commit/aa5f1bb4a77cc76dd5734711359e68b6cdebb912) — Buffer asset hashing reads.
 27. [4021e63](https://github.com/ordinarybob/dlss-swapper-lle/commit/4021e638b462c0ed8b218353791c3b586d31066e) — Prioritize learned game asset paths.
 28. [182f6b9](https://github.com/ordinarybob/dlss-swapper-lle/commit/182f6b90ec6359f67236c9aa7e69a48a601d2341) — Prioritize usable candidate library before fallback scan.
-29. [48b903a](https://github.com/ordinarybob/dlss-swapper-lle/commit/48b903a768469477400ed9eeb6ff7da0037deecc) — Parallelize Steam game registration.
+29. [48b903a](https://github.com/ordinarybob/dlss-swapper-lle/commit/48b903a768469477400ed9eeb6ff7da0037deecc) — Parallelize Steam manifest parsing and game registration.
 30. [1d9ab27](https://github.com/ordinarybob/dlss-swapper-lle/commit/1d9ab27dd1bafa7a680b9b75e4ee71f1f41f7666) — Add complete local app data reset.
 31. [07a9b80](https://github.com/ordinarybob/dlss-swapper-lle/commit/07a9b8053c2170939781459a770d18b9bfb356aa) — Fill grid width with resizing cards and density preferences.
 32. [f715332](https://github.com/ordinarybob/dlss-swapper-lle/commit/f715332fbe138de6dda108e205b7ac9937e09518) — Draw card hover border around the cover instead of over it.

@@ -9,6 +9,10 @@ The multi-game selection and batch-update foundation comes from
 RafaelHGOliveira's [PR #913](https://github.com/beeradmoore/dlss-swapper/pull/913).
 LLE extends that contribution with its shared update workflows and interface.
 
+Native Linux support, including the desktop and command-line applications, was
+developed in LLE. LLE also adds parallel library scanning and parsing, batch game
+import with automatic launch-executable detection, and Streamline SDK management.
+
 Later upstream contributions include the adapted scan-loading/UI-thread fix,
 Japanese and Hebrew translations, DLL catalog updates and Ray Reconstruction
 Preset F. Their sources are listed in [upstream imports and adaptations](docs/COMMITS.md#upstream-imports-and-adaptations).

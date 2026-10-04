@@ -1,24 +1,25 @@
 # LLE workflows
 
-## Large game libraries
+## Ultra fast library scanning
 
-Deep Scan, batch actions, sorting and adjustable card sizes are available
-directly from the redesigned Games page.
+First library scan takes ~15 seconds for a 4,000-game Steam library, with cached
+reloads instantaneous. LLE parallelizes library parsing and game scans; Adaptive
+Fast Scan reuses learned paths, while Deep Scan searches complete game folders.
 
 ![LLE Games page with Deep Scan, batch actions and the Steam Card size selector](images/workflow-game-library.png)
 
-## Bulk game import and launch setup
+## Batch game import with automatic executable detection
 
-Import several game folders or a parent folder, scan the whole group for launch
-executables, then review the suggestions together. Each game has an executable
-selector and Browse button; Apply and Save and close handle the list together.
+Add a whole folder of games in one operation. LLE automatically scans every game
+in the batch and preselects suggested launch executables. Save the entire batch
+from one window, changing individual selections only where needed.
 
-![Bulk launch setup with executable suggestions for eleven imported games](images/workflow-manual-launch.png)
+![LLE automatically selected launch executables for eleven imported games, ready to save together](images/workflow-manual-launch.png)
 
 ## One-click update-all and Streamline batch selection
 
-Select the latest eligible DLL versions together and include a specific Streamline
-SDK across the selected games, then apply the updates in parallel.
+Update selected games in parallel, with one-click latest-version selection for
+their detected DLLs and a chosen Streamline SDK across the batch.
 
 ![LLE batch picker with latest DLL versions and Streamline v2.14.1 selected for 41 games](images/workflow-game-updates.png)
 
@@ -29,4 +30,4 @@ release for use in individual-game or batch component updates.
 
 ![Streamline Library showing eight SDK releases available to download](images/workflow-streamline-library.png)
 
-[Overview](../README.md) · [LLE changes](FEATURE_CLUSTERS.md)
+[Native Linux desktop and CLI](../linux/README.md) · [Overview](../README.md) · [LLE features](FEATURE_CLUSTERS.md)
