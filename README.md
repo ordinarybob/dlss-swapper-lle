@@ -1,6 +1,6 @@
-# DLSS Swapper LLE — Large Library Edition
+# DLSS Swapper — Large Library Edition
 
-DLSS Swapper LLE adds ultra fast library scanning and parsing, native Linux
+LLE adds ultra fast library scanning and parsing, native Linux
 support, manual multi-game import, and batch launch setup to DLSS Swapper.
 Built for large game collections, it also brings a redesigned
 Windows interface, parallel DLL updates and Streamline version management.

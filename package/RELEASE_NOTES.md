@@ -1,6 +1,6 @@
 # DLSS Swapper LLE V1
 
-Large Library Edition adds ultra fast library scanning and parsing, native Linux
+LLE adds ultra fast library scanning and parsing, native Linux
 support, manual multi-game import, and batch launch setup.
 
 ## Highlights
