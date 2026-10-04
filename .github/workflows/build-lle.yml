@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   windows:
-    name: Windows x64 checkpoint artifacts
+    name: Windows x64 portable release
     runs-on: windows-2025
 
     steps:
@@ -20,13 +20,6 @@ jobs:
         with:
           dotnet-version: '10.0.100'
 
-      - name: Install NSIS
-        run: winget install -e --id NSIS.NSIS --version 3.12 --accept-package-agreements --accept-source-agreements
-
-      - name: Add NSIS to PATH
-        shell: pwsh
-        run: '"C:\Program Files (x86)\NSIS\Bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
-
       - name: Build and package portable artifact
         shell: cmd
         working-directory: package
@@ -34,24 +27,15 @@ jobs:
           build_Portable.cmd
           package_Portable.cmd
 
-      - name: Build and package installer artifact
-        shell: cmd
-        working-directory: package
-        run: |
-          build_Installer.cmd
-          package_Installer.cmd
-
-      - name: Upload unsigned checkpoint artifacts
+      - name: Upload Windows portable archive
         uses: actions/upload-artifact@v4
         with:
-          name: DLSS-Swapper-LLE-1.2.5.1-windows-x64
+          name: DLSS-Swapper-LLE-1.0.0-windows-x64
           if-no-files-found: error
-          path: |
-            package/Output/DLSS.Swapper-LLE-1.2.5.1-portable.zip
-            package/Output/DLSS.Swapper-LLE-1.2.5.1-installer.exe
+          path: package/Output/DLSS.Swapper-LLE-1.0.0-windows-x64-portable.zip
 
   linux:
-    name: Linux x64 checkpoint artifact
+    name: Linux x64 portable release
     runs-on: ubuntu-24.04
 
     steps:
@@ -74,11 +58,11 @@ jobs:
         run: |
           dotnet restore linux/DlssSwapper.Linux.Gui/DlssSwapper.Linux.Gui.csproj -r linux-x64
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          ./linux/Package-Portable.ps1 -Dotnet dotnet -OutputPath DLSS-Swapper-LLE-1.2.5.1-linux-x64.tar.gz
+          ./linux/Package-Portable.ps1 -Dotnet dotnet -OutputPath DLSS.Swapper-LLE-1.0.0-linux-x64.tar.gz
 
-      - name: Upload Linux checkpoint artifact
+      - name: Upload Linux portable archive
         uses: actions/upload-artifact@v4
         with:
-          name: DLSS-Swapper-LLE-1.2.5.1-linux-x64
+          name: DLSS-Swapper-LLE-1.0.0-linux-x64
           if-no-files-found: error
-          path: DLSS-Swapper-LLE-1.2.5.1-linux-x64.tar.gz
+          path: DLSS.Swapper-LLE-1.0.0-linux-x64.tar.gz

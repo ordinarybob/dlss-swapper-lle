@@ -9,7 +9,7 @@ if (!$Dotnet) {
     $Dotnet = if (Test-Path -LiteralPath $bundledDotnet) { $bundledDotnet } else { 'dotnet' }
 }
 $output = if ($OutputPath) { [IO.Path]::GetFullPath($OutputPath) } else {
-    [IO.Path]::GetFullPath((Join-Path $repo '../../outputs/DLSS.Swapper-LLE-test-linux-x64.tar.gz'))
+    [IO.Path]::GetFullPath((Join-Path $repo '../../outputs/DLSS.Swapper-LLE-1.0.0-linux-x64.tar.gz'))
 }
 $stageRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'obj'))
 $stage = Join-Path $stageRoot ('package-' + [Guid]::NewGuid().ToString('N'))
