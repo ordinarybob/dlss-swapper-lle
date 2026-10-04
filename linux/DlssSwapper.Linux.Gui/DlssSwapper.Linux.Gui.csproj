@@ -29,6 +29,10 @@
     <Deterministic>true</Deterministic>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
 
   <ItemGroup>
     <AssemblyMetadata Include="LlePackageFormat" Value="$(LlePackageFormat)" />
